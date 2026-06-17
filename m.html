@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>My Vitality Plan</title>
+<meta name="robots" content="noindex">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js" defer></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:#f7f8fa;color:#16201d;overscroll-behavior:none}
+  .font-display{font-family:'Montserrat','Inter',sans-serif}
+  .card{background:#fff;border:1px solid #e6e9ee;border-radius:18px}
+  .field{width:100%;background:#fff;border:1px solid #e6e9ee;border-radius:12px;padding:.7rem .9rem;font-size:1rem}
+  .field:focus{outline:none;border-color:#0a6cf5;box-shadow:0 0 0 3px rgba(10,108,245,.12)}
+  .tabbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:.5rem 0;font-size:.7rem;font-weight:600;color:#9aa0ab}
+  .tabbtn.on{color:#0a6cf5}
+  .seg{font-variant-numeric:tabular-nums}
+  #reader{border-radius:16px;overflow:hidden;position:relative;min-height:240px;background:#000}#reader video,#reader canvas{width:100%!important;height:auto!important;display:block}#reader canvas.drawingBuffer{position:absolute;top:0;left:0}
+</style>
+</head>
+<body class="min-h-screen pb-20">
+
+<header class="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-[#e6e9ee]">
+  <div class="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
+    <div class="flex items-center gap-2"><img src="assets/logo-icon.png" class="h-6 w-auto" alt="Vitality"><span class="font-display font-semibold">My Plan</span></div>
+    <span id="pts" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#eaf2ff] text-[#0a3d7a]">0 pts today</span>
+  </div>
+</header>
+
+<main class="max-w-md mx-auto px-4 py-4">
+  <div id="boot" class="text-center text-[#9aa0ab] text-sm py-24">Loading your plan…</div>
+  <div id="view" class="hidden space-y-4"></div>
+</main>
+
+<nav id="tabs" class="hidden fixed bottom-0 inset-x-0 z-20 bg-white border-t border-[#e6e9ee]">
+  <div class="max-w-md mx-auto flex">
+    <button class="tabbtn on" data-t="today"><span class="text-lg">🍽️</span>Today</button>
+    <button class="tabbtn" data-t="shop"><span class="text-lg">🛒</span>Shop</button>
+    <button class="tabbtn" data-t="scan"><span class="text-lg">📷</span>Scan</button>
+  </div>
+</nav>
+
+<script>
+const SB='https://jtifhcvbgxqwlywugvjv.supabase.co', ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWZoY3ZiZ3hxd2x5d3Vndmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDc5NTgsImV4cCI6MjA4ODA4Mzk1OH0.UfRVLuvM8_HPvKXUEDXb0cxR50znv16L5Tf99AnSc7g';
+const $=(id)=>document.getElementById(id);
+const esc=(s)=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const TOKEN=(location.hash.match(/t=([a-z0-9]+)/i)||[])[1]||null;
+let DATA=null, TAB='today', LIVE_ON=false, stream=null, rafId=null, videoEl=null, detector=null;
+try{ if('BarcodeDetector' in window) detector=new BarcodeDetector(); }catch(e){ detector=null; }
+
+// Convex cutover flag (companion = token-based, no login). OFF = legacy edge fn.
+const USE_CONVEX = true;
+const CONVEX_URL = 'https://quixotic-cat-492.convex.cloud';
+let _convex = null;
+async function getConvex(){ if(!_convex){ const { ConvexHttpClient } = await import('https://esm.sh/convex@1.41.0/browser'); _convex = new ConvexHttpClient(CONVEX_URL); } return _convex; }
+
+async function api(fn, payload){
+  const p = payload || {};
+  if (USE_CONVEX) {
+    const c = await getConvex();
+    if (p.action === 'load')    return await c.query('portal:loadByToken', { token: TOKEN });
+    if (p.action === 'add_log') return await c.mutation('portal:addLogByToken', { token: TOKEN, kind:p.kind, value_num:p.value_num, unit:p.unit, body:p.body });
+    return { ok:false, error:'unknown action' };
+  }
+  const r=await fetch(SB+'/functions/v1/'+fn,{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON},body:JSON.stringify({token:TOKEN,...payload})});
+  return await r.json();
+}
+function hb(){ return (DATA&&DATA.plan&&DATA.plan.handbook)||{}; }
+function todayName(){ return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()]; }
+function gamify(){
+  const PTS={food:10,weigh_in:5,journal:5,activity:15,scan:10,module:25};
+  const logs=DATA.logs||[], ib=DATA.inbody||[], plan=DATA.plan, h=plan&&plan.handbook;
+  const dk=(iso)=>new Date(iso).toDateString();
+  let points=0; const dates=new Set();
+  logs.forEach(l=>{ points+=PTS[l.kind]||5; dates.add(dk(l.logged_at)); });
+  let streak=0, cur=new Date(); if(!dates.has(cur.toDateString())) cur.setDate(cur.getDate()-1);
+  while(dates.has(cur.toDateString())){ streak++; cur.setDate(cur.getDate()-1); }
+  let week=0; for(let i=0;i<7;i++){ const d=new Date(); d.setDate(d.getDate()-i); if(dates.has(d.toDateString())) week++; }
+  const start=(h&&h.summary&&h.summary.weight)||(ib[0]&&+ib[0].weight_lb)||null;
+  const goal=(plan&&plan.goal_weight)||(h&&h.summary&&h.summary.goal_weight)||null;
+  const wl=logs.filter(l=>l.kind==='weigh_in'&&l.value_num!=null);
+  const cw=wl.length?+wl[0].value_num:(ib.length?+ib[ib.length-1].weight_lb:start);
+  const lost=(start!=null&&cw!=null)?(start-cw):0, n=logs.length;
+  const B=(i,l,e)=>({icon:i,label:l,earned:!!e});
+  const badges=[B('👣','First step',n>=1),B('⚖️','Weigh-in',logs.some(l=>l.kind==='weigh_in')),B('🍽️','Food',logs.some(l=>l.kind==='food')),B('🔥','3-day',streak>=3),B('🗓️','Week',streak>=7),B('📉','Down 5',lost>=5),B('💪','Down 10',lost>=10),B('⭐','50 logs',n>=50),B('🎓','PhD',new Set(logs.filter(l=>l.kind==='module').map(l=>(l.body||'').split(':')[0])).size>=3),B('🏆','Goal',goal!=null&&cw!=null&&cw<=goal)];
+  return {points,streak,week,badges,earned:badges.filter(b=>b.earned).length};
+}
+function refreshPts(){ const g=gamify(); $('pts').textContent='🔥'+g.streak+' · '+g.points+' pts'; }
+
+// ---------- TODAY ----------
+function viewToday(){
+  const h=hb(), meals=h.meals||[], n=h.nutrition||{};
+  let day=meals.find(m=>m.day===todayName())||meals[0];
+  const t=new Date().toDateString();
+  const kcalToday=(DATA.logs||[]).filter(l=>l.kind==='food'&&new Date(l.logged_at).toDateString()===t).reduce((s,l)=>s+(+l.value_num||0),0);
+  const target=n.calories||null;
+  const dayChips=meals.map(m=>`<button data-day="${esc(m.day)}" class="dc px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${m.day===(day&&day.day)?'bg-[#0a6cf5] text-white':'bg-white border border-[#e6e9ee] text-[#6b7280]'}">${esc(m.day.slice(0,3))}</button>`).join('');
+  const meal=(m)=>`<div class="rounded-xl overflow-hidden border border-[#eef0f4]">${m.image?`<img src="${esc(m.image)}" alt="" loading="lazy" class="w-full h-28 object-cover">`:''}<div class="p-3"><div class="text-[11px] uppercase tracking-wide text-[#0a6cf5] font-semibold">${esc(m.meal)}</div><div class="text-sm font-semibold">${esc(m.name)}</div><div class="text-[11px] text-[#9aa0ab] seg">${m.kcal} kcal · ${m.protein}g protein</div><div class="text-xs text-[#6b7280] mt-.5">${esc(m.ingredients)}</div></div></div>`;
+  const g=gamify();
+  const rstrip=`<div class="card p-3">
+    <div class="grid grid-cols-3 gap-2 text-center mb-2">
+      <div><div class="font-display text-lg font-semibold">${g.streak} 🔥</div><div class="text-[10px] text-[#9aa0ab] font-semibold uppercase tracking-wide">streak</div></div>
+      <div><div class="font-display text-lg font-semibold seg">${g.points}</div><div class="text-[10px] text-[#9aa0ab] font-semibold uppercase tracking-wide">points</div></div>
+      <div><div class="font-display text-lg font-semibold seg">${g.week}/7</div><div class="text-[10px] text-[#9aa0ab] font-semibold uppercase tracking-wide">this week</div></div>
+    </div>
+    <div class="flex gap-2 overflow-x-auto pt-1 border-t border-[#f1f3f7]">${g.badges.map(b=>`<div class="shrink-0 text-center ${b.earned?'':'opacity-30'}" title="${esc(b.label)}"><div class="text-xl leading-none">${b.icon}</div></div>`).join('')}</div>
+  </div>`;
+  $('view').innerHTML=`
+    ${rstrip}
+    ${target?`<div class="card p-3"><div class="flex justify-between text-xs mb-1"><span class="text-[#6b7280] font-semibold">Today's intake</span><span class="seg ${kcalToday>target?'text-rose-600':'text-[#16201d]'}">${kcalToday} / ${target} kcal</span></div><div class="h-1.5 rounded-full bg-[#eef0f4] overflow-hidden"><div class="h-full ${kcalToday>target?'bg-rose-400':'bg-[#0a6cf5]'}" style="width:${Math.min(100,target?kcalToday/target*100:0).toFixed(0)}%"></div></div></div>`:''}
+    <div class="flex gap-1.5 overflow-x-auto pb-1">${dayChips}</div>
+    <div class="card p-4"><div class="font-display font-semibold mb-2">${day?esc(day.day):''} <span class="text-xs text-[#9aa0ab] font-normal seg">${day?day.kcal+' kcal · '+day.protein+'g protein':''}</span></div><div class="space-y-3">${day?(day.items||[]).map(meal).join(''):'No plan loaded.'}</div></div>`;
+  $('view').querySelectorAll('.dc').forEach(b=>b.onclick=()=>{ day=meals.find(m=>m.day===b.dataset.day); renderDay(day); });
+  function renderDay(d){ viewToday.current=d; viewToday(); } // simple re-render on chip
+}
+
+// ---------- SHOP ----------
+function shopKey(){ return 'vitshop_'+(DATA.patient?DATA.patient.id:'x'); }
+function getChecks(){ try{return JSON.parse(localStorage.getItem(shopKey())||'{}');}catch(e){return {};} }
+function viewShop(){
+  const list=(hb().shopping||[]);
+  const checks=getChecks();
+  const done=list.filter((x,i)=>checks[i]).length;
+  $('view').innerHTML=`
+    <div class="card p-4">
+      <div class="flex items-center justify-between mb-3"><div class="font-display font-semibold">Shopping list</div><span class="text-xs text-[#9aa0ab]">${done}/${list.length}</span></div>
+      <div class="space-y-1">${list.map((x,i)=>`<label class="flex items-center gap-3 py-1.5 border-b border-[#f1f3f7] last:border-0">
+        <input type="checkbox" data-i="${i}" ${checks[i]?'checked':''} class="ck w-5 h-5 rounded accent-[#0a6cf5]">
+        <span class="flex-1 text-sm ${checks[i]?'line-through text-[#9aa0ab]':''}">${esc(x.item)}</span>
+        <span class="text-xs text-[#9aa0ab]">${esc(x.qty||'')}</span>
+      </label>`).join('')}</div>
+    </div>`;
+  $('view').querySelectorAll('.ck').forEach(c=>c.onchange=()=>{ const ch=getChecks(); ch[c.dataset.i]=c.checked; localStorage.setItem(shopKey(),JSON.stringify(ch)); viewShop(); });
+}
+
+// ---------- SCAN (photo: menu or product — Claude vision, personalized, NO barcodes) ----------
+function viewScan(){
+  $('view').innerHTML=`
+    <div class="card p-4">
+      <div class="font-display font-semibold mb-1">Scan a menu or product</div>
+      <p class="text-xs text-[#6b7280] mb-3">Snap a photo of a restaurant menu or a product, and we'll check it against your plan. No barcodes.</p>
+      <input id="rest" class="field w-full mb-3" placeholder="Restaurant or brand (optional)">
+      <div class="grid grid-cols-2 gap-2">
+        <label class="py-3 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold text-center cursor-pointer">📷 Take photo<input id="cam" type="file" accept="image/*" capture="environment" class="hidden"></label>
+        <label class="py-3 rounded-xl bg-white border border-[#e6e9ee] text-[#16201d] text-sm font-semibold text-center cursor-pointer">⬆️ Upload<input id="up" type="file" accept="image/*" class="hidden"></label>
+      </div>
+      <div id="result" class="mt-3"></div>
+    </div>`;
+  $('cam').onchange=e=>{ if(e.target.files[0]) onPhoto(e.target.files[0]); };
+  $('up').onchange=e=>{ if(e.target.files[0]) onPhoto(e.target.files[0]); };
+}
+// downscale the photo so the upload is small + fast, then send to the vision scanner
+function onPhoto(file){
+  const fr=new FileReader();
+  fr.onload=()=>{ const img=new Image(); img.onload=()=>{
+    const max=1280, sc=Math.min(1,max/Math.max(img.width,img.height));
+    const c=document.createElement('canvas'); c.width=Math.round(img.width*sc); c.height=Math.round(img.height*sc);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    doScan(c.toDataURL('image/jpeg',0.82));
+  }; img.onerror=()=>doScan(fr.result); img.src=fr.result; };
+  fr.readAsDataURL(file);
+}
+async function doScan(dataURL){
+  const res=$('result');
+  res.innerHTML='<div class="card p-5 text-center"><div class="animate-spin mx-auto mb-3" style="width:34px;height:34px;border:3px solid #e6e9ee;border-top-color:#0a6cf5;border-radius:50%"></div><div class="text-sm text-[#6b7280]">Reading it and checking your plan…</div></div>';
+  const rest=(($('rest')&&$('rest').value)||'').trim();
+  const d=await api('vit-menu-scan',{image:dataURL,restaurant:rest});
+  if(!d||!d.ok){ res.innerHTML='<div class="card p-4 text-sm text-rose-600 text-center">Couldn’t read that photo. Try again with the menu or label filling the frame, in good light.</div>'; return; }
+  renderScan(d);
+}
+const VBADGE={good:{bg:'bg-emerald-50',bd:'border-emerald-200',tx:'text-emerald-700',ic:'✓',lab:'Good pick'},mods:{bg:'bg-amber-50',bd:'border-amber-200',tx:'text-amber-700',ic:'⚠',lab:'OK with mods'},skip:{bg:'bg-rose-50',bd:'border-rose-200',tx:'text-rose-700',ic:'✕',lab:'Skip'}};
+function renderScan(d){
+  const res=$('result');
+  const picks=(d.top_picks||[]);
+  const top=(d.kind==='menu'&&picks.length)?`<div class="card overflow-hidden mb-3"><div class="bg-emerald-50 border-b border-emerald-200 p-4"><div class="font-display font-semibold text-emerald-700 mb-1">✓ Top picks for you</div>${picks.map((n,i)=>`<div class="text-sm text-[#16201d] flex gap-2 py-0.5"><span class="text-emerald-600 font-bold">${i+1}</span>${esc(n)}</div>`).join('')}</div></div>`:'';
+  const items=(d.items||[]).map((it,idx)=>{
+    const c=VBADGE[it.verdict]||VBADGE.mods;
+    const macros=[it.protein_g!=null?`🥩 ~${it.protein_g}g protein`:'',it.cal!=null?`🔥 ~${it.cal} cal`:''].filter(Boolean).join('  ·  ');
+    const canLog=it.cal!=null&&it.verdict!=='skip';
+    return `<div class="card overflow-hidden mb-2">
+      <div class="${c.bg} ${c.bd} border-b p-3 flex items-center justify-between gap-2">
+        <div class="font-semibold text-sm ${c.tx} min-w-0 truncate">${esc(it.name)}</div>
+        <div class="text-[11px] font-bold ${c.tx} whitespace-nowrap">${c.ic} ${c.lab}</div>
+      </div>
+      <div class="p-3">
+        ${macros?`<div class="text-xs text-[#6b7280] mb-1.5">${macros}</div>`:''}
+        <div class="text-xs text-[#16201d] leading-snug">${esc(it.reason||'')}</div>
+        ${it.how_to_order?`<div class="text-xs text-[#6b7280] mt-2 bg-[#f7f8fa] rounded-lg p-2">💡 <b>How to order:</b> ${esc(it.how_to_order)}</div>`:''}
+        ${canLog?`<button class="logItem mt-2 w-full py-2 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold" data-i="${idx}">Log this (+10 pts)</button>`:''}
+      </div></div>`;
+  }).join('');
+  res.innerHTML=(d.summary?`<div class="text-xs text-[#6b7280] mb-2 px-1">${esc(d.summary)}</div>`:'')+top+(items||'<div class="card p-4 text-sm text-[#6b7280] text-center">No items detected. Try a clearer photo.</div>');
+  res.querySelectorAll('.logItem').forEach(b=>b.onclick=async()=>{
+    const it=d.items[+b.dataset.i]; b.disabled=true; b.textContent='Logged ✓';
+    await api('vit-portal-data',{action:'add_log',kind:'food',value_num:it.cal||0,unit:' kcal',body:`${it.name}${it.protein_g?' · '+it.protein_g+'g P':''}${d.restaurant?' @ '+d.restaurant:''}`});
+    DATA=await api('vit-portal-data',{action:'load'}); refreshPts();
+  });
+}
+
+function render(){
+  refreshPts();
+  if(TAB==='today') viewToday(); else if(TAB==='shop') viewShop(); else viewScan();
+  $('tabs').querySelectorAll('.tabbtn').forEach(b=>b.classList.toggle('on',b.dataset.t===TAB));
+}
+$('tabs').querySelectorAll('.tabbtn').forEach(b=>b.onclick=async()=>{
+  if(LIVE_ON) stopLive();
+  TAB=b.dataset.t; render();
+});
+
+(async()=>{
+  if(!TOKEN){ $('boot').innerHTML='Open this from the QR code in your Vitality portal.'; return; }
+  DATA=await api('vit-portal-data',{action:'load'});
+  if(!DATA||!DATA.ok||!DATA.patient){ $('boot').innerHTML='This link has expired. Open a fresh QR from your portal.'; return; }
+  $('boot').classList.add('hidden'); $('view').classList.remove('hidden'); $('tabs').classList.remove('hidden');
+  render();
+})();
+</script>
+</body>
+</html>

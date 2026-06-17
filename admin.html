@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin & Operations Vitality</title>
+<meta name="robots" content="noindex">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:#f7f8fa;color:#16201d}
+  .font-display{font-family:'Montserrat','Inter',sans-serif}
+  .card{background:#fff;border:1px solid #e6e9ee;border-radius:18px}
+  .field{background:#fff;border:1px solid #e6e9ee;border-radius:10px;padding:.5rem .7rem;font-size:.9rem}
+  .field:focus{outline:none;border-color:#0a6cf5;box-shadow:0 0 0 3px rgba(10,108,245,.12)}
+  .tab{padding:.5rem .9rem;border-radius:999px;font-size:.85rem;font-weight:600;color:#6b7280;cursor:pointer}
+  .tab.on{background:#0a6cf5;color:#fff}
+  .seg{font-variant-numeric:tabular-nums}
+  .pill{font-size:.7rem;font-weight:600;padding:.12rem .5rem;border-radius:999px}
+</style>
+</head>
+<body class="min-h-screen">
+
+<header class="sticky top-0 z-20 bg-white/85 backdrop-blur border-b border-[#e6e9ee]">
+  <div class="max-w-5xl mx-auto px-5 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-2.5"><img src="assets/logo-icon.png" alt="Vitality" class="h-7 w-auto"><span class="font-display font-semibold text-lg">Admin &amp; Operations</span></div>
+    <div class="flex items-center gap-4">
+      <a href="crm.html" class="text-xs text-[#6b7280] hover:text-[#16201d]">← CRM</a>
+      <span id="who" class="text-xs text-[#6b7280] hidden sm:block"></span>
+      <button id="signout" class="text-xs text-[#6b7280] hover:text-[#16201d]">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-5 py-8">
+  <div id="loading" class="text-center text-[#6b7280] py-24 text-sm">Loading…</div>
+  <div id="denied" class="hidden card p-8 text-center max-w-md mx-auto mt-10">
+    <h2 class="font-display text-lg font-semibold mb-2">Admins only</h2>
+    <p class="text-sm text-[#6b7280]">This operations area is restricted to clinic admins. <a href="crm.html" class="text-[#0a6cf5]">Back to the CRM</a>.</p>
+  </div>
+  <div id="app" class="hidden space-y-6"></div>
+</main>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const SB='https://jtifhcvbgxqwlywugvjv.supabase.co', ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWZoY3ZiZ3hxd2x5d3Vndmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDc5NTgsImV4cCI6MjA4ODA4Mzk1OH0.UfRVLuvM8_HPvKXUEDXb0cxR50znv16L5Tf99AnSc7g';
+const sb = createClient(SB, ANON, { auth:{ storageKey:'sb-vit-staff', persistSession:true } });
+const FN = SB + '/functions/v1/vit-admin';
+const $=(id)=>document.getElementById(id);
+const esc=(s)=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let TOKEN=null, DATA=null, TAB='systems', TASKS=null, REPORTS=null, SYS=null;
+
+// code shield: neutral codes in the DB/log; human labels decoded ONLY here in the admin UI
+const CODES={'S-001':'Role changed','S-002':'Staff added','S-003':'Access deactivated','S-004':'Access reactivated','A-001':'Chart accessed','M-001':'Record modified','M-002':'Note added','D-001':'Disclosure / sent','V-001':'Vendor risk reviewed','100-001':'Record created'};
+const decode=(c)=>CODES[c]||c;
+const roleColor={admin:'bg-[#eaf2ff] text-[#0a3d7a]',provider:'bg-[#eafaf0] text-[#0a7a3d]',staff:'bg-[#f1f3f7] text-[#6b7280]'};
+
+// Vendor & AI risk register the "shadow AI" map: every tool, what data it touches,
+// and whether a BAA covers it. Curated reference (v1, read-only). A red flag = it
+// touches patient data (PHI/health) without a signed BAA.
+const VENDORS=[
+  {side:'them',name:'Lovable VBIS generator',cat:'AI / no-code',use:'Generates patient transformation handbooks from InBody intake',data:'phi',baa:'none',risk:'critical',reviewed:'',mit:'Remediate: rebuild VBIS natively on a BAA-backed backend; stop sending PHI to Lovable (DPA §3.8 bans it).',note:'DPA §3.8 expressly bans PHI; no BAA offered. Real patient data is processed here.'},
+  {side:'them',name:'Lovable Macros Calculator',cat:'AI / no-code',use:'Public macros tool + lead capture',data:'health',baa:'none',risk:'high',reviewed:'',mit:'Remediate: move lead capture to a BAA-backed backend; lock RLS; stop collecting health inputs on a non-BAA app.',note:'Public app embeds their Supabase project + anon key; collects weight/height/activity. RLS unverified.'},
+  {side:'them',name:'Base44',cat:'AI / no-code',use:'Original app builder (Lovable rebuilds from it)',data:'health',baa:'none',risk:'high',reviewed:'',mit:'Remediate: consolidate onto one reviewed, BAA-backed stack; retire the no-code AI vendor for any PHI path.',note:'Second unreviewed no-code/AI vendor in their stack.'},
+  {side:'them',name:'Supabase (their project)',cat:'Backend / infra',use:'Backend behind their Lovable / Base44 apps',data:'health',baa:'unknown',risk:'high',reviewed:'',mit:'Remediate: verify RLS, confirm/obtain a BAA, or migrate to a HIPAA-configured project.',note:'Directly reachable with the public anon key; RLS configuration unconfirmed.'},
+  {side:'them',name:'athenahealth',cat:'EHR / e-rx / billing',use:'EHR, e-prescribing (Surescripts), insurance claims',data:'phi',baa:'unknown',risk:'medium',reviewed:'',mit:'Confirm the BAA on file (standard EHR vendor); they retain e-rx + claims.',note:'Standard EHR vendor they keep; confirm a BAA is on file.'},
+  {side:'us',name:'Supabase (shared demo)',cat:'Backend / infra',use:'Demo backend for this build (synthetic data only)',data:'none',baa:'queued',risk:'medium',reviewed:'',mit:'Control: synthetic data only today, no real PHI. → Low at go-live: dedicated HIPAA project (Team + HIPAA add-on, ~$900/mo) + signed BAA queued, funded, rolls in on payment.',note:'No real PHI flows yet. Dedicated HIPAA project + BAA gates go-live.'},
+  {side:'us',name:'Telnyx',cat:'Voice / SMS',use:'AI receptionist phone line (admin-only: booking, hours, location)',data:'phi',baa:'na',risk:'low',reviewed:'2026-06-16',mit:'Conduit Exception (HIPAA): per Telnyx, no BAA required for the current admin-only scope — the receptionist collects no health info and vit_call_log stores METADATA only (intent/outcome/duration), never transcript/recording content. PHI-minimized rails; line isolated from IBS. CAVEAT: Telnyx AI Assistant transcribes/processes call audio to function, which is thinner than a pure pass-through, so the exception holds only while no call content is stored. TRIGGER requiring a BAA: enabling transcript/recording storage or analysis. Confirm with a healthcare compliance attorney before real-PHI go-live.',note:'Conduit Exception applies for the admin-only scope (Telnyx confirmed 2026-06-16) — no BAA needed. BAA required only if call content (transcripts/recordings) is ever stored.'},
+  {side:'us',name:'Anthropic (Claude)',cat:'AI model',use:'InBody OCR + document analysis',data:'phi',baa:'queued',risk:'medium',reviewed:'',mit:'Controls: API is zero-retention + not trained on data; PHI minimized at OCR. → Low once the Anthropic BAA is signed (standard path, fast).',note:'Anthropic offers a standard BAA; execute before any real PHI.'},
+  {side:'us',name:'xAI (Grok)',cat:'AI model',use:'Vee website chat + voice',data:'none',baa:'na',risk:'low',reviewed:'',mit:'Control: hard rails keep PHI out of prompts; the chat never collects health info. No PHI path by design = low; BAA only if a PHI path is ever added.',note:'No PHI reaches the model by design (enforced rails).'},
+  {side:'us',name:'Resend',cat:'Email',use:'Patient + provider email',data:'contact',baa:'none',risk:'medium',reviewed:'',mit:'Control: non-PHI content only (appointment / marketing). → Low via a BAA-capable email provider (e.g., Paubox) before any clinical content.',note:'Not HIPAA by default; keep to non-PHI or move clinical email to a BAA provider.'},
+  {side:'us',name:'GitHub Pages',cat:'Hosting',use:'Static marketing site',data:'none',baa:'na',risk:'low',reviewed:'',mit:'Public marketing pages only; no PHI. Already low.',note:'Public pages only; no PHI.'},
+];
+const vFlag=(v)=>(v.data==='phi'||v.data==='health')&&v.baa!=='signed'&&v.baa!=='na';
+const dataPill={phi:'bg-[#fde8e8] text-rose-600',health:'bg-amber-50 text-amber-700',contact:'bg-[#eaf2ff] text-[#0a3d7a]',none:'bg-[#f1f3f7] text-[#9aa0ab]'};
+const baaPill={signed:'bg-emerald-50 text-emerald-700',queued:'bg-[#eaf2ff] text-[#0a3d7a]',pending:'bg-amber-50 text-amber-700',none:'bg-[#fde8e8] text-rose-600',na:'bg-[#f1f3f7] text-[#9aa0ab]',unknown:'bg-[#f1f3f7] text-[#6b7280]'};
+const riskPill={critical:'bg-rose-600 text-white',high:'bg-amber-500 text-white',medium:'bg-[#0a6cf5] text-white',low:'bg-emerald-500 text-white'};
+
+// Milestone B: identity + admin backend are Convex-native. Flip USE_CONVEX_AUTH=false to roll back to Supabase.
+const USE_CONVEX_AUTH = true;
+const CONVEX_URL = 'https://quixotic-cat-492.convex.site';
+let getAuthToken, signOutFn;
+if (USE_CONVEX_AUTH) {
+  const { getToken, signOut, STORE_STAFF } = await import('./auth-convex.js');
+  const t0 = await getToken(STORE_STAFF);
+  if (!t0){ location.replace('login.html'); throw new Error('no session'); }
+  getAuthToken = () => getToken(STORE_STAFF);   // fresh (auto-refreshing) token per request
+  signOutFn = () => signOut(STORE_STAFF);
+} else {
+  const { data:{ session } } = await sb.auth.getSession();
+  if (!session){ location.replace('login.html'); throw new Error('no session'); }
+  TOKEN = session.access_token;
+  getAuthToken = async () => TOKEN;
+  signOutFn = () => sb.auth.signOut();
+}
+$('signout').onclick=()=> signOutFn().then(()=>location.replace('login.html'));
+// Convex routes mirror the old Supabase action payloads — base URL + token swap only.
+async function api(p){
+  if (USE_CONVEX_AUTH){ const r=await fetch(CONVEX_URL+'/admin-data',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getAuthToken()},body:JSON.stringify(p||{})}); return await r.json(); }
+  const r=await fetch(FN,{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON,'Authorization':'Bearer '+TOKEN},body:JSON.stringify(p||{})}); return await r.json(); }
+async function tasksApi(p){
+  if (USE_CONVEX_AUTH){ const r=await fetch(CONVEX_URL+'/tasks-data',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getAuthToken()},body:JSON.stringify(p||{})}); return await r.json(); }
+  const r=await fetch(SB+'/functions/v1/vit-tasks',{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON,'Authorization':'Bearer '+TOKEN},body:JSON.stringify(p||{})}); return await r.json(); }
+async function loadTasks(){ TASKS=await tasksApi({action:'load'}); }
+async function sysApi(p){
+  if (USE_CONVEX_AUTH){ const r=await fetch(CONVEX_URL+'/health-check',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getAuthToken()},body:JSON.stringify(p||{})}); return await r.json(); }
+  const r=await fetch(SB+'/functions/v1/vit-health',{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON,'Authorization':'Bearer '+TOKEN},body:JSON.stringify(p||{})}); return await r.json(); }
+
+const fmtTs=(s)=>{ if(!s)return''; const d=new Date(s); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); };
+
+function viewAccess(){
+  const staff=DATA.staff||[];
+  return `<section class="card p-6">
+    <div class="flex items-center justify-between mb-4"><h2 class="font-display text-lg font-semibold">Access control</h2><span class="text-xs text-[#9aa0ab]">${staff.length} people</span></div>
+    <div class="space-y-2">${staff.map(s=>`<div class="flex items-center gap-3 rounded-xl border border-[#eef0f4] bg-[#fbfcfe] p-3">
+      <div class="h-9 w-9 rounded-full bg-[#0a6cf5] text-white grid place-items-center font-display font-semibold text-xs shrink-0">${esc((s.name||'?').split(' ').map(x=>x[0]).slice(0,2).join(''))}</div>
+      <div class="min-w-0 flex-1"><div class="text-sm font-semibold truncate">${esc(s.name)}</div><div class="text-[11px] text-[#9aa0ab]">${s.email?esc(s.email):'no login yet'}${s.linked?' · linked':''}${s.active?'':' · <span class="text-rose-500">inactive</span>'+(s.reason?' · <span class="text-rose-500">'+esc(s.reason)+'</span>':'')}</div></div>
+      <select data-role="${s.id}" class="field text-xs"><option value="admin" ${s.role==='admin'?'selected':''}>Admin</option><option value="provider" ${s.role==='provider'?'selected':''}>Provider</option><option value="staff" ${s.role==='staff'?'selected':''}>Staff</option></select>
+      <button data-active="${s.id}" data-to="${s.active?'0':'1'}" class="pill ${s.active?'bg-[#eafaf0] text-[#0a7a3d]':'bg-[#fde8e8] text-rose-600'}">${s.active?'Active':'Inactive'}</button>
+    </div>`).join('')}</div>
+    <div class="mt-4 pt-4 border-t border-[#f1f3f7]">
+      <div class="text-xs font-semibold text-[#6b7280] mb-2">Add a team member</div>
+      <div class="flex flex-wrap gap-2 items-center">
+        <input id="nName" class="field flex-1" placeholder="Full name" style="min-width:150px">
+        <input id="nEmail" class="field" placeholder="Email (optional)">
+        <select id="nRole" class="field text-sm"><option value="staff">Staff</option><option value="provider">Provider</option><option value="admin">Admin</option></select>
+        <button id="addBtn" class="px-4 py-2 rounded-lg bg-[#0a6cf5] text-white text-sm font-semibold">Add</button>
+      </div>
+    </div>
+  </section>`;
+}
+function viewAudit(){
+  const a=DATA.audit||[];
+  return `<section class="card p-6">
+    <div class="flex items-center justify-between mb-1"><h2 class="font-display text-lg font-semibold">Audit log</h2><button id="csv" class="px-3 py-1.5 rounded-lg border border-[#e6e9ee] text-xs font-semibold hover:bg-[#f1f3f7]">⬇ Export CSV</button></div>
+    <p class="text-xs text-[#9aa0ab] mb-4">Append-only. Each entry stores a neutral code and a one-way hash, no patient detail. Decoded here for review.</p>
+    <div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-[11px] uppercase tracking-wide text-[#9aa0ab] text-left border-b border-[#eef0f4]"><th class="py-2 pr-3">When</th><th class="py-2 pr-3">Action</th><th class="py-2 pr-3">By</th><th class="py-2 pr-3">On</th><th class="py-2 pr-3">Hash</th><th class="py-2">Anchored</th></tr></thead>
+      <tbody>${a.length?a.map(r=>`<tr class="border-b border-[#f5f6f8]"><td class="py-2 pr-3 whitespace-nowrap text-[#6b7280]">${fmtTs(r.ts)}</td><td class="py-2 pr-3"><span class="font-semibold">${esc(decode(r.code))}</span> <span class="text-[10px] text-[#c0c4cc]">${esc(r.code)}</span></td><td class="py-2 pr-3 text-[#4b5563]">${esc(r.actor||'')}</td><td class="py-2 pr-3 text-[#9aa0ab]">${esc(r.entity||'')}</td><td class="py-2 pr-3 font-mono text-[10px] text-[#9aa0ab]">${esc((r.hash||'').slice(0,12))}…</td><td class="py-2 text-[11px]">${r.tx?'<span class="text-[#0a7a3d]">on-chain</span>':'<span class="text-[#9aa0ab]">local</span>'}</td></tr>`).join(''):`<tr><td colspan="6" class="py-6 text-center text-[#9aa0ab]">No audit entries yet.</td></tr>`}</tbody></table></div>
+  </section>`;
+}
+
+function viewTasks(){
+  if(!TASKS){ (async()=>{ await loadTasks(); render(); })(); return '<div class="card p-8 text-center text-[#9aa0ab] text-sm">Loading tasks…</div>'; }
+  const tasks=TASKS.tasks||[], assignees=TASKS.assignees||['Front Desk'];
+  const pri={high:'bg-rose-500',normal:'bg-[#0a6cf5]',low:'bg-[#cbd2da]'};
+  const cols=[['todo','To do'],['doing','Doing'],['done','Done']];
+  const card=(t)=>`<div class="rounded-lg border border-[#eef0f4] bg-white p-2.5">
+    <div class="flex items-start gap-2">
+      <span class="w-2 h-2 rounded-full ${pri[t.priority]||pri.normal} mt-1.5 shrink-0" title="${esc(t.priority)}"></span>
+      <div class="flex-1 min-w-0"><div class="text-sm font-medium ${t.status==='done'?'line-through text-[#9aa0ab]':''}">${esc(t.title)}</div><div class="text-[11px] text-[#9aa0ab]">${t.assignee?esc(t.assignee):'unassigned'}${t.due?' · due '+esc(t.due):''}</div></div>
+      <button data-del="${t.id}" class="text-[#c0c4cc] hover:text-rose-500 text-base leading-none">×</button>
+    </div>
+    <select data-move="${t.id}" class="field text-[11px] mt-2 w-full">${cols.map(c=>`<option value="${c[0]}" ${t.status===c[0]?'selected':''}>${c[1]}</option>`).join('')}</select>
+  </div>`;
+  return `<section class="card p-6">
+    <h2 class="font-display text-lg font-semibold mb-3">Task board</h2>
+    <div class="flex flex-wrap gap-2 items-center mb-4 pb-4 border-b border-[#f1f3f7]">
+      <input id="tTitle" class="field flex-1" placeholder="New task…" style="min-width:160px">
+      <select id="tAssignee" class="field text-sm">${assignees.map(a=>`<option>${esc(a)}</option>`).join('')}</select>
+      <select id="tPriority" class="field text-sm"><option value="normal">Normal</option><option value="high">High</option><option value="low">Low</option></select>
+      <input id="tDue" type="date" class="field text-sm">
+      <button id="tAdd" class="px-4 py-2 rounded-lg bg-[#0a6cf5] text-white text-sm font-semibold">Add</button>
+    </div>
+    <div class="grid md:grid-cols-3 gap-4">${cols.map(c=>`<div><div class="text-xs font-semibold text-[#6b7280] mb-2 flex items-center justify-between">${c[1]} <span class="text-[#9aa0ab]">${tasks.filter(t=>t.status===c[0]).length}</span></div><div class="space-y-2">${tasks.filter(t=>t.status===c[0]).map(card).join('')||'<div class="text-[11px] text-[#c0c4cc] py-2">Nothing here</div>'}</div></div>`).join('')}</div>
+  </section>`;
+}
+
+function viewSystems(){
+  if(!SYS){ (async()=>{ SYS=await sysApi({action:'load'}); render(); })(); return '<div class="card p-8 text-center text-[#9aa0ab] text-sm">Loading…</div>'; }
+  const latest=SYS.latest, results=(latest&&latest.results)||[], hist=SYS.history||[];
+  const dot=(s)=> s==='up'?'bg-emerald-500':s==='warn'?'bg-amber-500':s==='skip'?'bg-[#cbd2da]':'bg-rose-500';
+  const lab=(s)=> s==='up'?'OK':s==='warn'?'Check':s==='skip'?'n/a':'Down';
+  const txt=(s)=> s==='up'?'text-emerald-600':s==='warn'?'text-amber-600':s==='skip'?'text-[#9aa0ab]':'text-rose-600';
+  const issues=results.filter(r=>r.status==='down'||r.status==='warn').length;
+  const clear=latest&&latest.all_clear;
+  const banner = !latest ? `<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-4 text-center text-sm text-[#6b7280]">No check run yet. Run one to confirm all systems are firing.</div>`
+    : clear ? `<div class="rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-center"><div class="font-display text-lg font-semibold text-emerald-700">✓ All systems clear</div><div class="text-xs text-emerald-600 mt-1">Last checked ${fmtTs(latest.ran_at)} by ${esc(latest.ran_by||'')}</div></div>`
+    : `<div class="rounded-xl bg-amber-50 border border-amber-200 p-4 text-center"><div class="font-display text-lg font-semibold text-amber-700">${issues} need${issues===1?'s':''} a look</div><div class="text-xs text-amber-600 mt-1">Last checked ${fmtTs(latest.ran_at)} by ${esc(latest.ran_by||'')}</div></div>`;
+  return `<section class="card p-6">
+    <div class="flex items-center justify-between mb-4"><h2 class="font-display text-lg font-semibold">Systems check</h2><button id="runChk" class="px-4 py-2 rounded-lg bg-[#0a6cf5] text-white text-sm font-semibold">Run check</button></div>
+    ${banner}
+    <div class="grid sm:grid-cols-2 gap-2 mt-4">${results.map(r=>`<div class="flex items-center gap-3 rounded-lg border border-[#eef0f4] bg-[#fbfcfe] p-2.5"><span class="w-2.5 h-2.5 rounded-full ${dot(r.status)} shrink-0"></span><div class="flex-1 min-w-0"><div class="text-sm font-medium truncate">${esc(r.name)}</div><div class="text-[10px] text-[#9aa0ab] uppercase tracking-wide">${esc(r.cat)}</div></div><span class="text-[11px] font-semibold ${txt(r.status)}">${lab(r.status)}</span>${r.ms?`<span class="text-[10px] text-[#c0c4cc] seg">${r.ms}ms</span>`:''}</div>`).join('')||'<div class="text-sm text-[#9aa0ab] col-span-2 text-center py-4">Run a check to see status.</div>'}</div>
+    ${hist.length?`<div class="mt-5"><div class="text-xs font-semibold text-[#6b7280] mb-2">Recent runs</div><div class="space-y-1">${hist.slice(0,8).map(h=>`<div class="flex items-center justify-between text-xs py-1 border-b border-[#f5f6f8]"><span class="text-[#6b7280]">${fmtTs(h.ran_at)} · ${esc(h.ran_by||'')}</span><span class="${h.all_clear?'text-emerald-600':'text-amber-600'} font-semibold">${h.all_clear?'all clear':'had issues'}</span></div>`).join('')}</div></div>`:''}
+    <p class="text-[11px] text-[#9aa0ab] mt-4">Run this at open, mid-day, and close so the opener can confirm every webhook, server, and service is firing. Automatic 3x/day checks are the next step (scheduled cron).</p>
+  </section>`;
+}
+
+function viewReports(){
+  if(!REPORTS){ (async()=>{ REPORTS=await api({action:'reports'}); render(); })(); return '<div class="card p-8 text-center text-[#9aa0ab] text-sm">Loading reports…</div>'; }
+  const k=REPORTS.kpis||{}, calls=REPORTS.calls||[];
+  const mm=(s)=> s==null?' ':(Math.floor(s/60)+'m '+(s%60)+'s');
+  const fmtd=(s)=>{ if(!s)return''; const d=new Date(s); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); };
+  const flag=(c)=> (!c.outcome || (c.dur!=null && c.dur<5));
+  const kpi=(v,l)=>`<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-4 text-center"><div class="font-display text-2xl font-semibold seg">${v}</div><div class="text-[11px] uppercase tracking-wide text-[#9aa0ab] font-semibold mt-.5">${l}</div></div>`;
+  return `<section class="card p-6">
+    <div class="flex items-center justify-between mb-4"><h2 class="font-display text-lg font-semibold">Receptionist calls</h2><button id="callcsv" class="px-3 py-1.5 rounded-lg border border-[#e6e9ee] text-xs font-semibold hover:bg-[#f1f3f7]">⬇ Export CSV</button></div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">${kpi(k.calls||0,'calls')}${kpi(mm(k.avgDur),'avg length')}${kpi(k.chats||0,'web chats')}${kpi(k.chatLeads||0,'chat leads')}</div>
+    <div class="flex flex-wrap gap-2 mb-4">${Object.entries(k.outcomes||{}).map(([o,n])=>`<span class="pill bg-[#eaf2ff] text-[#0a3d7a]">${esc(o)}: ${n}</span>`).join('')}</div>
+    <div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-[11px] uppercase tracking-wide text-[#9aa0ab] text-left border-b border-[#eef0f4]"><th class="py-2 pr-3">When</th><th class="py-2 pr-3">From</th><th class="py-2 pr-3">Intent</th><th class="py-2 pr-3">Outcome</th><th class="py-2 pr-3">Length</th><th class="py-2 pr-3">Transcript</th><th class="py-2">Review</th></tr></thead>
+      <tbody>${calls.length?calls.map(c=>`<tr class="border-b border-[#f5f6f8]"><td class="py-2 pr-3 whitespace-nowrap text-[#6b7280]">${fmtd(c.ts)}</td><td class="py-2 pr-3">${esc(c.from||' ')}</td><td class="py-2 pr-3">${esc(c.intent||' ')}</td><td class="py-2 pr-3">${esc(c.outcome||' ')}</td><td class="py-2 pr-3 seg">${mm(c.dur)}</td><td class="py-2 pr-3 text-[11px] ${c.tref?'text-[#0a6cf5]':'text-[#c0c4cc]'}">${c.tref?'available':'pending'}</td><td class="py-2">${flag(c)?'<span class="pill bg-[#fde8e8] text-rose-600">flag</span>':'<span class="text-[#9aa0ab] text-xs">ok</span>'}</td></tr>`).join(''):`<tr><td colspan="7" class="py-6 text-center text-[#9aa0ab]">No calls yet.</td></tr>`}</tbody></table></div>
+    <p class="text-[11px] text-[#9aa0ab] mt-3">Every call the AI receptionist handles is captured here, so an auditor pulls calls and transcripts from this panel, not from the phone vendor. Automatic HIPAA-exposure flags and full transcript review activate once calls run on the dedicated HIPAA project with the carrier BAA in place.</p>
+  </section>`;
+}
+
+function viewVendors(){
+  const flagged=VENDORS.filter(vFlag);
+  const themFlag=flagged.filter(v=>v.side==='them').length;
+  const lastRev=(DATA.audit||[]).find(a=>a.code==='V-001');
+  const row=(v)=>`<tr class="border-b border-[#f5f6f8] ${vFlag(v)?'bg-rose-50/60':''}">
+    <td class="py-2 pr-3"><div class="text-sm font-semibold flex items-center gap-1.5">${vFlag(v)?'<span title="Touches patient data with no signed BAA">🚩</span>':''}${esc(v.name)}</div><div class="text-[11px] text-[#9aa0ab]">${esc(v.use)}</div><div class="text-[11px] ${v.side==='us'?'text-emerald-700':'text-[#b08400]'} mt-0.5">${v.side==='us'?'✓ ':'→ '}${esc(v.mit)}</div></td>
+    <td class="py-2 pr-3 text-xs text-[#6b7280] whitespace-nowrap">${esc(v.cat)}</td>
+    <td class="py-2 pr-3"><span class="pill ${dataPill[v.data]||dataPill.none}">${esc(v.data.toUpperCase())}</span></td>
+    <td class="py-2 pr-3"><span class="pill ${baaPill[v.baa]||baaPill.unknown}">${esc(v.baa)}</span></td>
+    <td class="py-2 pr-3"><span class="pill ${riskPill[v.risk]||riskPill.low}">${esc(v.risk)}</span></td>
+    <td class="py-2 text-[11px] text-[#9aa0ab]">${lastRev?esc(fmtTs(lastRev.ts)):'never'}</td></tr>`;
+  const section=(side,label,sub)=>`<div class="mt-5"><div class="text-xs font-semibold text-[#6b7280] mb-1">${label}</div><div class="text-[11px] text-[#9aa0ab] mb-2">${sub}</div>
+    <div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-[10px] uppercase tracking-wide text-[#9aa0ab] text-left border-b border-[#eef0f4]"><th class="py-2 pr-3">Vendor / tool</th><th class="py-2 pr-3">Category</th><th class="py-2 pr-3">Data</th><th class="py-2 pr-3">BAA</th><th class="py-2 pr-3">Risk</th><th class="py-2">Reviewed</th></tr></thead>
+    <tbody>${VENDORS.filter(v=>v.side===side).map(row).join('')}</tbody></table></div></div>`;
+  return `<section class="card p-6">
+    <div class="flex items-center justify-between mb-1 gap-2 flex-wrap"><h2 class="font-display text-lg font-semibold">Vendor &amp; AI risk</h2><div class="flex items-center gap-2"><span class="text-[11px] text-[#9aa0ab]">${lastRev?('Last reviewed '+esc(fmtTs(lastRev.ts))+(lastRev.actor?' · '+esc(lastRev.actor):'')):'Not yet reviewed'}</span><button id="vrev" class="px-3 py-1.5 rounded-lg bg-[#0a6cf5] text-white text-xs font-semibold">✓ Log review</button><button id="vcsv" class="px-3 py-1.5 rounded-lg border border-[#e6e9ee] text-xs font-semibold hover:bg-[#f1f3f7]">⬇ Export CSV</button></div></div>
+    <p class="text-xs text-[#9aa0ab] mb-3">The shadow-AI map: every vendor and AI tool, the data class it touches, and whether a BAA covers it. A 🚩 = it handles patient data (PHI/health) with no signed BAA.</p>
+    <div class="rounded-xl ${flagged.length?'bg-rose-50 border border-rose-200':'bg-emerald-50 border border-emerald-200'} p-4 text-center">
+      <div class="font-display text-lg font-semibold ${flagged.length?'text-rose-700':'text-emerald-700'}">${flagged.length} vendor${flagged.length===1?'':'s'} touch patient data with no signed BAA</div>
+      <div class="text-xs ${flagged.length?'text-rose-600':'text-emerald-600'} mt-1">${themFlag} are in the clinic's current stack (unmanaged) · ${flagged.length-themFlag} in our build (BAAs queued + controls in place; synthetic-only until signed)</div>
+    </div>
+    ${section('them','Clinic current stack','What Vitality runs today the exposure, with the remediation for each.')}
+    ${section('us','Our build','Synthetic data only today no real PHI flows. Active controls + BAAs queued (funded) gate go-live. Flags here are managed/pending, not unmanaged.')}
+    <p class="text-[11px] text-[#9aa0ab] mt-4">Reference list (v1). The editable, audit-logged version add a vendor, mark it reviewed, anchor the review is a one-step upgrade to a <span class="font-mono">vit_vendors</span> table.</p>
+  </section>`;
+}
+
+function render(){
+  $('who').textContent=(DATA.me?DATA.me.email:'')+' · '+(DATA.me?DATA.me.role:'');
+  $('app').innerHTML=`
+    <div><h1 class="font-display text-2xl font-semibold tracking-[-.5px]">Operations</h1><p class="text-sm text-[#6b7280] mt-1">Access control, the task board, and the compliance audit trail.</p></div>
+    <div class="flex gap-2 flex-wrap">
+      <span class="tab ${TAB==='systems'?'on':''}" data-t="systems">Systems</span>
+      <span class="tab ${TAB==='access'?'on':''}" data-t="access">Access control</span>
+      <span class="tab ${TAB==='tasks'?'on':''}" data-t="tasks">Tasks</span>
+      <span class="tab ${TAB==='reports'?'on':''}" data-t="reports">Reporting</span>
+      <span class="tab ${TAB==='vendors'?'on':''}" data-t="vendors">Vendor risk</span>
+      <span class="tab ${TAB==='audit'?'on':''}" data-t="audit">Audit log</span>
+    </div>
+    ${TAB==='systems'?viewSystems():TAB==='access'?viewAccess():TAB==='tasks'?viewTasks():TAB==='reports'?viewReports():TAB==='vendors'?viewVendors():viewAudit()}`;
+  document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{ TAB=t.dataset.t; render(); });
+  if(TAB==='systems' && SYS){
+    const rc=$('runChk'); if(rc) rc.onclick=async()=>{ rc.disabled=true; rc.textContent='Running…'; await sysApi({action:'run'}); SYS=await sysApi({action:'load'}); render(); };
+  } else if(TAB==='access'){
+    document.querySelectorAll('[data-role]').forEach(s=>s.onchange=async()=>{ await api({action:'set_role',id:s.dataset.role,role:s.value}); await reload(); });
+    document.querySelectorAll('[data-active]').forEach(b=>b.onclick=async()=>{ const activate=b.dataset.to==='1'; let reason=null; if(!activate){ reason=prompt('Reason for deactivating access (e.g. Involuntary termination, Resigned, Leave of absence):',''); if(reason===null) return; } await api({action:'set_active',id:b.dataset.active,active:activate,reason}); await reload(); });
+    $('addBtn').onclick=async()=>{ const n=$('nName').value.trim(); if(!n)return; await api({action:'add_staff',full_name:n,email:$('nEmail').value.trim(),role:$('nRole').value}); await reload(); };
+  } else if(TAB==='tasks' && TASKS){
+    document.querySelectorAll('[data-move]').forEach(s=>s.onchange=async()=>{ await tasksApi({action:'update',id:s.dataset.move,status:s.value}); await loadTasks(); render(); });
+    document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{ await tasksApi({action:'delete',id:b.dataset.del}); await loadTasks(); render(); });
+    const add=$('tAdd'); if(add) add.onclick=async()=>{ const t=$('tTitle').value.trim(); if(!t)return; await tasksApi({action:'create',title:t,assignee:$('tAssignee').value,priority:$('tPriority').value,due_date:$('tDue').value||null}); await loadTasks(); render(); };
+  } else if(TAB==='reports' && REPORTS){
+    const cc=$('callcsv'); if(cc) cc.onclick=()=>{ const rows=[['when','from','intent','outcome','seconds','transcript_ref','telnyx_call_id','review']].concat((REPORTS.calls||[]).map(c=>[c.ts,c.from,c.intent,c.outcome,c.dur,c.tref,c.telnyx,(!c.outcome||(c.dur!=null&&c.dur<5))?'flag':'ok'])); const csv=rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='vitality-calls-'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); };
+  } else if(TAB==='vendors'){
+    const vr=$('vrev'); if(vr) vr.onclick=async()=>{ vr.disabled=true; vr.textContent='Logging…'; DATA=await api({action:'vendor_review'}); render(); };
+    const vc=$('vcsv'); if(vc) vc.onclick=()=>{ const lastRev=(DATA.audit||[]).find(a=>a.code==='V-001'); const revStamp=lastRev?(fmtTs(lastRev.ts)+(lastRev.actor?' by '+lastRev.actor:'')):'never'; const rows=[['side','vendor','category','use','data_class','baa','risk','flag','mitigation','last_reviewed','note']].concat(VENDORS.map(v=>[v.side==='them'?'clinic':'ours',v.name,v.cat,v.use,v.data,v.baa,v.risk,vFlag(v)?'flag':'',v.mit,revStamp,v.note])); const csv=rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='vitality-vendor-risk-'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); };
+  } else if(TAB==='audit'){
+    $('csv').onclick=()=>{ const rows=[['timestamp','code','action','by','entity','entity_id','hash','onchain_tx']].concat((DATA.audit||[]).map(r=>[r.ts,r.code,decode(r.code),r.actor,r.entity,r.entity_id,r.hash,r.tx||''])); const csv=rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='vitality-audit-'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); };
+  }
+}
+async function reload(){ DATA=await api({action:'load'}); render(); }
+
+DATA = await api({action:'load'});
+$('loading').classList.add('hidden');
+if (DATA && DATA.ok){ $('app').classList.remove('hidden'); render(); }
+else if (DATA && /admin/i.test(DATA.error||'')){ $('denied').classList.remove('hidden'); }
+else { $('loading').textContent='Could not load. Please try again.'; $('loading').classList.remove('hidden'); }
+</script>
+</body>
+</html>

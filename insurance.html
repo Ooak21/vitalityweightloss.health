@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<title>Vitality — Check Your Insurance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#16201d; --ink:#16201d; --muted:#6b7280; --line:#e6e9ee; --line-2:#eef0f4;
+    --cream-2:#f7f8fa; --white:#ffffff; --green:#0a6cf5; --green-deep:#0856c8; --green-soft:#bcd6ff;
+    --shadow-1:0 1px 2px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Inter',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;color:var(--ink);
+    background:linear-gradient(180deg,#fbfcfe 0%,#f5f7fa 100%);min-height:100vh;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,.wordmark{font-family:'Montserrat','Inter',sans-serif;color:var(--navy);}
+  a{color:var(--green-deep);text-decoration:none}
+  .topbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.85);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid rgba(16,24,40,.06);}
+  .topbar-inner{max-width:760px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+  .brand{display:flex;align-items:center;gap:10px;text-decoration:none;}
+  .brand-logo{height:30px;width:auto;flex-shrink:0;display:block;}
+  .brand-name{font-family:'Montserrat','Inter',sans-serif;font-weight:600;font-size:1.18rem;color:var(--ink);letter-spacing:.15em;text-transform:uppercase;line-height:1;display:flex;flex-direction:column;align-items:center;}
+  .brand-name .sub{display:block;font-family:'Montserrat','Inter',sans-serif;font-weight:500;font-size:.5rem;color:var(--ink);letter-spacing:.30em;text-transform:uppercase;margin-top:3px;}
+  .trust-pill{font-size:11px;font-weight:600;color:var(--green-deep);letter-spacing:.04em;display:flex;align-items:center;gap:6px;background:#eef4ff;border:1px solid var(--green-soft);padding:5px 11px;border-radius:999px;}
+  .vfoot{max-width:760px;margin:0 auto;padding:30px 24px 54px;text-align:center;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line-2);}
+  .vfoot img{height:26px;width:auto;opacity:.9;margin-bottom:9px;display:inline-block;}
+  .vfoot a{color:var(--green-deep);}
+  .wrap{max-width:620px;margin:6px auto 60px;padding:0 22px;}
+  .panel{background:var(--white);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow-1);padding:26px;}
+  .eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 6px;}
+  h1{font-size:25px;margin:0 0 8px;line-height:1.2;}
+  .lede{color:var(--muted);font-size:14.5px;line-height:1.55;margin:0 0 22px;}
+  .sec-label{font-family:'Montserrat',sans-serif;font-weight:600;font-size:13px;color:var(--navy);margin:22px 0 12px;display:flex;align-items:center;gap:8px;}
+  .sec-label .pill{font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--green-deep);background:#eef4ff;border:1px solid var(--green-soft);border-radius:6px;padding:2px 7px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
+  @media(max-width:520px){.grid{grid-template-columns:1fr;}}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field.full{grid-column:1 / -1;}
+  label{font-size:12.5px;font-weight:500;color:var(--ink);}
+  label .req{color:var(--green-deep);}
+  input,select,textarea{appearance:none;background:var(--white);border:1.5px solid var(--line);border-radius:11px;
+    padding:11px 13px;font-family:inherit;font-size:14.5px;color:var(--ink);width:100%;transition:border-color .15s,box-shadow .15s;}
+  input:focus,select:focus,textarea:focus{outline:0;border-color:var(--green);box-shadow:0 0 0 3px rgba(10,108,245,.12);}
+  textarea{resize:vertical;min-height:64px;}
+  select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%236b7280' d='M1 1l5 5 5-5'/></svg>");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px;}
+  .consent{display:flex;gap:11px;align-items:flex-start;margin-top:18px;padding:14px;background:var(--cream-2);border:1px solid var(--line-2);border-radius:12px;}
+  .consent input{width:18px;height:18px;flex:0 0 auto;margin-top:1px;accent-color:var(--green);}
+  .consent label{font-size:12.5px;color:var(--muted);line-height:1.5;font-weight:400;}
+  .cta{width:100%;appearance:none;border:0;border-radius:13px;background:var(--navy);color:#fff;font-family:inherit;
+    font-weight:600;font-size:15.5px;padding:15px;cursor:pointer;margin-top:20px;transition:transform .08s,opacity .15s;}
+  .cta:hover{transform:translateY(-1px);} .cta:disabled{opacity:.55;cursor:default;transform:none;}
+  .foot{display:flex;align-items:center;gap:7px;justify-content:center;color:var(--muted);font-size:12px;margin-top:14px;}
+  .foot svg{width:13px;height:13px;color:var(--green-deep);}
+  .err{display:none;color:#c0392b;font-size:13px;margin-top:12px;text-align:center;}
+  .ok-card{text-align:center;padding:26px 6px;}
+  .ok-icon{width:60px;height:60px;border-radius:50%;background:#eef4ff;border:1.5px solid var(--green-soft);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;color:var(--green-deep);}
+  .ok-icon svg{width:28px;height:28px;}
+  .ref{display:inline-block;font-family:'Montserrat',sans-serif;font-weight:700;color:var(--navy);background:var(--cream-2);border:1px solid var(--line);border-radius:10px;padding:8px 16px;margin:6px 0 18px;letter-spacing:.03em;}
+  .timeline{text-align:left;max-width:380px;margin:0 auto;}
+  .timeline div{display:flex;gap:11px;align-items:flex-start;padding:9px 0;font-size:13.5px;color:var(--ink);}
+  .timeline .dot{width:8px;height:8px;border-radius:50%;background:var(--green);margin-top:6px;flex:0 0 auto;}
+  .timeline .t{color:var(--muted);}
+  .elig{margin:0 auto 18px;max-width:410px;text-align:left;border-radius:14px;padding:16px;border:1px solid var(--line);background:var(--cream-2);}
+  .elig-good{border-color:#bfe3c6;background:linear-gradient(180deg,#f1faf3,#fff);}
+  .elig-bad{border-color:#f0d2cf;background:linear-gradient(180deg,#fdf3f1,#fff);}
+  .elig-neutral{border-color:var(--green-soft);background:linear-gradient(180deg,#f5f9ff,#fff);}
+  .elig-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:7px;}
+  .elig-pill{font-family:'Montserrat',sans-serif;font-weight:700;font-size:14px;color:var(--navy);}
+  .elig-good .elig-pill{color:#1f7a3a;} .elig-bad .elig-pill{color:#b23b2e;}
+  .elig-plan{font-size:12px;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:6px;padding:2px 8px;}
+  .elig-sub{font-size:13px;color:var(--ink);line-height:1.5;}
+  .elig-raw{font-size:11.5px;color:var(--muted);margin-top:9px;font-family:ui-monospace,SFMono-Regular,monospace;}
+  /* shared processing overlay */
+  .v-proc{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.88);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);animation:vProcIn .35s ease both;}
+  @keyframes vProcIn{from{opacity:0}to{opacity:1}}
+  .v-proc-card{text-align:center;max-width:380px;padding:0 24px;}
+  .v-proc-ring{position:relative;width:74px;height:74px;margin:0 auto 28px;}
+  .v-proc-ring i{position:absolute;inset:0;border:3px solid transparent;border-top-color:var(--green);border-radius:50%;animation:vProcSpin 1.1s cubic-bezier(.5,0,.5,1) infinite;}
+  .v-proc-ring i:nth-child(2){inset:10px;border-top-color:var(--green-soft);animation-duration:1.6s;animation-direction:reverse;}
+  .v-proc-ring i:nth-child(3){inset:20px;border-top-color:var(--green-deep);animation-duration:.85s;}
+  @keyframes vProcSpin{to{transform:rotate(360deg)}}
+  .v-proc-title{font-family:'Montserrat','Inter',sans-serif;font-weight:600;font-size:18px;color:var(--navy);margin-bottom:9px;min-height:24px;}
+  .v-proc-sub{font-size:13.5px;color:var(--muted);}
+  .v-proc-dots{display:flex;gap:7px;justify-content:center;margin-top:24px;}
+  .v-proc-dots span{width:7px;height:7px;border-radius:50%;background:var(--green-soft);animation:vProcDot 1.4s ease-in-out infinite;}
+  .v-proc-dots span:nth-child(2){animation-delay:.18s}.v-proc-dots span:nth-child(3){animation-delay:.36s}.v-proc-dots span:nth-child(4){animation-delay:.54s}
+  @keyframes vProcDot{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.18);background:var(--green)}}
+  @keyframes vProcFade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="index.html" class="brand" aria-label="Vitality Weight Loss home">
+        <img class="brand-logo" src="assets/logo-icon.png" alt="Vitality Weight Loss" />
+        <span class="brand-name">Vitality<span class="sub">Weight Loss</span></span>
+      </a>
+      <div style="display:flex;align-items:center;gap:13px;">
+        <button id="langToggle" type="button" style="background:none;border:0;color:var(--green-deep);font:600 13px/1 'Inter',sans-serif;cursor:pointer;" aria-label="Cambiar idioma">Español</button>
+        <div class="trust-pill">HIPAA-secure</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="panel" id="panel">
+      <p class="eyebrow">Insurance &amp; benefits</p>
+      <h1>See what your insurance covers.</h1>
+      <p class="lede">Many of the clinical services in our programs may be covered by insurance: medical visits, behavioral therapy, nutrition counseling, and ongoing medical management. Share a few details and our team verifies your benefits, then calls you back within 24 business hours with what's covered and your estimated out-of-pocket. No charge to check.</p>
+      <p class="lede" style="font-size:13px;">Compounded GLP-1 medication itself is self-pay, but the clinical care around your program often is not.</p>
+
+      <form id="form" autocomplete="on" novalidate>
+        <div class="sec-label">Your contact</div>
+        <div class="grid">
+          <div class="field"><label>First name <span class="req">*</span></label><input name="first_name" required></div>
+          <div class="field"><label>Last name <span class="req">*</span></label><input name="last_name" required></div>
+          <div class="field"><label>Phone <span class="req">*</span></label><input name="phone" type="tel" inputmode="tel" required></div>
+          <div class="field"><label>Email</label><input name="email" type="email" inputmode="email"></div>
+          <div class="field"><label>ZIP code</label><input name="zip" inputmode="numeric" maxlength="5"></div>
+          <div class="field"><label>What are you interested in?</label>
+            <select name="interest">
+              <option value="">Select…</option>
+              <option>Medical weight-loss visit (E/M)</option>
+              <option>Medical management</option>
+              <option>Intensive Behavioral Therapy (IBT)</option>
+              <option>Nutrition counseling (Registered Dietitian)</option>
+              <option>Behavioral health / counseling</option>
+              <option>Not sure, check what's covered</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="sec-label">Your insurance <span class="pill">Encrypted · HIPAA</span></div>
+        <div class="grid">
+          <div class="field"><label>Date of birth</label><input name="dob" type="date"></div>
+          <div class="field"><label>Sex (as on insurance)</label>
+            <select name="sex"><option value="">Select…</option><option value="F">Female</option><option value="M">Male</option></select>
+          </div>
+          <div class="field full"><label>Insurance carrier <span class="req">*</span></label>
+            <select name="carrier" required>
+              <option value="">Select…</option>
+              <option>Cigna</option><option>UnitedHealthcare</option><option>Aetna</option>
+              <option>Anthem (BCBS)</option><option>Humana</option><option>Sierra Health &amp; Life</option>
+              <option>Tricare / VA</option><option>Medicare</option><option>Nevada Medicaid</option>
+              <option>Other</option><option>Self-pay (no insurance)</option>
+            </select>
+          </div>
+          <div class="field"><label>Member / Subscriber ID</label><input name="member_id" autocomplete="off"></div>
+          <div class="field"><label>Group number</label><input name="group_number" autocomplete="off"></div>
+          <div class="field full"><label>Plan type</label>
+            <select name="plan_type">
+              <option value="">Select…</option>
+              <option>PPO</option><option>HMO</option><option>EPO</option><option>HDHP</option>
+              <option>Medicare Advantage</option><option>Marketplace / ACA</option><option>Not sure</option>
+            </select>
+          </div>
+          <div class="field full"><label>Anything we should know? (optional)</label><textarea name="clinical_notes" placeholder="Current medications, prior authorizations, etc."></textarea></div>
+        </div>
+
+        <div class="consent">
+          <input type="checkbox" id="consent" name="consent">
+          <label for="consent">I authorize Vitality Weight Loss to verify my insurance benefits using the information above, and I understand this check is not a guarantee of coverage. My information is handled under HIPAA. <span class="req">*</span></label>
+        </div>
+
+        <button class="cta" id="submitBtn" type="submit">Check my coverage</button>
+        <div class="err" id="formErr"></div>
+        <div class="foot">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Encrypted &middot; stored on our HIPAA-compliant system
+        </div>
+      </form>
+    </div>
+  </div>
+
+<footer class="vfoot">
+  <img src="assets/logo-icon.png" alt="Vitality Weight Loss" />
+  <div>Vitality Weight Loss &middot; Las Vegas, NV &middot; <a href="tel:17026025002">(702) 602-5002</a> &middot; care@vitalityacademies.health</div>
+</footer>
+
+<script>
+/* Convex (HIPAA/BAA) endpoint — PHI lands here, not on Netlify/HubSpot.
+   Match the deployment used by glp1.html. */
+const INSURANCE_URL = 'https://quixotic-cat-492.convex.site/insurance-check';
+
+/* ---- processing overlay (shared with glp1.html / checkout.html) ---- */
+const MSGS = ['Submitting your request','Securing your information','Done'];
+let __t=null;
+function showProcessingOverlay(){
+  if(document.getElementById('vProcessing'))return;
+  const o=document.createElement('div');o.id='vProcessing';o.className='v-proc';
+  o.innerHTML=`<div class="v-proc-card"><div class="v-proc-ring"><i></i><i></i><i></i></div>
+    <div class="v-proc-title" id="vProcTitle">${MSGS[0]}</div><div class="v-proc-sub">One moment.</div>
+    <div class="v-proc-dots"><span></span><span></span><span></span><span></span></div></div>`;
+  document.body.appendChild(o);
+  let i=0;__t=setInterval(()=>{i=(i+1)%MSGS.length;const t=document.getElementById('vProcTitle');
+    if(t){t.style.animation='none';void t.offsetWidth;t.style.animation='vProcFade .5s ease';t.textContent=MSGS[i];}},1300);
+}
+function hideProcessingOverlay(){if(__t){clearInterval(__t);__t=null;}const o=document.getElementById('vProcessing');
+  if(o){o.style.animation='vProcIn .3s ease reverse both';setTimeout(()=>o.remove(),300);}}
+
+const form = document.getElementById('form');
+const err  = document.getElementById('formErr');
+const showErr = m => { err.textContent=m; err.style.display='block'; window.vitRetranslate&&window.vitRetranslate(); };
+
+form.addEventListener('submit', async (e)=>{
+  e.preventDefault(); err.style.display='none';
+  const f = Object.fromEntries(new FormData(form).entries());
+  if(!f.first_name || !f.last_name){ return showErr('Please enter your first and last name.'); }
+  if(!f.phone && !f.email){ return showErr('Please give us a phone or an email so we can reach you.'); }
+  if(!f.carrier){ return showErr('Please choose your insurance carrier.'); }
+  if(!document.getElementById('consent').checked){ return showErr('Please check the authorization box so we can verify your benefits.'); }
+
+  const btn = document.getElementById('submitBtn'); btn.disabled=true;
+  showProcessingOverlay();
+  try{
+    const r = await fetch(INSURANCE_URL, { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ ...f, consent: true }) });
+    const j = await r.json().catch(()=>({}));
+    hideProcessingOverlay();
+    if(r.ok && j.ok){ showSuccess(f.first_name, j.reference, j.eligibility); }
+    else { btn.disabled=false; showErr(j.error || 'Something went wrong submitting your request. Please try again or call (702) 602-5002.'); }
+  }catch(_){ hideProcessingOverlay(); btn.disabled=false; showErr('Network error. Please try again or call (702) 602-5002.'); }
+});
+
+function renderEligibility(e){
+  const s = (e.status || '').toString().trim();
+  if(!s) return '';
+  const pos = /eligib|active|covered|in[- ]?network/i.test(s) && !/in(eligible|active)|not|denied|term/i.test(s);
+  const neg = /in(eligible|active)|not\s|denied|term/i.test(s);
+  const tone = pos ? 'good' : neg ? 'bad' : 'neutral';
+  const head = pos ? 'Active coverage found' : neg ? 'No active coverage returned' : 'Verification started';
+  const sub  = pos
+    ? "Your plan came back active. Our team confirms your covered services and exact cost on the call below."
+    : neg ? "Your plan didn't return active coverage for this. Our team will double-check and walk you through your options."
+    : "We've submitted your benefits to your payer. Our team confirms the result on the call below.";
+  return `<div class="elig elig-${tone}">
+    <div class="elig-row"><span class="elig-pill">${head}</span>${e.planName?`<span class="elig-plan">${e.planName}</span>`:''}</div>
+    <div class="elig-sub">${sub}</div>
+    <div class="elig-raw">Payer response: ${s}</div>
+  </div>`;
+}
+function showSuccess(fn, ref, elig){
+  const eligBlock = (elig && elig.status) ? renderEligibility(elig) : '';
+  document.getElementById('panel').innerHTML = `
+    <div class="ok-card">
+      <div class="ok-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <h1 style="font-size:22px;">Got it${fn?', '+fn:''}.</h1>
+      ${eligBlock}
+      <p class="lede" style="margin:0 auto 4px;max-width:380px;">${eligBlock ? 'Your benefits check is logged. Reference number:' : "Your benefits request is in. Here's your reference number:"}</p>
+      <div class="ref">${ref || 'VIC-PENDING'}</div>
+      <div class="timeline">
+        <div><span class="dot"></span><div><b>Within 1 hour</b> &mdash; <span class="t">a confirmation email if you provided one.</span></div></div>
+        <div><span class="dot"></span><div><b>Within 24 business hours</b> &mdash; <span class="t">a personal call with your verified benefits and estimated cost.</span></div></div>
+      </div>
+      <p class="lede" style="margin:20px auto 0;max-width:360px;font-size:13px;">Ready to get started? <a href="intake.html">Become a patient &rarr;</a></p>
+    </div>`;
+  window.vitRetranslate&&window.vitRetranslate();
+}
+</script>
+<!-- EN/ES shell: shares localStorage 'vit_lang' with /vitality. vitRetranslate() re-applies after JS injects content. -->
+<script>
+(function(){
+  const DICT={
+    "Insurance & benefits":"Seguro y beneficios",
+    "See what your insurance covers.":"Ve qué cubre tu seguro.",
+    "Many of the clinical services in our programs may be covered by insurance: medical visits, behavioral therapy, nutrition counseling, and ongoing medical management. Share a few details and our team verifies your benefits, then calls you back within 24 business hours with what's covered and your estimated out-of-pocket. No charge to check.":"Muchos de los servicios clínicos de nuestros programas pueden estar cubiertos por el seguro: visitas médicas, terapia conductual, asesoría nutricional y manejo médico continuo. Comparte unos datos y nuestro equipo verifica tus beneficios, luego te llama en 24 horas hábiles con lo que está cubierto y tu costo estimado. Sin cargo por consultar.",
+    "Compounded GLP-1 medication itself is self-pay, but the clinical care around your program often is not.":"El medicamento GLP-1 compuesto es de pago propio, pero la atención clínica alrededor de tu programa a menudo no lo es.",
+    "Your contact":"Tus datos de contacto","Your insurance":"Tu seguro","Encrypted · HIPAA":"Cifrado · HIPAA",
+    "First name":"Nombre","Last name":"Apellido","Phone":"Teléfono","Email":"Correo","ZIP code":"Código postal",
+    "What are you interested in?":"¿Qué te interesa?","Select…":"Selecciona…",
+    "Medical weight-loss visit (E/M)":"Visita de pérdida de peso médica (E/M)","Medical management":"Manejo médico",
+    "Intensive Behavioral Therapy (IBT)":"Terapia Conductual Intensiva (IBT)",
+    "Nutrition counseling (Registered Dietitian)":"Asesoría nutricional (Dietista Registrada)",
+    "Behavioral health / counseling":"Salud conductual / asesoría","Not sure, check what's covered":"No estoy seguro, revisen qué cubre",
+    "Date of birth":"Fecha de nacimiento","Sex (as on insurance)":"Sexo (como en el seguro)","Female":"Femenino","Male":"Masculino",
+    "Insurance carrier":"Aseguradora","Other":"Otro","Self-pay (no insurance)":"Pago propio (sin seguro)",
+    "Member / Subscriber ID":"Número de miembro / suscriptor","Group number":"Número de grupo",
+    "Plan type":"Tipo de plan","Not sure":"No estoy seguro","Anything we should know? (optional)":"¿Algo que debamos saber? (opcional)",
+    "I authorize Vitality Weight Loss to verify my insurance benefits using the information above, and I understand this check is not a guarantee of coverage. My information is handled under HIPAA.":"Autorizo a Vitality Weight Loss a verificar mis beneficios de seguro con la información anterior, y entiendo que esta consulta no garantiza cobertura. Mi información se maneja conforme a HIPAA.",
+    "Check my coverage":"Verifica mi cobertura",
+    "Encrypted · stored on our HIPAA-compliant system":"Cifrado · almacenado en nuestro sistema compatible con HIPAA","HIPAA-secure":"Seguro HIPAA",
+    "Your benefits check is logged. Reference number:":"Tu verificación de beneficios quedó registrada. Número de referencia:",
+    "Your benefits request is in. Here's your reference number:":"Tu solicitud de beneficios está lista. Aquí está tu número de referencia:",
+    "Within 1 hour":"En 1 hora","a confirmation email if you provided one.":"un correo de confirmación si proporcionaste uno.",
+    "Within 24 business hours":"En 24 horas hábiles","a personal call with your verified benefits and estimated cost.":"una llamada personal con tus beneficios verificados y costo estimado.",
+    "Ready to get started?":"¿Listo para empezar?","Become a patient →":"Conviértete en paciente →",
+    "Active coverage found":"Cobertura activa encontrada","No active coverage returned":"No se encontró cobertura activa","Verification started":"Verificación iniciada",
+    "Your plan came back active. Our team confirms your covered services and exact cost on the call below.":"Tu plan resultó activo. Nuestro equipo confirma tus servicios cubiertos y el costo exacto en la llamada de abajo.",
+    "Your plan didn't return active coverage for this. Our team will double-check and walk you through your options.":"Tu plan no mostró cobertura activa para esto. Nuestro equipo lo revisará y te explicará tus opciones.",
+    "We've submitted your benefits to your payer. Our team confirms the result on the call below.":"Enviamos tus beneficios a tu aseguradora. Nuestro equipo confirma el resultado en la llamada de abajo.",
+    "Please enter your first and last name.":"Por favor ingresa tu nombre y apellido.",
+    "Please give us a phone or an email so we can reach you.":"Por favor danos un teléfono o correo para contactarte.",
+    "Please choose your insurance carrier.":"Por favor elige tu aseguradora.",
+    "Please check the authorization box so we can verify your benefits.":"Por favor marca la casilla de autorización para verificar tus beneficios.",
+    "Something went wrong submitting your request. Please try again or call (702) 602-5002.":"Algo salió mal al enviar tu solicitud. Inténtalo de nuevo o llama al (702) 602-5002.",
+    "Network error. Please try again or call (702) 602-5002.":"Error de red. Inténtalo de nuevo o llama al (702) 602-5002."
+  };
+  const ORIG=new Map(); let cur='en';
+  function walk(node,fn){ for(let i=0;i<node.childNodes.length;i++){ const n=node.childNodes[i]; if(n.nodeType===3) fn(n); else if(n.nodeType===1 && n.tagName!=='SCRIPT' && n.tagName!=='STYLE') walk(n,fn); } }
+  function apply(lang){ cur=lang; walk(document.body,function(n){ const raw=ORIG.has(n)?ORIG.get(n):n.nodeValue; const key=raw.trim(); if(!key||!DICT[key])return; if(!ORIG.has(n))ORIG.set(n,n.nodeValue); n.nodeValue= lang==='es'? raw.replace(key,DICT[key]) : ORIG.get(n); });
+    document.documentElement.lang=lang; const b=document.getElementById('langToggle'); if(b) b.textContent= lang==='es'?'English':'Español'; try{ localStorage.setItem('vit_lang',lang); }catch(e){} }
+  window.vitRetranslate=function(){ apply(cur); };
+  let saved='en'; try{ saved=localStorage.getItem('vit_lang')||'en'; }catch(e){}
+  apply(saved);
+  const b=document.getElementById('langToggle'); if(b) b.onclick=function(){ apply(cur==='es'?'en':'es'); };
+})();
+</script>
+</body>
+</html>

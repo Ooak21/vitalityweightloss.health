@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vitality Weight Loss, Physician-Led GLP-1 Weight Loss in Las Vegas</title>
+<meta name="description" content="Physician-led medical weight loss in Las Vegas. Semaglutide, tirzepatide, and hormone optimization, built around your body by a surgeon-scientist. Book a consult.">
+<!--
+  VITALITY WEIGHT LOSS, homepage redesign v2
+  Aesthetic: CORTEX Dark Cinematic (matches cortexibs.com DESIGN.md), adapted for a
+  premium medical brand. Emerald = the "vitality/health" positive accent.
+  Build approach matches cortexibs: Tailwind CDN + Inter/Space Grotesk + small style block.
+  PLACEHOLDERS (search "[[" ): [[DR_NAME]] [[DR_CREDENTIALS]] [[DR_BIO]] [[DR_PHOTO]]
+  [[LOGO]] [[PRICE_*]] [[BOOK_URL]] [[HOURS]] [[HERO_VIDEO]]
+-->
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff; --surface:#ffffff; --surface-2:#f1f3f7; --border:#e6e9ee;
+    --text:#16201d; --muted:#6b7280; --accent:#0a6cf5; --accent-2:#0a6cf5;
+    --gold:#d97706; --emerald:#10b981;
+  }
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;background:var(--bg);color:var(--text)}
+  .font-display{font-family:'Montserrat','Inter',system-ui,sans-serif}
+  /* brand wordmark, matched to the Vitality logo: geometric caps, wide tracking */
+  .wordmark{font-family:'Montserrat','Inter',sans-serif;text-transform:uppercase;letter-spacing:.16em;font-weight:600;color:#16201d}
+  .wordmark .sub{font-weight:400;letter-spacing:.22em;color:#6b7280}
+  /* unified brand lockup: icon + stacked VITALITY / WEIGHT LOSS, matching the logo */
+  .brandlock{display:inline-flex;align-items:center;gap:.6rem;text-decoration:none;line-height:1}
+  .brandlock .marktext{display:flex;flex-direction:column;align-items:center;line-height:1}
+  .brandlock .v{font-family:'Montserrat','Inter',sans-serif;text-transform:uppercase;letter-spacing:.15em;font-weight:600;color:#16201d;font-size:1.18rem}
+  .brandlock .wl{font-family:'Montserrat','Inter',sans-serif;text-transform:uppercase;letter-spacing:.30em;font-weight:500;color:#16201d;font-size:.52rem;margin-top:3px}
+  /* hero text legibility over the video */
+  .hero-text{text-shadow:0 1px 3px rgba(0,0,0,.62),0 2px 16px rgba(0,0,0,.55)}
+  .hero-text-dark{text-shadow:0 1px 4px rgba(255,255,255,.75),0 0 2px rgba(255,255,255,.6)}
+  .section{scroll-margin-top:132px}
+  /* GLP-1 promo bar: slides down on land */
+  #glp1Bar{transform:translateY(-100%);animation:glp1BarDown .55s cubic-bezier(.23,1,.32,1) .35s forwards}
+  @keyframes glp1BarDown{to{transform:translateY(0)}}
+  /* hero InBody promo: pops out from the left after land */
+  #inbodyPromo{transform:translateX(-115%) scale(.8);transform-origin:left center;animation:inbodyPop .75s cubic-bezier(.34,1.32,.5,1) 1.1s forwards}
+  @keyframes inbodyPop{to{transform:translateX(0) scale(.8)}}
+  #medicarePromo{transform:translateX(-115%) scale(.8);transform-origin:left center;animation:medPop .75s cubic-bezier(.34,1.32,.5,1) 1.4s forwards}
+  @keyframes medPop{to{transform:translateX(0) scale(.8)}}
+  @media (prefers-reduced-motion:reduce){#inbodyPromo,#medicarePromo{transform:scale(.8);transform-origin:left center;animation:none}}
+  /* interactive FAQ: question rail + swapping detail cards */
+  .faqq{display:flex;align-items:center;justify-content:space-between;gap:.75rem;width:100%;text-align:left;border:1px solid #e6e9ee;border-radius:1rem;padding:.95rem 1.15rem;font-weight:600;color:#4b5563;background:#fff;transition:all .18s;cursor:pointer;line-height:1.3}
+  .faqq:hover{border-color:rgba(10,108,245,.45);color:#16201d}
+  .faqq.on{border-color:#0a6cf5;background:rgba(10,108,245,.06);color:#16201d;box-shadow:0 1px 2px rgba(16,24,40,.05)}
+  .faqq .chev{color:#c7ccd6;transition:.18s}
+  .faqq.on .chev{color:#0a6cf5;transform:translateX(2px)}
+  .faq-panel{display:none}
+  .faq-panel.on{display:block;animation:faqFade .32s ease}
+  @keyframes faqFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.faq-panel.on{animation:none}}
+  /* cinematic radial glows, soft tints on light */
+  .glow-emerald{background:radial-gradient(60% 55% at 50% 0%, rgba(10,108,245,0.10) 0%, rgba(10,108,245,0) 70%)}
+  .glow-blue{background:radial-gradient(50% 50% at 80% 20%, rgba(37,99,235,0.07) 0%, rgba(37,99,235,0) 70%)}
+  .glass{background:#ffffff;box-shadow:0 1px 2px rgba(16,24,40,0.04),0 14px 34px -18px rgba(16,24,40,0.12)}
+  .lift{transition:all .25s cubic-bezier(0.23,1,0.32,1)}
+  .lift:hover{transform:translateY(-5px);border-color:rgba(10,108,245,0.5);box-shadow:0 26px 52px -24px rgba(16,24,40,0.20),0 0 0 1px rgba(10,108,245,0.2)}
+  .deep-shadow{box-shadow:0 34px 80px -30px rgba(16,24,40,0.18),0 0 0 1px rgba(230,233,238,0.9) inset}
+  .metric{font-variant-numeric:tabular-nums}
+  .kenburns{animation:kenburns 22s ease-in-out infinite alternate;transform-origin:center 30%;will-change:transform}
+  @keyframes kenburns{from{transform:scale(1)}to{transform:scale(1.09)}}
+  @media (prefers-reduced-motion:reduce){.kenburns{animation:none}}
+  .reveal{opacity:0;transform:translateY(16px);transition:opacity 1.2s ease,transform 1.2s ease}
+  .reveal.in{opacity:1;transform:none}
+  #programs .reveal:nth-child(2){transition-delay:.1s}
+  #programs .reveal:nth-child(3){transition-delay:.2s}
+  .reveal-x{opacity:0;transform:translateX(48px);transition:opacity .9s ease,transform .9s cubic-bezier(.2,.8,.2,1)}
+  .reveal-x.in{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){.reveal-x{opacity:1;transform:none;transition:none}}
+  #how .reveal-x:nth-child(2){transition-delay:.12s}
+  #how .reveal-x:nth-child(3){transition-delay:.3s}
+  #how .reveal-x:nth-child(4){transition-delay:.42s}
+  @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+  /* GLP-1 vial cluster: continuous gentle float (entrance handled by .reveal) */
+  .vial-float{animation:vialFloat 6.5s ease-in-out infinite;will-change:transform}
+  .vial-float.delay{animation-duration:7.5s;animation-delay:-2.2s}
+  @keyframes vialFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+  @media (prefers-reduced-motion:reduce){.vial-float{animation:none}}
+  ::selection{background:rgba(10,108,245,0.25)}
+  .ph{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.8rem;letter-spacing:.1em;text-transform:uppercase}
+</style>
+
+<!-- ===== Agentic SEO layer: AI-readable knowledge map + medical structured data ===== -->
+<link rel="alternate" type="text/plain" title="llms.txt" href="/llms.txt">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": ["MedicalClinic","MedicalBusiness","LocalBusiness"],
+      "@id": "https://vitalityweightloss.health/#clinic",
+      "name": "Vitality Weight Loss",
+      "description": "Physician-led medical weight-loss clinic in Las Vegas, Nevada offering GLP-1 therapy (semaglutide and tirzepatide), a no-needle oral GLP-1 option, nutrition coaching, and a Medicare GLP-1 Bridge.",
+      "url": "https://vitalityweightloss.health/",
+      "telephone": "+1-702-602-5002",
+      "priceRange": "$$",
+      "medicalSpecialty": "Bariatric",
+      "address": {"@type":"PostalAddress","streetAddress":"6140 Brent Thurman Way, Suite 100","addressLocality":"Las Vegas","addressRegion":"NV","postalCode":"89148","addressCountry":"US"},
+      "geo": {"@type":"GeoCoordinates","latitude":36.0140,"longitude":-115.2430},
+      "areaServed": [{"@type":"City","name":"Las Vegas"},{"@type":"City","name":"Henderson"},{"@type":"State","name":"Nevada"}],
+      "openingHoursSpecification": [{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday"],"opens":"09:00","closes":"17:00"}],
+      "physician": [{"@id":"https://vitalityweightloss.health/#debry"},{"@id":"https://vitalityweightloss.health/#devera"},{"@id":"https://vitalityweightloss.health/#black"}],
+      "availableService": [{"@id":"https://vitalityweightloss.health/#sema"},{"@id":"https://vitalityweightloss.health/#tirz"},{"@id":"https://vitalityweightloss.health/#oral"}]
+    },
+    {
+      "@type": "Physician",
+      "@id": "https://vitalityweightloss.health/#debry",
+      "name": "Peter DeBry, MD",
+      "jobTitle": "Medical Director, Obesity Medicine",
+      "identifier": {"@type":"PropertyValue","propertyID":"NPI","value":"1831137991"},
+      "medicalSpecialty": "Bariatric",
+      "worksFor": {"@id":"https://vitalityweightloss.health/#clinic"}
+    },
+    {"@type":"Person","@id":"https://vitalityweightloss.health/#devera","name":"Richard DeVera, NP","jobTitle":"Nurse Practitioner","worksFor":{"@id":"https://vitalityweightloss.health/#clinic"}},
+    {"@type":"MedicalTherapy","@id":"https://vitalityweightloss.health/#sema","name":"Compounded Semaglutide GLP-1 Therapy","relevantSpecialty":"Bariatric","howPerformed":"Once-weekly subcutaneous injection of compounded semaglutide, prescribed after physician review."},
+    {"@type":"MedicalTherapy","@id":"https://vitalityweightloss.health/#tirz","name":"Compounded Tirzepatide (GIP/GLP-1) Therapy","relevantSpecialty":"Bariatric","howPerformed":"Once-weekly subcutaneous injection of compounded tirzepatide."},
+    {"@type":"MedicalTherapy","@id":"https://vitalityweightloss.health/#oral","name":"Oral Semaglutide (no-needle)","relevantSpecialty":"Bariatric","howPerformed":"Daily sublingual troche, a no-injection GLP-1 option."},
+    {
+      "@type": "FAQPage",
+      "@id": "https://vitalityweightloss.health/#faq",
+      "mainEntity": [
+        {"@type":"Question","name":"Do you offer a free InBody body-composition scan in Las Vegas?","acceptedAnswer":{"@type":"Answer","text":"Yes. Vitality offers a complimentary InBody scan to every new patient, with no purchase required. The medical-grade analyzer measures your muscle, fat, and body water in under a minute, and you get a one-time code for 50% off your first program."}},
+        {"@type":"Question","name":"Where can I get GLP-1 weight loss in Las Vegas?","acceptedAnswer":{"@type":"Answer","text":"Vitality Weight Loss is a physician-led clinic at 6140 Brent Thurman Way, Suite 100 in Las Vegas, offering semaglutide, tirzepatide, and oral GLP-1, all medically reviewed by Peter DeBry, MD."}},
+        {"@type":"Question","name":"Is a GLP-1 covered by Medicare in Nevada?","acceptedAnswer":{"@type":"Answer","text":"Vitality's GLP-1 Bridge helps eligible Medicare members access brand-name Wegovy or Zepbound for about $50 per month. Eligibility is confirmed by the clinic."}},
+        {"@type":"Question","name":"How much does semaglutide cost in Las Vegas?","acceptedAnswer":{"@type":"Answer","text":"Compounded semaglutide at Vitality starts at $145 the first month, then $199 per month, with no increase as the dose increases."}},
+        {"@type":"Question","name":"Is there a GLP-1 weight-loss option without injections?","acceptedAnswer":{"@type":"Answer","text":"Yes. Vitality offers a daily oral, sublingual semaglutide, a true no-needle option you take as drops under the tongue, in addition to weekly injections."}},
+        {"@type":"Question","name":"Who is the doctor at Vitality Weight Loss?","acceptedAnswer":{"@type":"Answer","text":"Peter DeBry, MD, a Nevada-licensed physician (NPI 1831137991), medically reviews every patient before any prescription."}}
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body class="bg-white text-[#16201d]">
+
+<!-- GLP-1 PROMO BAR (slides down on land; whole bar routes to the direct GLP-1 path) -->
+<a href="glp1.html" id="glp1Bar" class="fixed top-20 left-0 right-0 z-40 h-11 bg-[#0a6cf5] text-white flex items-center justify-center gap-3 px-4 text-sm hover:bg-[#0856c8] transition-colors">
+  <span class="font-medium truncate">GLP-1 weight loss from $145 your first month<span class="hidden sm:inline">, reviewed by Dr. DeBry in 24 hours</span></span>
+  <span class="inline-flex items-center gap-1 font-semibold bg-white text-[#0a6cf5] rounded-full px-3 py-1 text-[13px] whitespace-nowrap">Check eligibility <span aria-hidden="true">→</span></span>
+</a>
+
+<!-- NAV -->
+<nav id="nav" class="fixed top-0 left-0 right-0 z-50 border-b border-[#e6e9ee] bg-white/95 backdrop-blur-xl">
+  <div class="max-w-7xl mx-auto px-6 md:px-8 h-20 flex items-center justify-between relative">
+    <a href="#" class="brandlock">
+      <img src="assets/logo-icon.png" alt="Vitality Weight Loss" class="h-10 w-auto">
+      <span class="marktext">
+        <span class="v">Vitality</span>
+        <span class="wl">Weight Loss</span>
+      </span>
+    </a>
+    <!-- Medicare Bridge quick-note (center of the empty nav) -->
+    <a href="guides/semaglutide-medicare-nevada.html" class="hidden lg:flex absolute left-1/2 -translate-x-1/2 items-center text-[13px] text-[#16201d]/70 hover:text-[#16201d] transition-colors whitespace-nowrap">
+      <span><span class="font-semibold text-[#16201d]">Medicare $50/mo GLP-1 Bridge</span> · coming July 1</span>
+    </a>
+    <div class="flex items-center gap-3 md:gap-5">
+      <a href="tel:+17026025002" class="hidden sm:flex flex-col items-end leading-none">
+        <span class="text-[10px] font-bold uppercase tracking-[.08em] text-[#0a6cf5]">Call Now!</span>
+        <span class="text-sm font-semibold text-[#16201d] mt-0.5">(702) 602-5002</span>
+      </a>
+      <button id="navToggle" class="inline-flex items-center justify-center w-10 h-10 -mr-1 rounded-xl hover:bg-[#f1f3f6] transition-colors" aria-label="Menu" aria-expanded="false">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16201d" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <!-- DROPDOWN MENU -->
+  <div id="mobileMenu" class="hidden absolute right-4 md:right-8 top-[4.75rem] w-60 rounded-2xl border border-[#e6e9ee] bg-white shadow-[0_18px_44px_-18px_rgba(16,24,40,0.22)] overflow-hidden">
+    <div class="py-1.5 flex flex-col text-[15px] font-medium text-[#16201d]">
+      <a href="guides/semaglutide-medicare-nevada.html" class="flex items-start gap-2 px-5 py-2.5 bg-[#f6faef] border-b border-[#f1f3f6] hover:bg-[#eef6e0]">
+        <span class="w-1.5 h-1.5 rounded-full bg-[#74992F] mt-1.5 flex-shrink-0"></span>
+        <span class="text-[13px] leading-tight"><span class="font-semibold">Medicare $50/mo GLP-1 Bridge</span><br><span class="text-[#6b7280]">coming July 1</span></span>
+      </a>
+      <a href="#physician" class="px-5 py-2.5 hover:bg-[#f5f7fa]">The Physician</a>
+      <a href="#programs" class="px-5 py-2.5 hover:bg-[#f5f7fa]">Programs</a>
+      <a href="#how" class="px-5 py-2.5 hover:bg-[#f5f7fa]">How it works</a>
+      <a href="guides/" class="px-5 py-2.5 hover:bg-[#f5f7fa]">Guides</a>
+      <a href="#contact" class="px-5 py-2.5 hover:bg-[#f5f7fa]">Contact</a>
+      <a href="portal-login.html" class="px-5 py-2.5 hover:bg-[#f5f7fa]">Patient Portal</a>
+      <button id="langToggle" type="button" class="px-5 py-2.5 mt-1 border-t border-[#f1f3f6] text-left text-[#0a6cf5] font-semibold hover:bg-[#f5f7fa]" aria-label="Cambiar idioma">View in Español</button>
+      <a href="tel:+17026025002" class="px-5 py-2.5 border-t border-[#f1f3f6] text-[#0a6cf5] font-semibold hover:bg-[#f5f7fa]">Call Now! (702) 602-5002</a>
+    </div>
+  </div>
+</nav>
+<script>
+(function(){
+  var t=document.getElementById('navToggle'),m=document.getElementById('mobileMenu');
+  if(!t||!m)return;
+  t.addEventListener('click',function(){
+    var open=!m.classList.toggle('hidden');
+    t.setAttribute('aria-expanded',open?'true':'false');
+  });
+  m.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click',function(){m.classList.add('hidden');t.setAttribute('aria-expanded','false');});
+  });
+})();
+</script>
+
+<!-- HERO -->
+<header class="relative overflow-hidden pt-[124px]">
+  <!-- HERO_VIDEO: muted ambient background; dark overlay keeps headline legible -->
+  <video id="heroVideo" class="absolute inset-0 w-full h-full object-cover opacity-90 pointer-events-none" autoplay loop muted playsinline preload="auto" poster="assets/hero-poster.jpg?v=glp1">
+    <source src="assets/hero.mp4?v=glp1" type="video/mp4">
+  </video>
+  <div class="absolute inset-0 pointer-events-none" style="background:linear-gradient(to bottom, rgba(255,255,255,.04) 0%, rgba(255,255,255,.10) 52%, rgba(255,255,255,.55) 84%, #ffffff 100%)"></div>
+  <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(56% 46% at 50% 42%, rgba(0,0,0,.40), rgba(0,0,0,0) 72%)"></div>
+  <div class="absolute inset-0 glow-emerald pointer-events-none"></div>
+  <div class="absolute inset-0 glow-blue pointer-events-none"></div>
+  <!-- HERO PROMO: free InBody scan, pops out from the left -->
+  <a href="#book" id="inbodyPromo" class="hidden lg:flex absolute left-0 bottom-[15%] z-20 items-center gap-4 bg-white/95 backdrop-blur rounded-r-3xl shadow-2xl shadow-black/30 border border-[#e6e9ee] pl-4 pr-6 py-4 max-w-sm hover:bg-white transition-colors">
+    <img src="assets/inbody-970s.png" alt="InBody body composition scanner" class="shrink-0 h-56 w-auto self-end -mt-16 -mb-2 select-none pointer-events-none">
+    <div>
+      <div class="flex flex-wrap items-center gap-2 mb-1.5">
+        <span class="text-[11px] font-semibold tracking-[0.14em] uppercase text-[#0a6cf5]">Las Vegas <span class="font-extrabold">Exclusive</span></span>
+        <span class="text-[10px] font-bold uppercase tracking-wide text-white bg-red-500 rounded-full px-2 py-0.5">Limited time</span>
+      </div>
+      <div class="font-display text-xl font-semibold text-[#16201d] leading-[1.15] mb-1.5">Your <span class="text-[#0a6cf5]">FREE</span> InBody scan in Las Vegas.</div>
+      <div class="text-sm text-[#4b5563] leading-snug">Full body-composition analysis, on us. Then 50% off your first program. <span class="text-[#0a6cf5] font-semibold whitespace-nowrap">Book yours &rarr;</span></div>
+    </div>
+  </a>
+  <!-- HERO PROMO 2: Medicare $50/mo GLP-1 Bridge (July 1), pops out from the left (above the InBody card) -->
+  <a href="guides/semaglutide-medicare-nevada.html" id="medicarePromo" class="hidden lg:flex absolute left-0 bottom-[44%] z-20 items-center gap-4 bg-white/95 backdrop-blur rounded-r-3xl shadow-2xl shadow-black/30 border border-[#e6e9ee] pl-4 pr-6 py-4 max-w-sm hover:bg-white transition-colors">
+    <!-- Wegovy vial, sized large and popping up out of the card to catch the eye -->
+    <img src="assets/wegovy-vial.png" alt="Wegovy semaglutide vial" class="shrink-0 h-56 w-auto self-end -mt-16 -mb-2 select-none pointer-events-none">
+    <div class="text-left">
+      <div class="inline-flex self-start items-center gap-1.5 mb-2 text-[11px] font-extrabold uppercase tracking-[0.1em] text-white bg-[#74992F] rounded-full px-3 py-1">★ Coming July 1</div>
+      <div class="font-display text-xl font-semibold text-[#16201d] leading-[1.15] mb-1.5">Medicare <span class="text-[#0a6cf5]">$50/mo</span> GLP-1 Bridge.</div>
+      <div class="text-sm text-[#4b5563] leading-snug">Eligible Medicare members get brand-name Wegovy or Zepbound for about $50 a month. <span class="text-[#0a6cf5] font-semibold whitespace-nowrap">Check eligibility &rarr;</span></div>
+    </div>
+  </a>
+  <div class="max-w-5xl mx-auto px-6 md:px-8 pt-24 pb-56 text-center relative z-10">
+    <h1 class="font-display text-5xl md:text-7xl font-semibold tracking-[-3.5px] leading-[0.95] mb-6 text-white hero-text">
+      Lose the weight.<br>
+      <span class="text-[#9fcbff]">Keep the science.</span>
+    </h1>
+    <p class="max-w-xl mx-auto text-lg md:text-xl text-white font-medium tracking-tight hero-text">
+      Physician-led GLP-1 and hormone optimization, built around your body by a board-certified physician, not a template.
+    </p>
+    <div class="flex flex-col sm:flex-row gap-4 justify-center mt-10">
+      <a href="intake.html" class="px-8 py-4 rounded-3xl bg-[#0a6cf5] text-white font-semibold text-lg hover:bg-[#0856c8] transition-all active:scale-[0.985] shadow-2xl shadow-black/40">Become a Patient</a>
+      <a href="glp1.html" class="px-8 py-4 rounded-3xl bg-[#374151] text-white font-semibold text-lg hover:bg-[#2b3440] transition-all border border-white/15">Take the 60-Sec Quiz</a>
+    </div>
+    <div class="flex items-center justify-center gap-6 mt-10 text-sm text-[#16201d] font-semibold hero-text-dark">
+      <span class="flex items-center gap-2"><span class="text-[#0a6cf5]">✓</span> Real physician oversight</span>
+      <span class="hidden sm:flex items-center gap-2"><span class="text-[#0a6cf5]">✓</span> GLP-1 &amp; hormone protocols</span>
+    </div>
+  </div>
+</header>
+
+<!-- LOGO/STAT STRIP -->
+<div class="border-y border-[#e6e9ee] bg-[#f7f8fa]">
+  <div class="max-w-7xl mx-auto px-6 md:px-8 py-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+    <div><div class="font-display text-2xl font-semibold metric">GLP-1</div><div class="text-xs text-[#6b7280] tracking-wide mt-1">Semaglutide &amp; tirzepatide</div></div>
+    <div><div class="font-display text-2xl font-semibold metric">MD</div><div class="text-xs text-[#6b7280] tracking-wide mt-1">Obesity-medicine board-certified</div></div>
+    <div><div class="font-display text-2xl font-semibold metric">1:1</div><div class="text-xs text-[#6b7280] tracking-wide mt-1">Nutrition coaching</div></div>
+    <div><div class="font-display text-2xl font-semibold metric">24/7</div><div class="text-xs text-[#6b7280] tracking-wide mt-1">Someone always answers</div></div>
+  </div>
+</div>
+
+<!-- THE MEDICINE / GLP-1 PRODUCT (scroll-scrubbed: vial grows as you scroll the pinned stage) -->
+<section id="medicine" class="relative bg-white" style="height:240vh">
+  <div class="sticky top-[124px] h-[calc(100vh-124px)] overflow-hidden flex flex-col items-center justify-center text-center">
+    <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(46% 40% at 50% 46%, rgba(10,108,245,.10), rgba(10,108,245,0) 70%)"></div>
+    <!-- INTRO copy (top headline + bottom blurb/CTA) fades OUT as the pair settles -->
+    <div id="medIntro" class="absolute inset-0 z-20 pointer-events-none">
+      <div class="absolute top-[9%] left-0 right-0 px-6 text-center">
+        <div class="text-xs font-semibold tracking-[.18em] text-[#0a6cf5] uppercase mb-3">GLP-1 Therapy</div>
+        <h2 class="font-display text-3xl md:text-5xl font-semibold tracking-[-1.5px] leading-[1.04] max-w-2xl mx-auto">The medicine, matched to your body.</h2>
+      </div>
+      <div class="absolute bottom-[9%] left-0 right-0 px-6 text-center">
+        <p class="text-[#4b5563] max-w-md mx-auto mb-5 leading-relaxed">Semaglutide and tirzepatide, prescribed by Dr. DeBry and compounded for you by a USA-licensed 503A pharmacy.</p>
+        <a href="glp1.html" class="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-[#0a6cf5] text-white font-semibold hover:bg-[#0856c8] transition-all active:scale-[0.985] pointer-events-auto">See if you qualify <span aria-hidden="true">→</span></a>
+      </div>
+    </div>
+    <!-- the vials: bottle 1 grows with scroll; bottle 2 (tirzepatide) reveals, then the pair slides left; ground shadows fade in once they settle -->
+    <div class="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+      <div id="medGroup1" class="relative will-change-transform" style="height:40vh;transform:scale(0.5)">
+        <img id="medVial1" src="assets/glp1-vial-hero.png?v=2" alt="Vitality GLP-1 semaglutide vial" class="block h-full w-auto">
+        <div id="medShadow1" class="absolute left-1/2 -translate-x-1/2 rounded-[50%]" style="bottom:-2.5%;width:64%;height:5%;background:radial-gradient(50% 50% at 50% 50%, rgba(16,24,40,.34), rgba(16,24,40,0) 70%);opacity:0"></div>
+      </div>
+    </div>
+    <div class="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+      <div id="medGroup2" class="relative will-change-transform" style="height:40vh;transform:scale(0.5);opacity:0">
+        <img id="medVial2" src="assets/glp1-vial-hero-2.png?v=2" alt="Vitality GLP-1 + GIP tirzepatide vial" class="block h-full w-auto">
+        <div id="medShadow2" class="absolute left-1/2 -translate-x-1/2 rounded-[50%]" style="bottom:-2.5%;width:64%;height:5%;background:radial-gradient(50% 50% at 50% 50%, rgba(16,24,40,.34), rgba(16,24,40,0) 70%);opacity:0"></div>
+      </div>
+    </div>
+    <!-- SIDE copy fades IN beside the settled pair (desktop) -->
+    <div id="medSide" class="hidden lg:block absolute z-20 text-left opacity-0" style="right:7%;top:50%;transform:translateY(-50%);max-width:360px;pointer-events:none">
+      <div class="text-xs font-semibold tracking-[.18em] text-[#0a6cf5] uppercase mb-3">GLP-1 Therapy</div>
+      <h3 class="font-display text-3xl font-semibold tracking-[-1px] leading-[1.08] mb-4">Two proven molecules, one physician.</h3>
+      <p class="text-[#4b5563] leading-relaxed mb-6">Semaglutide or tirzepatide, prescribed by Dr. DeBry and compounded for you by a USA-licensed 503A pharmacy. Matched to your body, not a template.</p>
+      <a href="glp1.html" class="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-[#0a6cf5] text-white font-semibold hover:bg-[#0856c8] transition-all active:scale-[0.985]">See if you qualify <span aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</section>
+<script>
+(function(){
+  var sec=document.getElementById('medicine'),
+      v1=document.getElementById('medGroup1'),
+      v2=document.getElementById('medGroup2'),
+      sh1=document.getElementById('medShadow1'),
+      sh2=document.getElementById('medShadow2'),
+      intro=document.getElementById('medIntro'),
+      side=document.getElementById('medSide');
+  if(!sec||!v1||!v2) return;
+  var MIN=0.5, HEADER=124, ticking=false;   // HEADER = fixed nav (80) + blue promo bar (44)
+  function clamp(v,a,b){ return Math.min(Math.max(v,a),b); }
+  function update(){
+    ticking=false;
+    var vw=window.innerWidth, wide=vw>=1024;
+    var vh=window.innerHeight, stageH=vh-HEADER, total=sec.offsetHeight-stageH;
+    var scrolled=clamp(HEADER-sec.getBoundingClientRect().top,0,total);
+    var p=total>0?scrolled/total:0;
+    var MAX=wide?1.3:1.0;
+    var s=MIN+(MAX-MIN)*clamp(p/0.42,0,1);                  // grow, hold at MAX by 42%
+    var sep=clamp((p-0.42)/0.20,0,1);                       // bottle 2 reveal + separate
+    var off=sep*(v1.offsetWidth*s*0.62);                    // px each side
+    var swap=wide?clamp((p-0.64)/0.26,0,1):0;               // text swap + slide-left (desktop)
+    var groupX=swap*(-vw*0.17);
+    v1.style.transform='translateX('+(-off+groupX).toFixed(1)+'px) scale('+s.toFixed(3)+')';
+    v2.style.transform='translateX('+(off+groupX).toFixed(1)+'px) scale('+s.toFixed(3)+')';
+    v2.style.opacity=clamp((p-0.42)/0.14,0,1).toFixed(3);
+    // ground shadows appear only once the bottles reach their final resting place
+    var shOp=clamp((p-0.80)/0.16,0,1).toFixed(3);
+    if(sh1) sh1.style.opacity=shOp;
+    if(sh2) sh2.style.opacity=shOp;
+    if(intro){ intro.style.opacity=(1-swap).toFixed(3); intro.style.pointerEvents=swap>0.5?'none':''; }
+    if(side){ side.style.opacity=swap.toFixed(3); side.style.pointerEvents=swap>0.5?'auto':'none'; }
+  }
+  if(window.matchMedia('(prefers-reduced-motion:reduce)').matches){
+    var off=v1.offsetWidth*1.3*0.62;
+    v1.style.transform='translateX('+(-off)+'px) scale(1.3)';
+    v2.style.transform='translateX('+off+'px) scale(1.3)'; v2.style.opacity=1;
+    if(sh1) sh1.style.opacity=1; if(sh2) sh2.style.opacity=1; return;
+  }
+  function onScroll(){ if(!ticking){ ticking=true; requestAnimationFrame(update); } }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll);
+  update();
+})();
+</script>
+
+<!-- PROGRAMS -->
+<!-- PROGRAMS / OFFERS (prices) -->
+<section id="pricing" class="section py-24 border-t border-[#e6e9ee]">
+  <div class="max-w-6xl mx-auto px-6 md:px-8">
+    <div class="text-center max-w-2xl mx-auto mb-12">
+      <span class="text-xs font-semibold tracking-[0.18em] text-[#0a6cf5] uppercase">Programs</span>
+      <h2 class="font-display text-3xl md:text-5xl font-semibold tracking-[-2px] mt-3 mb-3">Choose your path.</h2>
+      <p class="text-[#4b5563] text-lg">Start with the medication, the full transformation, or men's health. Every path is physician-led and reviewed within 24 hours.</p>
+    </div>
+    <div class="grid md:grid-cols-3 gap-6 items-stretch">
+      <!-- GLP-1 -->
+      <div class="lift border border-[#e6e9ee] rounded-3xl p-8 flex flex-col bg-white shadow-sm reveal">
+        <span class="text-xs font-semibold tracking-[0.12em] text-[#0a6cf5] uppercase">Most popular</span>
+        <h3 class="font-display text-2xl font-semibold mt-2 mb-3">GLP-1 Weight Loss</h3>
+        <p class="text-[#4b5563] text-[15px] mb-5">Semaglutide, tirzepatide, or our no-needle oral option. Prescribed and shipped, no in-person visit required.</p>
+        <div class="mt-auto">
+          <div class="flex items-baseline gap-2"><span class="font-display text-3xl font-bold text-[#16201d]">$145</span><span class="text-sm text-[#6b7280]">first month</span></div>
+          <div class="text-xs text-[#9aa0ab] mt-0.5">then $199/mo &middot; cancel anytime</div>
+          <a href="glp1.html" class="mt-5 block text-center px-6 py-3 rounded-2xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8] transition">Start GLP-1 &rarr;</a>
+        </div>
+      </div>
+      <!-- Total Male -->
+      <div class="lift border-2 border-[#16201d] rounded-3xl p-8 flex flex-col bg-white shadow-md reveal">
+        <span class="text-xs font-semibold tracking-[0.12em] text-[#16201d] uppercase">New &middot; Men's health</span>
+        <h3 class="font-display text-2xl font-semibold mt-2 mb-3">Vitality Total Male</h3>
+        <p class="text-[#4b5563] text-[15px] mb-5">Testosterone therapy, GLP-1, and coaching in one men's transformation program. Drop the weight, get your edge back.</p>
+        <div class="mt-auto">
+          <div class="flex items-baseline gap-2"><span class="font-display text-3xl font-bold text-[#16201d]">$99</span><span class="text-base text-[#9aa0ab] line-through decoration-red-500 decoration-2">$199</span><span class="text-sm text-[#6b7280]">assessment</span></div>
+          <div class="text-xs text-[#9aa0ab] mt-0.5">labs + consult &middot; June, first 30 men</div>
+          <a href="total-male.html" class="mt-5 block text-center px-6 py-3 rounded-2xl bg-[#16201d] text-white font-semibold text-sm hover:bg-[#2b3440] transition">See Total Male &rarr;</a>
+        </div>
+      </div>
+      <!-- Comprehensive -->
+      <div class="lift border border-[#e6e9ee] rounded-3xl p-8 flex flex-col bg-white shadow-sm reveal">
+        <span class="text-xs font-semibold tracking-[0.12em] text-[#f59e0b] uppercase">Comprehensive</span>
+        <h3 class="font-display text-2xl font-semibold mt-2 mb-3">The full program</h3>
+        <p class="text-[#4b5563] text-[15px] mb-5">Medication plus all four pillars: behavioral therapy, counseling, registered-dietitian nutrition, and a personal fitness coordinator, at our facility.</p>
+        <div class="mt-auto">
+          <div class="font-display text-2xl font-bold text-[#16201d]">Built for you</div>
+          <div class="text-xs text-[#9aa0ab] mt-0.5">priced at your consultation</div>
+          <a href="intake.html" class="mt-5 block text-center px-6 py-3 rounded-2xl bg-white border border-[#0a6cf5] text-[#0a6cf5] font-semibold text-sm hover:bg-[#eef4ff] transition">Become a patient &rarr;</a>
+        </div>
+      </div>
+    </div>
+    <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 text-center">
+      <p class="text-[#4b5563] text-sm">Many of our clinical services may be covered by insurance.</p>
+      <a href="insurance.html" class="inline-flex items-center gap-2 px-6 py-3 rounded-2xl border border-[#0a6cf5] text-[#0a6cf5] font-semibold text-sm hover:bg-[#eef4ff] transition">See what your insurance covers &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<section id="programs" class="section py-24 bg-[#0089c0] relative overflow-hidden">
+  <img src="assets/start-figure.jpg" alt="" class="absolute inset-0 w-full h-full object-cover pointer-events-none select-none" style="object-position:right bottom;transform:translateX(18%)">
+  <div class="max-w-7xl mx-auto px-6 md:px-8 relative z-10 lg:pr-[360px]">
+    <div class="max-w-2xl mb-14">
+      <span class="text-xs font-semibold tracking-[0.18em] text-white/80 uppercase">What's included</span>
+      <h2 class="font-display text-3xl md:text-5xl font-semibold tracking-[-2px] mt-3 mb-3 text-white">Every program, built on four pillars.</h2>
+      <p class="text-white/90 text-lg">Medication is the catalyst. These four pillars are what make the change stick, and they come with every Vitality program.</p>
+    </div>
+    <!-- InBody scan offer -->
+    <div class="mb-10 flex flex-col sm:flex-row items-center gap-5 sm:gap-7 rounded-3xl border border-white/40 bg-white px-6 py-6 shadow-xl shadow-black/10">
+      <img src="assets/inbody-970s.png" alt="InBody body composition analyzer" class="shrink-0 h-44 sm:h-52 w-auto sm:self-end sm:-mt-16 sm:-mb-2 select-none pointer-events-none">
+      <div class="flex-1 text-center sm:text-left">
+        <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-1.5">
+          <span class="text-[11px] font-semibold tracking-[0.14em] uppercase text-[#0a6cf5]">Las Vegas <span class="font-extrabold">Exclusive</span></span>
+          <span class="text-[10px] font-bold uppercase tracking-wide text-white bg-red-500 rounded-full px-2 py-0.5">Limited time only</span>
+        </div>
+        <div class="font-display text-lg font-semibold text-[#16201d]">Book your free InBody scan, take 50% off any program.</div>
+        <div class="text-sm text-[#4b5563] mt-0.5">Come in for a complimentary body-composition scan on our medical-grade InBody, and we'll text you a one-time code that cuts your first program in half. No catch.</div>
+      </div>
+      <a href="#book" class="shrink-0 px-6 py-3 rounded-2xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8] transition-all active:scale-[0.985]">Book your free scan</a>
+    </div>
+    <style>
+      .pillar-tab{text-align:center;border-radius:1.1rem;padding:1.1rem .75rem;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);color:#fff;cursor:pointer;transition:transform .18s,background .18s,box-shadow .18s;}
+      .pillar-tab:hover{background:rgba(255,255,255,.22);transform:translateY(-2px);}
+      .pillar-tab.on{background:#fff;color:#16201d;box-shadow:0 14px 34px rgba(0,0,0,.22);transform:translateY(-2px);}
+      .pillar-tab .pic{font-size:1.7rem;display:block;margin-bottom:.35rem;}
+      .pillar-panel{grid-area:1 / 1;transition:opacity .28s ease;}
+      .pillar-panel:not(.on){opacity:0;pointer-events:none;}
+    </style>
+    <div id="pillarTabs" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5 max-w-3xl">
+      <button type="button" data-p="0" class="pillar-tab on"><span class="pic">🧠</span><span class="font-display font-semibold text-[13px] leading-tight">Behavioral Therapy</span></button>
+      <button type="button" data-p="1" class="pillar-tab"><span class="pic">💬</span><span class="font-display font-semibold text-[13px] leading-tight">Counseling &amp; Education</span></button>
+      <button type="button" data-p="2" class="pillar-tab"><span class="pic">🥗</span><span class="font-display font-semibold text-[13px] leading-tight">Registered Dietitian</span></button>
+      <button type="button" data-p="3" class="pillar-tab"><span class="pic">🏋️</span><span class="font-display font-semibold text-[13px] leading-tight">Fitness Coordinator</span></button>
+    </div>
+    <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl max-w-3xl grid">
+      <div class="pillar-panel on" data-pp="0">
+        <h3 class="font-display text-xl font-semibold mb-1.5 text-[#16201d]">Intensive Behavioral Therapy (IBT)</h3>
+        <p class="text-[#4b5563] text-[14px] mb-4">Willpower runs out; habit engineering doesn't. Every Vitality patient gets our structured IBT protocol that rewires triggers, routines, and rewards.</p>
+        <ul class="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-[#4b5563] text-[13.5px]">
+          <li class="flex gap-2"><span class="text-[#0a6cf5]">›</span>Spot emotional and situational eating triggers before they become lapses</li>
+          <li class="flex gap-2"><span class="text-[#0a6cf5]">›</span>Build micro-habits that compound into sustainable lifestyle change</li>
+          <li class="flex gap-2"><span class="text-[#0a6cf5]">›</span>Cognitive restructuring around food, body image, and health identity</li>
+          <li class="flex gap-2"><span class="text-[#0a6cf5]">›</span>Relapse prevention with ongoing accountability touchpoints</li>
+        </ul>
+      </div>
+      <div class="pillar-panel" data-pp="1">
+        <h3 class="font-display text-xl font-semibold mb-1.5 text-[#16201d]">Personal counseling &amp; education</h3>
+        <p class="text-[#4b5563] text-[14px] mb-4">Weight loss without education is temporary; with understanding it's permanent.</p>
+        <ul class="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-[#4b5563] text-[13.5px]">
+          <li class="flex gap-2"><span class="text-[#0a6cf5]">›</span><span><b class="text-[#16201d]">Sustainability education:</b> hold progress through travel, stress, holidays, and life transitions</span></li>
+          <li class="flex gap-2"><span class="text-[#0a6cf5]">›</span><span><b class="text-[#16201d]">Biomarker literacy:</b> your InBody numbers in plain language so every re-scan motivates</span></li>
+          <li class="flex gap-2"><span class="text-[#0a6cf5]">›</span><span><b class="text-[#16201d]">Identity-level change:</b> from "I'm on a diet" to "This is how I live now"</span></li>
+        </ul>
+      </div>
+      <div class="pillar-panel" data-pp="2">
+        <h3 class="font-display text-xl font-semibold mb-1.5 text-[#16201d]">Registered Dietitian guidance</h3>
+        <p class="text-[#4b5563] text-[14px] mb-4">Your nutrition plan isn't pulled from a template. A Registered Dietitian calibrates it against your InBody composition, body-fat percentage, lean mass, and your goals.</p>
+        <ul class="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-[#4b5563] text-[13.5px]">
+          <li class="flex gap-2"><span class="text-[#0a6cf5]">›</span><span><b class="text-[#16201d]">Body-fat-driven targeting:</b> macros tuned to your current and target body-fat, not a one-size number</span></li>
+          <li class="flex gap-2"><span class="text-[#0a6cf5]">›</span><span><b class="text-[#16201d]">Lean-mass protection:</b> protein floors and resistance fueling to keep muscle while fat comes off</span></li>
+          <li class="flex gap-2"><span class="text-[#0a6cf5]">›</span><span><b class="text-[#16201d]">Goal-specific plans:</b> fat loss, recomposition, performance, post-bariatric, or metabolic-first</span></li>
+          <li class="flex gap-2"><span class="text-[#0a6cf5]">›</span><span><b class="text-[#16201d]">Condition-aware:</b> GLP-1 side effects, insulin resistance, PCOS, thyroid, GI sensitivities</span></li>
+          <li class="flex gap-2"><span class="text-[#0a6cf5]">›</span><span><b class="text-[#16201d]">Ongoing re-calibration:</b> every InBody re-scan triggers an RD review</span></li>
+        </ul>
+      </div>
+      <div class="pillar-panel" data-pp="3">
+        <h3 class="font-display text-xl font-semibold mb-1.5 text-[#16201d]">Your personal fitness coordinator</h3>
+        <p class="text-[#4b5563] text-[14px] mb-4">You're not handed a workout sheet and sent away. A dedicated coordinator trains you hands-on so you can confidently run your plan on your own.</p>
+        <ul class="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-[#4b5563] text-[13.5px]">
+          <li class="flex gap-2"><span class="text-[#0a6cf5]">›</span><span><b class="text-[#16201d]">One-on-one training:</b> walked through every movement until it's second nature</span></li>
+          <li class="flex gap-2"><span class="text-[#0a6cf5]">›</span><span><b class="text-[#16201d]">Technique mastery:</b> correct form, tempo, and safety cues so you avoid injury</span></li>
+          <li class="flex gap-2"><span class="text-[#0a6cf5]">›</span><span><b class="text-[#16201d]">Gym autonomy:</b> independence, not dependency, so you can train at any gym</span></li>
+          <li class="flex gap-2"><span class="text-[#0a6cf5]">›</span><span><b class="text-[#16201d]">Plan personalization:</b> chosen around your capacity, injuries, and equipment</span></li>
+          <li class="flex gap-2"><span class="text-[#0a6cf5]">›</span><span><b class="text-[#16201d]">Facility onboarding:</b> come in, learn your program, leave with a clear path</span></li>
+        </ul>
+      </div>
+    </div>
+    <script>
+      (function(){
+        var tabs=document.querySelectorAll('#pillarTabs .pillar-tab');
+        var panels=document.querySelectorAll('.pillar-panel');
+        tabs.forEach(function(t){ t.addEventListener('click',function(){
+          tabs.forEach(function(x){x.classList.remove('on');}); t.classList.add('on');
+          panels.forEach(function(pp){ pp.classList.toggle('on', pp.getAttribute('data-pp')===t.getAttribute('data-p')); });
+        }); });
+      })();
+    </script>
+  </div>
+</section>
+
+<!-- VITALITY ACADEMIES — physical home base -->
+<section id="academies" class="section py-24 border-t border-[#e6e9ee]">
+  <div class="max-w-5xl mx-auto px-6 md:px-8">
+    <div class="mb-10">
+      <span class="text-xs font-semibold tracking-[0.18em] text-[#0a6cf5] uppercase">Vitality Academies</span>
+      <h2 class="font-display text-3xl md:text-5xl font-semibold tracking-[-2px] mt-3 mb-3">Your home base for transformation.</h2>
+      <p class="text-[#4b5563] text-lg max-w-2xl">This isn't a telehealth-only program from your couch. Vitality Academies is our physical headquarters, a real facility built for real transformation.</p>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-4 mb-6">
+      <div class="rounded-2xl border border-[#e6e9ee] bg-white p-5"><div class="font-display font-semibold text-[#16201d] mb-1">Workout facility</div><div class="text-sm text-[#4b5563]">Train on-site with equipment and space designed for your program.</div></div>
+      <div class="rounded-2xl border border-[#e6e9ee] bg-white p-5"><div class="font-display font-semibold text-[#16201d] mb-1">Lecture rooms</div><div class="text-sm text-[#4b5563]">Live education on nutrition, metabolism, and habit science.</div></div>
+      <div class="rounded-2xl border border-[#e6e9ee] bg-white p-5"><div class="font-display font-semibold text-[#16201d] mb-1">Nurse office</div><div class="text-sm text-[#4b5563]">On-site consults, medication administration, and clinical check-ins.</div></div>
+      <div class="rounded-2xl border border-[#e6e9ee] bg-white p-5"><div class="font-display font-semibold text-[#16201d] mb-1">Vitals &amp; wellness checks</div><div class="text-sm text-[#4b5563]">Blood pressure monitoring, injection administration, and progress tracking.</div></div>
+    </div>
+    <div class="rounded-2xl bg-[#f7f8fa] border border-[#e6e9ee] p-6">
+      <div class="font-display font-semibold text-[#16201d] mb-2">On-site highlights</div>
+      <ul class="space-y-1.5 text-sm text-[#4b5563]">
+        <li class="flex gap-2.5"><span class="text-[#0a6cf5]">›</span>On-site InBody 570 scanning for precise body-composition tracking</li>
+        <li class="flex gap-2.5"><span class="text-[#0a6cf5]">›</span>Clinical oversight from licensed medical professionals</li>
+        <li class="flex gap-2.5"><span class="text-[#0a6cf5]">›</span>A community of patients and providers working toward the same goal</li>
+      </ul>
+      <p class="text-[#16201d] text-[15px] mt-4 pt-4 border-t border-[#e6e9ee]">Everything under one roof: scans, workouts, consults, injections, and education, all at Vitality Academies. The difference between a program you download and a place that has your back.</p>
+    </div>
+  </div>
+</section>
+
+<!-- INSIDE VITALITY (clinic video, moved here from the care-team section) -->
+<section id="inside" class="section py-24 border-t border-[#e6e9ee]">
+  <div class="max-w-4xl mx-auto px-6 md:px-8">
+    <div class="text-center mb-8">
+      <span class="text-xs font-semibold tracking-[0.18em] text-[#0a6cf5] uppercase">Inside Vitality</span>
+      <h2 class="font-display text-3xl md:text-5xl font-semibold tracking-[-2px] mt-3">A look inside the clinic.</h2>
+    </div>
+    <!-- Clinic click-to-play card -->
+    <div id="vwlPlayer" class="relative rounded-3xl overflow-hidden border border-[#e6e9ee] deep-shadow aspect-video bg-white">
+      <img src="assets/vitality-main-poster.jpg?v=2" class="absolute inset-0 w-full h-full object-cover" alt="A look inside Vitality Weight Loss">
+      <button type="button" onclick="playVwl()" aria-label="Play video" class="absolute inset-0 flex items-center justify-center group">
+        <span class="relative w-16 h-16 md:w-20 md:h-20 rounded-full bg-[#0a6cf5]/95 group-hover:bg-[#0a6cf5] flex items-center justify-center shadow-xl shadow-[#0a6cf5]/30 transition group-hover:scale-105">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#ffffff" class="ml-1"><path d="M8 5v14l11-7z"/></svg>
+        </span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how" class="section py-24 relative overflow-hidden">
+  <img src="assets/howitworks-figure.png?v=2" alt="" class="hidden lg:block absolute left-[-7%] bottom-[-44px] h-[98.3%] w-auto z-0 pointer-events-none select-none">
+  <div class="max-w-7xl mx-auto px-6 md:px-8 relative z-10 lg:pl-[42%]">
+    <div class="max-w-2xl mb-14">
+      <span class="text-xs font-semibold tracking-[0.18em] text-[#0a6cf5] uppercase">How it works</span>
+      <h2 class="font-display text-3xl md:text-5xl font-semibold tracking-[-2px] mt-3">From first call to first dose, no maze.</h2>
+    </div>
+    <div class="grid md:grid-cols-4 lg:grid-cols-2 gap-5">
+      <div class="glass border border-[#e6e9ee] rounded-2xl p-7 reveal-x"><div class="font-display text-3xl font-bold text-[#0a6cf5]">1</div><h3 class="font-semibold text-lg mt-2 mb-1.5">Book a consult</h3><p class="text-[#6b7280] text-sm">One call or one form. A real person, or our 24/7 assistant, gets you scheduled.</p></div>
+      <div class="glass border border-[#e6e9ee] rounded-2xl p-7 reveal-x"><div class="font-display text-3xl font-bold text-[#0a6cf5]">2</div><h3 class="font-semibold text-lg mt-2 mb-1.5">Get evaluated</h3><p class="text-[#6b7280] text-sm">Physician review of your health, history, and goals. Labs where needed.</p></div>
+      <div class="glass border border-[#e6e9ee] rounded-2xl p-7 reveal-x"><div class="font-display text-3xl font-bold text-[#0a6cf5]">3</div><h3 class="font-semibold text-lg mt-2 mb-1.5">Start your plan</h3><p class="text-[#6b7280] text-sm">Medication prescribed and a plan built for your body, not a template.</p></div>
+      <div class="glass border border-[#e6e9ee] rounded-2xl p-7 reveal-x"><div class="font-display text-3xl font-bold text-[#0a6cf5]">4</div><h3 class="font-semibold text-lg mt-2 mb-1.5">Stay supported</h3><p class="text-[#6b7280] text-sm">Check-ins, coaching, and dose adjustments as you go. We answer when you call.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- QUIZ / CAPTURE -->
+<section id="quiz" class="section py-20 -mt-[15vh] relative z-10">
+  <div class="max-w-7xl mx-auto px-6 md:px-8">
+    <div class="relative overflow-hidden rounded-[2rem] border border-[#e6e9ee] glass deep-shadow p-10 md:p-14 grid md:grid-cols-[1.2fr_0.8fr] gap-10 items-center">
+      <div class="absolute inset-0 glow-emerald pointer-events-none"></div>
+      <div class="relative z-10">
+        <span class="text-xs font-semibold tracking-[0.18em] text-[#0a6cf5] uppercase">Not sure where to start?</span>
+        <h2 class="font-display text-3xl md:text-4xl font-semibold tracking-[-1.5px] mt-3 mb-3">Find your starting point in 60 seconds.</h2>
+        <p class="text-[#4b5563] text-lg">Answer a few questions and we'll point you to the right program. No pressure, no card.</p>
+      </div>
+      <div class="relative z-10">
+        <a href="glp1.html" class="inline-flex px-8 py-4 rounded-3xl bg-[#0a6cf5] text-white font-semibold text-lg hover:bg-[#0856c8] transition-all active:scale-[0.985]">Take the Quiz</a>
+        <p class="text-sm text-[#6b7280] mt-4">Or call <a href="tel:+17026025002" class="text-[#0a6cf5] font-semibold">(702) 602-5002</a> and talk to us now.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- THE LEARNING CENTER (PhD program + reading list + take-it-with-you phone) -->
+<section id="learning" class="section py-24 border-t border-[#e6e9ee] relative overflow-hidden">
+  <div class="absolute inset-0 glow-blue pointer-events-none"></div>
+  <div class="max-w-7xl mx-auto px-6 md:px-8 relative z-10">
+    <div class="max-w-2xl mb-12">
+      <span class="text-xs font-semibold tracking-[0.18em] text-[#0a6cf5] uppercase">The Learning Center</span>
+      <h2 class="font-display text-3xl md:text-5xl font-semibold tracking-[-2px] mt-3 mb-4">Earn your <span class="text-[#0a6cf5]">PhD</span>.</h2>
+      <p class="text-[#4b5563] text-lg">Short, no-fluff lessons, a 30-book master reading list, and your whole plan in your pocket. Knowledge is the part that makes results actually stick.</p>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-6 items-stretch">
+      <!-- LEFT: PhD program + reading list -->
+      <div class="grid sm:grid-cols-2 gap-6 auto-rows-fr items-stretch">
+        <!-- PhD program (slimmed) -->
+        <div class="rounded-3xl border border-[#e6e9ee] glass deep-shadow p-7 flex flex-col overflow-hidden">
+          <span class="text-[11px] font-semibold tracking-[0.16em] text-[#0a6cf5] uppercase">A Vitality Original</span>
+          <h3 class="font-display text-2xl font-semibold tracking-[-0.5px] mt-2 mb-2">Personal Health Doctorate</h3>
+          <p class="text-[#4b5563] text-sm leading-relaxed mb-5">Dr. DeBry's signature program that makes you the expert on your own body. No dissertation, no tuition, just you, finally smarter than your last diet.</p>
+          <div class="space-y-2.5 mb-6">
+            <div class="flex items-center gap-2.5 text-sm"><span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#0a6cf5]/10 text-[#0a6cf5] font-display font-semibold text-xs">1</span><span class="text-[#16201d] font-medium">Metabolism 101</span></div>
+            <div class="flex items-center gap-2.5 text-sm"><span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#0a6cf5]/10 text-[#0a6cf5] font-display font-semibold text-xs">2</span><span class="text-[#16201d] font-medium">Food, Actually</span></div>
+            <div class="flex items-center gap-2.5 text-sm"><span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#0a6cf5]/10 text-[#0a6cf5] font-display font-semibold text-xs">3</span><span class="text-[#16201d] font-medium">Habits That Stick</span></div>
+            <div class="flex items-center gap-2.5 text-sm"><span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#0a6cf5]/10 text-[#0a6cf5] font-display font-semibold text-xs">4</span><span class="text-[#16201d] font-medium">Graduation</span></div>
+          </div>
+          <!-- woman fills the gap; her base tucks behind the footer (the blue ball blends into it) -->
+          <img src="assets/learning-woman.png" alt="" aria-hidden="true" class="w-full flex-1 min-h-0 object-contain object-bottom mt-3 select-none pointer-events-none">
+          <!-- card footer; -mt-14 pulls it up over the ball's base -->
+          <div class="-mt-14 -mx-7 -mb-7 h-16 bg-[#0a6cf5] relative z-10 flex items-center justify-center px-6">
+            <a href="#book" class="inline-flex items-center gap-1.5 font-semibold bg-white text-[#0a6cf5] rounded-full px-5 py-2 text-sm hover:bg-[#eef4ff] transition-colors whitespace-nowrap">Enroll <span class="text-[10px] font-medium bg-[#0a6cf5]/10 rounded-full px-2 py-0.5">Coming soon</span></a>
+          </div>
+        </div>
+
+        <!-- Reading list / blog card -->
+        <div class="rounded-3xl border border-[#e6e9ee] bg-white deep-shadow p-7 flex flex-col relative overflow-hidden">
+          <span class="self-start text-[11px] font-semibold tracking-wide uppercase text-[#0a6cf5] bg-[#0a6cf5]/10 rounded-full px-2.5 py-1">Weight Loss Resources</span>
+          <h3 class="font-display text-2xl font-semibold tracking-[-0.5px] mt-3 mb-2 leading-snug">The Vitality PhD Reading List</h3>
+          <p class="text-[#4b5563] text-sm leading-relaxed">30 physician-curated books on nutrition science, habit psychology, mindset, sleep, stress, and longevity. One a month, built right into your program.</p>
+          <!-- man fills the empty space, anchored to the bottom; his lower cutoff tucks behind the footer -->
+          <img src="assets/learning-man.png" alt="" aria-hidden="true" class="w-full flex-1 min-h-0 object-contain object-bottom scale-[1.05] -translate-y-[10%] origin-bottom mt-3 select-none pointer-events-none">
+          <!-- card footer; -mt-14 pulls it up over the man's cutoff -->
+          <div class="-mt-14 -mx-7 -mb-7 h-16 bg-[#0a6cf5] relative z-10 flex items-center justify-center px-6">
+            <a href="guides/vitality-phd-reading-list.html" class="inline-flex items-center gap-1.5 font-semibold bg-white text-[#0a6cf5] rounded-full px-5 py-2 text-sm hover:bg-[#eef4ff] transition-colors whitespace-nowrap">Read the article <span aria-hidden="true">&rarr;</span></a>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: take-it-with-you copy (between the cards and the phone), then phone -->
+      <div class="flex flex-col lg:flex-row items-center gap-6 lg:pl-10">
+        <div class="text-center lg:text-left">
+          <h3 class="font-display text-2xl md:text-3xl font-semibold tracking-[-0.5px] mb-3 leading-tight">Your plan, in your pocket.</h3>
+          <p class="text-[#4b5563] leading-relaxed">Scan the QR in your patient profile and carry your <strong>learning plan</strong> and <strong>meal plans</strong> on your phone, with you at the store and the gym.</p>
+        </div>
+        <img src="assets/learning-phone.png" alt="The Vitality companion app on a phone" class="block w-auto max-w-full max-h-[674px] shrink-0 select-none pointer-events-none">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CARE TEAM / TRUST ANCHOR -->
+<section id="physician" class="section py-24 relative overflow-hidden">
+  <div class="absolute inset-0 glow-blue pointer-events-none"></div>
+  <div class="max-w-7xl mx-auto px-6 md:px-8 relative z-10">
+    <div class="max-w-2xl mb-14">
+      <span class="text-xs font-semibold tracking-[0.18em] text-[#0a6cf5] uppercase">Your Care Team</span>
+      <h2 class="font-display text-3xl md:text-5xl font-semibold tracking-[-2px] mt-3 mb-3">Physician-led, and it shows.</h2>
+      <p class="text-[#4b5563] text-lg">A board-certified obesity-medicine physician, an experienced nurse practitioner, and a metabolic-health PhD. Real clinicians, not a portal.</p>
+    </div>
+
+    <!-- Featured founder -->
+    <div class="grid md:grid-cols-[0.8fr_1.2fr] gap-10 items-center mb-8">
+      <div class="glass border border-[#e6e9ee] rounded-3xl p-3 deep-shadow">
+        <div class="overflow-hidden rounded-2xl">
+          <img src="assets/debry.jpg" alt="Dr. Peter W. DeBry, MD" class="w-full aspect-[4/5] object-cover object-top kenburns">
+        </div>
+      </div>
+      <div>
+        <span class="text-xs font-semibold tracking-[0.18em] text-[#0a6cf5] uppercase">Founder &amp; Medical Director</span>
+        <h3 class="font-display text-3xl md:text-4xl font-semibold tracking-[-1.5px] mt-3 mb-1">Peter W. DeBry, MD</h3>
+        <div class="flex flex-wrap gap-2.5 my-5">
+          <span class="px-3.5 py-1.5 rounded-full bg-[#0a6cf5]/10 border border-[#0a6cf5]/30 text-sm font-medium text-[#0856c8]">American Board of Obesity Medicine</span>
+          <span class="px-3.5 py-1.5 rounded-full bg-[#f1f3f7] border border-[#e6e9ee] text-sm font-medium text-[#3d4a45]">Alpha Omega Alpha</span>
+          <span class="px-3.5 py-1.5 rounded-full bg-[#f1f3f7] border border-[#e6e9ee] text-sm font-medium text-[#3d4a45]">University of Utah, MD</span>
+        </div>
+        <p class="text-[#4b5563] text-lg leading-relaxed mb-5">Dr. DeBry founded Vitality on a simple belief: meaningful change begins with understanding and individualized care. Board-certified in obesity medicine, he treats weight and metabolic health as the complex medical conditions they are, not a matter of willpower. His work is rooted in evidence-based medicine and positive psychology, aimed at lasting results over quick fixes.</p>
+        <blockquote class="reveal text-[#3d4a45] italic text-lg leading-relaxed">"My passion comes from years studying how to help people build positive patterns. My mother struggled with her weight her whole life. If I can help anyone overcome that, it's worth every bit of energy I put in."</blockquote>
+      </div>
+    </div>
+
+    <!-- Team grid, hover-reveal founder cards (matches IBS apex pattern, white/blue) -->
+    <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
+      <!-- DeVera -->
+      <div class="group relative glass border border-[#e6e9ee] rounded-3xl overflow-hidden transition-colors duration-300 hover:border-[#0a6cf5]/40" style="height:340px">
+        <div class="absolute inset-0 flex flex-col items-center justify-center gap-4 px-8 z-10 transition-all duration-500 group-hover:-translate-y-full group-hover:opacity-0">
+          <img src="assets/devera.jpg" alt="Richard DeVera, NP" class="w-24 h-24 rounded-full object-cover object-top border-2 border-[#e6e9ee]">
+          <div class="text-center">
+            <h3 class="font-display text-xl font-semibold text-[#16201d]">Richard DeVera, NP</h3>
+            <p class="text-xs font-semibold tracking-[0.12em] text-[#0a6cf5] uppercase mt-1.5">Family Nurse Practitioner</p>
+          </div>
+          <span class="text-[10px] tracking-[0.2em] text-[#9aa0ab] uppercase mt-1">Hover to read more</span>
+        </div>
+        <div class="absolute inset-0 flex flex-col justify-start p-7 z-10 translate-y-full opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+          <div class="flex items-center gap-3.5 mb-4">
+            <img src="assets/devera.jpg" alt="" class="w-12 h-12 rounded-full object-cover object-top border border-[#e6e9ee] shrink-0">
+            <div>
+              <h3 class="font-display text-base font-semibold text-[#16201d] leading-tight">Richard DeVera, NP</h3>
+              <p class="text-[10px] font-semibold tracking-[0.12em] text-[#0a6cf5] uppercase">Family Nurse Practitioner</p>
+            </div>
+          </div>
+          <p class="text-[#4b5563] text-[13px] leading-relaxed overflow-y-auto pr-1">A clinical background spanning the ICU, emergency department, and surgery centers. Richard focuses on individualized, evidence-based care that goes beyond the scale.</p>
+        </div>
+      </div>
+      <!-- Corona -->
+      <div class="group relative glass border border-[#e6e9ee] rounded-3xl overflow-hidden transition-colors duration-300 hover:border-[#0a6cf5]/40" style="height:340px">
+        <div class="absolute inset-0 flex flex-col items-center justify-center gap-4 px-8 z-10 transition-all duration-500 group-hover:-translate-y-full group-hover:opacity-0">
+          <img src="assets/corona.jpg" alt="Fred Corona, Chief Growth Officer" class="w-24 h-24 rounded-full object-cover object-top border-2 border-[#e6e9ee]">
+          <div class="text-center">
+            <h3 class="font-display text-xl font-semibold text-[#16201d]">Fred Corona</h3>
+            <p class="text-xs font-semibold tracking-[0.12em] text-[#0a6cf5] uppercase mt-1.5">Chief Growth Officer</p>
+          </div>
+          <span class="text-[10px] tracking-[0.2em] text-[#9aa0ab] uppercase mt-1">Hover to read more</span>
+        </div>
+        <div class="absolute inset-0 flex flex-col justify-start p-7 z-10 translate-y-full opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+          <div class="flex items-center gap-3.5 mb-4">
+            <img src="assets/corona.jpg" alt="" class="w-12 h-12 rounded-full object-cover object-top border border-[#e6e9ee] shrink-0">
+            <div>
+              <h3 class="font-display text-base font-semibold text-[#16201d] leading-tight">Fred Corona</h3>
+              <p class="text-[10px] font-semibold tracking-[0.12em] text-[#0a6cf5] uppercase">Chief Growth Officer</p>
+            </div>
+          </div>
+          <p class="text-[#4b5563] text-[13px] leading-relaxed overflow-y-auto pr-1">Leads growth and operations at Vitality, with 18+ years building high-performing teams. Outside the clinic he coaches boxing and wrestling at Uprising MMA in Las Vegas, running fight camps at the Olympic and professional championship level.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT / BOOK -->
+<section id="contact" class="section py-24 border-t border-[#e6e9ee] bg-[#f7f8fa] relative overflow-hidden">
+  <img src="assets/logo-icon.png" alt="" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[100%] w-auto opacity-[0.1] pointer-events-none select-none">
+  <div class="max-w-7xl mx-auto px-6 md:px-8 relative z-10" id="book">
+    <div class="max-w-2xl mb-14 reveal">
+      <span class="text-xs font-semibold tracking-[0.18em] text-[#0a6cf5] uppercase">Book / Contact</span>
+      <h2 class="font-display text-3xl md:text-5xl font-semibold tracking-[-2px] mt-3">Ready when you are.</h2>
+    </div>
+    <div class="grid md:grid-cols-2 gap-10">
+      <div class="space-y-6 reveal">
+        <div><div class="text-xs tracking-[0.12em] text-[#0a6cf5] uppercase font-semibold">Call</div><a href="tel:+17026025002" class="text-xl font-medium hover:text-[#0856c8] transition-colors">(702) 602-5002</a><span class="text-[#c7ccd6] mx-2">/</span><a href="tel:+17029888818" class="text-xl font-medium hover:text-[#0856c8] transition-colors">(702) 988-8818</a></div>
+        <div><div class="text-xs tracking-[0.12em] text-[#0a6cf5] uppercase font-semibold">Email</div><a href="mailto:info@vitalityweightloss.health" class="text-xl font-medium hover:text-[#0856c8] transition-colors">info@vitalityweightloss.health</a></div>
+        <div><div class="text-xs tracking-[0.12em] text-[#0a6cf5] uppercase font-semibold">Visit</div><div class="text-xl font-medium">6140 Brent Thurman Way, Suite 100<br>Las Vegas, NV 89148</div></div>
+        <div><div class="text-xs tracking-[0.12em] text-[#0a6cf5] uppercase font-semibold">Hours</div><div class="text-xl font-medium">Monday to Friday · 9am to 5pm</div></div>
+        <a href="intake.html" class="inline-flex px-8 py-4 rounded-3xl bg-[#0a6cf5] text-white font-semibold text-lg hover:bg-[#0856c8] transition-all active:scale-[0.985] mt-2">Become a Patient</a>
+      </div>
+      <div class="rounded-3xl overflow-hidden border border-[#e6e9ee] min-h-[320px] reveal-x" style="transition-delay:.12s">
+        <iframe title="Vitality Weight Loss location" width="100%" height="100%" style="border:0;min-height:320px;filter:grayscale(0.15)" loading="lazy"
+          src="https://www.google.com/maps?q=6140+Brent+Thurman+Way+Suite+100+Las+Vegas+NV+89148&output=embed"></iframe>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ (interactive: question rail + detail cards; answers back the FAQPage schema for AI search) -->
+<section id="faq" class="section py-24 border-t border-[#e6e9ee] bg-white">
+  <div class="max-w-7xl mx-auto px-6 md:px-8">
+    <div class="mb-10">
+      <div class="text-xs font-semibold tracking-[.2em] text-[#0a6cf5] uppercase mb-3">Common questions</div>
+      <h2 class="font-display text-3xl md:text-4xl font-semibold tracking-[-1px]">GLP-1 weight loss in Las Vegas, answered.</h2>
+    </div>
+    <div class="grid lg:grid-cols-[0.82fr_1.18fr] gap-6 lg:gap-10 items-start">
+      <!-- LEFT: question rail -->
+      <div id="faqList" class="space-y-2.5">
+        <button type="button" class="faqq on" data-faq="0">Do you offer a free InBody scan?<span class="chev">&rarr;</span></button>
+        <button type="button" class="faqq" data-faq="1">Where can I get GLP-1 weight loss in Las Vegas?<span class="chev">&rarr;</span></button>
+        <button type="button" class="faqq" data-faq="2">Is a GLP-1 covered by Medicare in Nevada?<span class="chev">&rarr;</span></button>
+        <button type="button" class="faqq" data-faq="3">How much does semaglutide cost in Las Vegas?<span class="chev">&rarr;</span></button>
+        <button type="button" class="faqq" data-faq="4">Is there a GLP-1 option without injections?<span class="chev">&rarr;</span></button>
+        <button type="button" class="faqq" data-faq="5">Who is the doctor at Vitality?<span class="chev">&rarr;</span></button>
+      </div>
+      <!-- RIGHT: detail cards -->
+      <div id="faqPanels">
+        <!-- 0 InBody -->
+        <div class="faq-panel on" data-panel="0">
+          <div class="rounded-3xl border border-[#e6e9ee] bg-[#f7f8fa] p-8 flex flex-col md:flex-row items-center gap-7">
+            <img src="assets/inbody-970s.png" alt="InBody body composition analyzer" class="h-60 md:h-72 w-auto shrink-0 select-none pointer-events-none">
+            <div>
+              <div class="flex items-center gap-2 mb-2"><span class="text-[11px] font-semibold tracking-[.14em] uppercase text-[#0a6cf5]">Free for new patients</span><span class="text-[10px] font-bold uppercase tracking-wide text-white bg-red-500 rounded-full px-2 py-0.5">Limited time</span></div>
+              <h3 class="font-display text-2xl md:text-3xl font-semibold tracking-[-.5px] mb-3">Your <span class="text-[#0a6cf5]">FREE</span> InBody scan in Las Vegas.</h3>
+              <p class="text-[#4b5563] leading-relaxed mb-5">A complimentary, medical-grade body-composition scan for every new patient, with no purchase required. Then a one-time code for 50% off your first program.</p>
+              <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="rounded-xl bg-white border border-[#e6e9ee] px-3.5 py-2.5"><div class="font-display font-semibold text-[#16201d]">~45 sec</div><div class="text-xs text-[#6b7280]">full-body scan</div></div>
+                <div class="rounded-xl bg-white border border-[#e6e9ee] px-3.5 py-2.5"><div class="font-display font-semibold text-[#16201d]">Muscle · Fat · Water</div><div class="text-xs text-[#6b7280]">segment by segment</div></div>
+                <div class="rounded-xl bg-white border border-[#e6e9ee] px-3.5 py-2.5"><div class="font-display font-semibold text-[#16201d]">Medical-grade</div><div class="text-xs text-[#6b7280]">clinical accuracy</div></div>
+                <div class="rounded-xl bg-white border border-[#e6e9ee] px-3.5 py-2.5"><div class="font-display font-semibold text-[#0a6cf5]">50% OFF</div><div class="text-xs text-[#6b7280]">your first program</div></div>
+              </div>
+              <a href="#book" class="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8] transition-all active:scale-[0.985]">Book your free scan &rarr;</a>
+            </div>
+          </div>
+        </div>
+        <!-- 1 Where -->
+        <div class="faq-panel" data-panel="1">
+          <div class="rounded-3xl border border-[#e6e9ee] bg-[#f7f8fa] p-8 flex flex-col md:flex-row items-center gap-7">
+            <div class="shrink-0 flex h-40 w-40 items-center justify-center rounded-3xl bg-[#0a6cf5]/10 text-[#0a6cf5]"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+            <div>
+              <div class="text-[11px] font-semibold tracking-[.14em] uppercase text-[#0a6cf5] mb-2">Las Vegas</div>
+              <h3 class="font-display text-2xl md:text-3xl font-semibold tracking-[-.5px] mb-3">Physician-led, right here in Las Vegas.</h3>
+              <p class="text-[#4b5563] leading-relaxed mb-5">Vitality Weight Loss is a physician-led clinic at 6140 Brent Thurman Way, Suite 100 in Las Vegas, offering semaglutide, tirzepatide, and oral GLP-1, all medically reviewed by Peter DeBry, MD.</p>
+              <div class="flex flex-wrap gap-3">
+                <span class="rounded-full bg-white border border-[#e6e9ee] px-4 py-2 text-sm font-medium text-[#16201d]">6140 Brent Thurman Way, Ste 100</span>
+                <span class="rounded-full bg-white border border-[#e6e9ee] px-4 py-2 text-sm font-medium text-[#16201d]">(702) 602-5002</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 2 Medicare -->
+        <div class="faq-panel" data-panel="2">
+          <div class="rounded-3xl border border-[#e6e9ee] bg-[#f7f8fa] p-8 flex flex-col md:flex-row items-center gap-7">
+            <img src="assets/wegovy-vial.png" alt="Wegovy semaglutide vial" class="h-60 md:h-72 w-auto shrink-0 select-none pointer-events-none">
+            <div>
+              <div class="inline-flex items-center gap-1.5 mb-2 text-[11px] font-extrabold uppercase tracking-[.1em] text-white bg-[#74992F] rounded-full px-3 py-1">★ Coming July 1</div>
+              <h3 class="font-display text-2xl md:text-3xl font-semibold tracking-[-.5px] mb-3">Medicare <span class="text-[#0a6cf5]">$50/mo</span> GLP-1 Bridge.</h3>
+              <p class="text-[#4b5563] leading-relaxed mb-5">Vitality's GLP-1 Bridge helps eligible Medicare members access brand-name Wegovy or Zepbound for about $50 per month. Eligibility is confirmed by the clinic.</p>
+              <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="rounded-xl bg-white border border-[#e6e9ee] px-3.5 py-2.5"><div class="font-display font-semibold text-[#0a6cf5]">~$50 / mo</div><div class="text-xs text-[#6b7280]">eligible members</div></div>
+                <div class="rounded-xl bg-white border border-[#e6e9ee] px-3.5 py-2.5"><div class="font-display font-semibold text-[#16201d]">Brand-name</div><div class="text-xs text-[#6b7280]">Wegovy or Zepbound</div></div>
+              </div>
+              <a href="guides/semaglutide-medicare-nevada.html" class="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8] transition-all active:scale-[0.985]">Check eligibility &rarr;</a>
+            </div>
+          </div>
+        </div>
+        <!-- 3 Cost -->
+        <div class="faq-panel" data-panel="3">
+          <div class="rounded-3xl border border-[#e6e9ee] bg-[#f7f8fa] p-8 flex flex-col md:flex-row items-center gap-7">
+            <img src="assets/glp1-vial-hero.png?v=2" alt="Vitality semaglutide vial" class="h-60 md:h-72 w-auto shrink-0 select-none pointer-events-none">
+            <div>
+              <div class="text-[11px] font-semibold tracking-[.14em] uppercase text-[#0a6cf5] mb-2">Transparent pricing</div>
+              <h3 class="font-display text-2xl md:text-3xl font-semibold tracking-[-.5px] mb-3">Semaglutide, no surprise pricing.</h3>
+              <p class="text-[#4b5563] leading-relaxed mb-5">Compounded semaglutide at Vitality starts at $145 the first month, then $199 per month, with no increase as the dose increases.</p>
+              <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="rounded-xl bg-white border border-[#e6e9ee] px-3.5 py-2.5"><div class="font-display font-semibold text-[#16201d]">$145</div><div class="text-xs text-[#6b7280]">first month</div></div>
+                <div class="rounded-xl bg-white border border-[#e6e9ee] px-3.5 py-2.5"><div class="font-display font-semibold text-[#16201d]">$199 / mo</div><div class="text-xs text-[#6b7280]">no dose surcharge</div></div>
+              </div>
+              <a href="#programs" class="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8] transition-all active:scale-[0.985]">See all programs &rarr;</a>
+            </div>
+          </div>
+        </div>
+        <!-- 4 Without injections -->
+        <div class="faq-panel" data-panel="4">
+          <div class="rounded-3xl border border-[#e6e9ee] bg-[#f7f8fa] p-8 flex flex-col md:flex-row items-center gap-7">
+            <img src="assets/semaglutide-dropper.png" alt="Vitality sublingual semaglutide drops" class="h-60 md:h-72 w-auto shrink-0 select-none pointer-events-none">
+            <div>
+              <div class="text-[11px] font-semibold tracking-[.14em] uppercase text-[#0a6cf5] mb-2">No needles</div>
+              <h3 class="font-display text-2xl md:text-3xl font-semibold tracking-[-.5px] mb-3">Prefer drops? Skip the needle.</h3>
+              <p class="text-[#4b5563] leading-relaxed mb-5">Vitality offers a daily oral, sublingual semaglutide, a true no-needle option you take as drops under the tongue, in addition to weekly injections.</p>
+              <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="rounded-xl bg-white border border-[#e6e9ee] px-3.5 py-2.5"><div class="font-display font-semibold text-[#16201d]">Daily drops</div><div class="text-xs text-[#6b7280]">under the tongue</div></div>
+                <div class="rounded-xl bg-white border border-[#e6e9ee] px-3.5 py-2.5"><div class="font-display font-semibold text-[#16201d]">No needles</div><div class="text-xs text-[#6b7280]">same active, semaglutide</div></div>
+              </div>
+              <a href="glp1.html" class="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8] transition-all active:scale-[0.985]">See if you qualify &rarr;</a>
+            </div>
+          </div>
+        </div>
+        <!-- 5 Doctor -->
+        <div class="faq-panel" data-panel="5">
+          <div class="rounded-3xl border border-[#e6e9ee] bg-[#f7f8fa] p-8 flex flex-col md:flex-row items-center gap-7">
+            <img src="assets/debry.jpg" alt="Peter DeBry, MD" class="h-56 md:h-64 w-auto shrink-0 rounded-2xl object-cover select-none pointer-events-none">
+            <div>
+              <div class="text-[11px] font-semibold tracking-[.14em] uppercase text-[#0a6cf5] mb-2">Founder &amp; Medical Director</div>
+              <h3 class="font-display text-2xl md:text-3xl font-semibold tracking-[-.5px] mb-3">Peter DeBry, MD.</h3>
+              <p class="text-[#4b5563] leading-relaxed mb-5">A Nevada-licensed physician (NPI 1831137991) who medically reviews every patient before any prescription. Board-certified in obesity medicine.</p>
+              <div class="flex flex-wrap gap-2.5">
+                <span class="rounded-full bg-white border border-[#e6e9ee] px-3.5 py-1.5 text-sm font-medium text-[#16201d]">Obesity Medicine board-certified</span>
+                <span class="rounded-full bg-white border border-[#e6e9ee] px-3.5 py-1.5 text-sm font-medium text-[#16201d]">University of Utah, MD</span>
+                <span class="rounded-full bg-white border border-[#e6e9ee] px-3.5 py-1.5 text-sm font-medium text-[#16201d]">NPI 1831137991</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+(function(){
+  var qs=document.querySelectorAll('#faqList .faqq'), panels=document.querySelectorAll('#faqPanels .faq-panel');
+  if(!qs.length) return;
+  function activate(i){
+    qs.forEach(function(q,j){ q.classList.toggle('on', j===i); });
+    panels.forEach(function(p,j){ p.classList.toggle('on', j===i); });
+  }
+  qs.forEach(function(q,i){
+    q.addEventListener('click', function(){ activate(i); });
+  });
+})();
+</script>
+
+<!-- FOOTER -->
+<footer class="border-t border-[#e6e9ee]">
+  <div class="max-w-7xl mx-auto px-6 md:px-8 pt-14 pb-12">
+    <div class="grid md:grid-cols-[2fr_1fr_1fr] gap-10">
+      <div>
+        <div class="flex items-center gap-2.5 mb-3">
+          <a href="#" class="brandlock">
+            <img src="assets/logo-icon.png" alt="Vitality Weight Loss" class="h-10 w-auto">
+            <span class="marktext">
+              <span class="v">Vitality</span>
+              <span class="wl">Weight Loss</span>
+            </span>
+          </a>
+        </div>
+        <p class="text-[#6b7280] text-sm max-w-xs">Physician-led medical weight loss in Las Vegas. GLP-1, hormone optimization, and the coaching to make it last.</p>
+      </div>
+      <div>
+        <h4 class="text-xs tracking-[0.1em] uppercase text-[#6b7280] font-semibold mb-3">Explore</h4>
+        <div class="space-y-2 text-sm text-[#4b5563]">
+          <a href="#physician" class="block hover:text-[#16201d]">The Physician</a>
+          <a href="#programs" class="block hover:text-[#16201d]">Programs</a>
+          <a href="#how" class="block hover:text-[#16201d]">How it works</a>
+          <a href="guides/" class="block hover:text-[#16201d]">Guides</a>
+          <a href="glp1.html" class="block hover:text-[#16201d]">Take the Quiz</a>
+        </div>
+      </div>
+      <div>
+        <h4 class="text-xs tracking-[0.1em] uppercase text-[#6b7280] font-semibold mb-3">Contact</h4>
+        <div class="space-y-2 text-sm text-[#4b5563]">
+          <a href="tel:+17026025002" class="block hover:text-[#16201d]">(702) 602-5002</a>
+          <a href="tel:+17029888818" class="block hover:text-[#16201d]">(702) 988-8818</a>
+          <a href="mailto:info@vitalityweightloss.health" class="block hover:text-[#16201d]">info@vitalityweightloss.health</a>
+          <span class="block">6140 Brent Thurman Way #100</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- green bottom bar -->
+  <div class="bg-[#73982e] text-white">
+    <div class="max-w-7xl mx-auto px-6 md:px-8 py-4 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <span class="text-white/85">© 2026 Vitality Weight Loss. All rights reserved.</span>
+      <div class="flex gap-5 font-semibold">
+        <a href="portal-login.html" class="hover:text-white/70 transition-colors">Patient Portal</a>
+        <a href="login.html" class="hover:text-white/70 transition-colors">Staff Login</a>
+      </div>
+      <span class="text-white/85">Medical weight loss · Las Vegas, NV</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+// scroll reveal: fade elements in once they're well within the viewport
+(function(){
+  var els=document.querySelectorAll('.reveal, .reveal-x');
+  if(!('IntersectionObserver' in window)){ els.forEach(function(e){e.classList.add('in');}); return; }
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+  },{ threshold:0.75 });
+  els.forEach(function(e){ io.observe(e); });
+})();
+function playVwl(){
+  var p=document.getElementById('vwlPlayer'); if(!p||p.dataset.on) return; p.dataset.on='1';
+  var btn=p.querySelector('button'); if(btn){ btn.style.transition='opacity .4s ease'; btn.style.opacity='0'; setTimeout(function(){ if(btn) btn.remove(); },420); }
+  var poster=p.querySelector('img'); if(poster){ poster.style.transition='opacity 1.2s ease'; }
+  // English plays the local clinic film; Spanish plays its Spanish counterpart
+  var v=document.createElement('video');
+  v.className='absolute inset-0 w-full h-full'; v.controls=true; v.playsInline=true; v.preload='auto';
+  v.src=document.documentElement.lang==='es'?'assets/vitality-main-es.mp4':'assets/vitality-main.mp4'; v.style.opacity='0'; v.style.transition='opacity 1.2s ease';
+  p.appendChild(v); v.load();
+  // hold the logo cleanly, then cinematic cross-dissolve into the video
+  setTimeout(function(){
+    var go=function(){ if(poster) poster.style.opacity='0'; v.style.opacity='1'; };
+    var pr=v.play(); if(pr&&pr.then){ pr.then(go).catch(go); } else { go(); }
+  }, 1400);
+}
+</script>
+
+<!-- VEE CHAT WIDGET -->
+<div class="fixed bottom-5 right-5 z-[60]">
+  <button id="veeBubble" onclick="veeToggleChat()" aria-label="Chat with Vee" class="w-14 h-14 rounded-full bg-[#0a6cf5] text-white shadow-xl shadow-[#0a6cf5]/30 flex items-center justify-center hover:bg-[#0856c8] transition active:scale-95">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+  </button>
+  <div id="veePanel" class="hidden absolute bottom-[4.5rem] right-0 w-[360px] max-w-[calc(100vw-2.5rem)] h-[520px] max-h-[calc(100vh-7rem)] bg-white rounded-3xl border border-[#e6e9ee] shadow-2xl flex flex-col overflow-hidden">
+    <div class="bg-[#0a6cf5] text-white px-5 py-4 flex items-center gap-3 shrink-0">
+      <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center font-display font-bold">V</div>
+      <div><div class="font-display font-semibold leading-tight">Vee</div><div class="text-xs text-white/70">Vitality Weight Loss · Front desk</div></div>
+      <button onclick="veeToggleChat()" aria-label="Close" class="ml-auto text-white/80 hover:text-white text-2xl leading-none">×</button>
+    </div>
+    <div id="veeMsgs" class="flex-1 overflow-y-auto p-4 space-y-3 bg-[#f7f8fa]"></div>
+    <div class="p-3 border-t border-[#e6e9ee] flex gap-2 shrink-0 bg-white">
+      <input id="veeInput" class="flex-1 border border-[#e6e9ee] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#0a6cf5]" placeholder="Ask about programs, pricing, hours..." onkeydown="if(event.key==='Enter')veeSend()">
+      <button onclick="veeSend()" class="px-4 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Send</button>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var SB='https://jtifhcvbgxqwlywugvjv.supabase.co';
+  var ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWZoY3ZiZ3hxd2x5d3Vndmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDc5NTgsImV4cCI6MjA4ODA4Mzk1OH0.UfRVLuvM8_HPvKXUEDXb0cxR50znv16L5Tf99AnSc7g';
+  var convo=[], opened=false, busy=false, SID=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():('s'+Date.now()+Math.random().toString(36).slice(2));
+  // Convex cutover flag for Vee chat. OFF = legacy vit-chat edge fn (live). Flip at cutover (needs XAI_API_KEY set on Convex).
+  var USE_CONVEX_VEE=true, CONVEX_URL='https://quixotic-cat-492.convex.cloud', _veeConvex=null;
+  async function getVeeConvex(){ if(!_veeConvex){ var m=await import('https://esm.sh/convex@1.41.0/browser'); _veeConvex=new m.ConvexHttpClient(CONVEX_URL); } return _veeConvex; }
+  function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+  function bubble(t,who){var m=document.getElementById('veeMsgs');var w=document.createElement('div');w.className=who==='user'?'flex justify-end':'flex justify-start';w.innerHTML='<div class="'+(who==='user'?'bg-[#0a6cf5] text-white':'bg-white text-[#16201d] border border-[#e6e9ee]')+' rounded-2xl px-3.5 py-2 text-sm max-w-[82%] leading-relaxed">'+esc(t)+'</div>';m.appendChild(w);m.scrollTop=m.scrollHeight;return w;}
+  window.veeToggleChat=function(){opened=!opened;var p=document.getElementById('veePanel');p.classList.toggle('hidden',!opened);if(opened){if(!document.getElementById('veeMsgs').children.length){bubble("Hi, I'm Vee, the Vitality front desk. I can help with our programs, pricing, hours, or getting you booked. What can I help you with?",'bot');}document.getElementById('veeInput').focus();}};
+  window.veeSend=async function(){if(busy)return;var inp=document.getElementById('veeInput');var t=inp.value.trim();if(!t)return;inp.value='';bubble(t,'user');convo.push({role:'user',content:t});busy=true;var typing=bubble('…','bot');
+    try{var d;
+      if(USE_CONVEX_VEE){var c=await getVeeConvex();d=await c.action('vee:chat',{messages:convo,session_id:SID});}
+      else{var r=await fetch(SB+'/functions/v1/vit-chat',{method:'POST',headers:{'content-type':'application/json','apikey':ANON,'authorization':'Bearer '+ANON},body:JSON.stringify({messages:convo,session_id:SID})});d=await r.json();}
+      typing.remove();var reply=(d&&d.reply)||"Sorry, I had trouble there. You can reach us at (702) 602-5002.";bubble(reply,'bot');convo.push({role:'assistant',content:reply});}
+    catch(e){typing.remove();bubble("Sorry, I had trouble connecting. Please call (702) 602-5002.",'bot');}
+    busy=false;inp.focus();
+  };
+})();
+</script>
+
+<!-- EN/ES language shell: text-node translation engine + lang-aware hero video. Add more pairs to DICT to extend coverage. -->
+<script>
+(function(){
+  const DICT={
+    "The Physician":"El Médico","Programs":"Programas","How it works":"Cómo funciona","Contact":"Contacto","Patient Portal":"Portal del Paciente","Book a Consult":"Reserva una Consulta",
+    /* --- v-next homepage (2026-06-15): promo bar, programs/offers, pillars, facility --- */
+    "GLP-1 weight loss from $145 your first month":"Pérdida de peso con GLP-1 desde $145 tu primer mes",
+    ", reviewed by Dr. DeBry in 24 hours":", revisado por el Dr. DeBry en 24 horas",
+    "Become a Patient":"Conviértete en Paciente",
+    "Choose your path.":"Elige tu camino.",
+    "Start with the medication, the full transformation, or men's health. Every path is physician-led and reviewed within 24 hours.":"Empieza con el medicamento, la transformación completa o la salud masculina. Cada camino es dirigido por un médico y revisado en 24 horas.",
+    "Most popular":"Más popular",
+    "Semaglutide, tirzepatide, or our no-needle oral option. Prescribed and shipped, no in-person visit required.":"Semaglutida, tirzepatida o nuestra opción oral sin agujas. Recetada y enviada, sin visita presencial.",
+    "first month":"primer mes",
+    "then $199/mo · cancel anytime":"luego $199/mes · cancela cuando quieras",
+    "Start GLP-1 →":"Comienza GLP-1 →",
+    "New · Men's health":"Nuevo · Salud masculina",
+    "Testosterone therapy, GLP-1, and coaching in one men's transformation program. Drop the weight, get your edge back.":"Terapia de testosterona, GLP-1 y asesoría en un programa de transformación masculina. Baja de peso, recupera tu ventaja.",
+    "assessment":"evaluación",
+    "labs + consult · June, first 30 men":"labs + consulta · junio, primeros 30 hombres",
+    "See Total Male →":"Ver Total Male →",
+    "Comprehensive":"Integral",
+    "The full program":"El programa completo",
+    "Medication plus all four pillars: behavioral therapy, counseling, registered-dietitian nutrition, and a personal fitness coordinator, at our facility.":"Medicamento más los cuatro pilares: terapia conductual, asesoría, nutrición de dietista registrada y un coordinador de ejercicio personal, en nuestras instalaciones.",
+    "Built for you":"Hecho para ti",
+    "priced at your consultation":"precio definido en tu consulta",
+    "Become a patient →":"Conviértete en paciente →",
+    "Many of our clinical services may be covered by insurance.":"Muchos de nuestros servicios clínicos pueden estar cubiertos por el seguro.",
+    "See what your insurance covers →":"Ve qué cubre tu seguro →",
+    "What's included":"Qué incluye",
+    "Every program, built on four pillars.":"Cada programa, construido sobre cuatro pilares.",
+    "Medication is the catalyst. These four pillars are what make the change stick, and they come with every Vitality program.":"El medicamento es el catalizador. Estos cuatro pilares son los que hacen que el cambio perdure, y vienen con cada programa de Vitality.",
+    "Behavioral Therapy":"Terapia Conductual","Counseling & Education":"Asesoría y Educación","Registered Dietitian":"Dietista Registrada","Fitness Coordinator":"Coordinador de Ejercicio",
+    "Intensive Behavioral Therapy (IBT)":"Terapia Conductual Intensiva (IBT)",
+    "Willpower runs out; habit engineering doesn't. Every Vitality patient gets our structured IBT protocol that rewires triggers, routines, and rewards.":"La fuerza de voluntad se agota; la ingeniería de hábitos no. Cada paciente de Vitality recibe nuestro protocolo IBT estructurado que reconfigura disparadores, rutinas y recompensas.",
+    "Personal counseling & education":"Asesoría y educación personal",
+    "Weight loss without education is temporary; with understanding it's permanent.":"La pérdida de peso sin educación es temporal; con comprensión es permanente.",
+    "Registered Dietitian guidance":"Guía de dietista registrada",
+    "Your nutrition plan isn't pulled from a template. A Registered Dietitian calibrates it against your InBody composition, body-fat percentage, lean mass, and your goals.":"Tu plan de nutrición no sale de una plantilla. Una dietista registrada lo calibra según tu composición InBody, porcentaje de grasa corporal, masa magra y tus metas.",
+    "Your personal fitness coordinator":"Tu coordinador de ejercicio personal",
+    "You're not handed a workout sheet and sent away. A dedicated coordinator trains you hands-on so you can confidently run your plan on your own.":"No te entregan una hoja de ejercicios y te despiden. Un coordinador dedicado te entrena de forma práctica para que ejecutes tu plan con confianza por tu cuenta.",
+    "Your home base for transformation.":"Tu base para la transformación.",
+    "This isn't a telehealth-only program from your couch. Vitality Academies is our physical headquarters, a real facility built for real transformation.":"Esto no es un programa solo de telesalud desde tu sofá. Vitality Academies es nuestra sede física, una instalación real construida para una transformación real.",
+    "Workout facility":"Sala de ejercicio","Train on-site with equipment and space designed for your program.":"Entrena en el lugar con equipo y espacio diseñados para tu programa.",
+    "Lecture rooms":"Salas de clase","Live education on nutrition, metabolism, and habit science.":"Educación en vivo sobre nutrición, metabolismo y ciencia de los hábitos.",
+    "Nurse office":"Oficina de enfermería","On-site consults, medication administration, and clinical check-ins.":"Consultas en el lugar, administración de medicamentos y controles clínicos.",
+    "Vitals & wellness checks":"Signos vitales y bienestar","Blood pressure monitoring, injection administration, and progress tracking.":"Monitoreo de presión arterial, administración de inyecciones y seguimiento del progreso.",
+    "On-site highlights":"Lo destacado en el lugar",
+    "On-site InBody 570 scanning for precise body-composition tracking":"Escaneo InBody 570 en el lugar para un seguimiento preciso de la composición corporal",
+    "Clinical oversight from licensed medical professionals":"Supervisión clínica de profesionales médicos licenciados",
+    "A community of patients and providers working toward the same goal":"Una comunidad de pacientes y proveedores que trabajan hacia la misma meta",
+    "Everything under one roof: scans, workouts, consults, injections, and education, all at Vitality Academies. The difference between a program you download and a place that has your back.":"Todo bajo un mismo techo: escaneos, entrenamientos, consultas, inyecciones y educación, todo en Vitality Academies. La diferencia entre un programa que descargas y un lugar que te respalda.",
+    "Lose the weight.":"Baja de peso.","Keep the science.":"Con la ciencia de tu lado.",
+    "Physician-led GLP-1 and hormone optimization, built around your body by a board-certified physician, not a template.":"Optimización de GLP-1 y hormonas dirigida por un médico, diseñada para tu cuerpo por un médico certificado, no por una plantilla.",
+    "Take the 60-Sec Quiz":"Haz el test de 60 segundos","Real physician oversight":"Supervisión médica real","GLP-1 & hormone protocols":"Protocolos de GLP-1 y hormonas",
+    "Semaglutide & tirzepatide":"Semaglutida y tirzepatida","Obesity-medicine board-certified":"Certificado en medicina de obesidad","Nutrition coaching":"Asesoría nutricional","Someone always answers":"Siempre te contestamos",
+    "Your Care Team":"Tu Equipo Médico","Physician-led, and it shows.":"Dirigido por un médico, y se nota.",
+    "A board-certified obesity-medicine physician, an experienced nurse practitioner, and a metabolic-health PhD. Real clinicians, not a portal.":"Un médico certificado en medicina de obesidad, un enfermero practicante con experiencia y una PhD en salud metabólica. Clínicos de verdad, no un portal.",
+    "Founder & Medical Director":"Fundador y Director Médico","American Board of Obesity Medicine":"Junta Americana de Medicina de Obesidad","University of Utah, MD":"Universidad de Utah, MD",
+    "Dr. DeBry founded Vitality on a simple belief: meaningful change begins with understanding and individualized care. Board-certified in obesity medicine, he treats weight and metabolic health as the complex medical conditions they are, not a matter of willpower. His work is rooted in evidence-based medicine and positive psychology, aimed at lasting results over quick fixes.":"El Dr. DeBry fundó Vitality sobre una idea sencilla: el cambio real empieza con comprensión y atención individualizada. Certificado en medicina de obesidad, trata el peso y la salud metabólica como las condiciones médicas complejas que son, no como falta de fuerza de voluntad. Su trabajo se basa en la medicina basada en evidencia y la psicología positiva, buscando resultados duraderos en lugar de soluciones rápidas.",
+    "Family Nurse Practitioner":"Enfermero Familiar Practicante","Metabolic & Wellness":"Metabolismo y Bienestar","Chief Growth Officer":"Director de Crecimiento","Hover to read more":"Pasa el cursor para leer más",
+    "A clinical background spanning the ICU, emergency department, and surgery centers. Richard focuses on individualized, evidence-based care that goes beyond the scale.":"Con experiencia clínica en cuidados intensivos, urgencias y centros quirúrgicos. Richard se enfoca en una atención individualizada y basada en evidencia que va más allá de la báscula.",
+    "Leads growth and operations at Vitality, with 18+ years building high-performing teams. Outside the clinic he coaches boxing and wrestling at Uprising MMA in Las Vegas, running fight camps at the Olympic and professional championship level.":"Lidera el crecimiento y las operaciones en Vitality, con más de 18 años formando equipos de alto rendimiento. Fuera de la clínica entrena boxeo y lucha en Uprising MMA en Las Vegas, dirigiendo campamentos a nivel olímpico y de campeonato profesional.",
+    "One of these is the right place to start.":"Uno de estos es el lugar ideal para empezar.","Clear programs, real medication, physician oversight. No guessing which button to press.":"Programas claros, medicación real, supervisión médica. Sin adivinar qué botón presionar.",
+    "Book your free InBody scan, take 50% off any program.":"Reserva tu escaneo InBody gratis y obtén 50% de descuento en cualquier programa.","Come in for a complimentary body-composition scan and we'll text you a one-time code that cuts your first program in half. No catch.":"Ven por un escaneo de composición corporal sin costo y te enviaremos por mensaje un código único que reduce tu primer programa a la mitad. Sin trucos.","Book your free scan":"Reserva tu escaneo gratis",
+    "Most Popular":"El Más Popular","GLP-1 Weight Loss":"Pérdida de Peso con GLP-1","Semaglutide or tirzepatide, physician-prescribed":"Semaglutida o tirzepatida, recetada por un médico","Monthly check-ins and dose management":"Seguimiento mensual y manejo de dosis","Nutrition guidance included":"Guía nutricional incluida","/ mo":"/ mes","with your free InBody scan":"con tu escaneo InBody gratis",
+    "Comprehensive":"Integral","Metabolic & Hormone":"Metabolismo y Hormonas","Hormone and metabolism evaluation":"Evaluación de hormonas y metabolismo","Lab-based, personalized protocol":"Protocolo personalizado basado en laboratorio","For weight that won't move on its own":"Para el peso que no baja por sí solo",
+    "Foundations":"Fundamentos","Coaching & Nutrition":"Asesoría y Nutrición","1:1 coaching and macro planning":"Asesoría 1:1 y planificación de macros","The \"PhD\", Personal Health education":"El \"PhD\", educación de salud personal","Pairs with any medication program":"Se combina con cualquier programa de medicación",
+    "A Vitality Original":"Un Original de Vitality","Earn your":"Obtén tu","Personal Health Doctorate":"Doctorado en Salud Personal","No dissertation. No tuition. Just you, finally smarter than your last diet.":"Sin tesis. Sin colegiatura. Solo tú, por fin más listo que tu última dieta.","Enroll in the PhD":"Inscríbete en el PhD","Coming soon":"Próximamente",
+    "Your curriculum":"Tu plan de estudios","0 / 4 credits":"0 / 4 créditos","Metabolism 101":"Metabolismo 101","Why your body fights back, and how to win.":"Por qué tu cuerpo se resiste, y cómo ganar.","Food, Actually":"La Comida, de Verdad","Eating for your life, not a meal plan.":"Comer para tu vida, no un plan de comidas.","Habits That Stick":"Hábitos que Perduran","Small systems that beat willpower.":"Pequeños sistemas que vencen a la fuerza de voluntad.","Graduation":"Graduación","Your maintenance plan, for life.":"Tu plan de mantenimiento, de por vida.","Enroll to start earning credits.":"Inscríbete para empezar a ganar créditos.",
+    "From first call to first dose, no maze.":"De la primera llamada a la primera dosis, sin laberintos.","Book a consult":"Reserva una consulta","One call or one form. A real person, or our 24/7 assistant, gets you scheduled.":"Una llamada o un formulario. Una persona real, o nuestro asistente 24/7, te agenda.","Get evaluated":"Evaluación","Physician review of your health, history, and goals. Labs where needed.":"Revisión médica de tu salud, historial y metas. Laboratorios cuando se necesiten.","Start your plan":"Empieza tu plan","Medication prescribed and a plan built for your body, not a template.":"Medicación recetada y un plan hecho para tu cuerpo, no una plantilla.","Stay supported":"Acompañamiento continuo","Check-ins, coaching, and dose adjustments as you go. We answer when you call.":"Seguimiento, asesoría y ajustes de dosis sobre la marcha. Te contestamos cuando llamas.",
+    "Not sure where to start?":"¿No sabes por dónde empezar?","Find your starting point in 60 seconds.":"Encuentra tu punto de partida en 60 segundos.","Answer a few questions and we'll point you to the right program. No pressure, no card.":"Responde unas preguntas y te indicamos el programa ideal. Sin presión, sin tarjeta.","Take the Quiz":"Haz el Test","Or call":"O llama al","and talk to us now.":"y habla con nosotros ahora.",
+    "Book / Contact":"Reserva / Contacto","Ready when you are.":"Listos cuando tú lo estés.","Call":"Llama","Email":"Correo","Visit":"Visítanos","Hours":"Horario","Monday to Friday · 9am to 5pm":"Lunes a viernes · 9am a 5pm","Book Your Consult":"Reserva tu Consulta",
+    "Physician-led medical weight loss in Las Vegas. GLP-1, hormone optimization, and the coaching to make it last.":"Pérdida de peso médica en Las Vegas. GLP-1, optimización hormonal y la asesoría para que dure.","Explore":"Explora","Staff Login":"Acceso del Personal","Medical weight loss · Las Vegas, NV":"Pérdida de peso médica · Las Vegas, NV"
+  };
+  const ORIG=new Map();
+  function walk(node, fn){ for(let i=0;i<node.childNodes.length;i++){ const n=node.childNodes[i]; if(n.nodeType===3) fn(n); else if(n.nodeType===1 && n.tagName!=='SCRIPT' && n.tagName!=='STYLE') walk(n,fn); } }
+  function apply(lang){
+    walk(document.body, function(n){ const raw=ORIG.has(n)?ORIG.get(n):n.nodeValue; const key=raw.trim(); if(!key||!DICT[key]) return; if(!ORIG.has(n)) ORIG.set(n,n.nodeValue); n.nodeValue = lang==='es' ? raw.replace(key,DICT[key]) : ORIG.get(n); });
+    document.documentElement.lang=lang;
+    const btn=document.getElementById('langToggle'); if(btn) btn.textContent = lang==='es'?'View in English':'View in Español';
+    try{ localStorage.setItem('vit_lang',lang); }catch(e){}
+  }
+  let saved='en'; try{ saved=localStorage.getItem('vit_lang')||'en'; }catch(e){}
+  if(saved==='es') apply('es');
+  const btn=document.getElementById('langToggle'); if(btn) btn.onclick=function(){ apply(document.documentElement.lang==='es'?'en':'es'); };
+})();
+</script>
+
+<!-- LANDING POP-UP: pushes visitors to the GLP-1 health quiz (Athena prescribe path). Set POPUP_ENABLED=false to disable. -->
+<div id="quizPopup" class="fixed inset-0 z-[90] hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="quizPopupTitle">
+  <div class="absolute inset-0 bg-[#0b1220]/60 backdrop-blur-sm" data-popup-close></div>
+  <div class="relative w-full max-w-md rounded-3xl bg-white shadow-2xl border border-[#e6e9ee] overflow-hidden translate-y-2 opacity-0 transition-all duration-300" id="quizPopupCard">
+    <button data-popup-close aria-label="Close" class="absolute top-3 right-3 z-10 flex h-9 w-9 items-center justify-center rounded-full text-[#6b7280] hover:bg-[#f1f3f6] hover:text-[#16201d] transition-colors">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+    </button>
+    <div class="px-8 pt-8 pb-7 text-center">
+      <img src="assets/logo-icon.png" alt="" class="h-10 w-auto mx-auto mb-4">
+      <div class="text-xs font-semibold tracking-[0.16em] text-[#0a6cf5] uppercase mb-2">Prescribed online</div>
+      <h3 id="quizPopupTitle" class="font-display text-2xl md:text-3xl font-semibold tracking-[-0.5px] mb-2">Skip the waiting room.</h3>
+      <p class="text-[#4b5563] leading-relaxed mb-6">Take our 60-second health quiz. Dr. DeBry reviews your answers and, if you qualify, prescribes your GLP-1 and ships it to your door.</p>
+      <a href="glp1.html" class="block w-full px-7 py-3.5 rounded-2xl bg-[#0a6cf5] text-white font-semibold hover:bg-[#0856c8] transition-all active:scale-[0.985]">Start the health quiz &rarr;</a>
+      <button data-popup-close class="mt-3 text-sm font-medium text-[#9aa0ab] hover:text-[#6b7280] transition-colors">Maybe later</button>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var POPUP_ENABLED = true;          // <- set to false to turn the landing pop-up off
+  var SUPPRESS_HOURS = 24;           // don't reshow within this window per visitor
+  var DELAY_MS = 1500;               // wait after land before showing
+  if(!POPUP_ENABLED) return;
+  var el=document.getElementById('quizPopup'), card=document.getElementById('quizPopupCard');
+  if(!el||!card) return;
+  try{ var t=parseInt(localStorage.getItem('vit_quiz_popup')||'0',10); if(t && (Date.now()-t) < SUPPRESS_HOURS*3600*1000) return; }catch(e){}
+  function open(){ el.classList.remove('hidden'); el.classList.add('flex'); document.body.style.overflow='hidden';
+    requestAnimationFrame(function(){ card.classList.remove('translate-y-2','opacity-0'); }); }
+  function close(){ card.classList.add('translate-y-2','opacity-0'); document.body.style.overflow='';
+    setTimeout(function(){ el.classList.add('hidden'); el.classList.remove('flex'); }, 250);
+    try{ localStorage.setItem('vit_quiz_popup', String(Date.now())); }catch(e){} }
+  el.querySelectorAll('[data-popup-close]').forEach(function(b){ b.addEventListener('click', close); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && !el.classList.contains('hidden')) close(); });
+  // record the suppression as soon as they engage the CTA too
+  var cta=el.querySelector('a[href="glp1.html"]'); if(cta) cta.addEventListener('click', function(){ try{ localStorage.setItem('vit_quiz_popup', String(Date.now())); }catch(e){} });
+  setTimeout(open, DELAY_MS);
+})();
+</script>
+</body>
+</html>

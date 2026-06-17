@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Vitality</title>
+<meta name="robots" content="noindex">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:#f7f8fa;color:#16201d}
+  .font-display{font-family:'Montserrat','Inter',sans-serif}
+  .card{background:#fff;border:1px solid #e6e9ee;border-radius:20px;box-shadow:0 18px 44px -30px rgba(16,24,40,0.18)}
+  .field{width:100%;background:#fff;border:1px solid #e6e9ee;border-radius:12px;padding:.7rem .9rem;color:#16201d;font-size:.95rem}
+  .field:focus{outline:none;border-color:#0a6cf5;box-shadow:0 0 0 3px rgba(10,108,245,.12)}
+  .chip{display:inline-flex;align-items:center;gap:.3rem;font-size:.72rem;font-weight:600;padding:.18rem .6rem;border-radius:999px}
+  .seg{font-variant-numeric:tabular-nums}
+  .tab{padding:.5rem .9rem;border-radius:999px;font-size:.85rem;font-weight:600;color:#6b7280;cursor:pointer;white-space:nowrap}
+  .tab.on{background:#0a6cf5;color:#fff}
+  details>summary{list-style:none;cursor:pointer}details>summary::-webkit-details-marker{display:none}
+  details[open] .chev{transform:rotate(90deg)}
+  .chev{transition:transform .18s}
+  ::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#d7dbe2;border-radius:8px}
+  .print-only{display:none}
+  @media print{
+    @page{margin:14mm}
+    body.printing *{visibility:hidden!important}
+    body.printing .print-target,body.printing .print-target *{visibility:visible!important}
+    body.printing .print-target{position:absolute;left:0;top:0;width:100%;box-shadow:none!important;border:0!important;border-radius:0!important;padding:0!important}
+    body.printing .no-print{display:none!important}
+    body.printing .print-only{display:block!important}
+    body.printing .screen-only{display:none!important}
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+<header class="sticky top-0 z-20 bg-white/85 backdrop-blur border-b border-[#e6e9ee]">
+  <div class="max-w-5xl mx-auto px-5 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <img src="assets/logo-icon.png" alt="Vitality" class="h-8 w-auto">
+      <span class="font-display font-semibold text-xl tracking-[-.5px]">My Vitality</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <span id="hello" class="text-sm text-[#6b7280] hidden sm:block"></span>
+      <button id="signout" class="text-xs text-[#6b7280] hover:text-[#16201d]">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<main id="app" class="max-w-5xl mx-auto px-5 py-8">
+  <div id="loading" class="text-center text-[#6b7280] py-24 text-sm">Loading your dashboard…</div>
+  <div id="content" class="hidden space-y-6"></div>
+  <div id="nolink" class="hidden card p-8 text-center max-w-md mx-auto mt-10">
+    <h2 class="font-display text-lg font-semibold mb-2">Almost there</h2>
+    <p class="text-sm text-[#6b7280]">Your account is not linked to a patient chart yet. Please call the clinic at (702) 602-5002 and we will connect it.</p>
+  </div>
+</main>
+
+<div id="lightbox" class="hidden fixed inset-0 z-50 bg-black/80 items-center justify-center p-5 cursor-zoom-out">
+  <div class="max-w-lg w-full">
+    <img id="lbImg" src="" alt="" class="w-full max-h-[78vh] object-contain rounded-2xl bg-white">
+    <div id="lbCap" class="text-white text-center text-sm mt-3 font-semibold"></div>
+    <div class="text-white/50 text-center text-xs mt-1">Tap anywhere to close</div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const SB='https://jtifhcvbgxqwlywugvjv.supabase.co', ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWZoY3ZiZ3hxd2x5d3Vndmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDc5NTgsImV4cCI6MjA4ODA4Mzk1OH0.UfRVLuvM8_HPvKXUEDXb0cxR50znv16L5Tf99AnSc7g';
+const sb = createClient(SB, ANON, { auth:{ storageKey:'sb-vit-patient', persistSession:true } });
+const FN = SB + '/functions/v1/vit-portal-data';
+const $ = (id)=>document.getElementById(id);
+let TOKEN=null, DATA=null, QR_URL=null;
+
+// Convex cutover flag. OFF = legacy Supabase edge fn (live, unchanged). Flip to true
+// once the Convex dev deployment is seeded — moves the portal onto Convex (portal.ts),
+// reusing the same bridge JWT the staff/patient login already issues.
+const USE_CONVEX = true;
+const CONVEX_URL = 'https://quixotic-cat-492.convex.cloud';
+let convex = null;
+
+// Milestone B: identity is Convex-native. Flip USE_CONVEX_AUTH=false to roll back to Supabase.
+const USE_CONVEX_AUTH = true;
+let signOutFn;
+if (USE_CONVEX_AUTH) {
+  const { getToken, signOut, STORE_PATIENT } = await import('./auth-convex.js');
+  TOKEN = await getToken(STORE_PATIENT);
+  if (!TOKEN){ location.replace('portal-login.html'); throw new Error('no session'); }
+  signOutFn = () => signOut(STORE_PATIENT);
+} else {
+  const { data:{ session } } = await sb.auth.getSession();
+  if (!session){ location.replace('portal-login.html'); throw new Error('no session'); }
+  TOKEN = session.access_token;
+  signOutFn = () => sb.auth.signOut();
+}
+if (USE_CONVEX) {
+  const { ConvexHttpClient } = await import('https://esm.sh/convex@1.41.0/browser');
+  convex = new ConvexHttpClient(CONVEX_URL);
+  convex.setAuth(TOKEN);
+}
+$('signout').onclick = ()=> signOutFn().then(()=>location.replace('portal-login.html'));
+
+async function api(payload){
+  const a = payload || {};
+  if (USE_CONVEX) {
+    if (a.action === 'load')       return await convex.query('portal:loadPortal', {});
+    if (a.action === 'add_log')    return await convex.mutation('portal:addLog', { kind:a.kind, value_num:a.value_num, unit:a.unit, body:a.body });
+    if (a.action === 'mint_token') return await convex.mutation('portal:mintToken', {});
+    return { ok:false, error:'unknown action' };
+  }
+  const r = await fetch(FN, { method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':ANON, 'Authorization':'Bearer '+TOKEN }, body: JSON.stringify(payload||{}) });
+  return await r.json();
+}
+const esc = (s)=> (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const PROGRAMS = { glp1:'GLP-1 Weight Loss', metabolic:'Metabolic & Hormone', coaching:'Coaching & Nutrition', unsure:'Getting started' };
+const fmtDate = (s)=>{ if(!s) return ''; const d=new Date(s); return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); };
+const fmtWhen = (s)=>{ if(!s) return ''; const d=new Date(s); return d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})+' at '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); };
+const fmtAgo = (s)=>{ if(!s) return ''; const diff=(Date.now()-new Date(s).getTime())/1000; if(diff<60) return 'just now'; if(diff<3600) return Math.floor(diff/60)+'m ago'; if(diff<86400) return Math.floor(diff/3600)+'h ago'; return Math.floor(diff/86400)+'d ago'; };
+
+// projected weight curve (day 0 = start) with goal marker
+function projChart(start, proj, current){
+  const pts=[{x:0,y:start}].concat((proj||[]).map(p=>({x:parseInt((p.label||'').replace(/\D/g,''))||0, y:+p.weight})));
+  if(pts.length<2) return '';
+  const w=560,h=170,pad=30, padR=46;
+  const xs=pts.map(p=>p.x), ys=pts.map(p=>p.y);
+  const xmin=0,xmax=Math.max(...xs), ymin=Math.min(...ys), ymax=Math.max(...ys), yspan=(ymax-ymin)||1;
+  const X=(v)=> pad + (v-xmin)/((xmax-xmin)||1)*(w-pad-padR);
+  const Y=(v)=> pad + (1-(v-ymin)/yspan)*(h-pad*2);
+  const line=pts.map((p,i)=>`${i?'L':'M'}${X(p.x).toFixed(1)},${Y(p.y).toFixed(1)}`).join(' ');
+  const area=`${line} L${X(pts[pts.length-1].x).toFixed(1)},${h-pad} L${X(0).toFixed(1)},${h-pad} Z`;
+  const dots=pts.map(p=>`<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="3.5" fill="#0a6cf5"/>`).join('');
+  const labs=(proj||[]).map(p=>{const x=parseInt((p.label||'').replace(/\D/g,''))||0;return `<text x="${X(x).toFixed(1)}" y="${Y(+p.weight)-10}" fill="#0a3d7a" font-size="10" font-weight="600" text-anchor="middle">${p.weight}</text>`;}).join('');
+  const dayLabs=pts.map(p=>`<text x="${X(p.x).toFixed(1)}" y="${h-9}" fill="#9aa0ab" font-size="9" text-anchor="middle">${p.x===0?'Now':'D'+p.x}</text>`).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" class="w-full" style="max-height:190px"><defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a6cf5" stop-opacity=".16"/><stop offset="1" stop-color="#0a6cf5" stop-opacity="0"/></linearGradient></defs><path d="${area}" fill="url(#pg)"/><path d="${line}" fill="none" stroke="#0a6cf5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${dots}${labs}${dayLabs}<text x="${(w-padR+6)}" y="${Y(ys[ys.length-1]).toFixed(1)}" fill="#0a3d7a" font-size="10" font-weight="700">Goal</text></svg>`;
+}
+function stat(label,val,sub){ return `<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3"><div class="text-[11px] uppercase tracking-wide text-[#9aa0ab] font-semibold">${label}</div><div class="font-display text-2xl font-semibold seg mt-.5">${val}</div>${sub?`<div class="text-xs ${sub.cls||'text-[#6b7280]'} mt-.5">${sub.t}</div>`:''}</div>`; }
+function macro(label,val){ return `<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 text-center"><div class="font-display text-xl font-semibold seg">${val}</div><div class="text-[11px] uppercase tracking-wide text-[#9aa0ab] font-semibold mt-.5">${label}</div></div>`; }
+
+// InBody scoring bar (zones healthy/caution/high with the patient's marker) — mirrors the staff CRM
+function ibBar(label,val,min,max,zones,unit){
+  if(val==null) return '';
+  const pct=Math.max(2,Math.min(98,((val-min)/(max-min))*100));
+  const segs=zones.map(z=>`<div style="flex:${z.w};background:${z.c};opacity:.55"></div>`).join('');
+  return `<div class="mb-3"><div class="flex justify-between text-xs mb-1.5"><span class="text-[#6b7280]">${label}</span><span class="font-semibold seg">${val}${unit||''}</span></div>
+    <div style="position:relative;height:8px;border-radius:9999px;overflow:hidden;display:flex">${segs}<div style="position:absolute;left:${pct}%;top:-3px;width:3px;height:14px;background:#16201d;border-radius:2px;box-shadow:0 0 0 1.5px rgba(255,255,255,.9)"></div></div></div>`;
+}
+function ibSeg(obj,color){
+  const labels={right_arm:'R Arm',left_arm:'L Arm',trunk:'Trunk',right_leg:'R Leg',left_leg:'L Leg'};
+  const vals=Object.values(obj||{}); if(!vals.length) return '';
+  const max=Math.max(...vals)||1;
+  return Object.entries(obj).map(([k,v])=>`<div class="flex items-center gap-2 mb-1.5"><span class="text-[11px] text-[#6b7280] w-12">${labels[k]||k}</span><div class="flex-1 h-2 rounded-full bg-[#f1f3f7] overflow-hidden"><div style="width:${(v/max*100).toFixed(0)}%;height:100%;background:${color}"></div></div><span class="text-[11px] text-[#9aa0ab] w-10 text-right seg">${(+v).toFixed(1)}</span></div>`).join('');
+}
+// Full InBody report body (used on-page AND in the printable view)
+function reportHTML(ib){
+  const m=[['Weight',ib.weight_lb+' lb'],['Body Fat',ib.pbf_pct+'%'],['Skeletal Muscle',ib.smm_lb+' lb'],['BMI',ib.bmi],['Body Fat Mass',ib.body_fat_mass_lb+' lb'],['Lean Body Mass',ib.lean_body_mass_lb+' lb'],['Visceral Fat','Lvl '+ib.visceral_fat_level],['BMR',ib.bmr_kcal+' kcal']];
+  const seg=ib.segmental_lean_lb&&Object.keys(ib.segmental_lean_lb).length;
+  return `<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">${m.map(x=>`<div class="bg-[#f7f8fa] border border-[#e6e9ee] rounded-xl p-3"><div class="text-[11px] text-[#6b7280]">${x[0]}</div><div class="font-display text-lg font-semibold mt-0.5 seg">${x[1]}</div></div>`).join('')}</div>
+    <div class="grid sm:grid-cols-2 gap-x-8 gap-y-1">
+      <div><div class="text-[11px] font-semibold tracking-wide text-[#6b7280] uppercase mb-3">Obesity &amp; water analysis</div>
+        ${ibBar('Percent Body Fat',ib.pbf_pct,0,50,[{w:10,c:'#3b82f6'},{w:10,c:'#10b981'},{w:30,c:'#f43f5e'}],'%')}
+        ${ibBar('BMI',ib.bmi,10,55,[{w:8.5,c:'#3b82f6'},{w:6.5,c:'#10b981'},{w:30,c:'#f43f5e'}],'')}
+        ${ibBar('Visceral Fat Level',ib.visceral_fat_level,0,30,[{w:10,c:'#10b981'},{w:5,c:'#f59e0b'},{w:15,c:'#f43f5e'}],'')}
+        ${ibBar('ECW/TBW (water balance)',ib.ecw_tbw,0.34,0.40,[{w:.04,c:'#10b981'},{w:.02,c:'#f59e0b'}],'')}
+      </div>
+      ${seg?`<div><div class="text-[11px] font-semibold tracking-wide text-[#6b7280] uppercase mb-3">Segmental lean mass</div>${ibSeg(ib.segmental_lean_lb,'#10b981')}<div class="text-[11px] font-semibold tracking-wide text-[#6b7280] uppercase mt-4 mb-3">Segmental fat mass</div>${ibSeg(ib.segmental_fat_lb,'#f43f5e')}</div>`:''}
+    </div>
+    ${ib.target_fat_change_lb!=null?`<div class="mt-5 pt-4 border-t border-[#f1f3f7] text-xs text-[#6b7280]">Fat-lean control target: <b class="text-[#be123c]">${ib.target_fat_change_lb} lb fat</b>${ib.total_body_water_lb!=null?` · Total body water <b class="text-[#3d4a45]">${ib.total_body_water_lb} lb</b>`:''}</div>`:''}
+    <p class="text-[11px] text-[#9aa0ab] mt-3">InBody published ranges: visceral fat healthy under 10 · ECW/TBW healthy 0.36–0.39 · BMI normal 18.5–25. Your provider interprets what these mean for you.</p>`;
+}
+
+// ---- handbook tab renderers ----
+function tabOverview(hb){
+  const n=hb.nutrition||{}, s=hb.summary||{};
+  return `<div class="space-y-5">
+    <p class="text-sm text-[#4b5563] leading-relaxed">${esc(hb.executive_summary||'')}</p>
+    <div>
+      <div class="flex flex-wrap gap-1.5 mb-3">${(n.tags||[]).map(t=>`<span class="chip bg-[#eaf2ff] text-[#0a3d7a]">${esc(t)}</span>`).join('')}</div>
+      <div class="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
+        ${macro('Calories',n.calories)}${macro('Protein',(n.protein||'')+'g')}${macro('Carbs',(n.carbs||'')+'g')}${macro('Fat',(n.fat||'')+'g')}${macro('Fiber',(n.fiber||'')+'g')}${macro('Water',(n.water||'')+'oz')}
+      </div>
+    </div>
+    ${s.medical&&s.medical.length?`<div class="rounded-xl bg-[#fff8f0] border border-[#f3e6d6] p-4"><div class="text-[11px] uppercase tracking-wide text-[#9a7b4f] font-semibold mb-1">Your care team is accounting for</div><div class="text-sm text-[#6b5535]">${s.medical.map(esc).join(' · ')}</div></div>`:''}
+  </div>`;
+}
+function tabMeals(hb){
+  return `<div class="space-y-2.5">${(hb.meals||[]).map((d,i)=>`
+    <details ${i===0?'open':''} class="rounded-xl border border-[#eef0f4] bg-[#fbfcfe]">
+      <summary class="flex items-center justify-between p-3.5">
+        <span class="flex items-center gap-2"><span class="chev text-[#0a6cf5]">▸</span><span class="font-semibold">${esc(d.day)}</span></span>
+        <span class="text-xs text-[#6b7280] seg">${d.kcal} kcal · ${d.protein}g protein</span>
+      </summary>
+      <div class="px-3.5 pb-3.5 space-y-3">
+        ${(d.items||[]).map(m=>`<div class="border-l-2 border-[#d6e6ff] pl-3 ${m.image?'flex gap-3':''}">
+          ${m.image?`<img src="${esc(m.image)}" alt="" loading="lazy" data-zoom data-cap="${esc(m.name)}" class="w-16 h-16 rounded-lg object-cover shrink-0 border border-[#eee] cursor-zoom-in">`:''}
+          <div class="min-w-0">
+            <div class="text-[11px] uppercase tracking-wide text-[#0a6cf5] font-semibold">${esc(m.meal)}</div>
+            <div class="text-sm font-semibold">${esc(m.name)} <span class="text-[#9aa0ab] font-normal seg">· ${m.kcal} kcal · ${m.protein}g</span></div>
+            <div class="text-xs text-[#6b7280] mt-.5">${esc(m.ingredients)}</div>
+            <div class="text-xs text-[#9aa0ab] italic mt-.5">${esc(m.instructions)}</div>
+          </div>
+        </div>`).join('')}
+      </div>
+    </details>`).join('')}</div>`;
+}
+function tabWorkouts(hb){
+  const w=hb.workouts||{};
+  return `<div class="space-y-2.5">
+    ${w.channel?`<a href="https://${esc(w.channel)}" target="_blank" rel="noopener" class="flex items-center gap-2 rounded-xl bg-[#fff1f1] border border-[#ffd9d9] p-3 text-sm hover:border-[#ff9d9d]"><span class="text-[#e23] text-lg">▶</span><span><span class="font-semibold">Form videos on our YouTube channel</span><span class="text-[#9aa0ab]"> · ${esc(w.channel)}</span></span></a>`:''}
+    ${(w.phases||[]).map((ph,i)=>`<details ${i===0?'open':''} class="rounded-xl border border-[#eef0f4] bg-[#fbfcfe]">
+      <summary class="flex items-center justify-between p-3.5">
+        <span class="flex items-center gap-2"><span class="chev text-[#0a6cf5]">▸</span><span class="font-semibold">${esc(ph.name)}</span><span class="chip bg-[#f1f3f7] text-[#6b7280]">Weeks ${esc(ph.weeks)}</span></span>
+        <span class="text-xs text-[#9aa0ab]">${esc(ph.burn||'')}</span>
+      </summary>
+      <div class="px-3.5 pb-3.5">
+        <div class="text-xs text-[#6b7280] mb-1"><b>Focus:</b> ${esc(ph.focus)}</div>
+        <div class="text-xs text-[#6b7280] mb-3"><b>Structure:</b> ${esc(ph.structure)}</div>
+        <div class="space-y-2.5">${(ph.exercises||[]).map(x=>`<div class="border-l-2 border-[#d6e6ff] pl-3 ${x.image?'flex gap-3':''}">
+          ${x.image?`<img src="${esc(x.image)}" alt="" loading="lazy" data-zoom data-cap="${esc(x.name)}" class="w-16 h-16 rounded-lg object-cover shrink-0 border border-[#eee] bg-white cursor-zoom-in">`:''}
+          <div class="min-w-0">
+            <div class="text-sm font-semibold">${esc(x.name)} <span class="text-[#9aa0ab] font-normal seg">· ${esc(x.scheme)}</span></div>
+            <div class="text-xs text-[#6b7280]">${esc(x.detail)}</div>
+            <div class="text-[11px] text-[#9aa0ab] mt-.5">${x.easier?`<b>Easier:</b> ${esc(x.easier)} · `:''}${x.harder?`<b>Harder:</b> ${esc(x.harder)}`:''}</div>
+            ${(x.watch||x.safety)?`<div class="text-[11px] text-[#9aa0ab]">${x.watch?`<b>Watch:</b> ${esc(x.watch)} · `:''}${x.safety?`<b>Safety:</b> ${esc(x.safety)}`:''}</div>`:''}
+          </div>
+        </div>`).join('')}</div>
+      </div>
+    </details>`).join('')}
+  </div>`;
+}
+function tabRoadmap(hb){
+  return `<div class="space-y-4">
+    <div class="space-y-2.5">${(hb.roadmap||[]).map(m=>`<div class="rounded-xl border border-[#eef0f4] bg-[#fbfcfe] p-3.5">
+      <div class="flex items-center justify-between"><div class="font-semibold text-sm">Month ${m.month} · ${esc(m.title)}</div><span class="chip bg-[#eaf2ff] text-[#0a3d7a]">${esc(m.calories)}</span></div>
+      <ul class="mt-2 space-y-1">${(m.swaps||[]).map(s=>`<li class="text-xs text-[#6b7280] flex gap-2"><span class="text-[#0a6cf5]">•</span>${esc(s)}</li>`).join('')}</ul>
+    </div>`).join('')}</div>
+    <div>
+      <div class="text-sm font-semibold mb-2">Weekly habits</div>
+      <div class="space-y-2">${(hb.habits||[]).map(hcard=>`<div class="rounded-xl border border-[#eef0f4] bg-[#fbfcfe] p-3"><div class="text-sm font-semibold">Week ${hcard.week} · ${esc(hcard.title)}</div><div class="text-xs text-[#6b7280] mt-.5">${esc(hcard.benefit)}</div></div>`).join('')}</div>
+    </div>
+    <div>
+      <div class="text-sm font-semibold mb-2">Swaps for your lactose intolerance</div>
+      <ul class="space-y-1">${(hb.substitutions||[]).map(s=>`<li class="text-xs text-[#6b7280] flex gap-2"><span class="text-[#0a6cf5]">→</span>${esc(s)}</li>`).join('')}</ul>
+    </div>
+  </div>`;
+}
+
+// Phase 1 gamification streaks, points, weekly activity, badges (all derived client-side)
+function gamify(){
+  const PTS={food:10,weigh_in:5,journal:5,activity:15,scan:10,module:25};
+  const logs=DATA.logs||[], ib=DATA.inbody||[], plan=DATA.plan, hb=plan&&plan.handbook;
+  const dk=(iso)=>new Date(iso).toDateString(), today=new Date().toDateString();
+  let points=0, ptsToday=0; const dates=new Set();
+  logs.forEach(l=>{ const pt=PTS[l.kind]||5; points+=pt; const k=dk(l.logged_at); dates.add(k); if(k===today) ptsToday+=pt; });
+  let streak=0, cur=new Date(); if(!dates.has(cur.toDateString())) cur.setDate(cur.getDate()-1);
+  while(dates.has(cur.toDateString())){ streak++; cur.setDate(cur.getDate()-1); }
+  let week=0; for(let i=0;i<7;i++){ const d=new Date(); d.setDate(d.getDate()-i); if(dates.has(d.toDateString())) week++; }
+  const start=(hb&&hb.summary&&hb.summary.weight)||(ib[0]&&+ib[0].weight_lb)||null;
+  const goal=(plan&&plan.goal_weight)||(hb&&hb.summary&&hb.summary.goal_weight)||null;
+  const wlogs=logs.filter(l=>l.kind==='weigh_in'&&l.value_num!=null);
+  const cw=wlogs.length?+wlogs[0].value_num:(latestW()!=null?latestW():start);
+  function latestW(){ return ib.length?+ib[ib.length-1].weight_lb:null; }
+  const lost=(start!=null&&cw!=null)?(start-cw):0, n=logs.length;
+  const B=(id,icon,label,earned)=>({id,icon,label,earned:!!earned});
+  const badges=[
+    B('first','👣','First step',n>=1),
+    B('weigh','⚖️','First weigh-in',logs.some(l=>l.kind==='weigh_in')),
+    B('food','🍽️','Food logged',logs.some(l=>l.kind==='food')),
+    B('s3','🔥','3-day streak',streak>=3),
+    B('s7','🗓️','Week warrior',streak>=7),
+    B('d5','📉','Down 5 lb',lost>=5),
+    B('d10','💪','Down 10 lb',lost>=10),
+    B('l50','⭐','50 logs',n>=50),
+    B('phd','🎓','PhD scholar',new Set(logs.filter(l=>l.kind==='module').map(l=>(l.body||'').split(':')[0])).size>=3),
+    B('goal','🏆','Goal reached',goal!=null&&cw!=null&&cw<=goal),
+  ];
+  return {points,ptsToday,streak,week,lost:Math.max(0,Math.round(lost*10)/10),badges,earned:badges.filter(b=>b.earned).length};
+}
+
+function render(){
+  const p=DATA.patient, ib=DATA.inbody||[], latest=ib[ib.length-1];
+  const plan=DATA.plan, hb=plan&&plan.handbook? plan.handbook : null;
+  const goal = (plan&&plan.goal_weight)||(hb&&hb.summary&&hb.summary.goal_weight)||null;
+  const start = (hb&&hb.summary&&hb.summary.weight)|| (ib[0]&&+ib[0].weight_lb) || null;
+  // current weight: latest weigh-in log beats InBody
+  const wLogs=(DATA.logs||[]).filter(l=>l.kind==='weigh_in'&&l.value_num!=null);
+  const current = wLogs.length? +wLogs[0].value_num : (latest? +latest.weight_lb : start);
+  $('hello').textContent = 'Hi, '+esc(p.first);
+
+  // progress hero
+  let progress='';
+  if (start&&goal){
+    const lost = (start-current), totalToGo=(start-goal)||1, pct=Math.max(0,Math.min(100, (lost/totalToGo)*100));
+    progress=`<section class="card p-6">
+      <div class="flex items-center justify-between mb-4"><h2 class="font-display text-lg font-semibold">Your transformation</h2><span class="chip bg-[#eaf2ff] text-[#0a3d7a]">${hb?esc(hb.system||'VBIS'):'InBody'}</span></div>
+      <div class="grid grid-cols-3 gap-3 mb-4 text-center">
+        <div><div class="text-[11px] uppercase tracking-wide text-[#9aa0ab] font-semibold">Start</div><div class="font-display text-2xl font-semibold seg">${start.toFixed(1)}</div></div>
+        <div><div class="text-[11px] uppercase tracking-wide text-[#0a6cf5] font-semibold">Current</div><div class="font-display text-3xl font-semibold seg text-[#0a6cf5]">${current.toFixed(1)}</div></div>
+        <div><div class="text-[11px] uppercase tracking-wide text-[#9aa0ab] font-semibold">Goal</div><div class="font-display text-2xl font-semibold seg">${(+goal).toFixed(0)}</div></div>
+      </div>
+      <div class="h-2 rounded-full bg-[#eef0f4] overflow-hidden mb-1"><div class="h-full bg-[#0a6cf5] rounded-full" style="width:${pct.toFixed(0)}%"></div></div>
+      <div class="text-xs text-[#6b7280] mb-4">${lost>0?`<b class="text-[#0a6cf5]">${lost.toFixed(1)} lb</b> down · ${(current-goal).toFixed(0)} lb to goal`:`${(start-goal).toFixed(0)} lb to your goal`}</div>
+      ${hb&&hb.projections? `<div class="text-[11px] uppercase tracking-wide text-[#9aa0ab] font-semibold mb-1">Your projected path</div>`+projChart(start, hb.projections, current):''}
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+        ${latest?stat('Weight',(+latest.weight_lb).toFixed(1)+' lb'):''}
+        ${latest&&latest.pbf_pct!=null?stat('Body fat',(+latest.pbf_pct).toFixed(1)+'%'):''}
+        ${latest&&latest.smm_lb!=null?stat('Muscle',(+latest.smm_lb).toFixed(1)+' lb'):''}
+        ${latest&&latest.visceral_fat_level!=null?stat('Visceral fat',(+latest.visceral_fat_level).toFixed(0)):''}
+      </div>
+      ${hb&&hb.rescan?`<div class="mt-4 rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 flex items-center justify-between"><span class="text-sm text-[#6b7280]">Next InBody scan</span><span class="text-sm font-semibold">${fmtDate(hb.rescan.next)} <span class="text-[#9aa0ab] font-normal">· every ${hb.rescan.interval_days} days</span></span></div>`:''}
+    </section>`;
+  } else {
+    progress=`<section class="card p-6"><h2 class="font-display text-lg font-semibold mb-2">Your progress</h2><p class="text-sm text-[#6b7280]">Your first InBody scan will appear here and start your trend line.</p></section>`;
+  }
+
+  // InBody body-composition report (mirrors the staff CRM panel) + printable
+  let inbodyReport='';
+  if (latest){
+    inbodyReport=`<section id="inbodyReport" class="card p-6">
+      <div class="print-letterhead print-only"></div>
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <div><h2 class="font-display text-lg font-semibold">InBody body composition</h2><div class="text-xs text-[#6b7280] mt-.5">${latest.model?esc(latest.model)+' · ':''}${fmtDate(latest.test_date)}</div></div>
+        <button onclick="printReport()" class="no-print px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">🖨 Print report</button>
+      </div>
+      ${reportHTML(latest)}
+    </section>`;
+  }
+
+  // plan (handbook tabs)
+  let planHtml='';
+  if (hb){
+    planHtml=`<section id="planSection" class="card p-6">
+      <div class="print-letterhead print-only"></div>
+      <div class="flex items-center justify-between mb-1 flex-wrap gap-2">
+        <h2 class="font-display text-lg font-semibold">${esc(plan.title||'Your plan')}</h2>
+        <div class="flex items-center gap-2">
+          <span class="chip bg-[#eaf2ff] text-[#0a3d7a]">${esc(hb.type||'')}</span>
+          <button onclick="printPlan()" class="no-print px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">🖨 Print plan</button>
+        </div>
+      </div>
+      <p class="text-xs text-[#9aa0ab] mb-4">Issued ${fmtDate(hb.issued)} · ${esc(hb.provider||'Vitality')}</p>
+      <div class="screen-only">
+        <div id="ptabs" class="flex gap-1.5 overflow-x-auto pb-3 mb-1">
+          <span class="tab on" data-t="overview">Overview</span>
+          <span class="tab" data-t="meals">Meal plan</span>
+          <span class="tab" data-t="workouts">Workouts</span>
+          <span class="tab" data-t="roadmap">Roadmap &amp; habits</span>
+        </div>
+        <div id="ptab-body"></div>
+      </div>
+      <div class="print-only space-y-5">
+        <div><h3 class="font-display font-semibold mb-2">Overview</h3>${tabOverview(hb)}</div>
+        <div><h3 class="font-display font-semibold mb-2">Meal plan</h3>${tabMeals(hb)}</div>
+        <div><h3 class="font-display font-semibold mb-2">Workouts</h3>${tabWorkouts(hb)}</div>
+        <div><h3 class="font-display font-semibold mb-2">Roadmap &amp; habits</h3>${tabRoadmap(hb)}</div>
+      </div>
+      ${hb.disclaimer?`<p class="text-[11px] text-[#9aa0ab] mt-5 pt-3 border-t border-[#f1f3f7]">${esc(hb.disclaimer)}</p>`:''}
+    </section>`;
+  } else if (plan){
+    planHtml=`<section class="card p-6"><h2 class="font-display text-lg font-semibold mb-2">${esc(plan.title||'Your plan')}</h2><p class="text-sm text-[#6b7280]">${esc(plan.summary||'')}</p></section>`;
+  } else {
+    planHtml=`<section class="card p-6"><h2 class="font-display text-lg font-semibold mb-2">Your plan</h2><p class="text-sm text-[#6b7280]">Your personalized plan from your care team will appear right here, no PDF to dig out of your inbox.</p></section>`;
+  }
+
+  // next appointment
+  const na=DATA.nextAppt;
+  const appt=`<details class="card overflow-hidden"><summary class="flex items-center justify-between p-5"><div><h2 class="font-display text-lg font-semibold">Next appointment</h2>${na?`<div class="text-xs text-[#6b7280] mt-.5">${fmtWhen(na.when)}</div>`:''}</div><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
+    ${na?`<div class="rounded-xl bg-[#eaf2ff] border border-[#d6e6ff] p-3"><div class="font-semibold text-[#0a3d7a] text-sm">${esc(na.type||'Visit')}</div><div class="text-sm">${fmtWhen(na.when)}</div><div class="text-xs text-[#6b7280] mt-.5">${na.provider?'with '+esc(na.provider)+' · ':''}(702) 602-5002 to change</div></div>`:`<p class="text-sm text-[#6b7280]">No upcoming appointment. Call (702) 602-5002 to schedule.</p>`}
+  </div></details>`;
+
+  // logging
+  const logs=DATA.logs||[];
+  const _today=new Date().toDateString();
+  const kcalToday=logs.filter(l=>l.kind==='food'&&new Date(l.logged_at).toDateString()===_today).reduce((s,l)=>s+(+l.value_num||0),0);
+  const kcalTarget=hb&&hb.nutrition?hb.nutrition.calories:null;
+  const logList=logs.length? logs.map(l=>`<div class="flex items-start gap-3 py-2 border-b border-[#f1f3f7] last:border-0">
+    <span class="chip ${l.kind==='weigh_in'?'bg-[#eaf2ff] text-[#0a3d7a]':l.kind==='food'?'bg-[#eafaf0] text-[#0a7a3d]':'bg-[#f1f3f7] text-[#6b7280]'} mt-.5 shrink-0">${l.kind==='weigh_in'?'Weigh-in':l.kind==='food'?'Food':l.kind==='activity'?'Activity':'Journal'}</span>
+    <div class="min-w-0"><div class="text-sm">${l.value_num!=null?`<span class="font-semibold seg">${esc(l.value_num)}${esc(l.unit||'')}</span> `:''}${esc(l.body||'')}</div><div class="text-[11px] text-[#9aa0ab]">${fmtAgo(l.logged_at)}</div></div>
+  </div>`).join('') : `<p class="text-sm text-[#9aa0ab] py-2">No entries yet. Log a weigh-in, a food, or a quick note.</p>`;
+  const logging=`<details class="card overflow-hidden"><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Track today</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
+    ${kcalTarget?`<div class="mb-4 rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3"><div class="flex justify-between text-xs mb-1"><span class="text-[#6b7280] font-semibold">Today's intake</span><span class="seg ${kcalToday>kcalTarget?'text-rose-600':'text-[#16201d]'}">${kcalToday} / ${kcalTarget} kcal</span></div><div class="h-1.5 rounded-full bg-[#eef0f4] overflow-hidden"><div class="h-full ${kcalToday>kcalTarget?'bg-rose-400':'bg-[#0a6cf5]'} rounded-full" style="width:${Math.min(100,kcalToday/kcalTarget*100).toFixed(0)}%"></div></div></div>`:''}
+    <div class="flex flex-wrap gap-2 items-end mb-2"><div><label class="text-[11px] font-semibold text-[#6b7280]">Weight (lb)</label><input id="wIn" type="number" step="0.1" class="field mt-1" style="width:120px" placeholder=" "></div><button id="wBtn" class="px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Log weigh-in</button></div>
+    <div class="flex gap-2 items-end mb-3"><div class="flex-1"><label class="text-[11px] font-semibold text-[#6b7280]">Journal / note</label><input id="jIn" type="text" class="field mt-1" placeholder="Energy, sleep, pain, wins…"></div><button id="jBtn" class="px-4 py-2.5 rounded-xl bg-white border border-[#e6e9ee] text-sm font-semibold hover:border-[#0a6cf5]">Add</button></div>
+    <div class="mb-4"><label class="text-[11px] font-semibold text-[#6b7280]">Log a food</label>
+      <div class="flex gap-2 items-end mt-1"><input id="foodIn" type="text" class="field flex-1" placeholder="Search a food, e.g. grilled chicken"><button id="foodBtn" class="px-4 py-2.5 rounded-xl bg-white border border-[#e6e9ee] text-sm font-semibold hover:border-[#0a6cf5]">Search</button></div>
+      <div id="foodResults" class="mt-1"></div>
+    </div>
+    <div id="logList" class="max-h-64 overflow-y-auto">${logList}</div>
+  </div></details>`;
+
+  const TEAM=[{n:'Dr. Peter DeBry, MD',r:'Medical Director · Obesity Medicine',img:'assets/debry.jpg'},{n:'Richard DeVera, NP',r:'Nurse Practitioner',img:'assets/devera.jpg'}];
+  const team=`<section class="card p-6"><h2 class="font-display text-lg font-semibold mb-3">Your care team</h2><div class="grid grid-cols-3 gap-4">${TEAM.map(t=>`<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-4 text-center"><img src="${t.img}" alt="${esc(t.n)}" loading="lazy" class="h-16 w-16 rounded-full object-cover mx-auto mb-2 border border-[#e6e9ee]"><div class="text-sm font-semibold leading-tight">${esc(t.n)}</div><div class="text-xs text-[#6b7280] mt-1 leading-tight">${esc(t.r)}</div></div>`).join('')}</div></section>`;
+
+  const companion = QR_URL?`<details class="card overflow-hidden"><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Take your plan to the store</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5 text-center"><p class="text-sm text-[#6b7280] mb-4">Scan with your phone to open your meals, shopping list, and a barcode scanner that checks if a product fits your plan.</p><div id="qrBox" class="inline-block p-3 bg-white rounded-2xl border border-[#e6e9ee]"></div></div></details>`:'';
+  const g=gamify();
+  const rewards=`<details class="card overflow-hidden"><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Rewards</h2><span class="flex items-center gap-2 text-xs text-[#9aa0ab]">${g.earned}/${g.badges.length} badges <span class="chev text-[#0a6cf5]">▸</span></span></summary><div class="px-5 pb-5">
+    <div class="grid grid-cols-3 gap-2.5 mb-4 text-center">
+      <div class="rounded-xl bg-[#fff4ed] border border-[#ffe2cf] p-3"><div class="font-display text-2xl font-semibold">${g.streak}<span class="text-base"> 🔥</span></div><div class="text-[10px] text-[#9a7b4f] font-semibold uppercase tracking-wide">day streak</div></div>
+      <div class="rounded-xl bg-[#eaf2ff] border border-[#d6e6ff] p-3"><div class="font-display text-2xl font-semibold seg">${g.points}</div><div class="text-[10px] text-[#0a3d7a] font-semibold uppercase tracking-wide">points</div></div>
+      <div class="rounded-xl bg-[#eafaf0] border border-[#cdeedd] p-3"><div class="font-display text-2xl font-semibold seg">${g.week}/7</div><div class="text-[10px] text-[#0a7a3d] font-semibold uppercase tracking-wide">this week</div></div>
+    </div>
+    <div class="grid grid-cols-3 gap-2">
+      ${g.badges.map(b=>`<div class="rounded-xl border p-2 text-center ${b.earned?'bg-white border-[#e6e9ee]':'bg-[#f7f8fa] border-[#eef0f4] opacity-40'}"><div class="text-2xl leading-none mb-1">${b.icon}</div><div class="text-[10px] font-semibold ${b.earned?'text-[#16201d]':'text-[#9aa0ab]'} leading-tight">${esc(b.label)}</div></div>`).join('')}
+    </div>
+    <a href="rewards.html" class="mt-4 flex items-center justify-center gap-1 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Open Rewards <span>→</span></a>
+  </div></details>`;
+  // Approved-for-you: what they qualify for + push the request to the doctor + pay (Clover).
+  // If flagged for review, show a gracious "under review" notice instead of the buy options.
+  const tags=(p.tags||[]), needsReview=tags.includes('needs-review'), glp1ok=tags.includes('glp1-eligible'), medicareok=tags.includes('medicare-glp1-eligible');
+  const MEDS=[
+    {name:'Compounded Semaglutide',sub:'Weekly injection · same active ingredient as Ozempic & Wegovy',price:'$145 first month, then $199/mo',clover:'https://link.clover.com/urlshortener/fw4vjT'},
+    {name:'Compounded Tirzepatide',sub:'Weekly injection · same active ingredient as Mounjaro & Zepbound',price:'$249 first month, then $399/mo',clover:'https://link.clover.com/urlshortener/2T5N7F'},
+    {name:'Oral Semaglutide No-Needle',sub:'Daily sublingual troche · no injections, ever',price:'$199 first month, then $299/mo',clover:'https://link.clover.com/urlshortener/9h9CJ7'}
+  ];
+  let approved='';
+  if (needsReview){
+    approved=`<section class="card p-6">
+      <div class="flex items-center justify-between mb-1 flex-wrap gap-2"><h2 class="font-display text-lg font-semibold">Your intake is under review</h2><span class="chip bg-[#fff7ed] text-[#9a5a00]">In review</span></div>
+      <p class="text-sm text-[#6b7280]">Thanks for completing your intake. Before we can offer the prescription program, our care team needs to review a couple of your health answers. We'll reach out, usually within one business day. Vitality offers more than medication, and we'll help you find the path that's safe and right for you. Questions? Call <a href="tel:+17026025002" class="text-[#0a6cf5] font-medium">(702) 602-5002</a>.</p>
+    </section>`;
+  } else if (glp1ok || medicareok){
+    approved=`<section class="card p-6">
+      <div class="flex items-center justify-between mb-1 flex-wrap gap-2"><h2 class="font-display text-lg font-semibold">Approved for you</h2><span class="chip bg-[#eafaf0] text-[#0a7a3d]">Cleared medical screening</span></div>
+      <p class="text-sm text-[#6b7280] mb-4">Based on your intake, Dr. DeBry can review and prescribe. Choose your medication to send your request and check out. <b>If Dr. DeBry declines at review, you're fully refunded.</b></p>
+      ${medicareok?`<div class="rounded-xl bg-[#fff7ed] border border-[#ffe2cf] p-3 mb-4"><div class="text-sm font-semibold text-[#9a5a00]">★ Medicare $50/mo GLP-1 Bridge <span class="text-[11px] font-normal text-[#9aa0ab]">(pending provider confirmation)</span></div><div class="text-sm text-[#6b7280] mt-1">You may qualify for brand-name Wegovy or Zepbound at about $50/month. Dr. DeBry confirms Medicare details at review.</div></div>`:''}
+      <div class="space-y-3">
+        ${MEDS.map(m=>`<div class="rounded-xl border border-[#e6e9ee] p-4">
+          <div class="font-semibold text-sm">${m.name}</div>
+          <div class="text-xs text-[#6b7280] mt-.5">${m.sub}</div>
+          <div class="text-sm font-semibold text-[#0a6cf5] mt-1">${m.price}</div>
+          <button class="reqBtn mt-3 w-full py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]" data-name="${esc(m.name)}" data-clover="${m.clover}">Request from Dr. DeBry &amp; check out →</button>
+        </div>`).join('')}
+      </div>
+    </section>`;
+  }
+  $('content').innerHTML=`
+    <div><h1 class="font-display text-2xl font-semibold tracking-[-.5px]">Welcome back, ${esc(p.first)}</h1>
+    <p class="text-sm text-[#6b7280] mt-1">${PROGRAMS[p.program]||'Your program'} · <span class="capitalize">${esc((p.status||'').replace('_',' '))}</span></p></div>
+    <div class="grid lg:grid-cols-3 gap-6 items-start">
+      <div class="lg:col-span-2 space-y-6">${approved}${team}${progress}${inbodyReport}${planHtml}</div>
+      <div class="space-y-6">${appt}${logging}${rewards}${companion}</div>
+    </div>`;
+  document.querySelectorAll('.reqBtn').forEach(b=>b.onclick=async()=>{
+    b.disabled=true; b.textContent='Sending to Dr. DeBry…';
+    try{ await api({action:'add_log', kind:'journal', body:'Requested '+b.dataset.name+' sent to Dr. DeBry for asynchronous review, then checkout.'}); }catch(e){}
+    window.location.href=b.dataset.clover;
+  });
+  if(QR_URL && window.QRCode){ const qb=$('qrBox'); if(qb){ qb.innerHTML=''; new QRCode(qb,{text:QR_URL,width:170,height:170,colorDark:'#16201d',colorLight:'#ffffff'}); } }
+
+  // tabs
+  if (hb){
+    const renderers={overview:tabOverview,meals:tabMeals,workouts:tabWorkouts,roadmap:tabRoadmap};
+    const body=$('ptab-body'); body.innerHTML=tabOverview(hb);
+    $('ptabs').querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+      $('ptabs').querySelectorAll('.tab').forEach(x=>x.classList.remove('on')); t.classList.add('on');
+      body.innerHTML=(renderers[t.dataset.t]||tabOverview)(hb);
+    });
+  }
+  // logging wire
+  const refresh=async()=>{ DATA=await api({action:'load'}); render(); };
+  $('wBtn').onclick=async()=>{ const v=parseFloat($('wIn').value); if(isNaN(v))return; $('wBtn').disabled=true; await api({action:'add_log',kind:'weigh_in',value_num:v,unit:' lb'}); await refresh(); };
+  $('jBtn').onclick=async()=>{ const t=$('jIn').value.trim(); if(!t)return; $('jBtn').disabled=true; await api({action:'add_log',kind:'journal',body:t}); await refresh(); };
+  // food search (USDA FoodData Central, no PHI) -> log macros against plan target
+  const foodBtn=$('foodBtn');
+  if(foodBtn){
+    const doFood=async()=>{
+      const q=$('foodIn').value.trim(); if(!q)return;
+      const box=$('foodResults'); box.innerHTML='<div class="text-xs text-[#9aa0ab] py-2">Searching…</div>';
+      try{
+        const r=await fetch(FN.replace('vit-portal-data','vit-food-search'),{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON,'Authorization':'Bearer '+TOKEN},body:JSON.stringify({query:q})});
+        const d=await r.json(); const foods=(d&&d.foods)||[];
+        if(!foods.length){ box.innerHTML='<div class="text-xs text-[#9aa0ab] py-2">'+(d&&d.rate_limited?'Food lookup is busy, try again in a minute.':'No matches.')+'</div>'; return; }
+        box.innerHTML=foods.map((f,i)=>`<div data-i="${i}" class="flex items-center gap-2 py-2 border-b border-[#f1f3f7] last:border-0">
+          <div class="min-w-0 flex-1"><div class="text-sm truncate">${esc(f.name)}${f.brand?` <span class="text-[#9aa0ab] text-xs">${esc(f.brand)}</span>`:''}</div><div class="text-[11px] text-[#9aa0ab]">100g · ${f.kcal} kcal · ${f.protein}P · ${f.carbs}C · ${f.fat}F</div></div>
+          <input class="fg field" type="number" value="100" min="1" style="width:62px;padding:.35rem .4rem">
+          <span class="text-[11px] text-[#9aa0ab]">g</span>
+          <button class="fb px-3 py-1.5 rounded-lg bg-[#0a6cf5] text-white text-xs font-semibold shrink-0">Log</button>
+        </div>`).join('');
+        box.querySelectorAll('[data-i]').forEach(row=>{
+          const f=foods[+row.dataset.i];
+          row.querySelector('.fb').onclick=async()=>{
+            const g=parseFloat(row.querySelector('.fg').value)||100, k=g/100;
+            await api({action:'add_log',kind:'food',value_num:Math.round(f.kcal*k),unit:' kcal',body:`${f.name} (${g}g) · ${Math.round(f.protein*k)}g P · ${Math.round(f.carbs*k)}g C · ${Math.round(f.fat*k)}g F`});
+            $('foodIn').value=''; box.innerHTML=''; await refresh();
+          };
+        });
+      }catch(e){ box.innerHTML='<div class="text-xs text-rose-600 py-2">Search failed.</div>'; }
+    };
+    foodBtn.onclick=doFood;
+    $('foodIn').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); doFood(); }});
+  }
+}
+
+// ---- printing: isolate one section, add a clinic letterhead, print ----
+function doPrint(el){
+  if(!el) return;
+  const p=(DATA&&DATA.patient)||{};
+  const lh=el.querySelector('.print-letterhead');
+  if(lh) lh.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #0a6cf5;padding-bottom:8px;margin-bottom:16px">
+    <div><div class="font-display" style="font-weight:700;letter-spacing:.15em;text-transform:uppercase;font-size:18px">VITALITY</div><div style="font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#0a6cf5">Weight Loss</div></div>
+    <div style="text-align:right;font-size:12px">${esc((p.first||'')+' '+(p.last||''))}<br><span style="color:#6b7280">${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</span></div>
+  </div>`;
+  const done=()=>{ el.classList.remove('print-target'); document.body.classList.remove('printing'); window.removeEventListener('afterprint',done); };
+  window.addEventListener('afterprint',done);
+  el.classList.add('print-target'); document.body.classList.add('printing');
+  window.print();
+  setTimeout(done,1500);
+}
+window.printReport=()=>doPrint(document.getElementById('inbodyReport'));
+window.printPlan=()=>doPrint(document.getElementById('planSection'));
+
+// image lightbox: click any meal/exercise thumbnail to see it large
+(function(){ const lb=$('lightbox'); if(!lb) return;
+  document.addEventListener('click',(e)=>{ const z=e.target.closest&&e.target.closest('img[data-zoom]'); if(z){ $('lbImg').src=z.src; $('lbCap').textContent=z.getAttribute('data-cap')||''; lb.classList.remove('hidden'); lb.classList.add('flex'); } });
+  lb.addEventListener('click',()=>{ lb.classList.add('hidden'); lb.classList.remove('flex'); });
+})();
+
+DATA = await api({action:'load'}).catch(()=>null);
+if (!DATA || !DATA.ok){
+  // NEVER auto-signout+redirect here: a failed load (staff account, network blip,
+  // function error) would bounce straight back to portal-login and read as a login loop.
+  // Surface the real reason and let the user choose — no automatic bounce.
+  console.warn('portal load failed:', DATA);
+  const isStaff = !!(DATA && /staff/i.test(DATA.error||''));
+  $('loading').classList.remove('hidden');
+  $('loading').innerHTML = isStaff
+    ? 'This is a staff account, not a patient login. Open the <a href="login.html" class="text-[#0a6cf5] font-semibold underline">staff dashboard</a> instead.'
+    : 'We couldn’t load your portal right now. <a href="portal-login.html" class="text-[#0a6cf5] font-semibold underline">Sign in again</a> or call the clinic at (702) 602-5002.';
+}
+else if (!DATA.patient){ $('loading').classList.add('hidden'); $('nolink').classList.remove('hidden'); }
+else {
+  $('loading').classList.add('hidden');
+  try{ const mt=await api({action:'mint_token'}); if(mt&&mt.token) QR_URL=location.origin+'/m.html#t='+mt.token; }catch(e){}
+  $('content').classList.remove('hidden');
+  try { render(); }
+  catch(e){ console.error('portal render error:', e); $('loading').textContent='Something went wrong loading your dashboard. Please refresh.'; $('loading').classList.remove('hidden'); }
+}
+</script>
+</body>
+</html>

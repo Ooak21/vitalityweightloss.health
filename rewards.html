@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rewards My Vitality</title>
+<meta name="robots" content="noindex">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:#f7f8fa;color:#16201d}
+  .font-display{font-family:'Montserrat','Inter',sans-serif}
+  .card{background:#fff;border:1px solid #e6e9ee;border-radius:20px;box-shadow:0 18px 44px -30px rgba(16,24,40,0.18)}
+  .seg{font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body class="min-h-screen">
+
+<header class="sticky top-0 z-20 bg-white/85 backdrop-blur border-b border-[#e6e9ee]">
+  <div class="max-w-3xl mx-auto px-5 h-16 flex items-center justify-between">
+    <a href="portal.html" class="flex items-center gap-2 text-sm text-[#6b7280] hover:text-[#16201d]"><span>←</span> My Vitality</a>
+    <div class="flex items-center gap-2.5"><img src="assets/logo-icon.png" alt="Vitality" class="h-7 w-auto"><span class="font-display font-semibold">Rewards</span></div>
+    <button id="signout" class="text-xs text-[#6b7280] hover:text-[#16201d]">Sign out</button>
+  </div>
+</header>
+
+<main class="max-w-3xl mx-auto px-5 py-8">
+  <div id="loading" class="text-center text-[#6b7280] py-24 text-sm">Loading your rewards…</div>
+  <div id="content" class="hidden space-y-6"></div>
+</main>
+
+<div id="modModal" class="hidden fixed inset-0 z-50 bg-black/50 items-start justify-center p-4 overflow-y-auto">
+  <div class="bg-white rounded-2xl max-w-lg w-full my-6 max-h-[88vh] flex flex-col shadow-xl">
+    <div class="p-5 border-b border-[#e6e9ee] flex items-center justify-between shrink-0">
+      <h3 id="modTitle" class="font-display font-semibold text-lg"></h3>
+      <button id="modClose" class="text-[#6b7280] hover:text-[#16201d] text-xl">×</button>
+    </div>
+    <div id="modBody" class="p-5 overflow-y-auto"></div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const SB='https://jtifhcvbgxqwlywugvjv.supabase.co', ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWZoY3ZiZ3hxd2x5d3Vndmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDc5NTgsImV4cCI6MjA4ODA4Mzk1OH0.UfRVLuvM8_HPvKXUEDXb0cxR50znv16L5Tf99AnSc7g';
+const sb = createClient(SB, ANON, { auth:{ storageKey:'sb-vit-patient', persistSession:true } });
+const FN = SB + '/functions/v1/vit-portal-data';
+const $=(id)=>document.getElementById(id);
+const esc=(s)=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let TOKEN=null, DATA=null;
+
+// Convex cutover flag. OFF = legacy Supabase edge fn (live, unchanged). Flip at cutover.
+const USE_CONVEX = true;
+const CONVEX_URL = 'https://quixotic-cat-492.convex.cloud';
+let convex = null;
+
+// Milestone B: identity is Convex-native. Flip USE_CONVEX_AUTH=false to roll back to Supabase.
+const USE_CONVEX_AUTH = true;
+let signOutFn;
+if (USE_CONVEX_AUTH) {
+  const { getToken, signOut, STORE_PATIENT } = await import('./auth-convex.js');
+  TOKEN = await getToken(STORE_PATIENT);
+  if (!TOKEN){ location.replace('portal-login.html'); throw new Error('no session'); }
+  signOutFn = () => signOut(STORE_PATIENT);
+} else {
+  const { data:{ session } } = await sb.auth.getSession();
+  if (!session){ location.replace('portal-login.html'); throw new Error('no session'); }
+  TOKEN = session.access_token;
+  signOutFn = () => sb.auth.signOut();
+}
+if (USE_CONVEX) {
+  const { ConvexHttpClient } = await import('https://esm.sh/convex@1.41.0/browser');
+  convex = new ConvexHttpClient(CONVEX_URL);
+  convex.setAuth(TOKEN);
+}
+$('signout').onclick = ()=> signOutFn().then(()=>location.replace('portal-login.html'));
+async function api(payload){
+  const a = payload || {};
+  if (USE_CONVEX) {
+    if (a.action === 'load')       return await convex.query('portal:loadPortal', {});
+    if (a.action === 'add_log')    return await convex.mutation('portal:addLog', { kind:a.kind, value_num:a.value_num, unit:a.unit, body:a.body });
+    if (a.action === 'mint_token') return await convex.mutation('portal:mintToken', {});
+    return { ok:false, error:'unknown action' };
+  }
+  const r=await fetch(FN,{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON,'Authorization':'Bearer '+TOKEN},body:JSON.stringify(payload||{})}); return await r.json();
+}
+
+function gamify(){
+  const PTS={food:10,weigh_in:5,journal:5,activity:15,scan:10,module:25};
+  const logs=DATA.logs||[], ib=DATA.inbody||[], plan=DATA.plan, h=plan&&plan.handbook;
+  const dk=(iso)=>new Date(iso).toDateString();
+  let points=0; const dates=new Set();
+  logs.forEach(l=>{ points+=PTS[l.kind]||5; dates.add(dk(l.logged_at)); });
+  let streak=0, cur=new Date(); if(!dates.has(cur.toDateString())) cur.setDate(cur.getDate()-1);
+  while(dates.has(cur.toDateString())){ streak++; cur.setDate(cur.getDate()-1); }
+  const days14=[]; for(let i=13;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); days14.push({label:d.toLocaleDateString('en-US',{weekday:'narrow'}), active:dates.has(d.toDateString())}); }
+  const week=days14.slice(7).filter(d=>d.active).length;
+  const start=(h&&h.summary&&h.summary.weight)||(ib[0]&&+ib[0].weight_lb)||null;
+  const goal=(plan&&plan.goal_weight)||(h&&h.summary&&h.summary.goal_weight)||null;
+  const wl=logs.filter(l=>l.kind==='weigh_in'&&l.value_num!=null);
+  const cw=wl.length?+wl[0].value_num:(ib.length?+ib[ib.length-1].weight_lb:start);
+  const lost=(start!=null&&cw!=null)?(start-cw):0, n=logs.length;
+  const doneMods=new Set(logs.filter(l=>l.kind==='module').map(l=>(l.body||'').split(':')[0].trim())).size;
+  const B=(i,l,d,e)=>({icon:i,label:l,desc:d,earned:!!e});
+  const badges=[
+    B('👣','First step','Log your first anything',n>=1),
+    B('⚖️','First weigh-in','Log a weight',logs.some(l=>l.kind==='weigh_in')),
+    B('🍽️','Food logged','Log a meal or food',logs.some(l=>l.kind==='food')),
+    B('🔥','3-day streak','Log 3 days in a row',streak>=3),
+    B('🗓️','Week warrior','Log 7 days in a row',streak>=7),
+    B('📉','Down 5 lb','Drop 5 lb from start',lost>=5),
+    B('💪','Down 10 lb','Drop 10 lb from start',lost>=10),
+    B('⭐','50 logs','Log 50 entries total',n>=50),
+    B('🎓','PhD scholar','Finish 3 lessons',doneMods>=3),
+    B('🏆','Goal reached','Hit your goal weight',goal!=null&&cw!=null&&cw<=goal),
+  ];
+  return {points,streak,week,days14,lost:Math.max(0,Math.round(lost*10)/10),badges,earned:badges.filter(b=>b.earned).length};
+}
+
+// ---- PhD education modules (starter content; clinic can revise/expand) ----
+const MODULES=[
+  {slug:'nutrition',icon:'🥗',title:'Nutrition foundations',
+    lessons:[
+      {heading:'Protein first',body:'Build every meal around a palm or two of protein. Protein keeps you full, steadies your energy, and protects the muscle you want to keep while you lose fat. Aim for a source at breakfast, lunch, and dinner.'},
+      {heading:'Fill half your plate with vegetables',body:'Vegetables add fiber and volume for very few calories, so you feel satisfied on less. Aim for about two cups of non starchy vegetables at your main meals, cooked or raw, however you enjoy them.'},
+      {heading:'Smart carbs and healthy fats',body:'Choose whole grain, high fiber carbs like quinoa, brown rice, oats, and beans over white bread and sugar. Add a thumb of healthy fat like olive oil, avocado, or nuts for flavor and fullness.'}],
+    quiz:[
+      {q:'What should you build each meal around?',options:['Bread','Protein','Juice'],answer:1},
+      {q:'About how much of your plate should be non starchy vegetables?',options:['A quarter','Half','None'],answer:1},
+      {q:'Which is the smarter carb choice?',options:['White bread','Quinoa or beans','Candy'],answer:1}]},
+  {slug:'glp1',icon:'💉',title:'GLP-1, what to expect',
+    lessons:[
+      {heading:'How it helps',body:'A GLP-1 medication lowers appetite and slows how fast your stomach empties, so you feel full sooner and longer. It is a tool that makes the plan easier to follow, not a replacement for the plan.'},
+      {heading:'Take it consistently',body:'Use it exactly as your provider prescribes, on the same day each week, and rotate your injection sites. Never change your dose on your own. If you miss a dose, ask your care team rather than doubling up.'},
+      {heading:'Managing side effects',body:'Mild nausea is common early and usually settles as your body adjusts. Eat smaller meals, stop when you feel full, drink water through the day, and go easy on greasy or very rich foods. Tell your care team about anything that does not settle.'}],
+    quiz:[
+      {q:'A GLP-1 medication mainly helps by:',options:['Replacing meals','Lowering appetite and slowing stomach emptying','Adding calories'],answer:1},
+      {q:'If a side effect will not settle, you should:',options:['Stop everything yourself','Tell your care team','Ignore it'],answer:1},
+      {q:'You should change your dose:',options:['Whenever you want','Only as your provider directs','Every day'],answer:1}]},
+  {slug:'protein',icon:'🍳',title:'Protein & muscle',
+    lessons:[
+      {heading:'Protect your muscle',body:'When you lose weight, you want the loss to come from fat, not muscle. Eating enough protein and doing some resistance training tells your body to keep the muscle. Your InBody scan tracks this over time.'},
+      {heading:'How much and when',body:'A common target is roughly your goal body weight in grams of protein per day, spread across meals. Thirty to forty grams per meal is a useful anchor. Even amounts through the day work better than one big serving.'},
+      {heading:'Easy protein sources',body:'Lean meats, fish, eggs and egg whites, Greek style yogurt, cottage style products, beans and lentils, tofu, and a clean protein powder all count. On a lactose free plan, choose lactose free dairy or plant options.'}],
+    quiz:[
+      {q:'While losing weight, you want the loss to come mostly from:',options:['Muscle','Fat','Water only'],answer:1},
+      {q:'A useful per meal protein anchor is about:',options:['5 grams','30 to 40 grams','100 grams'],answer:1},
+      {q:'What helps protect muscle along with protein?',options:['Resistance training','Skipping meals','Less sleep'],answer:0}]},
+  {slug:'mobility',icon:'🦵',title:'Mobility & joints',
+    lessons:[
+      {heading:'Warm up and ease in',body:'A few minutes of easy movement before you train wakes up your joints and lowers pain. Start light and add only when the movement feels smooth and pain free.'},
+      {heading:'Low impact is your friend',body:'Walking, cycling, and supported strength work build fitness without pounding your joints. You can get strong and lean without jumping or running if those bother you.'},
+      {heading:'Use pain as a guide',body:'Mild muscle effort is fine. Sharp or worsening joint pain is a signal to reduce range, lower the weight, or switch to an easier version. Your plan includes easier and harder options for this reason.'}],
+    quiz:[
+      {q:'Before training you should:',options:['Go max effort cold','Warm up with easy movement','Skip it'],answer:1},
+      {q:'For sore knees, a smart choice is:',options:['Jumping and running','Low impact work like walking or supported strength','Heavy max lifts'],answer:1},
+      {q:'Sharp or worsening joint pain means:',options:['Push through','Reduce range or switch to an easier version','Add weight'],answer:1}]},
+  {slug:'sleep',icon:'😴',title:'Sleep & recovery',
+    lessons:[
+      {heading:'Sleep drives results',body:'Short sleep raises hunger and cravings and makes it harder to lose fat. Aiming for seven to nine hours makes every other part of the plan work better.'},
+      {heading:'Build a wind down',body:'Keep a steady sleep and wake time, dim the lights and screens in the last hour, and keep the room cool and dark. A short walk earlier in the day helps you fall asleep at night.'},
+      {heading:'If you have sleep apnea',body:'Loud snoring, gasping, or daytime sleepiness are worth mentioning to your care team. Treating sleep apnea often improves energy, blood pressure, and weight loss together.'}],
+    quiz:[
+      {q:'Short sleep tends to:',options:['Lower hunger','Raise hunger and cravings','Do nothing'],answer:1},
+      {q:'A good sleep target is:',options:['3 to 4 hours','7 to 9 hours','12 hours'],answer:1},
+      {q:'Loud snoring and daytime sleepiness are worth:',options:['Ignoring','Mentioning to your care team','Hiding'],answer:1}]},
+  {slug:'label',icon:'🏷️',title:'Reading a label',
+    lessons:[
+      {heading:'Start with the serving size',body:'Every number on the label is per serving, and a package often holds more than one. Check the serving size first so the calories and protein actually match what you eat.'},
+      {heading:'Find the protein and fiber',body:'Higher protein and higher fiber foods keep you fuller. Use them as quick green lights when you compare two products.'},
+      {heading:'Scan the ingredients',body:'Shorter lists with foods you recognize are usually the better pick. On a lactose free plan, watch for milk, whey, cream, and butter. Your phone barcode check flags these for you.'}],
+    quiz:[
+      {q:'The first thing to check on a label is:',options:['The brand','The serving size','The color'],answer:1},
+      {q:'Two helpful green lights when comparing foods are:',options:['High protein and high fiber','High sugar and low protein','More additives'],answer:0},
+      {q:'On a lactose free plan, watch the ingredients for:',options:['Milk, whey, cream, butter','Water','Salt only'],answer:0}]},
+];
+function doneSlugs(){ const s=new Set(); (DATA.logs||[]).filter(l=>l.kind==='module').forEach(l=>{ const sl=(l.body||'').split(':')[0].trim(); if(sl) s.add(sl); }); return s; }
+
+function openModule(slug){
+  const m=MODULES.find(x=>x.slug===slug); if(!m) return;
+  $('modTitle').textContent=m.title;
+  const lessons=m.lessons.map(L=>`<div class="mb-4"><div class="font-semibold text-sm mb-1">${esc(L.heading)}</div><p class="text-sm text-[#4b5563] leading-relaxed">${esc(L.body)}</p></div>`).join('');
+  const quiz=m.quiz.map((q,qi)=>`<div class="mb-4"><div class="text-sm font-semibold mb-2">${qi+1}. ${esc(q.q)}</div>${q.options.map((o,oi)=>`<label class="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-[#f7f8fa] cursor-pointer"><input type="radio" name="q${qi}" value="${oi}" class="accent-[#0a6cf5]"><span class="text-sm">${esc(o)}</span></label>`).join('')}</div>`).join('');
+  $('modBody').innerHTML=`<div class="mb-5">${lessons}</div><div class="border-t border-[#eef0f4] pt-4"><div class="text-[11px] uppercase tracking-wide text-[#0a6cf5] font-semibold mb-3">Quick check</div>${quiz}<div id="modResult" class="text-sm mb-3"></div><button id="modSubmit" class="w-full py-2.5 rounded-xl bg-[#0a6cf5] text-white font-semibold">Submit</button></div>`;
+  $('modModal').classList.remove('hidden'); $('modModal').classList.add('flex');
+  $('modBody').scrollTop=0;
+  $('modSubmit').onclick=()=>submitQuiz(m);
+}
+function closeMod(){ $('modModal').classList.add('hidden'); $('modModal').classList.remove('flex'); }
+async function submitQuiz(m){
+  let correct=0, answered=0;
+  m.quiz.forEach((q,qi)=>{ const sel=document.querySelector(`input[name="q${qi}"]:checked`); if(sel){ answered++; if(+sel.value===q.answer) correct++; } });
+  if(answered<m.quiz.length){ $('modResult').innerHTML='<span class="text-amber-600">Answer every question to finish.</span>'; return; }
+  const pct=Math.round(correct/m.quiz.length*100);
+  if(correct>=Math.ceil(m.quiz.length*0.67)){
+    $('modResult').innerHTML=`<span class="text-emerald-600 font-semibold">Nice, ${correct}/${m.quiz.length} correct. +25 points.</span>`;
+    const btn=$('modSubmit'); btn.disabled=true; btn.textContent='Completed ✓';
+    await api({action:'add_log',kind:'module',value_num:pct,body:`${m.slug}: ${m.title}`});
+    DATA=await api({action:'load'});
+    setTimeout(()=>{ closeMod(); render(); }, 1100);
+  } else {
+    $('modResult').innerHTML=`<span class="text-rose-600">${correct}/${m.quiz.length} correct. Review the lesson and try again.</span>`;
+  }
+}
+
+function render(){
+  const g=gamify(), p=DATA.patient, done=doneSlugs();
+  const stat=(v,l,bg,bd)=>`<div class="rounded-2xl ${bg} border ${bd} p-4 text-center"><div class="font-display text-3xl font-semibold seg">${v}</div><div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mt-.5">${l}</div></div>`;
+  $('content').innerHTML=`
+    <div><h1 class="font-display text-2xl font-semibold tracking-[-.5px]">${esc(p.first)}'s rewards</h1><p class="text-sm text-[#6b7280] mt-1">Keep logging to build your streak and unlock badges.</p></div>
+
+    <div class="grid grid-cols-3 gap-3">
+      ${stat(g.streak+' 🔥','day streak','bg-[#fff4ed]','border-[#ffe2cf]')}
+      ${stat(g.points,'points','bg-[#eaf2ff]','border-[#d6e6ff]')}
+      ${stat(g.week+'/7','this week','bg-[#eafaf0]','border-[#cdeedd]')}
+    </div>
+
+    <section class="card p-6">
+      <h2 class="font-display text-lg font-semibold mb-3">Last 2 weeks</h2>
+      <div class="flex gap-1.5 justify-between">${g.days14.map(d=>`<div class="flex-1 text-center"><div class="h-9 rounded-lg ${d.active?'bg-[#0a6cf5]':'bg-[#eef0f4]'}"></div><div class="text-[10px] text-[#9aa0ab] mt-1">${d.label}</div></div>`).join('')}</div>
+      <p class="text-xs text-[#9aa0ab] mt-3">Each filled day is a day you logged. Don't break the chain.</p>
+    </section>
+
+    <section class="card p-6">
+      <div class="flex items-center justify-between mb-4"><h2 class="font-display text-lg font-semibold">Badges</h2><span class="text-xs text-[#9aa0ab]">${g.earned}/${g.badges.length} earned</span></div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        ${g.badges.map(b=>`<div class="rounded-xl border p-3 ${b.earned?'bg-white border-[#e6e9ee]':'bg-[#f7f8fa] border-[#eef0f4] opacity-50'}"><div class="flex items-center gap-2"><div class="text-2xl leading-none">${b.icon}</div><div class="min-w-0"><div class="text-sm font-semibold ${b.earned?'text-[#16201d]':'text-[#9aa0ab]'}">${esc(b.label)}</div></div></div><div class="text-[11px] text-[#9aa0ab] mt-1.5">${esc(b.desc)}</div></div>`).join('')}
+      </div>
+    </section>
+
+    <section class="card p-6">
+      <h2 class="font-display text-lg font-semibold mb-1">How you earn points</h2>
+      <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 mt-3 text-center">
+        <div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3"><div class="font-display text-lg font-semibold">+10</div><div class="text-[11px] text-[#6b7280]">log a food</div></div>
+        <div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3"><div class="font-display text-lg font-semibold">+5</div><div class="text-[11px] text-[#6b7280]">weigh-in</div></div>
+        <div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3"><div class="font-display text-lg font-semibold">+5</div><div class="text-[11px] text-[#6b7280]">journal note</div></div>
+        <div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3"><div class="font-display text-lg font-semibold">+15</div><div class="text-[11px] text-[#6b7280]">log activity</div></div>
+        <div class="rounded-xl bg-[#f3f7ff] border border-[#d6e6ff] p-3"><div class="font-display text-lg font-semibold text-[#0a6cf5]">+25</div><div class="text-[11px] text-[#6b7280]">finish a lesson</div></div>
+      </div>
+    </section>
+
+    <section class="card p-6 bg-gradient-to-br from-white to-[#f3f7ff]">
+      <div class="flex items-center justify-between mb-1"><div class="flex items-center gap-2"><span class="text-xl">🎓</span><h2 class="font-display text-lg font-semibold">PhD: Personal Health Education</h2></div><span class="text-xs text-[#9aa0ab]">${done.size}/${MODULES.length} done</span></div>
+      <p class="text-sm text-[#6b7280] mb-4">Short lessons that unlock as you go, with a quick quiz to lock in what you learn. Each one is worth 25 points.</p>
+      <div class="grid sm:grid-cols-2 gap-3">${MODULES.map((m,i)=>{const isDone=done.has(m.slug),unlocked=(i===0||done.has(MODULES[i-1].slug));return `<button ${unlocked?'':'disabled'} data-mod="${m.slug}" class="text-left rounded-xl border p-3 transition ${isDone?'bg-[#eafaf0] border-[#cdeedd]':unlocked?'bg-white border-[#e6e9ee] hover:border-[#0a6cf5]':'bg-[#f7f8fa] border-[#eef0f4] opacity-60 cursor-not-allowed'}"><div class="flex items-center gap-2"><span class="text-xl">${m.icon}</span><span class="text-sm font-semibold">${esc(m.title)}</span></div><div class="text-[11px] mt-1 ${isDone?'text-[#0a7a3d] font-semibold':'text-[#9aa0ab]'}">${isDone?'✓ Completed':unlocked?'Start →':'Locked · finish the previous one'}</div></button>`;}).join('')}</div>
+      <p class="text-[11px] text-[#9aa0ab] mt-3">This program is informational and supports, but does not replace, the guidance of your care team.</p>
+    </section>`;
+}
+
+// module viewer listeners
+$('modClose').onclick=closeMod;
+$('modModal').addEventListener('click',(e)=>{ if(e.target===$('modModal')) closeMod(); });
+document.addEventListener('click',(e)=>{ const b=e.target.closest&&e.target.closest('[data-mod]'); if(b&&!b.disabled) openModule(b.getAttribute('data-mod')); });
+
+DATA = await api({action:'load'});
+$('loading').classList.add('hidden');
+if (!DATA || !DATA.ok || !DATA.patient){ $('loading').textContent='Could not load your rewards. Please head back and try again.'; $('loading').classList.remove('hidden'); }
+else { $('content').classList.remove('hidden'); render(); }
+</script>
+</body>
+</html>

@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patient CRM, Vitality Weight Loss</title>
+<meta name="robots" content="noindex">
+<!--
+  VITALITY, Patient CRM (DEMO · synthetic data only)
+  Works like the IBS/mortgage CRMs: lifecycle pipeline, patient chart, notes
+  timeline, call log, branded email off the chart. Cortex-dark.
+  Synthetic data embedded so it demos with zero backend. 
+  USE_CONVEX=true (current) routes to the standalone Convex deployment.
+  Legacy USE_SUPABASE paths remain behind the flag for rollback.
+  No real PHI until dedicated prod Convex + BAA.
+-->
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#ffffff;--surface:#ffffff;--surface-2:#f1f3f7;--border:#e6e9ee;--text:#16201d;--muted:#6b7280;--emerald:#0a6cf5}
+  body{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:var(--bg);color:var(--text)}
+  .font-display{font-family:'Montserrat','Inter',sans-serif}
+  .glass{background:#ffffff;box-shadow:0 1px 2px rgba(16,24,40,0.04),0 12px 30px -18px rgba(16,24,40,0.10)}
+  .row{transition:.12s;cursor:pointer}
+  .row:hover{background:#f4f6f8}.row.sel{background:rgba(10,108,245,0.07);border-color:rgba(10,108,245,0.35)!important}
+  .badge{font-size:.68rem;font-weight:600;letter-spacing:.03em;padding:2px 9px;border-radius:9999px;white-space:nowrap}
+  .b-lead{background:rgba(37,99,235,.10);color:#1d4ed8}.b-new_patient{background:rgba(217,119,6,.12);color:#b45309}
+  .b-active{background:rgba(16,185,129,.14);color:#047857}.b-inactive{background:rgba(100,116,139,.12);color:#475569}
+  .tab{padding:.4rem .85rem;border-radius:9999px;font-size:.8rem;font-weight:500;cursor:pointer;color:#6b7280;border:1px solid transparent}
+  .tab.on{background:rgba(10,108,245,.10);color:#0a6cf5;border-color:rgba(10,108,245,.25)}
+  .cnt{display:inline-block;min-width:17px;text-align:center;font-size:.6rem;font-weight:700;padding:0 5px;border-radius:9999px;background:rgba(10,108,245,.12);color:#0a6cf5;vertical-align:middle}
+  .tab.on .cnt{background:#0a6cf5;color:#fff}
+  .field{background:#ffffff;border:1px solid var(--border);border-radius:10px;padding:.5rem .75rem;color:#16201d;font-size:.9rem;width:100%}
+  .field:focus{outline:none;border-color:var(--emerald)}
+  .scroll::-webkit-scrollbar{width:8px}.scroll::-webkit-scrollbar-thumb{background:#d8dce3;border-radius:8px}
+  ::selection{background:rgba(10,108,245,.25)}
+  .modal-bg{background:rgba(16,24,40,.45);backdrop-filter:blur(4px)}
+</style>
+<style>html{visibility:hidden}</style>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+  // Milestone B: identity is Convex-native. Flip USE_CONVEX_AUTH=false to roll back to Supabase.
+  const USE_CONVEX_AUTH = true;
+  try {
+    if (USE_CONVEX_AUTH) {
+      const { staffRole, signOut, getToken, STORE_STAFF } = await import('./auth-convex.js');
+      const role = await staffRole(STORE_STAFF);  // null = no session OR a non-staff (patient) token
+      if (!role) {
+        // No staff role: clear any session and return to staff login. NEVER drop into the patient portal.
+        await signOut(STORE_STAFF); location.replace('login.html');
+      } else {
+        window.__vca = { getToken: () => getToken(STORE_STAFF), signOut: () => signOut(STORE_STAFF), role };
+        window.__vitUser = { app_metadata: { role } };
+        document.documentElement.style.visibility='visible';
+      }
+    } else {
+      const sb = createClient('https://jtifhcvbgxqwlywugvjv.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWZoY3ZiZ3hxd2x5d3Vndmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDc5NTgsImV4cCI6MjA4ODA4Mzk1OH0.UfRVLuvM8_HPvKXUEDXb0cxR50znv16L5Tf99AnSc7g',{ auth:{ storageKey:'sb-vit-staff', persistSession:true } });
+      const { data:{ session } } = await sb.auth.getSession();
+      if (!session) { location.replace('login.html'); }
+      else if (!(session.user.app_metadata && session.user.app_metadata.role)) { sb.auth.signOut().then(()=>location.replace('login.html')); }
+      else { window.__vitSb = sb; window.__vitUser = session.user; document.documentElement.style.visibility='visible'; }
+    }
+  } catch(e){ console.warn('vit auth guard', e); document.documentElement.style.visibility='visible'; }
+</script>
+</head>
+<body class="h-screen overflow-hidden flex flex-col">
+
+<!-- TOP BAR -->
+<div class="h-16 border-b border-[#e6e9ee] flex items-center justify-between px-5 flex-shrink-0">
+  <div class="flex items-center gap-3">
+    <img src="assets/logo-icon.png" class="h-7 w-auto" alt="Vitality Weight Loss">
+    <span class="font-display flex flex-col items-center leading-none"><span class="font-semibold text-lg uppercase tracking-[.15em]">Vitality</span><span class="text-[.46rem] font-medium tracking-[.3em] uppercase text-[#16201d] mt-0.5">Weight Loss</span></span>
+    <span class="ml-2 flex items-center gap-1.5 text-xs text-[#0a6cf5]"><span class="w-1.5 h-1.5 bg-[#0a6cf5] rounded-full animate-pulse"></span>Live</span>
+  </div>
+  <div class="flex items-center gap-3">
+    <button onclick="openAddPatient()" class="px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add patient</button>
+    <button id="importBtn" onclick="importScan()" class="px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">⬆ Import InBody scan</button>
+    <button onclick="openRx()" title="GLP-1 medication reference (FDA)" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7]">℞ Med reference</button>
+    <input id="search" class="field w-56 hidden md:block" placeholder="Search patients…">
+    <a href="admin.html" class="text-xs text-[#6b7280] hover:text-[#16201d]" title="Admin & Operations (admins only)">⚙ Admin</a>
+    <button onclick="(window.__vca?window.__vca.signOut():(window.__vitSb?window.__vitSb.auth.signOut():Promise.resolve())).then(()=>location.replace('login.html'))" class="text-xs text-[#6b7280] hover:text-[#16201d]">Sign out</button>
+    <div class="w-8 h-8 rounded-full bg-[#f1f3f7] border border-[#e6e9ee] flex items-center justify-center text-xs font-semibold text-[#4b5563]">FD</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="mainGrid" class="flex-1 grid grid-cols-1 md:grid-cols-[380px_1fr] gap-0 min-h-0">
+  <!-- LIST -->
+  <div id="listPane" class="border-r border-[#e6e9ee] flex flex-col min-h-0">
+    <div class="flex items-center gap-2 px-3 py-3 flex-shrink-0">
+      <button id="listToggle" onclick="toggleList()" title="Collapse patient list" class="w-8 h-8 rounded-lg border border-[#e6e9ee] flex items-center justify-center text-[#6b7280] hover:bg-[#f1f3f7] hover:text-[#16201d] shrink-0 text-lg leading-none">«</button>
+      <div class="flex gap-2 flex-wrap" id="tabs">
+        <div class="tab on" data-f="all">All <span class="cnt" data-c="all">0</span></div><div class="tab" data-f="lead">Leads <span class="cnt" data-c="lead">0</span></div>
+        <div class="tab" data-f="new_patient">New <span class="cnt" data-c="new_patient">0</span></div><div class="tab" data-f="active">Active <span class="cnt" data-c="active">0</span></div>
+      </div>
+    </div>
+    <div id="todayPanel" class="px-3 pb-3 flex-shrink-0 border-b border-[#e6e9ee]"></div>
+    <div class="flex-1 overflow-y-auto scroll px-3 pb-4 pt-3" id="list"></div>
+  </div>
+  <!-- DETAIL -->
+  <div class="overflow-y-auto scroll" id="detail">
+    <div class="h-full flex items-center justify-center text-[#9aa0ab]">Select a patient to open their chart</div>
+  </div>
+</div>
+
+<!-- EMAIL MODAL -->
+<div id="emailModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
+  <div class="bg-[#f7f8fa] border border-[#e6e9ee] rounded-3xl max-w-lg w-full overflow-hidden max-h-[90vh] flex flex-col">
+    <div class="p-5 border-b border-[#e6e9ee] flex items-center justify-between flex-shrink-0">
+      <h3 class="font-display font-semibold text-lg">Send branded email</h3>
+      <button onclick="closeEmail()" class="text-[#6b7280] hover:text-[#16201d] text-xl">×</button>
+    </div>
+    <div class="p-5 flex-1 overflow-y-auto min-h-0 scroll">
+      <label class="text-xs text-[#6b7280] font-semibold">Template</label>
+      <select id="emailTpl" class="field mt-1 mb-4" onchange="renderEmailPreview()">
+        <option value="confirm">Appointment Confirmation</option>
+        <option value="reminder">Appointment Reminder</option>
+        <option value="welcome">Welcome to Vitality</option>
+      </select>
+      <div class="text-xs text-[#6b7280] font-semibold mb-2">Preview</div>
+      <div class="rounded-2xl overflow-hidden border border-[#e6e9ee]" id="emailPreview"></div>
+    </div>
+    <div class="p-5 border-t border-[#e6e9ee] flex justify-end gap-3 flex-shrink-0">
+      <button onclick="closeEmail()" class="px-4 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-sm hover:bg-[#f1f3f7]">Cancel</button>
+      <button onclick="sendEmail()" class="px-5 py-2 rounded-xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8]">Send email</button>
+    </div>
+  </div>
+</div>
+
+<!-- APPOINTMENT MODAL -->
+<div id="apptModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
+  <div class="bg-white border border-[#e6e9ee] rounded-3xl max-w-sm w-full overflow-hidden shadow-[0_18px_44px_-22px_rgba(16,24,40,0.25)]">
+    <div class="p-5 border-b border-[#e6e9ee] flex items-center justify-between">
+      <div><h3 class="font-display font-semibold text-lg">Edit appointment</h3><div id="apptPatient" class="text-xs text-[#6b7280] mt-0.5"></div></div>
+      <button onclick="closeAppt()" class="text-[#6b7280] hover:text-[#16201d] text-xl">×</button>
+    </div>
+    <div class="p-5 space-y-3">
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-xs text-[#6b7280] font-semibold">Date</label><input id="apptDate" type="date" class="field mt-1"></div>
+        <div><label class="text-xs text-[#6b7280] font-semibold">Time</label><input id="apptTime" type="time" class="field mt-1"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-xs text-[#6b7280] font-semibold">Type</label><select id="apptType" class="field mt-1"><option>Consult</option><option>Follow-up</option><option>Coaching</option><option>Lab</option><option>Other</option></select></div>
+        <div><label class="text-xs text-[#6b7280] font-semibold">Provider</label><select id="apptProvider" class="field mt-1"><option>DeBry</option><option>DeVera</option><option>Black</option><option>Front Desk</option></select></div>
+      </div>
+      <div><label class="text-xs text-[#6b7280] font-semibold">Status</label><select id="apptStatus" class="field mt-1"><option value="scheduled">Scheduled</option><option value="confirmed">Confirmed</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="no_show">No-show</option></select></div>
+    </div>
+    <div class="p-5 border-t border-[#e6e9ee] flex justify-between gap-3 items-center">
+      <button onclick="cancelAppt()" class="px-3 py-2 rounded-xl border border-rose-200 text-rose-600 text-sm font-semibold hover:bg-rose-50">Cancel appt</button>
+      <div class="flex gap-2">
+        <button onclick="closeAppt()" class="px-4 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-sm hover:bg-[#f1f3f7]">Close</button>
+        <button onclick="saveAppt()" class="px-5 py-2 rounded-xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8]">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PATIENT MODAL -->
+<div id="addModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
+  <div class="bg-white border border-[#e6e9ee] rounded-3xl max-w-md w-full overflow-hidden shadow-[0_18px_44px_-22px_rgba(16,24,40,0.25)] max-h-[90vh] flex flex-col">
+    <div class="p-5 border-b border-[#e6e9ee] flex items-center justify-between shrink-0">
+      <div><h3 class="font-display font-semibold text-lg">Add patient</h3><div class="text-xs text-[#6b7280] mt-0.5">Creates a record on the board. Portal access is set up later via intake.</div></div>
+      <button onclick="closeAddPatient()" class="text-[#6b7280] hover:text-[#16201d] text-xl">×</button>
+    </div>
+    <div class="p-5 space-y-3 overflow-y-auto">
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-xs text-[#6b7280] font-semibold">First name *</label><input id="apFirst" class="field mt-1" placeholder="Jane"></div>
+        <div><label class="text-xs text-[#6b7280] font-semibold">Last name</label><input id="apLast" class="field mt-1" placeholder="Doe"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-xs text-[#6b7280] font-semibold">Phone</label><input id="apPhone" type="tel" class="field mt-1" placeholder="(702) 555-0123"></div>
+        <div><label class="text-xs text-[#6b7280] font-semibold">Date of birth</label><input id="apDob" type="date" class="field mt-1"></div>
+      </div>
+      <div><label class="text-xs text-[#6b7280] font-semibold">Email</label><input id="apEmail" type="email" class="field mt-1" placeholder="jane@email.com"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-xs text-[#6b7280] font-semibold">Program</label><select id="apProgram" class="field mt-1"><option value="glp1">GLP-1 weight loss</option><option value="medicare_glp1">Medicare GLP-1 Bridge</option><option value="metabolic">Metabolic &amp; hormone</option><option value="coaching">Coaching &amp; nutrition</option><option value="unsure">Not sure yet</option></select></div>
+        <div><label class="text-xs text-[#6b7280] font-semibold">Status</label><select id="apStatus" class="field mt-1"><option value="lead">Lead</option><option value="new_patient">New Patient</option><option value="active">Active</option></select></div>
+      </div>
+      <div><label class="text-xs text-[#6b7280] font-semibold">First note (optional)</label><textarea id="apNote" rows="2" class="field mt-1" placeholder="How they came in, what they want…"></textarea></div>
+      <label class="flex items-start gap-2 text-sm text-[#3d4a45] cursor-pointer mt-1"><input id="apLogin" type="checkbox" class="w-4 h-4 mt-0.5 accent-[#0a6cf5]"><span>Create a patient portal login <span class="text-[#9aa0ab]">(needs an email · generates a temporary password to hand over)</span></span></label>
+      <div id="apErr" class="text-sm text-rose-600 hidden"></div>
+    </div>
+    <div class="p-5 border-t border-[#e6e9ee] flex justify-end gap-2 items-center shrink-0">
+      <button onclick="closeAddPatient()" class="px-4 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-sm hover:bg-[#f1f3f7]">Cancel</button>
+      <button id="apSave" onclick="saveAddPatient()" class="px-5 py-2 rounded-xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8]">Add patient</button>
+    </div>
+  </div>
+</div>
+
+<!-- medication reference (OpenFDA, provider-side, no PHI sent) -->
+<div id="rxModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
+  <div class="bg-white border border-[#e6e9ee] rounded-3xl max-w-lg w-full overflow-hidden shadow-[0_18px_44px_-22px_rgba(16,24,40,0.25)] max-h-[88vh] flex flex-col">
+    <div class="p-5 border-b border-[#e6e9ee] flex items-center justify-between shrink-0">
+      <div><h3 class="font-display font-semibold text-lg">Medication reference</h3><div class="text-xs text-[#6b7280] mt-0.5">U.S. FDA label data · reference only, not clinical guidance</div></div>
+      <button onclick="closeRx()" class="text-[#6b7280] hover:text-[#16201d] text-xl">×</button>
+    </div>
+    <div class="p-4 border-b border-[#e6e9ee] flex flex-wrap gap-2 shrink-0">
+      <button onclick="rxLookup('Ozempic')" class="px-3 py-1.5 rounded-full border border-[#e6e9ee] text-xs font-semibold text-[#4b5563] hover:bg-[#f1f3f7]">Ozempic</button>
+      <button onclick="rxLookup('Wegovy')" class="px-3 py-1.5 rounded-full border border-[#e6e9ee] text-xs font-semibold text-[#4b5563] hover:bg-[#f1f3f7]">Wegovy</button>
+      <button onclick="rxLookup('Mounjaro')" class="px-3 py-1.5 rounded-full border border-[#e6e9ee] text-xs font-semibold text-[#4b5563] hover:bg-[#f1f3f7]">Mounjaro</button>
+      <button onclick="rxLookup('Zepbound')" class="px-3 py-1.5 rounded-full border border-[#e6e9ee] text-xs font-semibold text-[#4b5563] hover:bg-[#f1f3f7]">Zepbound</button>
+      <button onclick="rxLookup('Saxenda')" class="px-3 py-1.5 rounded-full border border-[#e6e9ee] text-xs font-semibold text-[#4b5563] hover:bg-[#f1f3f7]">Saxenda</button>
+      <button onclick="rxLookup('phentermine')" class="px-3 py-1.5 rounded-full border border-[#e6e9ee] text-xs font-semibold text-[#4b5563] hover:bg-[#f1f3f7]">Phentermine</button>
+    </div>
+    <div id="rxBody" class="p-5 overflow-y-auto text-sm"><div class="text-[#9aa0ab] py-8 text-center">Pick a medication above to see FDA label highlights and the most reported events.</div></div>
+  </div>
+</div>
+
+<script>
+  // ---------------- config ----------------
+  // Dual wiring during Convex migration (Grok Build lane + portal/plan lane)
+  // USE_SUPABASE: legacy shared Supabase + edge functions
+  // USE_CONVEX:   new standalone Convex (crm-data compat layer + /generate-plan etc. are live)
+  const USE_SUPABASE = false;
+  const USE_CONVEX   = true;
+
+  const SB = "https://jtifhcvbgxqwlywugvjv.supabase.co";
+  const ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWZoY3ZiZ3hxd2x5d3Vndmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDc5NTgsImV4cCI6MjA4ODA4Mzk1OH0.UfRVLuvM8_HPvKXUEDXb0cxR50znv16L5Tf99AnSc7g";
+
+  // Convex deployment base (HTTP surface for /crm-data, /generate-plan, /inbody-intake).
+  // Confirmed live after coordinated deploy (portal lane).
+  const CONVEX_URL = "https://quixotic-cat-492.convex.site";
+
+  // Convex routes are staff-gated (requireStaff validates the JWT identity), so they need
+  // the LOGGED-IN staff member's access token, NOT the anon key. The auth guard (module
+  // script) runs after this classic script, so wait briefly for it. It exposes either
+  // window.__vca (Convex-native auth — Milestone B) or window.__vitSb (Supabase rollback);
+  // we use whichever ran. Falls back to ANON only if neither produced a session.
+  async function convexAuth(){
+    for (let i=0; i<60 && !window.__vca && !window.__vitSb; i++){ await new Promise(r=>setTimeout(r,50)); }
+    try {
+      if (window.__vca && window.__vca.getToken){ const t = await window.__vca.getToken(); if (t) return t; }
+      else if (window.__vitSb){ const { data:{ session } } = await window.__vitSb.auth.getSession(); if (session && session.access_token) return session.access_token; }
+    } catch(e){ console.warn('convexAuth: no staff session', e && e.message); }
+    return ANON;
+  }
+  const convexHeaders = async () => ({ 'content-type':'application/json', 'authorization':`Bearer ${await convexAuth()}` });
+
+  const CLINIC = { name:"Vitality Weight Loss", addr:"6140 Brent Thurman Way, Suite 100, Las Vegas, NV 89148", phone:"(702) 602-5002" };
+
+  // ---------------- synthetic data ----------------
+  const now = new Date(); // real time, so relative stamps + synthetic data stay current
+  const ago = (h)=> new Date(now.getTime()-h*3600e3).toISOString();
+  const ahead = (h)=> new Date(now.getTime()+h*3600e3).toISOString();
+  let patients = [
+    { id:'p1', first:'Marisol', last:'Reyes', email:'marisol.r@email.com', phone:'(702) 555-0143', dob:'1986-04-12', program:'glp1', status:'active', created:ago(720),
+      notes:[{type:'clinical_ref',author:'agent:receptionist',auto:true,ts:ago(1),body:'Patient called: nausea is back from the GLP-1. Asked Dr. DeBry to call her back today. Provider notified by email.'},
+             {type:'staff',author:'Front Desk',auto:false,ts:ago(48),body:'Sent welcome packet. Very motivated, has a wedding in the fall.'}],
+      appts:[{type:'Follow-up',status:'scheduled',when:ahead(20),provider:'DeVera'},{type:'Consult',status:'completed',when:ago(696),provider:'DeBry'}],
+      calls:[{dir:'inbound',intent:'question',outcome:'routed',ts:ago(2),dur:184}] },
+    { id:'p2', first:'Derek', last:'Okafor', email:'d.okafor@email.com', phone:'(702) 555-0177', dob:'1979-11-30', program:'metabolic', status:'new_patient', created:ago(96),
+      notes:[{type:'intake',author:'agent:intake',auto:true,ts:ago(96),body:'New web intake. Program interest: metabolic. Height: 6\'1". Current weight: 244 lbs. Heard via: Google.'}],
+      appts:[{type:'Consult',status:'confirmed',when:ahead(2),provider:'DeBry'}],
+      calls:[] },
+    { id:'p3', first:'Janelle', last:'Brooks', email:'janelle.b@email.com', phone:'(702) 555-0190', dob:'1992-07-08', program:'glp1', status:'lead', created:ago(5), review:['thyroid','gallbladder'],
+      notes:[{type:'call',author:'agent:receptionist',auto:true,ts:ago(5),body:'Inbound call captured by receptionist. Interested in tirzepatide. Took a message, wants a callback after 5pm. Dropped into CRM as a new lead.'}],
+      appts:[], calls:[{dir:'inbound',intent:'new_lead',outcome:'message_taken',ts:ago(5),dur:96}] },
+    { id:'p4', first:'Anthony', last:'Cole', email:'a.cole@email.com', phone:'(702) 555-0112', dob:'1968-02-21', program:'coaching', status:'active', created:ago(1400),
+      notes:[{type:'staff',author:'A. Black',auto:false,ts:ago(120),body:'Down 14 lbs since March. Adjusted macros, added two strength days.'}],
+      appts:[{type:'Coaching',status:'scheduled',when:ahead(72),provider:'Black'}], calls:[] },
+    { id:'p5', first:'Priya', last:'Nair', email:'priya.nair@email.com', phone:'(702) 555-0155', dob:'1990-09-15', program:'unsure', status:'lead', created:ago(28),
+      notes:[{type:'intake',author:'agent:intake',auto:true,ts:ago(28),body:'New web intake. Program interest: not sure. Heard via: Instagram / Facebook.'}],
+      appts:[], calls:[] },
+    { id:'p6', first:'Marcus', last:'Lee', email:'marcus.lee@email.com', phone:'(702) 555-0166', dob:'1984-12-02', program:'glp1', status:'new_patient', created:ago(50),
+      notes:[{type:'system',author:'agent:receptionist',auto:true,ts:ago(50),body:'Inbound. Booked consult for next week with DeBry. Insurance: yes, eligibility to verify.'}],
+      appts:[{type:'Consult',status:'scheduled',when:ahead(120),provider:'DeBry'}], calls:[{dir:'inbound',intent:'book',outcome:'booked',ts:ago(50),dur:212}] },
+    { id:'p7', first:'Tasha', last:'Williams', email:'tasha.w@email.com', phone:'(702) 555-0188', dob:'1995-03-19', program:'metabolic', status:'active', created:ago(900),
+      notes:[{type:'staff',author:'R. DeVera',auto:false,ts:ago(240),body:'Labs back, TSH normal, started protocol. Energy improving.'}],
+      appts:[{type:'Follow-up',status:'scheduled',when:ahead(6),provider:'DeVera'}], calls:[] },
+    { id:'p8', first:'Hector', last:'Mendoza', email:'h.mendoza@email.com', phone:'(702) 555-0121', dob:'1973-06-27', program:'coaching', status:'inactive', created:ago(2200),
+      notes:[{type:'staff',author:'Front Desk',auto:false,ts:ago(600),body:'Paused program, travel for work. Follow up in 30 days.'}],
+      appts:[], calls:[] },
+  ];
+
+  // ---------------- helpers ----------------
+  const $ = s=>document.querySelector(s);
+  const PROG = {glp1:'GLP-1',metabolic:'Metabolic',coaching:'Coaching',unsure:'Undecided'};
+  const STAT = {lead:'Lead',new_patient:'New Patient',active:'Active',inactive:'Inactive'};
+  // Provider-facing decode for intake review flags. Data layer carries only the neutral code
+  // (e.g. tag "review:thyroid"); the clinical reason is decoded here so the provider knows WHY.
+  const REVIEW_DECODE = {
+    residency:    { flag:'Non-Nevada resident', reason:'Outside the licensed service area (Nevada only).' },
+    thyroid:      { flag:'MTC / MEN-2 history', reason:'Boxed-warning contraindication for GLP-1 personal or family history of medullary thyroid carcinoma or MEN-2 (thyroid C-cell tumor risk).' },
+    eating:       { flag:'Active eating disorder', reason:'GLP-1 not appropriate during active eating-disorder treatment.' },
+    pancreatitis: { flag:'Chronic pancreatitis', reason:'Contraindication for GLP-1 therapy.' },
+    gallbladder:  { flag:'Active gallbladder disease', reason:'GLP-1 can precipitate or worsen active gallbladder disease.' },
+    diabetes_t1:  { flag:'Type 1 diabetes', reason:'Outside async GLP-1 scope needs endocrinology coordination.' },
+    gi_motility:  { flag:'Severe GI motility (gastroparesis)', reason:'GLP-1 slows gastric emptying unsafe in severe motility disorders.' },
+    bariatric:    { flag:'Bariatric / major GI surgery < 6 months', reason:'Standard safety wait period before initiating GLP-1.' },
+    pregnancy:    { flag:'Pregnant / planning / breastfeeding', reason:'GLP-1 not used in pregnancy, pre-conception, or lactation.' },
+    self_harm:    { flag:'Active self-harm risk', reason:'Routed to 988 crisis support clinical review required before any therapy.' }
+  };
+  const fmtDate = iso => new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const fmtDT = iso => new Date(iso).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  const rel = iso => { const h=(Date.now()-new Date(iso).getTime())/3600e3; if(isNaN(h)) return ''; if(h<0) return 'upcoming'; if(h<1) return Math.max(1,Math.round(h*60))+'m ago'; if(h<24) return Math.round(h)+'h ago'; return Math.round(h/24)+'d ago'; };
+  let filter='all', selId=null;
+
+  // InBody scoring bar: zones (healthy/caution/high) with the patient's marker
+  function ibBar(label, val, min, max, zones, unit){
+    if(val==null) return '';
+    const pct = Math.max(2, Math.min(98, ((val-min)/(max-min))*100));
+    const total = zones.reduce((s,z)=>s+z.w,0);
+    const segs = zones.map(z=>`<div style="flex:${z.w};background:${z.c};opacity:.55"></div>`).join('');
+    return `<div class="mb-3">
+      <div class="flex justify-between text-xs mb-1.5"><span class="text-[#6b7280]">${label}</span><span class="font-semibold">${val}${unit||''}</span></div>
+      <div style="position:relative;height:8px;border-radius:9999px;overflow:hidden;display:flex">${segs}
+        <div style="position:absolute;left:${pct}%;top:-3px;width:3px;height:14px;background:#16201d;border-radius:2px;box-shadow:0 0 0 1.5px rgba(255,255,255,.9)"></div>
+      </div></div>`;
+  }
+  // Segmental horizontal bars (normalized to max in the group)
+  function ibSeg(obj, color){
+    const labels={right_arm:'R Arm',left_arm:'L Arm',trunk:'Trunk',right_leg:'R Leg',left_leg:'L Leg'};
+    const max=Math.max(...Object.values(obj));
+    return Object.entries(obj).map(([k,v])=>`
+      <div class="flex items-center gap-2 mb-1.5">
+        <span class="text-[11px] text-[#6b7280] w-12">${labels[k]}</span>
+        <div class="flex-1 h-2 rounded-full bg-[#f1f3f7] overflow-hidden"><div style="width:${(v/max*100).toFixed(0)}%;height:100%;background:${color}"></div></div>
+        <span class="text-[11px] text-[#3d4a45] w-12 text-right">${v} lb</span>
+      </div>`).join('');
+  }
+
+  function lastActivity(p){
+    const all=[...p.notes.map(n=>n.ts),...p.calls.map(c=>c.ts)]; return all.length?all.sort().slice(-1)[0]:p.created;
+  }
+  function kpis(){
+    const c={all:patients.length,lead:0,new_patient:0,active:0,inactive:0};
+    patients.forEach(p=>{ if(c[p.status]!=null) c[p.status]++; });
+    document.querySelectorAll('#tabs .cnt').forEach(el=> el.textContent = c[el.dataset.c] ?? 0);
+    renderToday();
+  }
+  let calSel = null; // selected day-of-month in the Today panel; null = today
+  window.selectDay = function(d){ calSel = d; renderToday(); };
+  function renderToday(){
+    const el=document.getElementById('todayPanel'); if(!el) return;
+    const t=new Date(), y=t.getFullYear(), m=t.getMonth();
+    const startDay=new Date(y,m,1).getDay(), dim=new Date(y,m+1,0).getDate();
+    const selDay = (calSel && calSel<=dim) ? calSel : t.getDate();
+    const apptDays=new Set(), byDay={};
+    patients.forEach(p=>(p.appts||[]).forEach(a=>{ const d=new Date(a.when);
+      if(d.getFullYear()===y&&d.getMonth()===m){ const dd=d.getDate(); apptDays.add(dd);
+        (byDay[dd]=byDay[dd]||[]).push({when:a.when,type:a.type,provider:a.provider,pid:p.id,name:p.first+' '+p.last}); } }));
+    const dayAppts=(byDay[selDay]||[]).sort((a,b)=> new Date(a.when)-new Date(b.when));
+    let cells=''; for(let i=0;i<startDay;i++) cells+='<div></div>';
+    for(let d=1;d<=dim;d++){ const isToday=d===t.getDate(), isSel=d===selDay, has=apptDays.has(d);
+      let cls='text-[#3d4a45]';
+      if(isSel) cls='bg-[#0a6cf5] text-white font-semibold';
+      else if(isToday) cls='text-[#0a6cf5] font-semibold ring-1 ring-inset ring-[#0a6cf5]/40';
+      cells+=`<div onclick="selectDay(${d})" class="relative text-center text-[11px] py-1 rounded-md cursor-pointer hover:bg-[#f1f3f7] ${cls}">${d}${has&&!isSel?'<span class="absolute left-1/2 -translate-x-1/2 bottom-0 w-1 h-1 rounded-full bg-[#0a6cf5]"></span>':''}</div>`; }
+    const dow=['S','M','T','W','T','F','S'].map(x=>`<div>${x}</div>`).join('');
+    const selDate=new Date(y,m,selDay);
+    const hdr = selDay===t.getDate() ? 'Appointments today' : `Appointments · ${selDate.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}`;
+    el.innerHTML=`
+      <div class="text-[11px] font-semibold tracking-wide text-[#6b7280] uppercase mt-2 mb-1.5">${t.toLocaleDateString('en-US',{month:'long',year:'numeric'})}</div>
+      <div class="grid grid-cols-7 gap-0.5 text-[10px] text-[#9aa0ab] text-center mb-0.5">${dow}</div>
+      <div class="grid grid-cols-7 gap-0.5 mb-3">${cells}</div>
+      <div class="text-[11px] font-semibold tracking-wide text-[#6b7280] uppercase mb-1">${hdr}</div>
+      ${dayAppts.length? dayAppts.map(a=>`<div class="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-[#f4f6f8]">
+          <span onclick="select('${a.pid}')" class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
+            <span class="text-[11px] font-semibold text-[#0a6cf5] w-12 shrink-0">${new Date(a.when).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>
+            <span class="text-xs text-[#16201d] truncate">${a.name}</span></span>
+          <span class="text-[10px] text-[#6b7280] shrink-0">${a.type}</span>
+          <button onclick="editAppt('${a.pid}','${a.when}')" title="Edit appointment" class="shrink-0 text-[#9aa0ab] hover:text-[#0a6cf5] px-1 leading-none">✎</button></div>`).join('')
+        : '<div class="text-xs text-[#9aa0ab] py-1.5">No appointments this day.</div>'}`;
+  }
+  function renderList(){
+    const q=($('#search').value||'').toLowerCase();
+    let rows = patients.filter(p=>filter==='all'||p.status===filter)
+      .filter(p=>!q || (p.first+' '+p.last+' '+p.email).toLowerCase().includes(q))
+      .sort((a,b)=> new Date(lastActivity(b)).getTime() - new Date(lastActivity(a)).getTime());
+    $('#list').innerHTML = rows.map(p=>`
+      <div class="row border border-transparent rounded-xl px-3 py-2 mb-0.5 ${p.id===selId?'sel':''}" onclick="select('${p.id}')">
+        <div class="flex items-center justify-between gap-2">
+          <div class="font-semibold text-[13px] truncate">${p.first} ${p.last} ${p.notes.some(n=>n.type==='clinical_ref')?'<span class="text-rose-600" title="Open clinical message">⚑</span>':''}${p.review&&p.review.length?'<span class="text-[#9a5a00]" title="Needs clinical review">⚠</span>':''}</div>
+          <span class="badge b-${p.status}">${STAT[p.status]}</span>
+        </div>
+        <div class="flex items-center justify-between mt-0.5 text-[11px] text-[#6b7280]">
+          <span>${PROG[p.program]||'-'}</span><span>${rel(lastActivity(p))}</span>
+        </div>
+      </div>`).join('') || '<div class="text-center text-[#9aa0ab] text-sm py-8">No patients</div>';
+  }
+  function select(id){ if(typeof veeActive!=='undefined'&&veeActive)veeStop(); selId=id; renderList(); renderDetail(); }
+
+  function timeline(p){
+    const items=[
+      ...p.notes.map(n=>({ts:n.ts,kind:n.auto?'auto':'note',author:n.author,body:n.body,ntype:n.type})),
+      ...p.calls.map(c=>({ts:c.ts,kind:'call',author:'Receptionist',body:`${c.dir==='inbound'?'Inbound':'Outbound'} call · ${c.intent} · ${c.outcome} · ${Math.floor(c.dur/60)}m${c.dur%60}s`})),
+      ...p.appts.map(a=>({ts:a.when,kind:'appt',author:a.provider,body:`${a.type} · ${a.status} · ${fmtDT(a.when)} · ${a.provider}`,pid:p.id,when:a.when})),
+    ].sort((x,y)=> new Date(y.ts).getTime() - new Date(x.ts).getTime());
+    const dot={auto:'bg-blue-400',note:'bg-[#6b7280]',call:'bg-[#0a6cf5]',appt:'bg-amber-400'};
+    return items.map(it=>{
+      const clin = it.ntype==='clinical_ref';
+      const d = clin ? 'bg-rose-400' : dot[it.kind];
+      return `
+      <div class="flex gap-3 pb-4">
+        <div class="flex flex-col items-center"><div class="w-2 h-2 rounded-full ${d} mt-1.5"></div><div class="w-px flex-1 bg-[#e6e9ee] mt-1"></div></div>
+        <div class="flex-1 -mt-0.5 ${clin?'border-l-2 border-rose-500/40 pl-3 -ml-1':''}">
+          <div class="flex items-center gap-2 text-xs text-[#6b7280]"><span class="font-semibold text-[#3d4a45]">${it.author}</span>${clin?'<span class="badge" style="background:rgba(244,63,94,.15);color:#be123c">⚑ Clinical · provider</span>':(it.kind==='auto'?'<span class="badge b-active">auto</span>':'')}<span>·</span><span>${rel(it.ts)}</span></div>
+          <div class="text-sm ${clin?'text-[#9f1239]':'text-[#16201d]'} mt-1 leading-relaxed">${it.body}${it.kind==='appt'?` <button onclick="editAppt('${it.pid}','${it.when}')" class="text-[#0a6cf5] text-xs font-semibold ml-1 hover:underline">edit</button>`:''}</div>
+        </div>
+      </div>`;}).join('');
+  }
+
+  // compact, click-to-edit contact rows
+  function infoRow(p, field, label){
+    if(field==='program'){
+      return `<div class="flex items-center justify-between gap-3 px-4 py-2"><span class="text-xs text-[#6b7280]">${label}</span>
+        <select class="field w-auto py-1 text-sm" onchange="saveInfo('${p.id}','program',this.value)">${Object.entries(PROG).map(([k,v])=>`<option value="${k}" ${k===p.program?'selected':''}>${v}</option>`).join('')}</select></div>`;
+    }
+    const v=p[field]; const disp=v?String(v):'<span class="text-[#9aa0ab] italic">add…</span>';
+    return `<div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">${label}</span>
+      <span class="text-sm text-[#16201d] cursor-text hover:bg-[#f4f6f8] rounded px-1.5 py-0.5 -mr-1" title="Click to edit" onclick="editInfo(this,'${p.id}','${field}')">${disp}</span></div>`;
+  }
+  window.editInfo = function(el,id,field){
+    const p=patients.find(x=>x.id===id)||{}; const cur=p[field]||'';
+    const inp=document.createElement('input'); inp.value=cur; inp.className='field'; inp.style.maxWidth='240px'; inp.style.textAlign='right';
+    if(field==='dob') inp.type='date'; else if(field==='email') inp.type='email'; else if(field==='phone') inp.type='tel';
+    el.replaceWith(inp); inp.focus(); try{inp.select();}catch(e){}
+    let done=false;
+    const finish=async(save)=>{ if(done)return; done=true; if(save) await saveInfo(id,field,inp.value.trim()); renderDetail(); };
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();finish(true);} else if(e.key==='Escape')finish(false); });
+    inp.addEventListener('blur',()=>finish(true));
+  };
+  window.saveInfo = async function(id,field,v){
+    const p=patients.find(x=>x.id===id); if(!p)return; p[field]=v;
+    const col={first:'first_name',last:'last_name'}[field]||field;
+    if(USE_SUPABASE && window.__vitSb){ try{ await window.__vitSb.from('vit_patients').update({[col]:v}).eq('id',id); }catch(e){ console.warn('saveInfo',e); } }
+    renderList();
+  };
+  window.editName = function(id){
+    const p=patients.find(x=>x.id===id); if(!p)return; const h=document.getElementById('patName'); if(!h)return;
+    const inp=document.createElement('input'); inp.value=`${p.first||''} ${p.last||''}`.trim(); inp.className='field'; inp.style.maxWidth='260px';
+    h.replaceWith(inp); inp.focus(); try{inp.select();}catch(e){}
+    let done=false;
+    const finish=async(save)=>{ if(done)return; done=true;
+      if(save){ const parts=inp.value.trim().split(/\s+/); p.first=parts[0]||''; p.last=parts.slice(1).join(' ');
+        if(USE_SUPABASE&&window.__vitSb){ try{ await window.__vitSb.from('vit_patients').update({first_name:p.first,last_name:p.last}).eq('id',id);}catch(e){console.warn(e);} } }
+      renderDetail(); renderList(); };
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();finish(true);} else if(e.key==='Escape')finish(false); });
+    inp.addEventListener('blur',()=>finish(true));
+  };
+
+  function renderDetail(){
+    const p=patients.find(x=>x.id===selId); if(!p){return;}
+    const age = p.dob ? (new Date().getFullYear()-new Date(p.dob).getFullYear()) : '-';
+    $('#detail').innerHTML = `
+      <div class="p-6 max-w-3xl">
+        <div class="flex items-start justify-between gap-4 mb-6">
+          <div>
+            <h2 id="patName" onclick="editName('${p.id}')" title="Click to edit name" class="font-display text-2xl font-semibold tracking-[-1px] cursor-text hover:bg-[#f4f6f8] rounded px-1 -ml-1 inline-block">${p.first} ${p.last}</h2>
+            <div class="text-sm text-[#6b7280] mt-1">${PROG[p.program]||'-'} program · age ${age} · patient since ${fmtDate(p.created)}</div>
+          </div>
+          <select class="field w-auto" onchange="changeStatus('${p.id}',this.value)">
+            ${Object.entries(STAT).map(([k,v])=>`<option value="${k}" ${k===p.status?'selected':''}>${v}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="border border-[#e6e9ee] rounded-2xl mb-6 divide-y divide-[#eef1f4]">
+          ${infoRow(p,'email','Email')}
+          ${infoRow(p,'phone','Phone')}
+          ${infoRow(p,'dob','Date of birth')}
+          ${infoRow(p,'program','Program')}
+        </div>
+
+        ${p.review&&p.review.length ? `
+        <div class="rounded-2xl border border-[#ffd9a8] bg-[#fff7ed] p-5 mb-6">
+          <div class="flex items-center gap-2 mb-1"><span class="text-[#9a5a00] text-lg leading-none">⚠</span><div class="font-display text-base font-semibold text-[#9a5a00]">Needs clinical review before offering the prescription</div></div>
+          <p class="text-xs text-[#9a5a00]/80 mb-3">Patient completed intake and self-reported the following. Do not offer the paid script until reviewed other Vitality options may be a better fit.</p>
+          <div class="space-y-2">
+            ${p.review.map(code=>{const d=REVIEW_DECODE[code]||{flag:code,reason:'Flagged at intake.'};return `<div class="rounded-xl bg-white border border-[#ffe2cf] p-3"><div class="text-sm font-semibold text-[#16201d]">${d.flag}</div><div class="text-xs text-[#6b7280] mt-0.5">${d.reason}</div></div>`;}).join('')}
+          </div>
+        </div>`:''}
+
+        <div class="flex gap-2 mb-2 flex-wrap">
+          <button onclick="openEmail()" class="px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8]">✉ Send branded email</button>
+          <button onclick="bookAppt('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">+ Book appointment</button>
+          <button onclick="generatePlan('${p.id}')" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ ${p.plan? 'Regenerate plan':'Generate plan'}</button>
+          <button onclick="portalLogin('${p.id}',${!!p.has_login})" ${p.email?'':'title="Add an email first"'} class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7]">🔑 ${p.has_login?'Reset portal password':'Create portal login'}</button>
+          <button id="veeBtn" onclick="veeToggle('${p.id}','provider')" class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10 flex items-center gap-2"><span id="veeDot" class="w-2 h-2 rounded-full bg-[#0a6cf5]"></span>🎙 Discuss with Vee</button>
+          <button onclick="veeToggle('${p.id}','patient')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7] flex items-center gap-2">👤 Patient review</button>
+        </div>
+        <div id="veeStatus" class="text-xs text-[#6b7280] mb-6"></div>
+
+        ${p.inbody ? `
+        <div class="glass border border-[#e6e9ee] rounded-2xl p-5 mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">InBody · Body Composition</div>
+            <div class="text-xs text-[#6b7280]">${p.inbody.model} · ${fmtDate(p.inbody.test_date)} · <span class="text-[#0a6cf5]">imported from scan</span></div>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+            ${[['Weight',p.inbody.weight_lb+' lb'],['Body Fat',p.inbody.pbf_pct+'%'],['Skeletal Muscle',p.inbody.smm_lb+' lb'],['BMI',p.inbody.bmi],['Body Fat Mass',p.inbody.body_fat_mass_lb+' lb'],['Lean Body Mass',p.inbody.lean_body_mass_lb+' lb'],['Visceral Fat','Lvl '+p.inbody.visceral_fat_level],['BMR',p.inbody.bmr_kcal+' kcal']].map(m=>`<div class="bg-[#f7f8fa] border border-[#e6e9ee] rounded-xl p-3"><div class="text-[11px] text-[#6b7280]">${m[0]}</div><div class="font-display text-lg font-semibold mt-0.5">${m[1]}</div></div>`).join('')}
+          </div>
+          <div class="grid md:grid-cols-2 gap-x-8 gap-y-1">
+            <div>
+              <div class="text-[11px] font-semibold tracking-wide text-[#6b7280] uppercase mb-3">Obesity &amp; water analysis</div>
+              ${ibBar('Percent Body Fat', p.inbody.pbf_pct, 0, 50, [{w:10,c:'#3b82f6'},{w:10,c:'#10b981'},{w:30,c:'#f43f5e'}], '%')}
+              ${ibBar('BMI', p.inbody.bmi, 10, 55, [{w:8.5,c:'#3b82f6'},{w:6.5,c:'#10b981'},{w:30,c:'#f43f5e'}], '')}
+              ${ibBar('Visceral Fat Level', p.inbody.visceral_fat_level, 0, 30, [{w:10,c:'#10b981'},{w:5,c:'#f59e0b'},{w:15,c:'#f43f5e'}], '')}
+              ${ibBar('ECW/TBW (water balance)', p.inbody.ecw_tbw, 0.34, 0.40, [{w:.04,c:'#10b981'},{w:.02,c:'#f59e0b'}], '')}
+            </div>
+            <div>
+              <div class="text-[11px] font-semibold tracking-wide text-[#6b7280] uppercase mb-3">Segmental lean mass</div>
+              ${ibSeg(p.inbody.segmental_lean_lb, '#10b981')}
+              <div class="text-[11px] font-semibold tracking-wide text-[#6b7280] uppercase mt-4 mb-3">Segmental fat mass</div>
+              ${ibSeg(p.inbody.segmental_fat_lb, '#f43f5e')}
+            </div>
+          </div>
+          <div class="flex items-center justify-between mt-5 pt-4 border-t border-[#e6e9ee]">
+            <div class="text-xs text-[#6b7280]">Fat-lean control: <b class="text-[#be123c]">${p.inbody.target_fat_change_lb} lb fat</b> · <b class="text-[#0a6cf5]">0.0 lb lean</b> · TBW <b class="text-[#3d4a45]">${p.inbody.total_body_water_lb} lb</b></div>
+            <a href="${p.inbody.pdf||'#'}" ${p.inbody.pdf?'target="_blank"':''} class="text-xs text-[#0a6cf5] font-semibold">↧ View original scan (PDF)</a>
+          </div>
+        </div>` : ''}
+
+        <div class="glass border border-[#e6e9ee] rounded-2xl p-5">
+          <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-4">Chart timeline</div>
+          ${timeline(p)}
+          <div class="flex gap-2 mt-2 pt-3 border-t border-[#e6e9ee]">
+            <input id="noteInput" class="field" placeholder="Add a note to the chart…" onkeydown="if(event.key==='Enter')addNote('${p.id}')">
+            <button onclick="addNote('${p.id}')" class="px-4 py-2 rounded-lg bg-[#f1f3f7] border border-[#e6e9ee] text-sm font-medium hover:border-[#0a6cf5]/40">Add</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ---------------- actions ----------------
+  function changeStatus(id,val){ const p=patients.find(x=>x.id===id); const old=p.status; p.status=val;
+    p.notes.push({type:'system',author:'Front Desk',auto:true,ts:new Date().toISOString(),body:`Status changed: ${STAT[old]} → ${STAT[val]}.`});
+    kpis(); renderList(); renderDetail(); }
+  function addNote(id){ const v=$('#noteInput').value.trim(); if(!v)return; const p=patients.find(x=>x.id===id);
+    p.notes.push({type:'staff',author:'Front Desk',auto:false,ts:new Date().toISOString(),body:v}); renderDetail(); renderList(); }
+  function bookAppt(id){ const p=patients.find(x=>x.id===id);
+    p.appts.push({type:'Consult',status:'scheduled',when:ahead(48),provider:'DeBry'});
+    p.notes.push({type:'system',author:'Front Desk',auto:true,ts:new Date().toISOString(),body:'Appointment booked: Consult in 2 days with DeBry.'});
+    renderDetail(); renderList(); kpis(); }
+
+  // ---- appointment edit (reschedule / change / cancel) ----
+  let apptEdit=null;
+  window.editAppt=function(pid, whenIso){
+    const p=patients.find(x=>x.id===pid); if(!p)return;
+    const idx=(p.appts||[]).findIndex(a=>a.when===whenIso); if(idx<0)return;
+    apptEdit={pid,idx}; const a=p.appts[idx]; const d=new Date(a.when); const pad=n=>String(n).padStart(2,'0');
+    document.getElementById('apptDate').value=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    document.getElementById('apptTime').value=`${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    document.getElementById('apptType').value=a.type||'Consult';
+    document.getElementById('apptProvider').value=a.provider||'DeBry';
+    document.getElementById('apptStatus').value=a.status||'scheduled';
+    document.getElementById('apptPatient').textContent=`${p.first} ${p.last}`;
+    const mo=document.getElementById('apptModal'); mo.classList.remove('hidden'); mo.classList.add('flex');
+  };
+  window.closeAppt=function(){ const mo=document.getElementById('apptModal'); mo.classList.add('hidden'); mo.classList.remove('flex'); apptEdit=null; };
+  window.saveAppt=async function(){
+    if(!apptEdit)return; const p=patients.find(x=>x.id===apptEdit.pid); if(!p)return; const a=p.appts[apptEdit.idx]; if(!a)return;
+    const dt=document.getElementById('apptDate').value, tm=document.getElementById('apptTime').value||'09:00';
+    const when=new Date(`${dt}T${tm}`).toISOString();
+    a.when=when; a.type=document.getElementById('apptType').value; a.provider=document.getElementById('apptProvider').value; a.status=document.getElementById('apptStatus').value;
+    if(USE_SUPABASE && window.__vitSb && a.id){ try{ await window.__vitSb.from('vit_appointments').update({scheduled_at:when,type:a.type,provider:a.provider,status:a.status}).eq('id',a.id);}catch(e){console.warn('saveAppt',e);} }
+    p.notes.push({type:'system',author:'Front Desk',auto:true,ts:new Date().toISOString(),body:`Appointment updated: ${a.type} with ${a.provider}, ${fmtDT(when)} (${a.status}).`});
+    closeAppt(); renderDetail(); renderList(); kpis();
+  };
+  window.cancelAppt=async function(){
+    if(!apptEdit)return; const p=patients.find(x=>x.id===apptEdit.pid); if(!p)return; const a=p.appts[apptEdit.idx]; if(!a)return;
+    if(USE_SUPABASE && window.__vitSb && a.id){ try{ await window.__vitSb.from('vit_appointments').update({status:'cancelled'}).eq('id',a.id);}catch(e){console.warn(e);} }
+    const when=a.when, type=a.type; p.appts.splice(apptEdit.idx,1);
+    p.notes.push({type:'system',author:'Front Desk',auto:true,ts:new Date().toISOString(),body:`Appointment cancelled: ${type}, ${fmtDT(when)}.`});
+    closeAppt(); renderDetail(); renderList(); kpis();
+  };
+
+  // ---------------- branded email ----------------
+  function openEmail(){ $('#emailModal').classList.remove('hidden'); $('#emailModal').classList.add('flex'); renderEmailPreview(); }
+  function closeEmail(){ $('#emailModal').classList.add('hidden'); $('#emailModal').classList.remove('flex'); }
+  // ---- sender signature (based on who's logged in; uses their profile photo) ----
+  const ASSET='https://vitalityweightloss.health/assets';
+  const TEAM_SIGS={
+    'fred@vitalityacademies.health':{name:'Fred Corona',cred:'',title:'Chief Growth Officer',photo:ASSET+'/corona.jpg',phone:'(702) 602-5002',email:'fcorona@vitalityacademies.health'},
+    'debry@vitalityweightloss.health':{name:'Dr. Peter W. DeBry',cred:'MD',title:'Founder & Medical Director',photo:ASSET+'/debry.jpg',phone:'(702) 602-5002',email:'debry@vitalityweightloss.health'},
+    'devera@vitalityweightloss.health':{name:'Richard DeVera',cred:'NP',title:'Family Nurse Practitioner',photo:ASSET+'/devera.jpg',phone:'(702) 602-5002',email:'devera@vitalityweightloss.health'},
+  };
+  function senderSig(){
+    const e=((window.__vitUser&&window.__vitUser.email)||'').toLowerCase();
+    return TEAM_SIGS[e] || {name:'Vitality Front Desk',cred:'',title:'Patient Coordinator',photo:ASSET+'/logo-icon.png',phone:'(702) 602-5002',email:'hello@vitalityweightloss.health'};
+  }
+  function sigBlockHtml(sig){
+    const tel='tel:'+(sig.phone||'').replace(/[^0-9]/g,'');
+    return `<div style="border-top:1px solid #eef1f4;padding-top:16px;margin-top:4px">
+      <table cellpadding="0" cellspacing="0" border="0"><tr>
+        <td style="vertical-align:top;padding-right:14px"><img src="${sig.photo}" width="54" height="54" style="width:54px;height:54px;border-radius:50%;object-fit:cover;border:2px solid #e6e9ee;display:block" alt=""></td>
+        <td style="vertical-align:middle">
+          <div style="font-size:15px;font-weight:700;color:#0a3d7a">${sig.name}${sig.cred?', '+sig.cred:''}</div>
+          <div style="font-size:13px;color:#3d4a45">${sig.title}</div>
+          <div style="font-size:12px;color:#0a6cf5;font-weight:600">Vitality Weight Loss</div>
+        </td>
+      </tr></table>
+      <div style="font-size:12px;color:#3d4a45;margin-top:11px;line-height:1.7;border-top:1px solid #eef1f4;padding-top:9px">
+        <a href="${tel}" style="color:#3d4a45;text-decoration:none">${sig.phone}</a> &nbsp;·&nbsp; <a href="mailto:${sig.email}" style="color:#0a6cf5;text-decoration:none">${sig.email}</a><br>${CLINIC.addr}
+      </div>
+    </div>`;
+  }
+  function emailContent(tpl,p){
+    const appt = p.appts.find(a=>new Date(a.when)>now) || p.appts.slice(-1)[0];
+    const when = appt? fmtDT(appt.when):'your upcoming visit';
+    if(tpl==='confirm') return {h:`You're confirmed, ${p.first}.`, b:`This confirms your ${appt?appt.type:'appointment'} at Vitality Weight Loss on <b>${when}</b>${appt?` with ${appt.provider}`:''}. We look forward to seeing you.`, cta:'Add to calendar'};
+    if(tpl==='reminder') return {h:`See you soon, ${p.first}.`, b:`A friendly reminder of your ${appt?appt.type:'appointment'} on <b>${when}</b>${appt?` with ${appt.provider}`:''}. Need to reschedule? Just reply or call us.`, cta:'Confirm appointment'};
+    return {h:`Welcome to Vitality, ${p.first}.`, b:`We're glad you're here. Your ${PROG[p.program]||'care'} program is built around you, with a physician in your corner every step. A coordinator will be in touch shortly.`, cta:'View your next steps'};
+  }
+  function renderEmailPreview(){ const p=patients.find(x=>x.id===selId); const c=emailContent($('#emailTpl').value,p); const sig=senderSig();
+    $('#emailPreview').innerHTML = `
+      <div style="background:#eef1f6;padding:18px;font-family:Inter,sans-serif">
+        <div style="max-width:100%;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e6e9ee">
+          <img src="${ASSET}/email-hero.jpg" style="width:100%;height:auto;display:block;border:0" alt="Vitality">
+          <div style="padding:18px 24px 2px;text-align:center"><img src="${ASSET}/logo-full.png" style="height:46px;width:auto" alt="Vitality"></div>
+          <div style="padding:6px 28px 6px;color:#16201d">
+            <h2 style="font-family:'Montserrat',sans-serif;font-size:21px;margin:6px 0 10px;color:#0a3d7a">${c.h}</h2>
+            <p style="font-size:14px;line-height:1.65;color:#3d4a45;margin:0 0 18px">${c.b}</p>
+            <a style="display:inline-block;background:#0a6cf5;color:#ffffff;font-weight:600;font-size:14px;text-decoration:none;padding:11px 22px;border-radius:10px">${c.cta}</a>
+          </div>
+          <div style="padding:18px 28px 8px">${sigBlockHtml(sig)}</div>
+          <div style="border-top:1px solid #eef1f4;padding:14px 28px;color:#8a9098;font-size:11px;line-height:1.5;background:#fafbfc">
+            ${CLINIC.name} · ${CLINIC.phone}<br>This message may contain protected health information intended only for ${p.first} ${p.last}.
+          </div>
+        </div>
+      </div>`;
+  }
+  function sendEmail(){ const p=patients.find(x=>x.id===selId); const tpl=$('#emailTpl').value;
+    const label={confirm:'Appointment Confirmation',reminder:'Appointment Reminder',welcome:'Welcome'}[tpl];
+    p.notes.push({type:'message',author:'agent:mailer',auto:true,ts:new Date().toISOString(),body:`Branded email sent: "${label}" to ${p.email}.`});
+    if(USE_SUPABASE){ fetch(`${SB}/functions/v1/vit-mailer`,{method:'POST',headers:{'content-type':'application/json','apikey':ANON,'authorization':`Bearer ${ANON}`},body:JSON.stringify({patient_id:p.id,template:tpl,sender:senderSig()})}).catch(e=>console.warn('mailer',e.message)); }
+    closeEmail(); renderDetail();
+  }
+
+  // ---------------- Import InBody scan (PDF → vit-inbody-intake) ----------------
+  window.importScan = function(){
+    const inp=document.createElement('input'); inp.type='file'; inp.accept='application/pdf,image/*';
+    inp.onchange=async()=>{ const f=inp.files[0]; if(!f) return;
+      const btn=document.getElementById('importBtn'); const orig=btn.textContent; btn.textContent='Reading scan…'; btn.disabled=true;
+      try{
+        const b64=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(f); });
+        const isPdf=(f.type||'').includes('pdf')||/\.pdf$/i.test(f.name);
+        const payload=isPdf?{pdf_base64:b64,filename:f.name}:{image_base64:b64,media_type:f.type||'image/jpeg',filename:f.name};
+        let r, j;
+        if (USE_CONVEX) {
+          r = await fetch(`${CONVEX_URL}/inbody-intake`, { method:'POST', headers:await convexHeaders(), body:JSON.stringify(payload) });
+          j = await r.json();
+        } else {
+          r = await fetch(`${SB}/functions/v1/vit-inbody-intake`, { method:'POST', headers:{'content-type':'application/json','apikey':ANON,'authorization':`Bearer ${ANON}`}, body:JSON.stringify(payload) });
+          j = await r.json();
+        }
+        if(j.ok){ await loadData();
+          const who=patients.find(p=>p.id===j.patient_id);
+          alert(j.matched ? `InBody scan imported to ${who?who.first+' '+who.last:'the matched profile'}.` : 'Scan imported, but no patient matched the phone on the sheet, created an unmatched record.');
+        } else alert('Import failed: '+(j.error||'unknown'));
+      }catch(e){ alert('Import error: '+e.message); }
+      btn.textContent=orig; btn.disabled=false;
+    };
+    inp.click();
+  };
+
+  // ---------------- Vee voice (xAI Realtime) ----------------
+  const VEE_TOKEN_URL = `${SB}/functions/v1/vit-voice-token`;
+  let veeWs=null, veeActive=false, veeCtx=null, veeMic=null, veeProc=null, veeQ=[], veePlaying=false;
+  function veeSetStatus(t){ const e=document.getElementById('veeStatus'); if(e) e.textContent=t; }
+  function veeUI(on){ const b=document.getElementById('veeBtn'), d=document.getElementById('veeDot'); if(!b)return;
+    b.classList.toggle('bg-[#0a6cf5]/10', on); if(d) d.classList.toggle('animate-pulse', on); }
+  function buildVeeInstructions(p, mode){
+    const ib=p.inbody, age=p.dob?(new Date().getFullYear()-new Date(p.dob).getFullYear()):'unknown';
+    const stats = ib ? [
+      `Latest InBody scan (${ib.model||'InBody'})`, `weight ${ib.weight_lb} pounds`, `body fat ${ib.pbf_pct} percent`,
+      `skeletal muscle mass ${ib.smm_lb} pounds`, `BMI ${ib.bmi}`, `lean body mass ${ib.lean_body_mass_lb} pounds`,
+      `total body water ${ib.total_body_water_lb} pounds`, `ECW to TBW ratio ${ib.ecw_tbw}`,
+      `visceral fat level ${ib.visceral_fat_level}`, `basal metabolic rate ${ib.bmr_kcal} calories`,
+      `body fat control target ${ib.target_fat_change_lb} pounds`,
+    ].join('. ')+'.' : 'No InBody scan on file for this patient.';
+    const appt=(p.appts||[]).find(a=>new Date(a.when)>new Date());
+    const notes=(p.notes||[]).slice(0,3).map(n=>n.body).join(' | ');
+    const tags=(p.tags||[]);
+    const audience = mode==='patient'
+      ? `You are speaking directly with the patient, ${p.first}. Be warm and encouraging in tone, but stick to facts.`
+      : `You are speaking with the provider or clinic staff about this patient.`;
+    // Staff mode only: the signals Vee uses to recommend how to target the patient and the next steps.
+    const engagementSignals = mode==='patient' ? `` : `
+ENGAGEMENT SIGNALS (use these to recommend next steps):
+- Lifecycle status: ${p.status}.
+- Program interest: ${({glp1:'GLP-1 weight loss',metabolic:'Metabolic and hormone',coaching:'Coaching and nutrition',medicare_glp1:'Medicare GLP-1 Bridge',unsure:'undecided'})[p.program]||'care'}.
+- Tags on file: ${tags.length?tags.join(', '):'none'}.
+- Patient portal login: ${p.has_login?'created':'NOT created yet'}.
+- Upcoming appointment: ${appt?(appt.type+' on '+new Date(appt.when).toLocaleDateString()):'none scheduled'}.
+- Email on file: ${p.email?'yes':'no'}. Phone on file: ${p.phone?'yes':'no'}.`;
+    const staffGuidance = mode==='patient' ? `` : `
+NEXT-STEP RECOMMENDATIONS (staff mode, this is expected of you): proactively recommend how to advance and retain this patient. This is operational and engagement guidance, NOT medical advice. Good recommendations:
+- Lead with the single best next action right now, and why.
+- Outreach: which channel (call, text, or branded email) and a short message angle tied to their stated interest, tags, or recent notes.
+- Follow-up timing by status: a hot or new lead is a same-day or this-week touch; a new patient needs an onboarding and portal-login touch; an active patient needs an adherence or rescan check; an inactive patient needs a re-engagement reason.
+- Which program or offer to PRESENT next (GLP-1, Medicare GLP-1 Bridge, coaching) framed as what to discuss with them, never as a prescription or dose.
+- Concrete clinic actions: book the next consult or InBody rescan, create the portal login if it is not created, send a branded email.
+- If a review flag (needs-review or any review: tag) is present, the next step is provider review before any program offer.
+Base every recommendation only on what is on file. If there is not enough to recommend confidently, say what to gather first (e.g., a callback, missing email, an InBody scan).`;
+    const opening = mode==='patient'
+      ? `\nSTART the call by giving ${p.first} a brief, warm overview of their key numbers in UNDER 90 SECONDS: weight, body fat percent, skeletal muscle mass, BMI, visceral fat level, and basal metabolic rate. Touch the key points only, do not read every metric. Where useful, mention InBody's published range as a fact. Then say you're happy to answer any questions, and STOP talking and listen.`
+      : `\nSTART by giving the staff member a 20 to 30 second read on ${p.first}: where they are in the journey, then your single best recommended next action, then one or two more next steps. Be specific and actionable. Then stop and take questions.`;
+    return `You are Vee, the front desk assistant for Vitality Weight Loss, a physician-led medical weight-loss clinic. ${audience} Be warm, brief, precise. Keep every answer short.
+
+PATIENT: ${p.first} ${p.last}, age ${age}, ${({glp1:'GLP-1',metabolic:'Metabolic and hormone',coaching:'Coaching',unsure:'care'})[p.program]||'care'} program, status ${p.status}.
+${stats}
+Next appointment: ${appt? (appt.type+' on '+new Date(appt.when).toLocaleString()+' with '+appt.provider):'none scheduled'}.
+Recent chart notes: ${notes||'none'}.
+${engagementSignals}
+
+INBODY PUBLISHED REFERENCE RANGES (these are printed facts from InBody, cite them as "InBody's published range", never as a verdict on this person): visceral fat level healthy under 10; ECW to TBW ratio healthy between 0.36 and 0.39; BMI normal 18.5 to 25.
+${staffGuidance}
+${opening}
+HARD RULES:
+- You are NOT a clinician. NEVER diagnose, NEVER say this person is healthy or unhealthy, NEVER recommend medication, a dose, a clinical diet, or treatment. Report recorded numbers and InBody's published ranges only. (Operational and outreach next steps in staff mode ARE allowed and expected, framed as what to do or discuss, never as a prescription.)
+- If you give a number next to an InBody range, do NOT editorialize. Say the measurement and the range, then add that their provider will interpret what it means for them.
+- If asked for medical judgment or advice, say you can only share the measurements and the provider will interpret them.
+- Never invent a number. If a stat is not on file, say it is not on file.
+- Keep answers short. No em-dashes when you speak. Use periods and commas.`;
+  }
+  window.veeToggle = function(id, mode){ if(veeActive){ veeStop(); return; } veeStart(id, mode||'provider'); };
+  async function veeStart(id, mode){
+    const p=patients.find(x=>x.id===id); if(!p) return;
+    veeSetStatus('Connecting to Vee…');
+    try{
+      const tr=await fetch(VEE_TOKEN_URL,{method:'POST',headers:{'content-type':'application/json','apikey':ANON}});
+      const td=await tr.json(); if(!td.token){ veeSetStatus('Could not start voice'); return; }
+      veeMic=await navigator.mediaDevices.getUserMedia({audio:{sampleRate:24000,channelCount:1}});
+      veeCtx=new AudioContext({sampleRate:24000});
+      veeWs=new WebSocket('wss://api.x.ai/v1/realtime',[`xai-client-secret.${td.token}`]);
+      veeWs.onopen=()=>{ veeActive=true; veeUI(true);
+        veeSetStatus(mode==='patient' ? 'Vee is reviewing '+p.first+"'s results…" : 'Vee is listening · ask about '+p.first+"'s stats");
+        veeWs.send(JSON.stringify({type:'session.update',session:{voice:'ara',instructions:buildVeeInstructions(p,mode),turn_detection:{type:'server_vad',threshold:0.8,silence_duration_ms:800},audio:{input:{format:{type:'audio/pcm',rate:24000}},output:{format:{type:'audio/pcm',rate:24000}}}}}));
+        if(mode==='patient'){ veeWs.send(JSON.stringify({type:'conversation.item.create',item:{type:'message',role:'user',content:[{type:'input_text',text:'Please give me a brief overview of my results.'}]}})); veeWs.send(JSON.stringify({type:'response.create'})); }
+        const src=veeCtx.createMediaStreamSource(veeMic); veeProc=veeCtx.createScriptProcessor(4096,1,1);
+        src.connect(veeProc); veeProc.connect(veeCtx.destination);
+        veeProc.onaudioprocess=(e)=>{ if(!veeActive||!veeWs||veeWs.readyState!==1)return;
+          const inp=e.inputBuffer.getChannelData(0); const pcm=new Int16Array(inp.length);
+          for(let i=0;i<inp.length;i++){ const s=Math.max(-1,Math.min(1,inp[i])); pcm[i]=s<0?s*0x8000:s*0x7FFF; }
+          veeWs.send(JSON.stringify({type:'input_audio_buffer.append',audio:btoa(String.fromCharCode(...new Uint8Array(pcm.buffer)))})); };
+      };
+      veeWs.onmessage=(m)=>{ const ev=JSON.parse(m.data);
+        if(ev.type==='response.output_audio.delta'&&ev.delta) veePlay(ev.delta);
+        if(ev.type==='error'){ console.error('[vee]',ev.error); veeSetStatus('Error: '+(ev.error?.message||'unknown')); } };
+      veeWs.onerror=()=>{ veeSetStatus('Connection error'); veeStop(); };
+      veeWs.onclose=()=>{ if(veeActive){ veeStop(); } };
+    }catch(e){ veeSetStatus('Mic/voice error: '+e.message); }
+  }
+  function veeStop(){ veeActive=false; veeUI(false); veeSetStatus('');
+    if(veeProc){veeProc.disconnect();veeProc=null;} if(veeMic){veeMic.getTracks().forEach(t=>t.stop());veeMic=null;}
+    if(veeCtx){veeCtx.close();veeCtx=null;} if(veeWs){veeWs.close();veeWs=null;} veeQ=[];veePlaying=false; }
+  function veePlay(b64){ veeQ.push(b64); if(!veePlaying) veeDrain(); }
+  function veeDrain(){ if(!veeQ.length){veePlaying=false;return;} veePlaying=true;
+    const bin=atob(veeQ.shift()); const by=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)by[i]=bin.charCodeAt(i);
+    const pcm=new Int16Array(by.buffer); const f=new Float32Array(pcm.length); for(let i=0;i<pcm.length;i++)f[i]=pcm[i]/32768;
+    const ctx=veeCtx||new AudioContext({sampleRate:24000}); const buf=ctx.createBuffer(1,f.length,24000); buf.getChannelData(0).set(f);
+    const s=ctx.createBufferSource(); s.buffer=buf; s.connect(ctx.destination); s.onended=()=>veeDrain(); s.start(); }
+
+  // ---------------- collapse patient list ----------------
+  let listOpen = true;
+  window.toggleList = function(){
+    listOpen = !listOpen;
+    const grid=document.getElementById('mainGrid'), btn=document.getElementById('listToggle'),
+          tabs=document.getElementById('tabs'), list=document.getElementById('list'), today=document.getElementById('todayPanel');
+    if(listOpen){ grid.style.gridTemplateColumns=''; tabs.style.display=''; list.style.display=''; today.style.display=''; btn.textContent='«'; btn.title='Collapse patient list'; }
+    else { grid.style.gridTemplateColumns='56px 1fr'; tabs.style.display='none'; list.style.display='none'; today.style.display='none'; btn.textContent='»'; btn.title='Show patient list'; }
+  };
+
+  // ---------------- boot ----------------
+  $('#search').addEventListener('input',renderList);
+  document.querySelectorAll('#tabs .tab').forEach(t=>t.addEventListener('click',()=>{
+    document.querySelectorAll('#tabs .tab').forEach(x=>x.classList.remove('on')); t.classList.add('on');
+    filter=t.dataset.f; renderList();
+  }));
+  function pickDefault(){ const l=patients.find(p=>/luis/i.test((p.first||'')+' '+(p.last||''))); return (l||patients[0]||{}).id; }
+  let liveLoaded=false;
+  async function loadData(){
+    if (USE_CONVEX) {
+      try {
+        const r = await fetch(`${CONVEX_URL}/crm-data`, {
+          method: 'POST',
+          headers: await convexHeaders()
+        });
+        const j = await r.json();
+        if (j.ok && j.patients) {
+          liveLoaded = true;
+          patients = j.patients;
+          if (!patients.find(p => p.id === selId)) selId = pickDefault();
+          kpis(); renderList(); renderDetail();
+        }
+      } catch (e) { console.warn('convex load failed:', e.message); }
+      return;
+    }
+    if (!USE_SUPABASE) return;
+    try {
+      const r = await fetch(`${SB}/functions/v1/vit-crm-data`, { method: 'POST', headers: { 'content-type': 'application/json', 'apikey': ANON, 'authorization': `Bearer ${ANON}` } });
+      const j = await r.json();
+      if (j.ok && j.patients) { liveLoaded = true; patients = j.patients; if (!patients.find(p => p.id === selId)) selId = pickDefault(); kpis(); renderList(); renderDetail(); }
+    } catch (e) { console.warn('live load failed:', e.message); }
+  }
+  // Live-first when wired, no synthetic flash. Seed only renders if the live load fails.
+  if(USE_SUPABASE || USE_CONVEX){
+    document.getElementById('list').innerHTML='<div class="text-center text-[#9aa0ab] text-sm py-10">Loading patients…</div>';
+    loadData().finally(()=>{ if(!liveLoaded){ kpis(); renderList(); if(patients[0]) select(pickDefault()); } });
+    if (USE_SUPABASE) setInterval(loadData, 15000);  // Convex is reactive; no polling needed
+  } else {
+    kpis(); renderList(); if(patients[0]) select(pickDefault());
+  }
+
+  // ---------------- medication reference (OpenFDA, provider-side, no PHI sent) ----------------
+  const rxEsc=(s)=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  function openRx(){ $('#rxModal').classList.remove('hidden'); $('#rxModal').classList.add('flex'); }
+  function closeRx(){ $('#rxModal').classList.add('hidden'); $('#rxModal').classList.remove('flex'); }
+
+  // ---------------- manual Add patient ----------------
+  window.openAddPatient = function(){
+    ['apFirst','apLast','apPhone','apDob','apEmail','apNote'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+    document.getElementById('apProgram').value='glp1';
+    document.getElementById('apStatus').value='lead';
+    document.getElementById('apLogin').checked=false;
+    const err=document.getElementById('apErr'); err.classList.add('hidden'); err.textContent='';
+    const m=document.getElementById('addModal'); m.classList.remove('hidden'); m.classList.add('flex');
+    setTimeout(()=>document.getElementById('apFirst').focus(),40);
+  };
+  window.closeAddPatient = function(){ const m=document.getElementById('addModal'); m.classList.add('hidden'); m.classList.remove('flex'); };
+  // ---------------- generate starting plan from InBody ----------------
+  window.generatePlan = async function(id, force){
+    const gen=async(f)=>{
+      if (USE_CONVEX) {
+        // Use the dedicated route (or fall back to the /crm-data compat layer)
+        const r = await fetch(`${CONVEX_URL}/generate-plan`, {
+          method:'POST',
+          headers:await convexHeaders(),
+          body:JSON.stringify({patient_id:id, force:!!f})
+        });
+        return r.json();
+      }
+      const r=await fetch(`${SB}/functions/v1/vit-generate-plan`,{method:'POST',headers:{'content-type':'application/json','apikey':ANON,'authorization':`Bearer ${ANON}`},body:JSON.stringify({patient_id:id,force:!!f})});
+      return r.json();
+    };
+    try{
+      let j=await gen(force);
+      if(j.exists){
+        if(!confirm('This patient already has a plan. Replace it with a freshly generated one from their latest InBody scan?')) return;
+        j=await gen(true);
+      }
+      if(!j.ok){ alert(j.error||'Could not generate a plan.'); return; }
+      await loadData();
+      alert(`Plan generated from the InBody scan.\nGoal ${j.goal_weight || j.goal} lb · ${j.calories || ''} kcal · ${j.protein || ''} g protein.\nIt now shows in the patient's portal. Provider should review and confirm.`);
+    }catch(e){ alert('Network error generating the plan — please try again.'); }
+  };
+  window.saveAddPatient = async function(){
+    const err=document.getElementById('apErr'), btn=document.getElementById('apSave');
+    const v=id=>(document.getElementById(id).value||'').trim();
+    const first=v('apFirst'), last=v('apLast');
+    if(!first && !last){ err.textContent='Enter at least a first or last name.'; err.classList.remove('hidden'); return; }
+    const wantLogin=document.getElementById('apLogin').checked;
+    if(wantLogin && !v('apEmail')){ err.textContent='An email is required to create a portal login.'; err.classList.remove('hidden'); return; }
+    err.classList.add('hidden'); btn.disabled=true; btn.textContent='Adding…';
+    const payload={ action:'add', first_name:first, last_name:last, email:v('apEmail'), phone:v('apPhone'), dob:v('apDob')||null, program:v('apProgram'), status:v('apStatus'), note:v('apNote') };
+    try{
+      let r, j;
+      if (USE_CONVEX) {
+        r = await fetch(`${CONVEX_URL}/crm-data`, { method:'POST', headers:await convexHeaders(), body:JSON.stringify(payload) });
+        j = await r.json();
+      } else {
+        r = await fetch(`${SB}/functions/v1/vit-crm-data`, { method:'POST', headers:{'content-type':'application/json','apikey':ANON,'authorization':`Bearer ${ANON}`}, body:JSON.stringify(payload) });
+        j = await r.json();
+      }
+      if(!j.ok){
+        err.textContent=j.error||'Could not add patient.'; err.classList.remove('hidden');
+        btn.disabled=false; btn.textContent='Add patient';
+        if(j.existing_id){ closeAddPatient(); select(j.existing_id); }
+        return;
+      }
+      let loginMsg='';
+      if(wantLogin && j.id){
+        const lj=await provisionLogin(j.id);
+        loginMsg = lj.ok
+          ? `Portal login created:\nEmail: ${lj.email}\nTemporary password: ${lj.password}\n\nHand these to the patient in person or by text — don't email the password.`
+          : 'Patient added, but the portal login could not be created: '+(lj.error||'unknown error');
+      }
+      closeAddPatient();
+      await loadData();
+      if(j.id) select(j.id);
+      if(loginMsg) alert(loginMsg);
+    }catch(e){
+      err.textContent='Network error — please try again.'; err.classList.remove('hidden');
+      btn.disabled=false; btn.textContent='Add patient';
+    }
+  };
+  async function provisionLogin(id, password){
+    if (USE_CONVEX) {
+      const r = await fetch(`${CONVEX_URL}/crm-data`, {
+        method:'POST',
+        headers:await convexHeaders(),
+        body:JSON.stringify({action:'create_login', patient_id:id, password:password||undefined})
+      });
+      return r.json();
+    }
+    const r=await fetch(`${SB}/functions/v1/vit-crm-data`,{method:'POST',headers:{'content-type':'application/json','apikey':ANON,'authorization':`Bearer ${ANON}`},body:JSON.stringify({action:'create_login',patient_id:id,password:password||undefined})});
+    return r.json();
+  }
+  window.portalLogin = async function(id, hasLogin){
+    if(hasLogin && !confirm('Reset this patient’s portal password to a new temporary one?')) return;
+    try{
+      const j=await provisionLogin(id);
+      if(!j.ok){ alert(j.error||'Could not create the portal login.'); return; }
+      await loadData();
+      alert(`${j.reset?'Portal password reset':'Portal login created'}:\nEmail: ${j.email}\nTemporary password: ${j.password}\n\nHand these to the patient in person or by text — don't email the password. They sign in at the patient portal.`);
+    }catch(e){ alert('Network error — please try again.'); }
+  };
+  async function rxLookup(drug){
+    const body=$('#rxBody'); body.innerHTML='<div class="text-[#9aa0ab] py-8 text-center">Loading '+rxEsc(drug)+'…</div>';
+    try{
+      const r=await fetch(SB+'/functions/v1/vit-drug-reference',{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON},body:JSON.stringify({drug})});
+      const d=await r.json();
+      if(!d||!d.found){ body.innerHTML='<div class="text-[#9aa0ab] py-8 text-center">No match found.</div>'; return; }
+      const g=d.drug;
+      const sec=(label,txt)=> txt?`<div class="mb-3"><div class="text-[11px] uppercase tracking-wide text-[#9aa0ab] font-semibold mb-1">${label}</div><div class="text-[#4b5563] leading-relaxed">${rxEsc(txt)}</div></div>`:'';
+      const ev=(g.top_reported_events||[]);
+      const events= ev.length?`<div class="mb-1"><div class="text-[11px] uppercase tracking-wide text-[#9aa0ab] font-semibold mb-1.5">Most reported events (FDA)</div><div class="flex flex-wrap gap-1.5">${ev.map(e=>`<span class="px-2 py-0.5 rounded-full bg-[#f1f3f7] text-xs text-[#4b5563] capitalize">${rxEsc(e.term)} <span class="text-[#9aa0ab]">${(e.count||0).toLocaleString()}</span></span>`).join('')}</div></div>`:'';
+      body.innerHTML=`<div class="mb-3"><span class="font-display font-semibold text-lg capitalize">${rxEsc(g.generic)}</span> <span class="text-xs text-[#6b7280]">${rxEsc((g.brands||[]).join(', '))} · ${rxEsc(g.class)}</span></div>`+
+        (g.boxed_warning?`<div class="mb-3 rounded-xl bg-rose-50 border border-rose-200 p-3"><div class="text-[11px] uppercase tracking-wide text-rose-600 font-semibold mb-1">Boxed warning</div><div class="text-[13px] text-rose-900 leading-relaxed">${rxEsc(g.boxed_warning)}</div></div>`:'')+
+        sec('Indications',g.indications)+sec('Dosing',g.dosing)+sec('Warnings &amp; cautions',g.warnings)+sec('Contraindications',g.contraindications)+sec('Adverse reactions',g.adverse_reactions)+events+
+        `<div class="text-[11px] text-[#9aa0ab] mt-3 pt-2 border-t border-[#f1f3f7]">${rxEsc(g.source)}</div>`;
+    }catch(e){ body.innerHTML='<div class="text-rose-600 py-8 text-center">Lookup failed. Try again.</div>'; }
+  }
+</script>
+</body>
+</html>
