@@ -87,7 +87,7 @@ async function api(payload){
 }
 
 function gamify(){
-  const PTS={food:10,weigh_in:5,journal:5,activity:15,scan:10,module:25};
+  const PTS={food:10,weigh_in:5,journal:5,activity:15,scan:10,module:25,nextstep:20};
   const logs=DATA.logs||[], ib=DATA.inbody||[], plan=DATA.plan, h=plan&&plan.handbook;
   const dk=(iso)=>new Date(iso).toDateString();
   let points=0; const dates=new Set();
@@ -102,6 +102,7 @@ function gamify(){
   const cw=wl.length?+wl[0].value_num:(ib.length?+ib[ib.length-1].weight_lb:start);
   const lost=(start!=null&&cw!=null)?(start-cw):0, n=logs.length;
   const doneMods=new Set(logs.filter(l=>l.kind==='module').map(l=>(l.body||'').split(':')[0].trim())).size;
+  const doneNext=new Set(logs.filter(l=>l.kind==='nextstep').map(l=>(l.body||'').split(':')[0].trim())).size;
   const B=(i,l,d,e)=>({icon:i,label:l,desc:d,earned:!!e});
   const badges=[
     B('👣','First step','Log your first anything',n>=1),
@@ -112,6 +113,8 @@ function gamify(){
     B('📉','Down 5 lb','Drop 5 lb from start',lost>=5),
     B('💪','Down 10 lb','Drop 10 lb from start',lost>=10),
     B('⭐','50 logs','Log 50 entries total',n>=50),
+    B('🚀','Off the ground','Finish a Next Step',doneNext>=1),
+    B('🎉','All set','Finish all 5 Next Steps',doneNext>=5),
     B('🎓','PhD scholar','Finish 3 lessons',doneMods>=3),
     B('🏆','Goal reached','Hit your goal weight',goal!=null&&cw!=null&&cw<=goal),
   ];
@@ -204,8 +207,35 @@ async function submitQuiz(m){
   }
 }
 
+const NEXTSTEPS=[
+  {slug:'vision',icon:'\uD83C\uDFAF',title:'Create your vision board',
+   steps:['Buy a small foam board (18 to 24 inches). Find pictures of yourself or loved ones that inspire you, and turn your "why" into images and words.','Leave a one-inch margin around the edge for the stickers you earn, and hang it where you will see it every day.'],
+   note:'Take a photo of your finished board and email it to success@vitalityweightloss.health.'},
+  {slug:'object',icon:'\uD83C\uDFCB\uFE0F',title:'Choose your goal object',
+   steps:['Pick an object that represents your weight-loss goal and decorate it with a face or sayings that motivate you.','Keep it on your bed. Each morning set it on the bed; each night pick it up a few times, then set it down, and picture life without that extra weight.'],
+   note:'Take a photo of your decorated object and email it to success@vitalityweightloss.health.'},
+  {slug:'labs',icon:'\uD83E\uDDEA',title:'Get your lab work done',
+   steps:['We need these labs to safely start a GLP-1: Comprehensive Metabolic Panel, Hemoglobin A1C, Lipid Panel, TSH, CBC, pregnancy test (women), Lipase and Amylase, and Fasting Insulin. Vitamin D is recommended.','Had labs with another doctor in the last 3 months? Send those instead, no need to repeat them.'],
+   note:'Email your results or a photo to success@vitalityweightloss.health.'},
+  {slug:'gear',icon:'\uD83D\uDC5F',title:'Get your exercise gear ready',
+   steps:['Have what you need to move comfortably: good gym shoes, a swimsuit (water activities help if walking is hard), sweatpants, and a tee shirt.','It does not have to be expensive, only functional.']},
+  {slug:'consent',icon:'\u270D\uFE0F',title:'Communication acknowledgment',
+   steps:['Email and text are how we send appointment, billing, and care updates. Standard email and text may not be fully secure, and by opting in you accept that for non-urgent messages.','For anything urgent, always call us or seek emergency care.'],
+   note:'Tap Mark complete to acknowledge.'},
+];
+function doneNextSteps(){ const s=new Set(); (DATA.logs||[]).filter(l=>l.kind==='nextstep').forEach(l=>{ const sl=(l.body||'').split(':')[0].trim(); if(sl) s.add(sl); }); return s; }
+function openNextStep(slug){
+  const s=NEXTSTEPS.find(x=>x.slug===slug); if(!s) return;
+  const isDone=doneNextSteps().has(slug);
+  $('modTitle').textContent=s.title;
+  const body=s.steps.map(t=>`<p class="text-sm text-[#4b5563] leading-relaxed mb-3">${esc(t)}</p>`).join('');
+  const note=s.note?`<div class="text-[12px] text-[#6b7280] bg-[#f7f8fa] border border-[#eef0f4] rounded-xl p-3 mb-4">${esc(s.note)}</div>`:'';
+  $('modBody').innerHTML=`<div class="mb-2">${body}</div>${note}<div id="nsResult" class="text-sm mb-3"></div><button id="nsBtn" class="w-full py-2.5 rounded-xl ${isDone?'bg-[#eafaf0] text-[#0a7a3d]':'bg-[#0a6cf5] text-white'} font-semibold" ${isDone?'disabled':''}>${isDone?'Completed \u2713':'Mark complete \u00b7 +20 points'}</button>`;
+  $('modModal').classList.remove('hidden'); $('modModal').classList.add('flex'); $('modBody').scrollTop=0;
+  if(!isDone) $('nsBtn').onclick=async()=>{ const btn=$('nsBtn'); btn.disabled=true; btn.textContent='Saving\u2026'; await api({action:'add_log',kind:'nextstep',body:`${s.slug}: ${s.title}`}); $('nsResult').innerHTML='<span class="text-emerald-600 font-semibold">Nice work, sticker earned. +20 points.</span>'; DATA=await api({action:'load'}); setTimeout(()=>{ closeMod(); render(); }, 1000); };
+}
 function render(){
-  const g=gamify(), p=DATA.patient, done=doneSlugs();
+  const g=gamify(), p=DATA.patient, done=doneSlugs(), nextDone=doneNextSteps();
   const stat=(v,l,bg,bd)=>`<div class="rounded-2xl ${bg} border ${bd} p-4 text-center"><div class="font-display text-3xl font-semibold seg">${v}</div><div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mt-.5">${l}</div></div>`;
   $('content').innerHTML=`
     <div><h1 class="font-display text-2xl font-semibold tracking-[-.5px]">${esc(p.first)}'s rewards</h1><p class="text-sm text-[#6b7280] mt-1">Keep logging to build your streak and unlock badges.</p></div>
@@ -215,6 +245,13 @@ function render(){
       ${stat(g.points,'points','bg-[#eaf2ff]','border-[#d6e6ff]')}
       ${stat(g.week+'/7','this week','bg-[#eafaf0]','border-[#cdeedd]')}
     </div>
+
+    <section class="card p-6 bg-gradient-to-br from-white to-[#eefaf3]">
+      <div class="flex items-center justify-between mb-1"><div class="flex items-center gap-2"><span class="text-xl">\uD83D\uDE80</span><h2 class="font-display text-lg font-semibold">Your Next Steps</h2></div><span class="text-xs text-[#9aa0ab]">${nextDone.size}/${NEXTSTEPS.length} done</span></div>
+      <p class="text-sm text-[#6b7280] mb-4">Get set up for your transformation. Each step earns a sticker and +20 points.</p>
+      <div class="flex gap-2 mb-4 flex-wrap">${NEXTSTEPS.map(s=>{const d=nextDone.has(s.slug);return `<div class="w-11 h-11 rounded-full flex items-center justify-center text-lg border-2 ${d?'bg-[#eafaf0] border-[#0a7a3d]':'bg-[#f7f8fa] border-dashed border-[#cdd5df] opacity-50 grayscale'}" title="${esc(s.title)}">${s.icon}</div>`;}).join('')}</div>
+      <div class="grid sm:grid-cols-2 gap-3">${NEXTSTEPS.map(s=>{const d=nextDone.has(s.slug);return `<button data-nextstep="${s.slug}" class="text-left rounded-xl border p-3 transition ${d?'bg-[#eafaf0] border-[#cdeedd]':'bg-white border-[#e6e9ee] hover:border-[#0a6cf5]'}"><div class="flex items-center gap-2"><span class="text-xl">${s.icon}</span><span class="text-sm font-semibold">${esc(s.title)}</span></div><div class="text-[11px] mt-1 ${d?'text-[#0a7a3d] font-semibold':'text-[#9aa0ab]'}">${d?'\u2713 Done':'View \u2192'}</div></button>`;}).join('')}</div>
+    </section>
 
     <section class="card p-6">
       <h2 class="font-display text-lg font-semibold mb-3">Last 2 weeks</h2>
@@ -252,6 +289,7 @@ function render(){
 $('modClose').onclick=closeMod;
 $('modModal').addEventListener('click',(e)=>{ if(e.target===$('modModal')) closeMod(); });
 document.addEventListener('click',(e)=>{ const b=e.target.closest&&e.target.closest('[data-mod]'); if(b&&!b.disabled) openModule(b.getAttribute('data-mod')); });
+document.addEventListener('click',(e)=>{ const b=e.target.closest&&e.target.closest('[data-nextstep]'); if(b&&!b.disabled) openNextStep(b.getAttribute('data-nextstep')); });
 
 DATA = await api({action:'load'});
 $('loading').classList.add('hidden');
