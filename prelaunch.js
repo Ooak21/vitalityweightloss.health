@@ -12,7 +12,9 @@
 
   var CONVEX_SITE = "https://quixotic-cat-492.convex.cloud".replace(".convex.cloud", ".convex.site");
   // Pages that begin patient intake / take payment — gated while pre-launch.
-  var GATED = ["intake.html", "glp1.html", "insurance.html", "checkout.html"];
+  // NOTE: glp1.html is intentionally OPEN (removed from this list) so Dr. DeBry can run a
+  // real end-to-end test of the GLP-1 manual/pickup flow with a trusted patient before launch.
+  var GATED = ["intake.html", "insurance.html", "checkout.html"];
 
   var CSS =
   '#vwl-wl{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(11,16,20,.55);backdrop-filter:blur(4px);font-family:Inter,system-ui,sans-serif}' +
