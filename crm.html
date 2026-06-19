@@ -913,7 +913,7 @@ HARD RULES:
   async function rxLookup(drug){
     const body=$('#rxBody'); body.innerHTML='<div class="text-[#9aa0ab] py-8 text-center">Loading '+rxEsc(drug)+'…</div>';
     try{
-      const r=await fetch(SB+'/functions/v1/vit-drug-reference',{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON},body:JSON.stringify({drug})});
+      const r=await fetch(`${CONVEX_URL}/drug-reference`,{method:'POST',headers:await convexHeaders(),body:JSON.stringify({drug})});
       const d=await r.json();
       if(!d||!d.found){ body.innerHTML='<div class="text-[#9aa0ab] py-8 text-center">No match found.</div>'; return; }
       const g=d.drug;

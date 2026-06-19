@@ -470,7 +470,7 @@ function render(){
       const q=$('foodIn').value.trim(); if(!q)return;
       const box=$('foodResults'); box.innerHTML='<div class="text-xs text-[#9aa0ab] py-2">Searching…</div>';
       try{
-        const r=await fetch(FN.replace('vit-portal-data','vit-food-search'),{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON,'Authorization':'Bearer '+TOKEN},body:JSON.stringify({query:q})});
+        const r=await fetch(CONVEX_URL.replace('.convex.cloud','.convex.site')+'/food-search',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},body:JSON.stringify({query:q})});
         const d=await r.json(); const foods=(d&&d.foods)||[];
         if(!foods.length){ box.innerHTML='<div class="text-xs text-[#9aa0ab] py-2">'+(d&&d.rate_limited?'Food lookup is busy, try again in a minute.':'No matches.')+'</div>'; return; }
         box.innerHTML=foods.map((f,i)=>`<div data-i="${i}" class="flex items-center gap-2 py-2 border-b border-[#f1f3f7] last:border-0">

@@ -64,7 +64,11 @@ async function api(fn, payload){
     const c = await getConvex();
     if (p.action === 'load')    return await c.query('portal:loadByToken', { token: TOKEN });
     if (p.action === 'add_log') return await c.mutation('portal:addLogByToken', { token: TOKEN, kind:p.kind, value_num:p.value_num, unit:p.unit, body:p.body });
-    // Functions not yet ported to Convex (e.g. vit-menu-scan) fall through to the Supabase call below.
+    if (fn === 'vit-menu-scan') {
+      const site = CONVEX_URL.replace('.convex.cloud','.convex.site');
+      const rr = await fetch(site+'/menu-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN,image:p.image,restaurant:p.restaurant})});
+      return await rr.json();
+    }
   }
   const r=await fetch(SB+'/functions/v1/'+fn,{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON},body:JSON.stringify({token:TOKEN,...payload})});
   return await r.json();
