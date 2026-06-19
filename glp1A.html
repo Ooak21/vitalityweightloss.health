@@ -865,13 +865,13 @@ async function captureLead(status) {
   if (state.crisis) tags.push('review:crisis');
   if (state.reason) tags.push('reason:' + state.reason);
   try {
-    await fetch(SB_URL + '/functions/v1/vit-portal-signup', {
+    await fetch('https://quixotic-cat-492.convex.site/lead', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SB_ANON, 'Authorization': 'Bearer ' + SB_ANON },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: state.email, password: leadPassword(),
-        first_name: state.firstName, last_name: state.lastName, phone: state.phone, dob: state.dob,
-        program: state.reason || 'glp1', tags, lead_status: status
+        email: state.email,
+        first_name: state.firstName || '', last_name: state.lastName || '', phone: state.phone || '', dob: state.dob,
+        program: state.reason || 'glp1', source: 'glp1-direct', tags, lead_status: status
       })
     });
   } catch (e) { console.warn('lead capture (demo continues):', e); }

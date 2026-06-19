@@ -42,6 +42,18 @@ export async function signIn(email, password, storeKey){
   return t.token;
 }
 
+// Create a new patient account (email + password) and store the session. Throws if the
+// email already has an account (Convex Password signUp rejects duplicates) — no overwrite,
+// which is the account-takeover fix vs the old vit-portal-signup.
+export async function signUp(email, password, storeKey){
+  const c = await newClient();
+  const res = await c.action('auth:signIn', { provider:'password', params:{ email, password, flow:'signUp' } });
+  const t = res && res.tokens;
+  if(!t || !t.token) throw new Error('Sign-up failed');
+  write(storeKey, t);
+  return t.token;
+}
+
 // Return a valid access token, refreshing if near expiry. Null if no/expired session that can't refresh.
 export async function getToken(storeKey){
   const stored = read(storeKey);
