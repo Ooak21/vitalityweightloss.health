@@ -656,7 +656,7 @@
   };
 
   // ---------------- Vee voice (xAI Realtime) ----------------
-  const VEE_TOKEN_URL = `${SB}/functions/v1/vit-voice-token`;
+  const VEE_TOKEN_URL = `${CONVEX_URL}/voice-token`;
   let veeWs=null, veeActive=false, veeCtx=null, veeMic=null, veeProc=null, veeQ=[], veePlaying=false;
   function veeSetStatus(t){ const e=document.getElementById('veeStatus'); if(e) e.textContent=t; }
   function veeUI(on){ const b=document.getElementById('veeBtn'), d=document.getElementById('veeDot'); if(!b)return;
@@ -720,7 +720,7 @@ HARD RULES:
     const p=patients.find(x=>x.id===id); if(!p) return;
     veeSetStatus('Connecting to Vee…');
     try{
-      const tr=await fetch(VEE_TOKEN_URL,{method:'POST',headers:{'content-type':'application/json','apikey':ANON}});
+      const tr=await fetch(VEE_TOKEN_URL,{method:'POST',headers:await convexHeaders()});
       const td=await tr.json(); if(!td.token){ veeSetStatus('Could not start voice'); return; }
       veeMic=await navigator.mediaDevices.getUserMedia({audio:{sampleRate:24000,channelCount:1}});
       veeCtx=new AudioContext({sampleRate:24000});
