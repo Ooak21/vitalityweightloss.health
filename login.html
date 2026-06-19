@@ -60,7 +60,14 @@
         if (error) throw error;
       }
       location.replace('crm.html');
-    } catch(error){ err.textContent = (error && error.message) || 'Sign in failed'; err.classList.remove('hidden'); btn.textContent='Sign in'; btn.disabled=false; }
+    } catch(error){
+      const raw = (error && (error.message || String(error))) || '';
+      // Convex Auth throws InvalidAccountId (no such email) / InvalidSecret (wrong password).
+      // Show one friendly line for any auth failure; never leak the raw server error.
+      const isAuth = /invalidaccountid|invalidsecret|invalid|account|secret|password|credential|unauthor|401/i.test(raw);
+      err.textContent = isAuth ? 'Invalid email or password.' : 'Sign in failed. Please try again.';
+      err.classList.remove('hidden'); btn.textContent='Sign in'; btn.disabled=false;
+    }
   });
 </script>
 </body>
