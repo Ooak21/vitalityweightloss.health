@@ -1081,10 +1081,10 @@ function playVwl(){
     </button>
     <div class="px-8 pt-8 pb-7 text-center">
       <img src="assets/logo-icon.png" alt="" class="h-10 w-auto mx-auto mb-4">
-      <div class="text-xs font-semibold tracking-[0.16em] text-[#0a6cf5] uppercase mb-2">Prescribed online</div>
-      <h3 id="quizPopupTitle" class="font-display text-2xl md:text-3xl font-semibold tracking-[-0.5px] mb-2">Skip the waiting room.</h3>
-      <p class="text-[#4b5563] leading-relaxed mb-6">Take our 60-second health quiz. Dr. DeBry reviews your answers and, if you qualify, prescribes your GLP-1 and ships it to your door.</p>
-      <a href="glp1.html" class="block w-full px-7 py-3.5 rounded-2xl bg-[#0a6cf5] text-white font-semibold hover:bg-[#0856c8] transition-all active:scale-[0.985]">Start the health quiz &rarr;</a>
+      <div class="text-xs font-semibold tracking-[0.16em] text-[#0a6cf5] uppercase mb-2">Free live webinar</div>
+      <h3 id="quizPopupTitle" class="font-display text-2xl md:text-3xl font-semibold tracking-[-0.5px] mb-2">GLP-1 for $50/mo through Medicare</h3>
+      <p class="text-[#4b5563] leading-relaxed mb-6">Join Dr. DeBry live Thursday, June 25 at 7PM PT. See how Medicare's new GLP-1 Bridge covers Wegovy and Zepbound for about $50 a month, and how to qualify.</p>
+      <a href="webinar.html" class="block w-full px-7 py-3.5 rounded-2xl bg-[#0a6cf5] text-white font-semibold hover:bg-[#0856c8] transition-all active:scale-[0.985]">Save my spot &rarr;</a>
       <button data-popup-close class="mt-3 text-sm font-medium text-[#9aa0ab] hover:text-[#6b7280] transition-colors">Maybe later</button>
     </div>
   </div>
@@ -1095,6 +1095,7 @@ function playVwl(){
   var SUPPRESS_HOURS = 24;           // don't reshow within this window per visitor
   var DELAY_MS = 1500;               // wait after land before showing
   if(!POPUP_ENABLED) return;
+  var WEBINAR_END=new Date('2026-06-26T07:00:00Z'); if(new Date()>WEBINAR_END) return; // webinar popup auto-off after Jun 25 night PT
   var el=document.getElementById('quizPopup'), card=document.getElementById('quizPopupCard');
   if(!el||!card) return;
   try{ var t=parseInt(localStorage.getItem('vit_quiz_popup')||'0',10); if(t && (Date.now()-t) < SUPPRESS_HOURS*3600*1000) return; }catch(e){}
