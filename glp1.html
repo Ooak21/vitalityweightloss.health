@@ -1721,7 +1721,7 @@ function viewPay(p) {
   card.innerHTML = `
     <h1>Secure payment</h1>
     <p class="lede" style="margin:0 auto 18px;max-width:460px;">Enter your card to complete enrollment. Payment is processed securely by Clover &mdash; your card details never touch our servers.</p>
-    <div class="info" style="text-align:left;margin:0 auto 16px;max-width:420px;"><strong>Today: ${amountLabel}</strong>${TEST_DOLLAR ? ' <span style="color:var(--muted)">(verification charge)</span>' : ''}</div>
+    <div class="info" style="text-align:left;margin:0 auto 16px;max-width:420px;"><strong>Today: ${amountLabel}</strong>, then <strong>$199/mo</strong> <span style="color:var(--muted)">&mdash; billed monthly to this card until you cancel. Cancel anytime by calling (702)&nbsp;602-5002.</span></div>
     <div style="max-width:420px;margin:0 auto;text-align:left;">
       <label class="sig-label">Card number</label>
       <div id="card-number" class="clv-field"></div>
@@ -1751,7 +1751,7 @@ function viewPay(p) {
     try {
       const res = await __cloverInst.createToken();
       if (res && res.errors) { payBtn.disabled = false; payBtn.textContent = orig; return showErr(Object.values(res.errors).map(x => (x && x.message) || x).join(' ')); }
-      const body = Object.assign({}, athenaPayload(), { source: res.token, amountCents, fulfillment: 'pickup' });
+      const body = Object.assign({}, athenaPayload(), { source: res.token, amountCents, fulfillment: 'pickup', subscribe: true, recurringCents: 19900 });
       showProcessingOverlay();   // prominent full-screen wait — the athena chart build runs ~60-90s
       const r = await fetch(CLOVER_PAY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const j = await r.json().catch(() => ({}));
