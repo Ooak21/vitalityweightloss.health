@@ -475,7 +475,7 @@
         <div class="flex gap-2 mb-2 flex-wrap">
           <button onclick="openEmail()" class="px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8]">✉ Send branded email</button>
           <button onclick="bookAppt('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">+ Book appointment</button>
-          <button onclick="generatePlan('${p.id}')" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ ${p.plan? 'Regenerate plan':'Generate plan'}</button>
+          <button onclick="generatePlan('${p.id}', false, this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ ${p.plan? 'Regenerate plan':'Generate plan'}</button>
           <button onclick="portalLogin('${p.id}',${!!p.has_login})" ${p.email?'':'title="Add an email first"'} class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7]">🔑 ${p.has_login?'Reset portal password':'Create portal login'}</button>
           <button id="veeBtn" onclick="veeToggle('${p.id}','provider')" class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10 flex items-center gap-2"><span id="veeDot" class="w-2 h-2 rounded-full bg-[#0a6cf5]"></span>🎙 Discuss with Vee</button>
           <button onclick="veeToggle('${p.id}','patient')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7] flex items-center gap-2">👤 Patient review</button>
@@ -821,7 +821,9 @@ HARD RULES:
   };
   window.closeAddPatient = function(){ const m=document.getElementById('addModal'); m.classList.add('hidden'); m.classList.remove('flex'); };
   // ---------------- generate starting plan from InBody ----------------
-  window.generatePlan = async function(id, force){
+  window.generatePlan = async function(id, force, btn){
+    const _orig = btn ? btn.innerHTML : null;
+    if(btn){ btn.disabled=true; btn.style.opacity='0.7'; btn.innerHTML='✨ Generating… (~30s)'; }
     const gen=async(f)=>{
       if (USE_CONVEX) {
         // Use the dedicated route (or fall back to the /crm-data compat layer)
@@ -845,6 +847,7 @@ HARD RULES:
       await loadData();
       alert(`Plan generated from the InBody scan.\nGoal ${j.goal_weight || j.goal} lb · ${j.calories || ''} kcal · ${j.protein || ''} g protein.\nIt now shows in the patient's portal. Provider should review and confirm.`);
     }catch(e){ alert('Network error generating the plan — please try again.'); }
+    finally{ if(btn && document.body.contains(btn)){ btn.disabled=false; btn.style.opacity=''; btn.innerHTML=_orig; } }
   };
   window.saveAddPatient = async function(){
     const err=document.getElementById('apErr'), btn=document.getElementById('apSave');
