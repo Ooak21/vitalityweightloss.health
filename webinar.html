@@ -92,13 +92,14 @@ document.getElementById('regform').addEventListener('submit',function(e){
      {name:'message',value:'WEBINAR REGISTRATION: '+payload.session}
    ],context:{pageUri:location.href,pageName:document.title}})
  }).then(function(r){console.log('HubSpot',r.status);}).catch(function(err){console.error(err);});
+ fetch('https://quixotic-cat-492.convex.site/lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({first_name:payload.firstname,last_name:payload.lastname,email:payload.email,phone:payload.phone,source:'webinar_registration',source_detail:'Webinar: '+payload.session,consent:true})}).catch(function(){});
  document.querySelector('.card').innerHTML=window.successHTML(payload.firstname);
 });
 </script>
 <script>
 (function(){
-  var S={en:{t:"You\u2019re registered!",p:function(n){return "Thank you, "+n+". Watch your email and phone for the link and reminders. See you there.";},q:"Questions? Call <b>(702) 602-5002</b>."},
-         es:{t:"\u00a1Est\u00e1 registrado!",p:function(n){return "Gracias, "+n+". Revise su correo y su tel\u00e9fono para el enlace y los recordatorios. Nos vemos all\u00ed.";},q:"\u00bfPreguntas? Llame al <b>(702) 602-5002</b>."}};
+  var S={en:{t:"You\u2019re registered!",p:function(n){return "Thanks for saving your spot. Watch your email and phone for the link and reminders. See you there.";},q:"Questions? Call <b>(702) 602-5002</b>."},
+         es:{t:"\u00a1Est\u00e1 registrado!",p:function(n){return "Gracias por reservar su lugar. Revise su correo y su tel\u00e9fono para el enlace y los recordatorios. Nos vemos all\u00ed.";},q:"\u00bfPreguntas? Llame al <b>(702) 602-5002</b>."}};
   function cur(){return window.__lang||(function(){try{return localStorage.getItem('vwl_lang');}catch(e){return null;}})()||'en';}
   window.successHTML=function(n){var s=S[cur()];return '<div class="result"><div class="ic">'+CHECK+'</div><h2>'+s.t+'</h2><p style="color:var(--muted)">'+s.p(n)+'</p><p style="color:var(--muted)">'+s.q+'</p></div>';};
   function setLang(l){window.__lang=l;try{localStorage.setItem('vwl_lang',l);}catch(e){}document.documentElement.lang=l;
