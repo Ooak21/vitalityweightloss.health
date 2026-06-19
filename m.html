@@ -72,7 +72,7 @@ async function api(fn, payload){
 function hb(){ return (DATA&&DATA.plan&&DATA.plan.handbook)||{}; }
 function todayName(){ return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()]; }
 function gamify(){
-  const PTS={food:10,weigh_in:5,journal:5,activity:15,scan:10,module:25};
+  const PTS={food:10,weigh_in:5,journal:5,activity:15,scan:10,module:25,nextstep:20};
   const logs=DATA.logs||[], ib=DATA.inbody||[], plan=DATA.plan, h=plan&&plan.handbook;
   const dk=(iso)=>new Date(iso).toDateString();
   let points=0; const dates=new Set();
@@ -86,10 +86,21 @@ function gamify(){
   const cw=wl.length?+wl[0].value_num:(ib.length?+ib[ib.length-1].weight_lb:start);
   const lost=(start!=null&&cw!=null)?(start-cw):0, n=logs.length;
   const B=(i,l,e)=>({icon:i,label:l,earned:!!e});
-  const badges=[B('👣','First step',n>=1),B('⚖️','Weigh-in',logs.some(l=>l.kind==='weigh_in')),B('🍽️','Food',logs.some(l=>l.kind==='food')),B('🔥','3-day',streak>=3),B('🗓️','Week',streak>=7),B('📉','Down 5',lost>=5),B('💪','Down 10',lost>=10),B('⭐','50 logs',n>=50),B('🎓','PhD',new Set(logs.filter(l=>l.kind==='module').map(l=>(l.body||'').split(':')[0])).size>=3),B('🏆','Goal',goal!=null&&cw!=null&&cw<=goal)];
+  const badges=[B('👣','First step',n>=1),B('⚖️','Weigh-in',logs.some(l=>l.kind==='weigh_in')),B('🍽️','Food',logs.some(l=>l.kind==='food')),B('🔥','3-day',streak>=3),B('🗓️','Week',streak>=7),B('📉','Down 5',lost>=5),B('💪','Down 10',lost>=10),B('⭐','50 logs',n>=50),B('🚀','Setup',new Set(logs.filter(l=>l.kind==='nextstep').map(l=>(l.body||'').split(':')[0])).size>=1),B('🎉','All set',new Set(logs.filter(l=>l.kind==='nextstep').map(l=>(l.body||'').split(':')[0])).size>=5),B('🎓','PhD',new Set(logs.filter(l=>l.kind==='module').map(l=>(l.body||'').split(':')[0])).size>=3),B('🏆','Goal',goal!=null&&cw!=null&&cw<=goal)];
   return {points,streak,week,badges,earned:badges.filter(b=>b.earned).length};
 }
 function refreshPts(){ const g=gamify(); $('pts').textContent='🔥'+g.streak+' · '+g.points+' pts'; }
+
+// ---------- NEXT STEPS (onboarding, gamified) ----------
+const NEXTSTEPS=[
+ {slug:'vision',icon:'🎯',title:'Vision board',detail:'Make a vision board with your "why" in pictures and words, and hang it where you see it daily. Snap a photo and email it to success@vitalityweightloss.health.'},
+ {slug:'object',icon:'🏋️',title:'Goal object',detail:'Pick an object that equals your goal weight, decorate it, keep it on your bed, and feel it every day. Email a photo to success@vitalityweightloss.health.'},
+ {slug:'labs',icon:'🧪',title:'Lab work',detail:'Get your required labs (CMP, A1C, lipid, TSH, CBC, pregnancy, lipase and amylase, fasting insulin). Email results to success@vitalityweightloss.health. Recent labs from another doctor work too.'},
+ {slug:'gear',icon:'👟',title:'Exercise gear',detail:'Get functional gear ready: good shoes, a swimsuit, sweatpants, a tee. It does not need to be fancy.'},
+ {slug:'consent',icon:'✍️',title:'Comms acknowledgment',detail:'We send non-urgent updates by email and text, which may not be fully secure. For anything urgent, always call us or seek emergency care. Tap complete to acknowledge.'},
+];
+function doneNext(){ const s=new Set(); (DATA.logs||[]).filter(l=>l.kind==='nextstep').forEach(l=>{const sl=(l.body||'').split(':')[0].trim(); if(sl)s.add(sl);}); return s; }
+async function completeStep(slug){ const t=NEXTSTEPS.find(s=>s.slug===slug); await api({action:'add_log',kind:'nextstep',body:`${slug}: ${t?t.title:slug}`}); DATA=await api({action:'load'}); viewToday.stepOpen=null; render(); }
 
 // ---------- TODAY ----------
 function viewToday(){
@@ -109,12 +120,21 @@ function viewToday(){
     </div>
     <div class="flex gap-2 overflow-x-auto pt-1 border-t border-[#f1f3f7]">${g.badges.map(b=>`<div class="shrink-0 text-center ${b.earned?'':'opacity-30'}" title="${esc(b.label)}"><div class="text-xl leading-none">${b.icon}</div></div>`).join('')}</div>
   </div>`;
+  const _nd=doneNext(), _nsOpen=viewToday.stepOpen;
+  const nsCard = _nd.size>=NEXTSTEPS.length ? '' : `<div class="card p-3">
+    <div class="flex items-center justify-between mb-2"><div class="text-sm font-semibold">🚀 Your Next Steps</div><span class="text-[11px] text-[#9aa0ab]">${_nd.size}/${NEXTSTEPS.length}</span></div>
+    <div class="flex gap-1.5 mb-2">${NEXTSTEPS.map(s=>{const d=_nd.has(s.slug);return `<div class="w-8 h-8 rounded-full flex items-center justify-center text-base border ${d?'bg-[#eafaf0] border-[#0a7a3d]':'bg-[#f7f8fa] border-dashed border-[#cdd5df] opacity-50 grayscale'}">${s.icon}</div>`;}).join('')}</div>
+    <div class="space-y-1.5">${NEXTSTEPS.map(s=>{const d=_nd.has(s.slug),op=_nsOpen===s.slug;return `<div class="rounded-xl border ${d?'bg-[#eafaf0] border-[#cdeedd]':'border-[#eef0f4]'}"><button data-ns="${s.slug}" class="w-full flex items-center gap-2 p-2.5 text-left"><span class="text-lg">${s.icon}</span><span class="text-sm font-semibold flex-1">${esc(s.title)}</span><span class="text-[11px] ${d?'text-[#0a7a3d] font-semibold':'text-[#9aa0ab]'}">${d?'✓':(op?'▲':'▾')}</span></button>${(op&&!d)?`<div class="px-2.5 pb-2.5"><p class="text-xs text-[#6b7280] leading-relaxed mb-2">${esc(s.detail)}</p><button data-nsdone="${s.slug}" class="w-full py-2 rounded-lg bg-[#0a6cf5] text-white text-sm font-semibold">Mark complete · +20</button></div>`:''}</div>`;}).join('')}</div>
+  </div>`;
   $('view').innerHTML=`
     ${rstrip}
+    ${nsCard}
     ${target?`<div class="card p-3"><div class="flex justify-between text-xs mb-1"><span class="text-[#6b7280] font-semibold">Today's intake</span><span class="seg ${kcalToday>target?'text-rose-600':'text-[#16201d]'}">${kcalToday} / ${target} kcal</span></div><div class="h-1.5 rounded-full bg-[#eef0f4] overflow-hidden"><div class="h-full ${kcalToday>target?'bg-rose-400':'bg-[#0a6cf5]'}" style="width:${Math.min(100,target?kcalToday/target*100:0).toFixed(0)}%"></div></div></div>`:''}
     <div class="flex gap-1.5 overflow-x-auto pb-1">${dayChips}</div>
     <div class="card p-4"><div class="font-display font-semibold mb-2">${day?esc(day.day):''} <span class="text-xs text-[#9aa0ab] font-normal seg">${day?day.kcal+' kcal · '+day.protein+'g protein':''}</span></div><div class="space-y-3">${day?(day.items||[]).map(meal).join(''):'No plan loaded.'}</div></div>`;
   $('view').querySelectorAll('.dc').forEach(b=>b.onclick=()=>{ day=meals.find(m=>m.day===b.dataset.day); renderDay(day); });
+  $('view').querySelectorAll('[data-ns]').forEach(b=>b.onclick=()=>{ viewToday.stepOpen = viewToday.stepOpen===b.dataset.ns?null:b.dataset.ns; viewToday(); });
+  $('view').querySelectorAll('[data-nsdone]').forEach(b=>b.onclick=()=>completeStep(b.dataset.nsdone));
   function renderDay(d){ viewToday.current=d; viewToday(); } // simple re-render on chip
 }
 
