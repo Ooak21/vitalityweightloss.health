@@ -177,6 +177,7 @@ p{margin:0;}
   import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
   window.__SB_URL = 'https://jtifhcvbgxqwlywugvjv.supabase.co';
   window.__ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWZoY3ZiZ3hxd2x5d3Vndmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDc5NTgsImV4cCI6MjA4ODA4Mzk1OH0.UfRVLuvM8_HPvKXUEDXb0cxR50znv16L5Tf99AnSc7g';
+  window.__CONVEX_SITE = 'https://quixotic-cat-492.convex.site';
   window.__sb = createClient(window.__SB_URL, window.__ANON, { auth:{ storageKey:'sb-vit-patient', persistSession:true } });
 </script>
 
@@ -664,6 +665,68 @@ const flow = [
     ctaBtn(p, { disabled: true });
   }, canContinue:(s) => (s.allergies||'').trim().length >= 2 },
 
+  { id:'foodallergies', section:'Lifestyle & preferences', view:(p) => {
+    p.appendChild(h('h1', {}, ['Any food allergies?']));
+    p.appendChild(h('p', { class:'lede' }, ['So your meal plan never includes them. List foods, or write "none".']));
+    const wrap = h('label', { class:'field' }, [h('span', { class:'lab' }, ['Food allergies'])]);
+    const ta = h('textarea', { rows:'2', placeholder:'e.g., peanuts, shellfish, dairy — or "none"' });
+    ta.value = state.foodAllergies || '';
+    ta.oninput = e => { state.foodAllergies = e.target.value; save(); validateCta(); };
+    wrap.appendChild(ta); p.appendChild(wrap); ctaBtn(p, { disabled: true });
+  }, canContinue:(s) => (s.foodAllergies||'').trim().length >= 2 },
+
+  { id:'dietstyle', section:'Lifestyle & preferences', view:(p) => {
+    p.appendChild(h('h1', {}, ['How do you like to eat?']));
+    const wrap = h('label', { class:'field' }, [h('span', { class:'lab' }, ['Eating style'])]);
+    const sel = h('select', {});
+    ['No specific restriction','Mediterranean','Vegetarian','Vegan','Pescatarian','Lactose-free','Gluten-free','Halal','Kosher'].forEach(o => { const op = h('option', { value:o }, [o]); if (state.dietStyle === o) op.selected = true; sel.appendChild(op); });
+    sel.onchange = e => { state.dietStyle = e.target.value; save(); };
+    wrap.appendChild(sel); p.appendChild(wrap); ctaBtn(p, { disabled: false });
+  }, canContinue:(s) => true },
+
+  { id:'dislikes', section:'Lifestyle & preferences', view:(p) => {
+    p.appendChild(h('h1', {}, ['Any foods you won\'t eat?']));
+    p.appendChild(h('p', { class:'lede' }, ['We\'ll keep these out of your plan. Optional.']));
+    const wrap = h('label', { class:'field' }, [h('span', { class:'lab' }, ['Foods to avoid'])]);
+    const ta = h('textarea', { rows:'2', placeholder:'e.g., liver, beets, cilantro' });
+    ta.value = state.dislikes || '';
+    ta.oninput = e => { state.dislikes = e.target.value; save(); };
+    wrap.appendChild(ta); p.appendChild(wrap); ctaBtn(p, { disabled: false });
+  }, canContinue:(s) => true },
+
+  { id:'injuries', section:'Lifestyle & preferences', view:(p) => {
+    p.appendChild(h('h1', {}, ['Any injuries or physical limits?']));
+    p.appendChild(h('p', { class:'lede' }, ['So your workouts are safe for you. List areas, or write "none".']));
+    const wrap = h('label', { class:'field' }, [h('span', { class:'lab' }, ['Injuries / limitations'])]);
+    const ta = h('textarea', { rows:'2', placeholder:'e.g., left knee, lower back — or "none"' });
+    ta.value = state.injuries || '';
+    ta.oninput = e => { state.injuries = e.target.value; save(); validateCta(); };
+    wrap.appendChild(ta); p.appendChild(wrap); ctaBtn(p, { disabled: true });
+  }, canContinue:(s) => (s.injuries||'').trim().length >= 2 },
+
+  { id:'training', section:'Lifestyle & preferences', view:(p) => {
+    p.appendChild(h('h1', {}, ['Where will you work out?']));
+    const wrap = h('label', { class:'field' }, [h('span', { class:'lab' }, ['Training location'])]);
+    const sel = h('select', {});
+    ['Home','Gym','Both'].forEach(o => { const op = h('option', { value:o }, [o]); if (state.trainingLocation === o) op.selected = true; sel.appendChild(op); });
+    sel.onchange = e => { state.trainingLocation = e.target.value; save(); };
+    wrap.appendChild(sel); p.appendChild(wrap);
+    const wrap2 = h('label', { class:'field', style:'margin-top:12px' }, [h('span', { class:'lab' }, ['Equipment you have'])]);
+    const inp = h('input', { type:'text', placeholder:'e.g., dumbbells, resistance bands, or none' });
+    inp.value = state.equipment || '';
+    inp.oninput = e => { state.equipment = e.target.value; save(); };
+    wrap2.appendChild(inp); p.appendChild(wrap2); ctaBtn(p, { disabled: false });
+  }, canContinue:(s) => true },
+
+  { id:'activity', section:'Lifestyle & preferences', view:(p) => {
+    p.appendChild(h('h1', {}, ['How active are you right now?']));
+    const wrap = h('label', { class:'field' }, [h('span', { class:'lab' }, ['Activity level'])]);
+    const sel = h('select', {});
+    ['Sedentary','Lightly active','Active','Very active'].forEach(o => { const op = h('option', { value:o }, [o]); if (state.activity === o) op.selected = true; sel.appendChild(op); });
+    sel.onchange = e => { state.activity = e.target.value; save(); };
+    wrap.appendChild(sel); p.appendChild(wrap); ctaBtn(p, { disabled: false });
+  }, canContinue:(s) => true },
+
   // MEDICARE SCREEN (placeholder criteria) -----------------------------------
   { id:'medicare', section:'Insurance', view:(p) => {
     p.appendChild(h('h1', {}, ['Are you enrolled in Medicare?']));
@@ -968,6 +1031,18 @@ async function submitIntake() {
       if (!error) state.portalReady = true;
     }
   } catch (e) { console.warn('portal signup (demo continues):', e); }
+  try {
+    await fetch(window.__CONVEX_SITE + '/patient-prefs', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: state.email, first: state.firstName, last: state.lastName, phone: state.phone,
+        prefs: {
+          food_allergies: state.foodAllergies || '', diet_style: state.dietStyle || '', dislikes: state.dislikes || '',
+          injuries: state.injuries || '', training_location: state.trainingLocation || '', equipment: state.equipment || '', activity: state.activity || ''
+        }
+      })
+    });
+  } catch (e) { console.warn('prefs bridge (continues):', e); }
   delete state.password; delete state.password2; save();
   render({ id:'submitted', section:'Submitted', view: viewSubmitted });
   setProgress(1);
