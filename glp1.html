@@ -765,7 +765,7 @@ const CLOVER_PUBLIC_KEY  = 'f9d8910605425172a0b627094e16f27b';
 const CLOVER_MERCHANT_ID = 'ECK6FJ94X1JM1';
 const CLOVER_SDK_URL     = 'https://checkout.clover.com/sdk.js';   // production
 const CLOVER_PAY_URL     = ATHENA_MIDDLEWARE_URL + '/pay';
-const TEST_DOLLAR        = true;   // charge $1.00 for the proving run; set false for live PRICING
+const TEST_DOLLAR        = false;  // LIVE: real charge, no verification-charge label
 let __cloverSdkPromise = null;
 function loadCloverSdk() {
   if (window.Clover) return Promise.resolve();
@@ -1714,7 +1714,7 @@ function hideProcessingOverlay() {
 
 let __cloverInst = null;
 function viewPay(p) {
-  const amountCents = TEST_DOLLAR ? 100 : (PRICING[state.drug] ? PRICING[state.drug].intro * 100 : 100);
+  const amountCents = 14900;   // flat $149 GLP-1 program — today's charge
   __cloverInst = null;
   const amountLabel = '$' + (amountCents / 100).toFixed(2);
   const card = h('div', { class:'center-card notrans' });
