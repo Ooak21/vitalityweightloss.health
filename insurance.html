@@ -135,9 +135,9 @@
 
         <div class="sec-label">Your insurance <span class="pill">Encrypted · HIPAA</span></div>
         <div class="grid">
-          <div class="field"><label>Date of birth</label><input name="dob" type="date"></div>
-          <div class="field"><label>Sex (as on insurance)</label>
-            <select name="sex"><option value="">Select…</option><option value="F">Female</option><option value="M">Male</option></select>
+          <div class="field"><label>Date of birth <span class="req">*</span></label><input name="dob" type="date" required></div>
+          <div class="field"><label>Sex (as on insurance) <span class="req">*</span></label>
+            <select name="sex" required><option value="">Select…</option><option value="F">Female</option><option value="M">Male</option></select>
           </div>
           <div class="field full"><label>Insurance carrier <span class="req">*</span></label>
             <select name="carrier" required>
@@ -148,7 +148,7 @@
               <option>Other</option><option>Self-pay (no insurance)</option>
             </select>
           </div>
-          <div class="field"><label>Member / Subscriber ID</label><input name="member_id" autocomplete="off"></div>
+          <div class="field"><label>Member / Subscriber ID <span class="req">*</span></label><input name="member_id" autocomplete="off" required></div>
           <div class="field"><label>Group number</label><input name="group_number" autocomplete="off"></div>
           <div class="field full"><label>Plan type</label>
             <select name="plan_type">
@@ -211,6 +211,13 @@ form.addEventListener('submit', async (e)=>{
   if(!f.first_name || !f.last_name){ return showErr('Please enter your first and last name.'); }
   if(!f.phone && !f.email){ return showErr('Please give us a phone or an email so we can reach you.'); }
   if(!f.carrier){ return showErr('Please choose your insurance carrier.'); }
+  // These three are what the real eligibility check (270/271) needs — without them the request
+  // falls back to a manual-callback lead instead of running. Require them so the check fires.
+  if(f.carrier!=='Self-pay (no insurance)'){
+    if(!f.dob){ return showErr('Please enter your date of birth so we can verify your benefits.'); }
+    if(!f.sex){ return showErr('Please select the sex shown on your insurance.'); }
+    if(!f.member_id){ return showErr('Please enter your member / subscriber ID so we can run the check.'); }
+  }
   if(!document.getElementById('consent').checked){ return showErr('Please check the authorization box so we can verify your benefits.'); }
 
   const btn = document.getElementById('submitBtn'); btn.disabled=true;
