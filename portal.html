@@ -249,10 +249,10 @@ function tabRoadmap(hb){
       <div class="text-sm font-semibold mb-2">Weekly habits</div>
       <div class="space-y-2">${(hb.habits||[]).map(hcard=>`<div class="rounded-xl border border-[#eef0f4] bg-[#fbfcfe] p-3"><div class="text-sm font-semibold">Week ${hcard.week} · ${esc(hcard.title)}</div><div class="text-xs text-[#6b7280] mt-.5">${esc(hcard.benefit)}</div></div>`).join('')}</div>
     </div>
-    <div>
-      <div class="text-sm font-semibold mb-2">Swaps for your lactose intolerance</div>
-      <ul class="space-y-1">${(hb.substitutions||[]).map(s=>`<li class="text-xs text-[#6b7280] flex gap-2"><span class="text-[#0a6cf5]">→</span>${esc(fmtSwap(s))}</li>`).join('')}</ul>
-    </div>
+    ${(hb.substitutions&&hb.substitutions.length)?`<div>
+      <div class="text-sm font-semibold mb-2">${esc(hb.substitutions_label || (hb.nutrition&&hb.nutrition.tags&&hb.nutrition.tags[0] ? 'Smart swaps for your '+hb.nutrition.tags[0]+' plan' : 'Smart ingredient swaps for your plan'))}</div>
+      <ul class="space-y-1">${hb.substitutions.map(s=>`<li class="text-xs text-[#6b7280] flex gap-2"><span class="text-[#0a6cf5]">→</span>${esc(fmtSwap(s))}</li>`).join('')}</ul>
+    </div>`:''}
   </div>`;
 }
 
