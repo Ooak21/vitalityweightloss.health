@@ -1142,7 +1142,7 @@ function playVwl(){
   var ROWH=24, COPIES=30, STEP=5;
   var msgs=[
     {html:'<span class="font-semibold text-[#16201d]">Medicare $50/mo GLP-1 Bridge</span> <span class="text-[#16201d]/55">&middot; coming July 1</span>', href:'guides/semaglutide-medicare-nevada.html'},
-    {html:'<span style="color:#74992F">&#9679;</span> <span class="font-semibold text-[#16201d]">Free webinar</span> <span class="text-[#16201d]/55">&middot; Thu Jun 25, 7PM PT with Dr. DeBry &rarr;</span>', href:'webinar.html'}
+    {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Free webinar</span> <span class="text-[#16201d]/55">&middot; Thu Jun 25, 7PM PT with Dr. DeBry &rarr;</span>', href:'webinar.html'}
   ];
   var reel=document.createElement('div'); reel.id='navSlotReel'; reel.style.willChange='transform';
   for(var i=0;i<COPIES;i++){ var m=msgs[i%2]; var a=document.createElement('a'); a.href=m.href;
