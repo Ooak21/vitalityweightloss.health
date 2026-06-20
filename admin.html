@@ -49,7 +49,11 @@ const sb = createClient(SB, ANON, { auth:{ storageKey:'sb-vit-staff', persistSes
 const FN = SB + '/functions/v1/vit-admin';
 const $=(id)=>document.getElementById(id);
 const esc=(s)=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let TOKEN=null, DATA=null, TAB='systems', TASKS=null, REPORTS=null, SYS=null, TICKETS=null, TREPORT=null;
+let TOKEN=null, DATA=null, TAB='systems', TASKS=null, REPORTS=null, SYS=null, TICKETS=null, TREPORT=null, BILLING=null;
+// Billing: the contract covers API costs for the first 30 days from this date; amendable after.
+const CONTRACT_START=new Date('2026-06-18T00:00:00').getTime();
+const COVER_DAYS=30;
+let BILL_FROM=CONTRACT_START, BILL_TO=Date.now();
 
 // code shield: neutral codes in the DB/log; human labels decoded ONLY here in the admin UI
 const CODES={'S-001':'Role changed','S-002':'Staff added','S-003':'Access deactivated','S-004':'Access reactivated','A-001':'Chart accessed','M-001':'Record modified','M-002':'Note added','D-001':'Disclosure / sent','V-001':'Vendor risk reviewed','100-001':'Record created'};
@@ -242,6 +246,63 @@ function viewReports(){
   </section>`;
 }
 
+function viewBilling(){
+  if(!BILLING){ (async()=>{ BILLING=await api({action:'billing',from:BILL_FROM,to:BILL_TO}); render(); })(); return '<div class="card p-8 text-center text-[#9aa0ab] text-sm">Loading billing…</div>'; }
+  const B=BILLING;
+  if(!B.ok){ return '<div class="card p-8 text-center text-rose-600 text-sm">Billing is admin-only. '+esc(B.error||'')+'</div>'; }
+  const usd=(m)=>{ const d=(m||0)/1e6; return '$'+(d<1?d.toFixed(4):d.toFixed(2)); };
+  const fmtd=(s)=>{ if(!s)return''; const d=new Date(s); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); };
+  const dISO=(t)=>new Date(t).toISOString().slice(0,10);
+  const prov=B.providers||{}, surf=B.surfaces||{}, acts=B.actors||[], recent=B.recent||[];
+  const provTotal=(p)=>prov[p]?usd(prov[p].micros):'$0.00';
+  const FEATURES={menu_scan:'Menu scanner',vee_chat:'Vee chat',plan_gen:'Plan generator'};
+  const PROV={anthropic:'Anthropic (Claude)',xai:'xAI (Grok)'};
+  const coverEnd=CONTRACT_START+COVER_DAYS*86400000;
+  const daysLeft=Math.ceil((coverEnd-Date.now())/86400000);
+  const coverEndStr=new Date(coverEnd).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const banner = daysLeft>0
+    ? `<div class="rounded-xl border border-[#cfe6d4] bg-[#f0faf2] p-4 mb-4 text-sm"><span class="font-semibold text-[#0a7a3d]">Costs covered through ${coverEndStr}</span> · ${daysLeft} day${daysLeft===1?'':'s'} left. After that, the contract allows amending the fee based on the usage below.</div>`
+    : `<div class="rounded-xl border border-[#f0d9a0] bg-[#fdf6e8] p-4 mb-4 text-sm"><span class="font-semibold text-[#9a6a00]">Coverage period ended ${coverEndStr}.</span> You can amend the fee now based on the usage below.</div>`;
+  const kpi=(v,l,sub)=>`<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-4"><div class="font-display text-2xl font-semibold seg">${v}</div><div class="text-[11px] uppercase tracking-wide text-[#9aa0ab] font-semibold mt-.5">${l}</div>${sub?`<div class="text-[11px] text-[#9aa0ab] mt-1">${sub}</div>`:''}</div>`;
+  const featRows=Object.keys(surf).length?Object.entries(surf).sort((a,b)=>b[1].micros-a[1].micros).map(([k,v])=>`<tr class="border-b border-[#f5f6f8]"><td class="py-2 pr-3 font-medium">${FEATURES[k]||esc(k)}</td><td class="py-2 pr-3 seg">${v.calls}</td><td class="py-2 pr-3 seg text-[#6b7280]">${(v.in||0).toLocaleString()}</td><td class="py-2 pr-3 seg text-[#6b7280]">${(v.out||0).toLocaleString()}</td><td class="py-2 seg font-semibold text-right">${usd(v.micros)}</td></tr>`).join(''):`<tr><td colspan="5" class="py-6 text-center text-[#9aa0ab]">No usage in this period yet.</td></tr>`;
+  const actRows=acts.length?acts.map(a=>`<tr class="border-b border-[#f5f6f8]"><td class="py-2 pr-3 font-medium">${esc(a.actor)}</td><td class="py-2 pr-3"><span class="pill bg-[#eef2f7] text-[#4b5563] text-[10px]">${esc(a.role)}</span></td><td class="py-2 pr-3 seg">${a.calls}</td><td class="py-2 seg font-semibold text-right">${usd(a.micros)}</td></tr>`).join(''):`<tr><td colspan="4" class="py-6 text-center text-[#9aa0ab]">No attributed usage yet.</td></tr>`;
+  const recRows=recent.length?recent.map(r=>`<tr class="border-b border-[#f5f6f8]"><td class="py-2 pr-3 whitespace-nowrap text-[#6b7280]">${fmtd(r.ts)}</td><td class="py-2 pr-3">${PROV[r.provider]||esc(r.provider)}</td><td class="py-2 pr-3">${FEATURES[r.surface]||esc(r.surface)}</td><td class="py-2 pr-3 text-[#6b7280]">${esc(r.actor||(r.role==='public'?'Website visitor':'—'))}</td><td class="py-2 pr-3 seg text-[#9aa0ab]">${(r.in||0).toLocaleString()}/${(r.out||0).toLocaleString()}</td><td class="py-2 seg font-semibold text-right">${usd(r.micros)}</td></tr>`).join(''):`<tr><td colspan="6" class="py-6 text-center text-[#9aa0ab]">No calls logged yet. Metering starts now and fills in as the AI tools get used.</td></tr>`;
+  return `<section class="space-y-4">
+    ${banner}
+    <div class="card p-6">
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div><h2 class="font-display text-lg font-semibold">API costs</h2><p class="text-[11px] text-[#9aa0ab] mt-.5">Every AI call (Claude menu/InBody scans, Vee chat, plan generation) priced at provider rates. Metering is forward-only; figures begin when this was deployed.</p></div>
+        <div class="flex items-center gap-2 text-xs">
+          <label class="text-[#9aa0ab]">From</label><input id="bFrom" type="date" value="${dISO(B.from)}" class="border border-[#e6e9ee] rounded-lg px-2 py-1">
+          <label class="text-[#9aa0ab]">To</label><input id="bTo" type="date" value="${dISO(B.to)}" class="border border-[#e6e9ee] rounded-lg px-2 py-1">
+          <button id="billcsv" class="px-3 py-1.5 rounded-lg border border-[#e6e9ee] font-semibold hover:bg-[#f1f3f7]">⬇ CSV</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        ${kpi(usd(B.total_micros),'total cost',`${B.calls||0} calls`)}
+        ${kpi(provTotal('anthropic'),'Anthropic',prov.anthropic?`${prov.anthropic.calls} calls`:'0 calls')}
+        ${kpi(provTotal('xai'),'xAI Grok',prov.xai?`${prov.xai.calls} calls`:'0 calls')}
+        ${kpi((B.calls||0).toString(),'AI calls','this period')}
+      </div>
+    </div>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="card p-6">
+        <h3 class="font-display font-semibold mb-3">By feature</h3>
+        <div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-[10px] uppercase tracking-wide text-[#9aa0ab] text-left border-b border-[#eef0f4]"><th class="py-2 pr-3">Feature</th><th class="py-2 pr-3">Calls</th><th class="py-2 pr-3">In tok</th><th class="py-2 pr-3">Out tok</th><th class="py-2 text-right">Cost</th></tr></thead><tbody>${featRows}</tbody></table></div>
+      </div>
+      <div class="card p-6">
+        <h3 class="font-display font-semibold mb-3">By user</h3>
+        <div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-[10px] uppercase tracking-wide text-[#9aa0ab] text-left border-b border-[#eef0f4]"><th class="py-2 pr-3">User</th><th class="py-2 pr-3">Role</th><th class="py-2 pr-3">Calls</th><th class="py-2 text-right">Cost</th></tr></thead><tbody>${actRows}</tbody></table></div>
+      </div>
+    </div>
+    <div class="card p-6">
+      <h3 class="font-display font-semibold mb-3">Recent calls</h3>
+      <div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-[10px] uppercase tracking-wide text-[#9aa0ab] text-left border-b border-[#eef0f4]"><th class="py-2 pr-3">When</th><th class="py-2 pr-3">Provider</th><th class="py-2 pr-3">Feature</th><th class="py-2 pr-3">User</th><th class="py-2 pr-3">In/Out tok</th><th class="py-2 text-right">Cost</th></tr></thead><tbody>${recRows}</tbody></table></div>
+      <p class="text-[11px] text-[#9aa0ab] mt-3">Prices: Claude Sonnet 4.6 $3/$15 per million tokens (in/out); Grok 4.1 Fast $0.20/$0.50. Adjust in convex/usage.ts if rates change.</p>
+    </div>
+  </section>`;
+}
+
 function viewVendors(){
   const flagged=VENDORS.filter(vFlag);
   const themFlag=flagged.filter(v=>v.side==='them').length;
@@ -279,10 +340,11 @@ function render(){
       <span class="tab ${TAB==='tasks'?'on':''}" data-t="tasks">Tasks</span>
       <span class="tab ${TAB==='tickets'?'on':''}" data-t="tickets">Tickets</span>
       <span class="tab ${TAB==='reports'?'on':''}" data-t="reports">Reporting</span>
+      <span class="tab ${TAB==='billing'?'on':''}" data-t="billing">Billing</span>
       <span class="tab ${TAB==='vendors'?'on':''}" data-t="vendors">Vendor risk</span>
       <span class="tab ${TAB==='audit'?'on':''}" data-t="audit">Audit log</span>
     </div>
-    ${TAB==='systems'?viewSystems():TAB==='access'?viewAccess():TAB==='tasks'?viewTasks():TAB==='tickets'?viewTickets():TAB==='reports'?viewReports():TAB==='vendors'?viewVendors():viewAudit()}`;
+    ${TAB==='systems'?viewSystems():TAB==='access'?viewAccess():TAB==='tasks'?viewTasks():TAB==='tickets'?viewTickets():TAB==='reports'?viewReports():TAB==='billing'?viewBilling():TAB==='vendors'?viewVendors():viewAudit()}`;
   document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{ TAB=t.dataset.t; render(); });
   if(TAB==='systems' && SYS){
     const rc=$('runChk'); if(rc) rc.onclick=async()=>{ rc.disabled=true; rc.textContent='Running…'; await sysApi({action:'run'}); SYS=await sysApi({action:'load'}); render(); };
@@ -301,6 +363,11 @@ function render(){
     const tc=$('tkcsv'); if(tc) tc.onclick=()=>{ const rows=[['subject','category','priority','status','requester','requester_type','sla_due','created','resolved']].concat((TICKETS.tickets||[]).map(t=>[t.subject,t.category,t.priority,t.status,(t.requester_name||t.requester_email),t.requester_type,t.sla_due_at?fmtTs(t.sla_due_at):'',t.created_at?fmtTs(t.created_at):'',t.resolved_at?fmtTs(t.resolved_at):''])); const csv=rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='vitality-tickets-'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); };
   } else if(TAB==='reports' && REPORTS){
     const cc=$('callcsv'); if(cc) cc.onclick=()=>{ const rows=[['when','from','intent','outcome','seconds','transcript_ref','telnyx_call_id','review']].concat((REPORTS.calls||[]).map(c=>[c.ts,c.from,c.intent,c.outcome,c.dur,c.tref,c.telnyx,(!c.outcome||(c.dur!=null&&c.dur<5))?'flag':'ok'])); const csv=rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='vitality-calls-'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); };
+  } else if(TAB==='billing' && BILLING){
+    const bf=$('bFrom'), bt=$('bTo');
+    const apply=()=>{ if(bf&&bf.value) BILL_FROM=new Date(bf.value+'T00:00:00').getTime(); if(bt&&bt.value) BILL_TO=new Date(bt.value+'T23:59:59').getTime(); BILLING=null; render(); };
+    if(bf) bf.onchange=apply; if(bt) bt.onchange=apply;
+    const bc=$('billcsv'); if(bc) bc.onclick=()=>{ const rows=[['when','provider','feature','user','role','input_tokens','output_tokens','usd']].concat((BILLING.recent||[]).map(r=>[new Date(r.ts).toISOString(),r.provider,r.surface,(r.actor||''),r.role,r.in,r.out,(r.micros/1e6).toFixed(6)])); const csv=rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='vitality-api-billing-'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); };
   } else if(TAB==='vendors'){
     const vr=$('vrev'); if(vr) vr.onclick=async()=>{ vr.disabled=true; vr.textContent='Logging…'; DATA=await api({action:'vendor_review'}); render(); };
     const vc=$('vcsv'); if(vc) vc.onclick=()=>{ const lastRev=(DATA.audit||[]).find(a=>a.code==='V-001'); const revStamp=lastRev?(fmtTs(lastRev.ts)+(lastRev.actor?' by '+lastRev.actor:'')):'never'; const rows=[['side','vendor','category','use','data_class','baa','risk','flag','mitigation','last_reviewed','note']].concat(VENDORS.map(v=>[v.side==='them'?'clinic':'ours',v.name,v.cat,v.use,v.data,v.baa,v.risk,vFlag(v)?'flag':'',v.mit,revStamp,v.note])); const csv=rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='vitality-vendor-risk-'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); };
