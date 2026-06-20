@@ -14,7 +14,7 @@
   // Pages that begin patient intake / take payment — gated while pre-launch.
   // NOTE: glp1.html is intentionally OPEN (removed from this list) so Dr. DeBry can run a
   // real end-to-end test of the GLP-1 manual/pickup flow with a trusted patient before launch.
-  var GATED = ["intake.html", "insurance.html", "checkout.html"];
+  var GATED = ["intake.html", "checkout.html"];   // insurance.html un-gated 6/20 — real eligibility check is live; intake/checkout stay on the July-1 waitlist
 
   var CSS =
   '#vwl-wl{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(11,16,20,.55);backdrop-filter:blur(4px);font-family:Inter,system-ui,sans-serif}' +
