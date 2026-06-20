@@ -188,14 +188,21 @@ function viewTasks(){
   const tasks=TASKS.tasks||[], assignees=TASKS.assignees||['Front Desk'];
   const pri={high:'bg-rose-500',normal:'bg-[#0a6cf5]',low:'bg-[#cbd2da]'};
   const cols=[['todo','To do'],['doing','Doing'],['done','Done']];
-  const card=(t)=>`<div class="rounded-lg border border-[#eef0f4] bg-white p-2.5">
+  const card=(t)=>{
+    const badge = t.clinical ? (t.locked
+      ? `<span class="pill bg-[#eef2f7] text-[#6b7280] text-[10px]" title="Clinical — visible to the prescribing provider only">🔒 Provider only</span>`
+      : `<span class="pill bg-[#eafaf0] text-[#0a7a3d] text-[10px]" title="Rx pending — patient detail visible to you">℞ Rx</span>`) : '';
+    const clinNotes = (t.clinical && !t.locked && t.notes)
+      ? `<div class="text-[11px] text-[#4b5563] mt-1.5 rounded bg-[#f7f8fa] border border-[#eef0f4] p-2">${esc(t.notes)}</div>` : '';
+    const delBtn = (t.clinical && t.locked) ? '' : `<button data-del="${t.id}" class="text-[#c0c4cc] hover:text-rose-500 text-base leading-none">×</button>`;
+    return `<div class="rounded-lg border ${t.clinical?'border-[#dbe7f5]':'border-[#eef0f4]'} bg-white p-2.5">
     <div class="flex items-start gap-2">
       <span class="w-2 h-2 rounded-full ${pri[t.priority]||pri.normal} mt-1.5 shrink-0" title="${esc(t.priority)}"></span>
-      <div class="flex-1 min-w-0"><div class="text-sm font-medium ${t.status==='done'?'line-through text-[#9aa0ab]':''}">${esc(t.title)}</div><div class="text-[11px] text-[#9aa0ab]">${t.assignee?esc(t.assignee):'unassigned'}${t.due?' · due '+esc(t.due):''}</div></div>
-      <button data-del="${t.id}" class="text-[#c0c4cc] hover:text-rose-500 text-base leading-none">×</button>
+      <div class="flex-1 min-w-0"><div class="text-sm font-medium ${t.status==='done'?'line-through text-[#9aa0ab]':''}">${esc(t.title)}</div><div class="text-[11px] text-[#9aa0ab]">${t.assignee?esc(t.assignee):'unassigned'}${t.due?' · due '+esc(t.due):''} ${badge}</div>${clinNotes}</div>
+      ${delBtn}
     </div>
     <select data-move="${t.id}" class="field text-[11px] mt-2 w-full">${cols.map(c=>`<option value="${c[0]}" ${t.status===c[0]?'selected':''}>${c[1]}</option>`).join('')}</select>
-  </div>`;
+  </div>`;};
   return `<section class="card p-6">
     <h2 class="font-display text-lg font-semibold mb-3">Task board</h2>
     <div class="flex flex-wrap gap-2 items-center mb-4 pb-4 border-b border-[#f1f3f7]">
