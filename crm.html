@@ -645,7 +645,7 @@
       try{
         const b64=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(f); });
         const isPdf=(f.type||'').includes('pdf')||/\.pdf$/i.test(f.name);
-        const payload=isPdf?{pdf_base64:b64,filename:f.name}:{image_base64:b64,media_type:f.type||'image/jpeg',filename:f.name};
+        const payload=isPdf?{pdf_base64:b64,filename:f.name,patient_id:selId}:{image_base64:b64,media_type:f.type||'image/jpeg',filename:f.name,patient_id:selId};
         let r, j;
         if (USE_CONVEX) {
           r = await fetch(`${CONVEX_URL}/inbody-intake`, { method:'POST', headers:await convexHeaders(), body:JSON.stringify(payload) });
