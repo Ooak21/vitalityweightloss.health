@@ -238,6 +238,24 @@
   }
   const convexHeaders = async () => ({ 'content-type':'application/json', 'authorization':`Bearer ${await convexAuth()}` });
 
+  // VBIS handbook — view (shared renderer) + generate/push. Provider side.
+  window.openVbisHandbook = async function(pid){
+    let ov=document.getElementById('hbOverlay');
+    if(!ov){ ov=document.createElement('div'); ov.id='hbOverlay'; ov.className='fixed inset-0 z-[70] bg-black/40 overflow-y-auto'; ov.onclick=e=>{ if(e.target===ov) ov.remove(); }; document.body.appendChild(ov); }
+    ov.innerHTML='<div class="max-w-3xl mx-auto my-8 px-3"><div class="flex justify-between items-center mb-3"><div class="font-display font-semibold text-lg text-white">VBIS Handbook</div><button onclick="document.getElementById(\'hbOverlay\').remove()" class="w-9 h-9 rounded-full bg-white text-2xl leading-none text-[#16201d]">×</button></div><div id="hbBody">Loading…</div></div>';
+    try{
+      const r=await fetch(CONVEX_URL+'/handbook-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({patient_id:pid})});
+      const j=await r.json();
+      if(!j.ok||!j.handbook){ document.getElementById('hbBody').innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">No handbook yet for this patient. Click “Generate VBIS handbook,” then check back in ~2-3 minutes.</div>'; return; }
+      document.getElementById('hbBody').innerHTML=window.renderVbisHandbook(j.handbook,{patient:j.patient});
+    }catch(e){ document.getElementById('hbBody').innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">Error: '+e.message+'</div>'; }
+  };
+  window.genVbisHandbook = async function(pid, btn){
+    const o=btn?btn.textContent:''; if(btn){ btn.disabled=true; btn.textContent='Starting…'; }
+    try{ const r=await fetch(CONVEX_URL+'/generate-handbook',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({patient_id:pid})}); const j=await r.json(); alert(j.ok?'Handbook generation started — it takes ~2-3 minutes. Click “View handbook” to check.':'Failed: '+(j.error||'unknown')); }catch(e){ alert('Error: '+e.message); }
+    if(btn){ btn.disabled=false; btn.textContent=o; }
+  };
+
   const CLINIC = { name:"Vitality Weight Loss", addr:"6140 Brent Thurman Way, Suite 100, Las Vegas, NV 89148", phone:"(702) 602-5002" };
 
   // ---------------- synthetic data ----------------
@@ -476,6 +494,8 @@
           <button onclick="openEmail()" class="px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8]">✉ Send branded email</button>
           <button onclick="bookAppt('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">+ Book appointment</button>
           <button onclick="generatePlan('${p.id}', false, this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ ${p.plan? 'Regenerate plan':'Generate plan'}</button>
+          <button onclick="openVbisHandbook('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">📋 View handbook</button>
+          <button onclick="genVbisHandbook('${p.id}', this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ Generate VBIS handbook</button>
           <button onclick="portalLogin('${p.id}',${!!p.has_login})" ${p.email?'':'title="Add an email first"'} class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7]">🔑 ${p.has_login?'Reset portal password':'Create portal login'}</button>
           <button id="veeBtn" onclick="veeToggle('${p.id}','provider')" class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10 flex items-center gap-2"><span id="veeDot" class="w-2 h-2 rounded-full bg-[#0a6cf5]"></span>🎙 Discuss with Vee</button>
           <button onclick="veeToggle('${p.id}','patient')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7] flex items-center gap-2">👤 Patient review</button>
@@ -936,5 +956,6 @@ HARD RULES:
     }catch(e){ body.innerHTML='<div class="text-rose-600 py-8 text-center">Lookup failed. Try again.</div>'; }
   }
 </script>
+<script src="handbook-render.js"></script>
 </body>
 </html>

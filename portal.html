@@ -81,6 +81,18 @@ let TOKEN=null, DATA=null, QR_URL=null;
 // reusing the same bridge JWT the staff/patient login already issues.
 const USE_CONVEX = true;
 const CONVEX_URL = 'https://quixotic-cat-492.convex.cloud';
+// VBIS handbook — patient self-view via the shared renderer.
+window.openMyHandbook = async ()=>{
+  let ov=document.getElementById('hbOverlay');
+  if(!ov){ ov=document.createElement('div'); ov.id='hbOverlay'; ov.className='fixed inset-0 z-[70] bg-black/40 overflow-y-auto'; ov.onclick=e=>{ if(e.target===ov) ov.remove(); }; document.body.appendChild(ov); }
+  ov.innerHTML='<div class="max-w-3xl mx-auto my-8 px-3"><div class="flex justify-between items-center mb-3"><div class="font-display font-semibold text-lg text-white">My Transformation Handbook</div><button onclick="document.getElementById(\'hbOverlay\').remove()" class="w-9 h-9 rounded-full bg-white text-2xl leading-none">×</button></div><div id="hbBody">Loading…</div></div>';
+  try{
+    const r=await fetch(CONVEX_URL.replace('.convex.cloud','.convex.site')+'/handbook-data',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},body:JSON.stringify({})});
+    const j=await r.json();
+    if(!j.ok||!j.handbook){ document.getElementById('hbBody').innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Your full handbook will appear here once your care team generates it.</div>'; return; }
+    document.getElementById('hbBody').innerHTML=window.renderVbisHandbook(j.handbook,{patient:j.patient});
+  }catch(e){ document.getElementById('hbBody').innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">Error: '+e.message+'</div>'; }
+};
 let convex = null;
 
 // Milestone B: identity is Convex-native. Flip USE_CONVEX_AUTH=false to roll back to Supabase.
@@ -465,7 +477,7 @@ function render(){
     <div><h1 class="font-display text-2xl font-semibold tracking-[-.5px]">Welcome back, ${esc(p.first)}</h1>
     <p class="text-sm text-[#6b7280] mt-1">${PROGRAMS[p.program]||'Your program'} · <span class="capitalize">${esc((p.status||'').replace('_',' '))}</span></p></div>
     <div class="grid lg:grid-cols-3 gap-6 items-start">
-      <div class="lg:col-span-2 space-y-6">${approved}${team}${progress}${inbodyReport}${scanHistory}${planHtml}</div>
+      <div class="lg:col-span-2 space-y-6">${approved}<section class="card p-6 flex items-center justify-between gap-3"><div><h2 class="font-display text-lg font-semibold">Your full transformation handbook</h2><p class="text-sm text-[#6b7280] mt-0.5">Your complete personalized handbook: InBody breakdown, every metric decoded, nutrition, workouts, and habits.</p></div><button onclick="openMyHandbook()" class="shrink-0 px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">📖 Open</button></section>${team}${progress}${inbodyReport}${scanHistory}${planHtml}</div>
       <div class="space-y-6">${appt}${logging}${rewards}${companion}</div>
     </div>`;
   document.querySelectorAll('.reqBtn').forEach(b=>b.onclick=async()=>{
@@ -568,5 +580,6 @@ else {
   catch(e){ console.error('portal render error:', e); $('loading').textContent='Something went wrong loading your dashboard. Please refresh.'; $('loading').classList.remove('hidden'); }
 }
 </script>
+<script src="handbook-render.js"></script>
 </body>
 </html>
