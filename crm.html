@@ -512,6 +512,15 @@
           </div>
         </div>` : ''}
 
+        ${(p.inbody_history && p.inbody_history.length>1) ? (()=>{
+          const H=p.inbody_history; const fmtN=(v,d=1)=>(v==null||isNaN(+v))?'—':(+v).toFixed(d);
+          const METRICS=[['Weight','weight_lb',1,' lb',true],['Body Fat','pbf_pct',1,'%',true],['Visceral','visceral_fat_level',0,'',true],['Muscle','smm_lb',1,' lb',false]];
+          const spark=(vals)=>{const ns=vals.filter(v=>v!=null&&!isNaN(+v)).map(Number);if(ns.length<2)return'';const w=64,h=20,mn=Math.min(...ns),mx=Math.max(...ns),rg=(mx-mn)||1;const pts=ns.map((v,i)=>`${(i/(ns.length-1))*w},${(h-((v-mn)/rg)*h).toFixed(1)}`).join(' ');return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${pts}" fill="none" stroke="#0a6cf5" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`;};
+          const cards=METRICS.map(m=>{const[label,key,dec,unit,lb]=m;const series=H.map(s=>s[key]==null?null:+s[key]);const vals=series.filter(v=>v!=null);if(!vals.length)return'';const last=vals[vals.length-1],first=vals[0],delta=last-first;const flat=Math.abs(delta)<(dec===0?0.5:0.05);const imp=lb?delta<0:delta>0;const col=flat?'#9aa0ab':(imp?'#0a7a3d':'#be123c');const arrow=flat?'→':(delta<0?'▼':'▲');return `<div class="bg-[#f7f8fa] border border-[#e6e9ee] rounded-xl p-3"><div class="text-[11px] text-[#6b7280]">${label}</div><div class="flex items-end justify-between gap-2 mt-1"><div class="font-display text-lg font-semibold">${fmtN(last,dec)}${unit}</div>${spark(series)}</div><div class="text-[11px] font-semibold mt-1" style="color:${col}">${arrow} ${Math.abs(delta).toFixed(dec)}${unit.trim()} since first</div></div>`;}).join('');
+          const rows=H.slice().reverse().map((s,i)=>`<tr class="border-b border-[#f1f3f7] last:border-0"><td class="py-2 pr-3 whitespace-nowrap">${fmtDate(s.test_date)}${i===0?' <span class="text-[10px] text-[#0a6cf5] font-semibold">latest</span>':''}</td><td class="py-2 pr-3">${fmtN(s.weight_lb)}</td><td class="py-2 pr-3">${fmtN(s.pbf_pct)}</td><td class="py-2 pr-3">${fmtN(s.visceral_fat_level,0)}</td><td class="py-2">${fmtN(s.smm_lb)}</td></tr>`).join('');
+          return `<div class="glass border border-[#e6e9ee] rounded-2xl p-5 mb-6"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-4">Scan history &amp; trend · ${H.length} scans</div><div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">${cards}</div><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-[10px] uppercase tracking-wide text-[#6b7280] text-left border-b border-[#e6e9ee]"><th class="py-2 pr-3">Scan date</th><th class="py-2 pr-3">Weight</th><th class="py-2 pr-3">Body fat %</th><th class="py-2 pr-3">Visceral</th><th class="py-2">Muscle (lb)</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+        })() : ''}
+
         <div class="glass border border-[#e6e9ee] rounded-2xl p-5">
           <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-4">Chart timeline</div>
           ${timeline(p)}
