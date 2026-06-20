@@ -156,6 +156,7 @@ function viewAccess(){
       <div class="min-w-0 flex-1"><div class="text-sm font-semibold truncate">${esc(s.name)}</div><div class="text-[11px] text-[#9aa0ab]">${s.email?esc(s.email):'no login yet'}${s.linked?' · linked':''}${s.active?'':' · <span class="text-rose-500">inactive</span>'+(s.reason?' · <span class="text-rose-500">'+esc(s.reason)+'</span>':'')}</div></div>
       <select data-role="${s.id}" class="field text-xs"><option value="admin" ${s.role==='admin'?'selected':''}>Admin</option><option value="provider" ${s.role==='provider'?'selected':''}>Provider</option><option value="staff" ${s.role==='staff'?'selected':''}>Staff</option></select>
       <button data-active="${s.id}" data-to="${s.active?'0':'1'}" class="pill ${s.active?'bg-[#eafaf0] text-[#0a7a3d]':'bg-[#fde8e8] text-rose-600'}">${s.active?'Active':'Inactive'}</button>
+      ${s.email?`<button data-invite="${esc(s.email)}" class="pill bg-[#eaf2ff] text-[#0a3d7a]" title="Send onboarding invite email">✉ Invite</button>`:''}
     </div>`).join('')}</div>
     <div class="mt-4 pt-4 border-t border-[#f1f3f7]">
       <div class="text-xs font-semibold text-[#6b7280] mb-2">Add a team member</div>
@@ -289,6 +290,7 @@ function render(){
     document.querySelectorAll('[data-role]').forEach(s=>s.onchange=async()=>{ await api({action:'set_role',id:s.dataset.role,role:s.value}); await reload(); });
     document.querySelectorAll('[data-active]').forEach(b=>b.onclick=async()=>{ const activate=b.dataset.to==='1'; let reason=null; if(!activate){ reason=prompt('Reason for deactivating access (e.g. Involuntary termination, Resigned, Leave of absence):',''); if(reason===null) return; } await api({action:'set_active',id:b.dataset.active,active:activate,reason}); await reload(); });
     $('addBtn').onclick=async()=>{ const n=$('nName').value.trim(); if(!n)return; await api({action:'add_staff',full_name:n,email:$('nEmail').value.trim(),role:$('nRole').value}); await reload(); };
+    document.querySelectorAll('[data-invite]').forEach(b=>b.onclick=async()=>{ const o=b.textContent; b.disabled=true; b.textContent='Sending…'; try{ const r=await fetch(CONVEX_URL+'/onboard-invite',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getAuthToken()},body:JSON.stringify({email:b.dataset.invite})}); const j=await r.json(); b.textContent=j.ok?'✓ Sent':'Failed'; }catch(e){ b.textContent='Failed'; } setTimeout(()=>{ b.disabled=false; b.textContent=o; },2500); });
   } else if(TAB==='tasks' && TASKS){
     document.querySelectorAll('[data-move]').forEach(s=>s.onchange=async()=>{ await tasksApi({action:'update',id:s.dataset.move,status:s.value}); await loadTasks(); render(); });
     document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{ await tasksApi({action:'delete',id:b.dataset.del}); await loadTasks(); render(); });
