@@ -171,10 +171,8 @@
         <span class="wl">Weight Loss</span>
       </span>
     </a>
-    <!-- Medicare Bridge quick-note (center of the empty nav) -->
-    <a href="guides/semaglutide-medicare-nevada.html" class="hidden lg:flex absolute left-1/2 -translate-x-1/2 items-center text-[13px] text-[#16201d]/70 hover:text-[#16201d] transition-colors whitespace-nowrap">
-      <span><span class="font-semibold text-[#16201d]">Medicare $50/mo GLP-1 Bridge</span> · coming July 1</span>
-    </a>
+    <!-- Slot-machine announcement reel (Medicare Bridge ⇄ Free Webinar) -->
+    <div id="navSlot" class="hidden lg:block absolute left-1/2 -translate-x-1/2 overflow-hidden h-6 text-[13px]" style="width:380px" aria-label="Announcements"></div>
     <div class="flex items-center gap-3 md:gap-5">
       <a href="tel:+17026025002" class="hidden sm:flex flex-col items-end leading-none">
         <span class="text-[10px] font-bold uppercase tracking-[.08em] text-[#0a6cf5]">Call Now!</span>
@@ -1136,5 +1134,35 @@ function playVwl(){
 })();
 </script>
 <script src="/prelaunch.js" defer></script>
+<script>
+/* Top-nav slot-machine announcement reel: Medicare Bridge ⇄ Free Webinar.
+   Spins through several rows with motion blur + deceleration, lands on the next message. */
+(function(){
+  var slot=document.getElementById('navSlot'); if(!slot) return;
+  var ROWH=24, COPIES=30, STEP=5;
+  var msgs=[
+    {html:'<span class="font-semibold text-[#16201d]">Medicare $50/mo GLP-1 Bridge</span> <span class="text-[#16201d]/55">&middot; coming July 1</span>', href:'guides/semaglutide-medicare-nevada.html'},
+    {html:'<span style="color:#74992F">&#9679;</span> <span class="font-semibold text-[#16201d]">Free webinar</span> <span class="text-[#16201d]/55">&middot; Thu Jun 25, 7PM PT with Dr. DeBry &rarr;</span>', href:'webinar.html'}
+  ];
+  var reel=document.createElement('div'); reel.id='navSlotReel'; reel.style.willChange='transform';
+  for(var i=0;i<COPIES;i++){ var m=msgs[i%2]; var a=document.createElement('a'); a.href=m.href;
+    a.className='flex items-center justify-center whitespace-nowrap hover:opacity-75 transition-opacity';
+    a.style.height=ROWH+'px'; a.style.lineHeight=ROWH+'px'; a.innerHTML=m.html; reel.appendChild(a); }
+  slot.appendChild(reel);
+  var st=document.createElement('style');
+  st.textContent='@keyframes navSlotBlur{0%{filter:blur(0)}30%{filter:blur(2.4px)}82%{filter:blur(.5px)}100%{filter:blur(0)}}#navSlotReel.spin{animation:navSlotBlur 1.15s cubic-bezier(.16,.84,.3,1)}';
+  document.head.appendChild(st);
+  var pos=0;
+  function go(){
+    if(pos+STEP>COPIES-2){ reel.style.transition='none'; pos=pos%2; reel.style.transform='translateY('+(-pos*ROWH)+'px)'; reel.offsetHeight; }
+    pos+=STEP;
+    reel.style.transition='transform 1.15s cubic-bezier(.16,.84,.3,1)';
+    reel.classList.add('spin');
+    reel.style.transform='translateY('+(-pos*ROWH)+'px)';
+    setTimeout(function(){ reel.classList.remove('spin'); }, 1180);
+  }
+  setTimeout(function(){ go(); setInterval(go, 5200); }, 3500);
+})();
+</script>
 </body>
 </html>
