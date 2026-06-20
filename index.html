@@ -435,7 +435,7 @@
       <a href="#book" class="shrink-0 px-6 py-3 rounded-2xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8] transition-all active:scale-[0.985]">Book your free scan</a>
     </div>
     <style>
-      .pillar-tab{text-align:center;border-radius:1.1rem;padding:1.1rem .75rem;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);color:#fff;cursor:pointer;transition:transform .18s,background .18s,box-shadow .18s;}
+      .pillar-tab{display:flex;align-items:center;justify-content:center;text-align:center;min-height:3.25rem;border-radius:1.1rem;padding:1.1rem .75rem;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);color:#fff;cursor:pointer;transition:transform .18s,background .18s,box-shadow .18s;}
       .pillar-tab:hover{background:rgba(255,255,255,.22);transform:translateY(-2px);}
       .pillar-tab.on{background:#fff;color:#16201d;box-shadow:0 14px 34px rgba(0,0,0,.22);transform:translateY(-2px);}
       .pillar-tab .pic{font-size:1.7rem;display:block;margin-bottom:.35rem;}
@@ -443,10 +443,10 @@
       .pillar-panel:not(.on){opacity:0;pointer-events:none;}
     </style>
     <div id="pillarTabs" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5 max-w-3xl">
-      <button type="button" data-p="0" class="pillar-tab on"><span class="pic">🧠</span><span class="font-display font-semibold text-[13px] leading-tight">Behavioral Therapy</span></button>
-      <button type="button" data-p="1" class="pillar-tab"><span class="pic">💬</span><span class="font-display font-semibold text-[13px] leading-tight">Counseling &amp; Education</span></button>
-      <button type="button" data-p="2" class="pillar-tab"><span class="pic">🥗</span><span class="font-display font-semibold text-[13px] leading-tight">Registered Dietitian</span></button>
-      <button type="button" data-p="3" class="pillar-tab"><span class="pic">🏋️</span><span class="font-display font-semibold text-[13px] leading-tight">Fitness Coordinator</span></button>
+      <button type="button" data-p="0" class="pillar-tab on"><span class="font-display font-semibold text-[13px] leading-tight">Behavioral Therapy</span></button>
+      <button type="button" data-p="1" class="pillar-tab"><span class="font-display font-semibold text-[13px] leading-tight">Counseling &amp; Education</span></button>
+      <button type="button" data-p="2" class="pillar-tab"><span class="font-display font-semibold text-[13px] leading-tight">Registered Dietitian</span></button>
+      <button type="button" data-p="3" class="pillar-tab"><span class="font-display font-semibold text-[13px] leading-tight">Fitness Coordinator</span></button>
     </div>
     <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl max-w-3xl grid">
       <div class="pillar-panel on" data-pp="0">
@@ -600,7 +600,7 @@
         <!-- PhD program (slimmed) -->
         <div class="rounded-3xl border border-[#e6e9ee] glass deep-shadow p-7 flex flex-col overflow-hidden">
           <span class="text-[11px] font-semibold tracking-[0.16em] text-[#0a6cf5] uppercase">A Vitality Original</span>
-          <h3 class="font-display text-2xl font-semibold tracking-[-0.5px] mt-2 mb-2">Personal Health Doctorate</h3>
+          <h3 class="font-display text-2xl font-semibold tracking-[-0.5px] mt-2 mb-2">Personal Health Degree</h3>
           <p class="text-[#4b5563] text-sm leading-relaxed mb-5">Dr. DeBry's signature program that makes you the expert on your own body. No dissertation, no tuition, just you, finally smarter than your last diet.</p>
           <div class="space-y-2.5 mb-6">
             <div class="flex items-center gap-2.5 text-sm"><span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#0a6cf5]/10 text-[#0a6cf5] font-display font-semibold text-xs">1</span><span class="text-[#16201d] font-medium">Metabolism 101</span></div>
@@ -1075,7 +1075,7 @@ function playVwl(){
     "Most Popular":"El Más Popular","GLP-1 Weight Loss":"Pérdida de Peso con GLP-1","Semaglutide or tirzepatide, physician-prescribed":"Semaglutida o tirzepatida, recetada por un médico","Monthly check-ins and dose management":"Seguimiento mensual y manejo de dosis","Nutrition guidance included":"Guía nutricional incluida","/ mo":"/ mes","with your free InBody scan":"con tu escaneo InBody gratis",
     "Comprehensive":"Integral","Metabolic & Hormone":"Metabolismo y Hormonas","Hormone and metabolism evaluation":"Evaluación de hormonas y metabolismo","Lab-based, personalized protocol":"Protocolo personalizado basado en laboratorio","For weight that won't move on its own":"Para el peso que no baja por sí solo",
     "Foundations":"Fundamentos","Coaching & Nutrition":"Asesoría y Nutrición","1:1 coaching and macro planning":"Asesoría 1:1 y planificación de macros","The \"PhD\", Personal Health education":"El \"PhD\", educación de salud personal","Pairs with any medication program":"Se combina con cualquier programa de medicación",
-    "A Vitality Original":"Un Original de Vitality","Earn your":"Obtén tu","Personal Health Doctorate":"Doctorado en Salud Personal","No dissertation. No tuition. Just you, finally smarter than your last diet.":"Sin tesis. Sin colegiatura. Solo tú, por fin más listo que tu última dieta.","Enroll in the PhD":"Inscríbete en el PhD","Coming soon":"Próximamente",
+    "A Vitality Original":"Un Original de Vitality","Earn your":"Obtén tu","Personal Health Degree":"Título en Salud Personal","No dissertation. No tuition. Just you, finally smarter than your last diet.":"Sin tesis. Sin colegiatura. Solo tú, por fin más listo que tu última dieta.","Enroll in the PhD":"Inscríbete en el PhD","Coming soon":"Próximamente",
     "Your curriculum":"Tu plan de estudios","0 / 4 credits":"0 / 4 créditos","Metabolism 101":"Metabolismo 101","Why your body fights back, and how to win.":"Por qué tu cuerpo se resiste, y cómo ganar.","Food, Actually":"La Comida, de Verdad","Eating for your life, not a meal plan.":"Comer para tu vida, no un plan de comidas.","Habits That Stick":"Hábitos que Perduran","Small systems that beat willpower.":"Pequeños sistemas que vencen a la fuerza de voluntad.","Graduation":"Graduación","Your maintenance plan, for life.":"Tu plan de mantenimiento, de por vida.","Enroll to start earning credits.":"Inscríbete para empezar a ganar créditos.",
     "From first call to first dose, no maze.":"De la primera llamada a la primera dosis, sin laberintos.","Book a consult":"Reserva una consulta","One call or one form. A real person, or our 24/7 assistant, gets you scheduled.":"Una llamada o un formulario. Una persona real, o nuestro asistente 24/7, te agenda.","Get evaluated":"Evaluación","Physician review of your health, history, and goals. Labs where needed.":"Revisión médica de tu salud, historial y metas. Laboratorios cuando se necesiten.","Start your plan":"Empieza tu plan","Medication prescribed and a plan built for your body, not a template.":"Medicación recetada y un plan hecho para tu cuerpo, no una plantilla.","Stay supported":"Acompañamiento continuo","Check-ins, coaching, and dose adjustments as you go. We answer when you call.":"Seguimiento, asesoría y ajustes de dosis sobre la marcha. Te contestamos cuando llamas.",
     "Not sure where to start?":"¿No sabes por dónde empezar?","Find your starting point in 60 seconds.":"Encuentra tu punto de partida en 60 segundos.","Answer a few questions and we'll point you to the right program. No pressure, no card.":"Responde unas preguntas y te indicamos el programa ideal. Sin presión, sin tarjeta.","Take the Quiz":"Haz el Test","Or call":"O llama al","and talk to us now.":"y habla con nosotros ahora.",
