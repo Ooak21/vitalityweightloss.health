@@ -740,7 +740,7 @@
 // CONFIG ---------------------------------------------------------------------
 // Clover hosted-checkout URLs per track.
 // Each Clover button should be set up as: 1x $XX intro charge + 5x recurring $YY/mo.
-const CLOVER_URL_SEMA = 'https://link.clover.com/urlshortener/fw4vjT';  // sema inj: $145 intro / $199 x5
+const CLOVER_URL_SEMA = 'https://link.clover.com/urlshortener/fw4vjT';  // sema inj: $149 intro / $199 x5
 const CLOVER_URL_TIRZ = 'https://link.clover.com/urlshortener/2T5N7F';  // tirz inj: $249 intro / $399 x5
 const CLOVER_URL_ORAL = 'https://link.clover.com/urlshortener/9h9CJ7';  // oral sema: $199 intro / $299 x5
 // Athena middleware creates the athenaOne patient AFTER Clover payment (Option B).
@@ -750,7 +750,7 @@ const CLOVER_URL_ORAL = 'https://link.clover.com/urlshortener/9h9CJ7';  // oral 
 // at go-live, after the BAA + athena Platform Services contract land.
 const ATHENA_MIDDLEWARE_URL = 'https://quixotic-cat-492.convex.site';
 const PRICING = {
-  sema: { intro: 145, monthly: 199, label: '$145 first month · $199/mo thereafter', term: 1140 },
+  sema: { intro: 149, monthly: 199, label: '$149 first month · $199/mo thereafter', term: 1140 },
   tirz: { intro: 249, monthly: 399, label: '$249 first month · $399/mo thereafter', term: 2244 },
   oral: { intro: 199, monthly: 299, label: '$199 first month · $299/mo thereafter', term: 1694 }
 };
@@ -1275,7 +1275,7 @@ const flow = [
     const opts = [
       { drug:'sema',
         title:'Compounded Semaglutide',
-        from:'$145 first month, then $199/mo',
+        from:'$149 first month, then $199/mo',
         body:'Once-weekly injection. Same active ingredient as Ozempic & Wegovy. The proven, steady, predictable workhorse for GLP-1 weight loss.',
         disc:'15-20% body-weight loss expected over 6 months. Tens of millions of patients worldwide. Your monthly price never goes up even at top dose.',
         pill:'Most popular' },
@@ -1341,7 +1341,7 @@ const flow = [
     state.acks = state.acks || {};
     const _ackEs = (window.__LANG==='es');
     const _priceLabel = _ackEs
-      ? ({ sema:'$145 el primer mes · $199/mes después', tirz:'$249 el primer mes · $399/mes después', oral:'$199 el primer mes · $299/mes después' }[drug])
+      ? ({ sema:'$149 el primer mes · $199/mes después', tirz:'$249 el primer mes · $399/mes después', oral:'$199 el primer mes · $299/mes después' }[drug])
       : PRICING[drug].label;
     const _variantEs = drug==='tirz' ? 'inyecciones semanales de tirzepatida compuesta' : drug==='oral' ? 'semaglutida oral (sublingual) diaria compuesta' : 'inyecciones semanales de semaglutida compuesta';
     const _variantEn = drug==='tirz' ? 'weekly compounded tirzepatide injections' : drug==='oral' ? 'daily compounded oral (sublingual) semaglutide' : 'weekly compounded semaglutide injections';
@@ -1610,7 +1610,7 @@ function viewSubmitted(p) {
     approved = '<div class="info" style="text-align:left;margin:8px 0;">Your intake is saved and your patient record is started. Our care team will follow up about the right path for you.</div>';
   }
   const drugMeta = ({
-    sema: { name:'Compounded Semaglutide', price:'$145 first month, then $199/mo' },
+    sema: { name:'Compounded Semaglutide', price:'$149 first month, then $199/mo' },
     tirz: { name:'Compounded Tirzepatide', price:'$249 first month, then $399/mo' },
     oral: { name:'Oral Semaglutide no-needle', price:'$199 first month, then $299/mo' },
   })[state.drug] || { name:'Your selected program', price:'' };
@@ -2027,7 +2027,7 @@ window.TEXT_ES = {
   "Compounded Semaglutide":"Semaglutida compuesta",
   "Compounded Tirzepatide":"Tirzepatida compuesta",
   "Oral Semaglutide No-Needle":"Semaglutida oral sin agujas",
-  "$145 first month, then $199/mo":"$145 el primer mes, luego $199/mes",
+  "$149 first month, then $199/mo":"$149 el primer mes, luego $199/mes",
   "$249 first month, then $399/mo":"$249 el primer mes, luego $399/mes",
   "$199 first month, then $299/mo":"$199 el primer mes, luego $299/mes",
   "Once-weekly injection. Same active ingredient as Ozempic & Wegovy. The proven, steady, predictable workhorse for GLP-1 weight loss.":"Inyección una vez por semana. Mismo ingrediente activo que Ozempic y Wegovy. El caballo de batalla probado, estable y predecible para la pérdida de peso con GLP-1.",
