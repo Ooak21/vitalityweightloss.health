@@ -191,7 +191,7 @@ function tabMeals(hb){
     <details ${i===0?'open':''} class="rounded-xl border border-[#eef0f4] bg-[#fbfcfe]">
       <summary class="flex items-center justify-between p-3.5">
         <span class="flex items-center gap-2"><span class="chev text-[#0a6cf5]">▸</span><span class="font-semibold">${esc(d.day)}</span></span>
-        <span class="text-xs text-[#6b7280] seg">${d.kcal} kcal · ${d.protein}g protein</span>
+        <span class="text-xs text-[#6b7280] seg">${d.kcal} kcal · ${(d.items||[]).reduce((s,m)=>s+(+m.protein||0),0)}g protein</span>
       </summary>
       <div class="px-3.5 pb-3.5 space-y-3">
         ${(d.items||[]).map(m=>`<div class="border-l-2 border-[#d6e6ff] pl-3 ${m.image?'flex gap-3':''}">
@@ -231,11 +231,19 @@ function tabWorkouts(hb){
     </details>`).join('')}
   </div>`;
 }
+// Swaps/substitutions arrive as strings OR objects (e.g. {"Original":"x -> y (reason)"}).
+// Render the text either way instead of "[object Object]".
+function fmtSwap(s){
+  if(s==null) return '';
+  if(typeof s==='string') return s;
+  if(typeof s==='object') return Object.values(s).filter(v=>v!=null&&v!=='').join(' ');
+  return String(s);
+}
 function tabRoadmap(hb){
   return `<div class="space-y-4">
     <div class="space-y-2.5">${(hb.roadmap||[]).map(m=>`<div class="rounded-xl border border-[#eef0f4] bg-[#fbfcfe] p-3.5">
       <div class="flex items-center justify-between"><div class="font-semibold text-sm">Month ${m.month} · ${esc(m.title)}</div><span class="chip bg-[#eaf2ff] text-[#0a3d7a]">${esc(m.calories)}</span></div>
-      <ul class="mt-2 space-y-1">${(m.swaps||[]).map(s=>`<li class="text-xs text-[#6b7280] flex gap-2"><span class="text-[#0a6cf5]">•</span>${esc(s)}</li>`).join('')}</ul>
+      <ul class="mt-2 space-y-1">${(m.swaps||[]).map(s=>`<li class="text-xs text-[#6b7280] flex gap-2"><span class="text-[#0a6cf5]">•</span>${esc(fmtSwap(s))}</li>`).join('')}</ul>
     </div>`).join('')}</div>
     <div>
       <div class="text-sm font-semibold mb-2">Weekly habits</div>
@@ -243,7 +251,7 @@ function tabRoadmap(hb){
     </div>
     <div>
       <div class="text-sm font-semibold mb-2">Swaps for your lactose intolerance</div>
-      <ul class="space-y-1">${(hb.substitutions||[]).map(s=>`<li class="text-xs text-[#6b7280] flex gap-2"><span class="text-[#0a6cf5]">→</span>${esc(s)}</li>`).join('')}</ul>
+      <ul class="space-y-1">${(hb.substitutions||[]).map(s=>`<li class="text-xs text-[#6b7280] flex gap-2"><span class="text-[#0a6cf5]">→</span>${esc(fmtSwap(s))}</li>`).join('')}</ul>
     </div>
   </div>`;
 }
@@ -520,7 +528,11 @@ function doPrint(el){
     <div><div class="font-display" style="font-weight:700;letter-spacing:.15em;text-transform:uppercase;font-size:18px">VITALITY</div><div style="font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#0a6cf5">Weight Loss</div></div>
     <div style="text-align:right;font-size:12px">${esc((p.first||'')+' '+(p.last||''))}<br><span style="color:#6b7280">${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</span></div>
   </div>`;
-  const done=()=>{ el.classList.remove('print-target'); document.body.classList.remove('printing'); window.removeEventListener('afterprint',done); };
+  // Expand every collapsed section inside the printed area so the FULL plan prints —
+  // not just whatever the patient happened to leave open on screen. Restored afterward.
+  const reopened=[...el.querySelectorAll('details:not([open])')];
+  reopened.forEach(d=>{ d.open=true; });
+  const done=()=>{ reopened.forEach(d=>{ d.open=false; }); el.classList.remove('print-target'); document.body.classList.remove('printing'); window.removeEventListener('afterprint',done); };
   window.addEventListener('afterprint',done);
   el.classList.add('print-target'); document.body.classList.add('printing');
   window.print();
