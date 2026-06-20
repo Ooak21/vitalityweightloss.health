@@ -49,7 +49,7 @@ const sb = createClient(SB, ANON, { auth:{ storageKey:'sb-vit-staff', persistSes
 const FN = SB + '/functions/v1/vit-admin';
 const $=(id)=>document.getElementById(id);
 const esc=(s)=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let TOKEN=null, DATA=null, TAB='systems', TASKS=null, REPORTS=null, SYS=null;
+let TOKEN=null, DATA=null, TAB='systems', TASKS=null, REPORTS=null, SYS=null, TICKETS=null, TREPORT=null;
 
 // code shield: neutral codes in the DB/log; human labels decoded ONLY here in the admin UI
 const CODES={'S-001':'Role changed','S-002':'Staff added','S-003':'Access deactivated','S-004':'Access reactivated','A-001':'Chart accessed','M-001':'Record modified','M-002':'Note added','D-001':'Disclosure / sent','V-001':'Vendor risk reviewed','100-001':'Record created'};
@@ -103,6 +103,44 @@ async function tasksApi(p){
   if (USE_CONVEX_AUTH){ const r=await fetch(CONVEX_URL+'/tasks-data',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getAuthToken()},body:JSON.stringify(p||{})}); return await r.json(); }
   const r=await fetch(SB+'/functions/v1/vit-tasks',{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON,'Authorization':'Bearer '+TOKEN},body:JSON.stringify(p||{})}); return await r.json(); }
 async function loadTasks(){ TASKS=await tasksApi({action:'load'}); }
+async function ticketsApi(p){ const r=await fetch(CONVEX_URL+'/tickets',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getAuthToken()},body:JSON.stringify(p||{})}); return await r.json(); }
+async function loadTickets(){ TICKETS=await ticketsApi({action:'list'}); TREPORT=await ticketsApi({action:'report'}); }
+function viewTickets(){
+  if(!TICKETS){ (async()=>{ await loadTickets(); render(); })(); return '<div class="card p-8 text-center text-[#9aa0ab] text-sm">Loading tickets…</div>'; }
+  const list=(TICKETS.tickets||[]); const rp=(TREPORT&&TREPORT.ok)?TREPORT:{}; const now=Date.now();
+  const PRI={P1:'bg-rose-600 text-white',P2:'bg-amber-500 text-white',P3:'bg-[#0a6cf5] text-white',P4:'bg-[#9aa0ab] text-white'};
+  const CATS=['it_config','access_request','data_correction','outage','security','cant_access','major_broken','billing','general','how_to','feature'];
+  const inp='w-full border border-[#e6e9ee] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#0a6cf5]';
+  const rows=list.map(t=>{ const id=t._id||t.id; const due=t.sla_due_at; const breached=due&&t.status!=='resolved'&&t.status!=='closed'&&due<now;
+    return `<tr class="border-b border-[#eef0f4] align-top">
+      <td class="py-2.5 pr-3"><div class="font-semibold text-[13px]">${esc(t.subject)}</div><div class="text-[11px] text-[#9aa0ab] mt-0.5">${esc((t.body||'').slice(0,90))}</div></td>
+      <td class="py-2.5 pr-3 text-[12px] text-[#6b7280]">${esc((t.category||'').replace(/_/g,' '))}</td>
+      <td class="py-2.5 pr-3"><span class="text-[10px] font-bold px-2 py-0.5 rounded ${PRI[t.priority]||''}">${esc(t.priority||'')}</span></td>
+      <td class="py-2.5 pr-3"><select data-tstatus="${id}" class="text-[12px] border border-[#e6e9ee] rounded-lg px-2 py-1">${['open','in_progress','resolved','closed'].map(s=>`<option value="${s}" ${t.status===s?'selected':''}>${s.replace('_',' ')}</option>`).join('')}</select></td>
+      <td class="py-2.5 pr-3 text-[12px]">${esc(t.requester_name||t.requester_email||'')}<div class="text-[10px] text-[#9aa0ab]">${esc(t.requester_type||'')}</div></td>
+      <td class="py-2.5 pr-3 text-[11px] ${breached?'text-rose-600 font-semibold':'text-[#6b7280]'}">${due?(breached?'⚠ overdue':fmtTs(due)):'—'}</td>
+      <td class="py-2.5 text-[11px] text-[#9aa0ab]">${t.created_at?fmtTs(t.created_at):''}</td></tr>`; }).join('');
+  return `<div class="card p-5">
+    <div class="flex items-center justify-between mb-4 gap-2 flex-wrap">
+      <h2 class="font-display text-lg font-semibold">Tickets</h2>
+      <div class="flex items-center gap-3 text-[12px] text-[#6b7280] flex-wrap">
+        <span><b class="text-[#16201d]">${rp.by_status?(rp.by_status.open||0):0}</b> open</span>
+        <span><b class="text-[#16201d]">${rp.by_status?(rp.by_status.in_progress||0):0}</b> doing</span>
+        <span><b class="text-[#16201d]">${rp.by_status?(rp.by_status.resolved||0):0}</b> resolved</span>
+        <span>SLA <b class="${(rp.sla_adherence_pct==null||rp.sla_adherence_pct>=95)?'text-emerald-600':'text-rose-600'}">${rp.sla_adherence_pct==null?'—':rp.sla_adherence_pct+'%'}</b></span>
+        <span class="${(rp.sla_breach_count||0)>0?'text-rose-600 font-semibold':''}">${rp.sla_breach_count||0} breach</span>
+        <button id="tkcsv" class="px-3 py-1.5 rounded-lg border border-[#e6e9ee] text-xs font-semibold hover:bg-[#f1f3f7]">⬇ Export CSV</button>
+      </div>
+    </div>
+    <div class="flex gap-2 mb-4 flex-wrap items-end bg-[#f7f8fa] rounded-xl p-3">
+      <div class="flex-1 min-w-[180px]"><label class="text-[10px] uppercase tracking-wide text-[#9aa0ab] font-semibold block mb-1">Subject</label><input id="tkSub" class="${inp}" placeholder="Short summary"></div>
+      <div><label class="text-[10px] uppercase tracking-wide text-[#9aa0ab] font-semibold block mb-1">Category</label><select id="tkCat" class="${inp}">${CATS.map(c=>`<option value="${c}">${c.replace(/_/g,' ')}</option>`).join('')}</select></div>
+      <div class="flex-1 min-w-[180px]"><label class="text-[10px] uppercase tracking-wide text-[#9aa0ab] font-semibold block mb-1">Details</label><input id="tkBody" class="${inp}" placeholder="What's needed"></div>
+      <button id="tkAdd" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold">Open ticket</button>
+    </div>
+    <div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-[10px] uppercase tracking-wide text-[#9aa0ab] text-left border-b border-[#eef0f4]"><th class="py-2 pr-3">Subject</th><th class="py-2 pr-3">Category</th><th class="py-2 pr-3">Priority</th><th class="py-2 pr-3">Status</th><th class="py-2 pr-3">Requester</th><th class="py-2 pr-3">SLA due</th><th class="py-2">Created</th></tr></thead><tbody>${rows||'<tr><td colspan="7" class="py-6 text-center text-[#9aa0ab]">No tickets yet.</td></tr>'}</tbody></table></div>
+  </div>`;
+}
 async function sysApi(p){
   if (USE_CONVEX_AUTH){ const r=await fetch(CONVEX_URL+'/health-check',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getAuthToken()},body:JSON.stringify(p||{})}); return await r.json(); }
   const r=await fetch(SB+'/functions/v1/vit-health',{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON,'Authorization':'Bearer '+TOKEN},body:JSON.stringify(p||{})}); return await r.json(); }
@@ -238,11 +276,12 @@ function render(){
       <span class="tab ${TAB==='systems'?'on':''}" data-t="systems">Systems</span>
       <span class="tab ${TAB==='access'?'on':''}" data-t="access">Access control</span>
       <span class="tab ${TAB==='tasks'?'on':''}" data-t="tasks">Tasks</span>
+      <span class="tab ${TAB==='tickets'?'on':''}" data-t="tickets">Tickets</span>
       <span class="tab ${TAB==='reports'?'on':''}" data-t="reports">Reporting</span>
       <span class="tab ${TAB==='vendors'?'on':''}" data-t="vendors">Vendor risk</span>
       <span class="tab ${TAB==='audit'?'on':''}" data-t="audit">Audit log</span>
     </div>
-    ${TAB==='systems'?viewSystems():TAB==='access'?viewAccess():TAB==='tasks'?viewTasks():TAB==='reports'?viewReports():TAB==='vendors'?viewVendors():viewAudit()}`;
+    ${TAB==='systems'?viewSystems():TAB==='access'?viewAccess():TAB==='tasks'?viewTasks():TAB==='tickets'?viewTickets():TAB==='reports'?viewReports():TAB==='vendors'?viewVendors():viewAudit()}`;
   document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{ TAB=t.dataset.t; render(); });
   if(TAB==='systems' && SYS){
     const rc=$('runChk'); if(rc) rc.onclick=async()=>{ rc.disabled=true; rc.textContent='Running…'; await sysApi({action:'run'}); SYS=await sysApi({action:'load'}); render(); };
@@ -254,6 +293,10 @@ function render(){
     document.querySelectorAll('[data-move]').forEach(s=>s.onchange=async()=>{ await tasksApi({action:'update',id:s.dataset.move,status:s.value}); await loadTasks(); render(); });
     document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{ await tasksApi({action:'delete',id:b.dataset.del}); await loadTasks(); render(); });
     const add=$('tAdd'); if(add) add.onclick=async()=>{ const t=$('tTitle').value.trim(); if(!t)return; await tasksApi({action:'create',title:t,assignee:$('tAssignee').value,priority:$('tPriority').value,due_date:$('tDue').value||null}); await loadTasks(); render(); };
+  } else if(TAB==='tickets' && TICKETS){
+    document.querySelectorAll('[data-tstatus]').forEach(s=>s.onchange=async()=>{ await ticketsApi({action:'update',id:s.dataset.tstatus,status:s.value}); await loadTickets(); render(); });
+    const ta=$('tkAdd'); if(ta) ta.onclick=async()=>{ const sub=$('tkSub').value.trim(); if(!sub)return; ta.disabled=true; ta.textContent='Opening…'; await ticketsApi({action:'create',subject:sub,category:$('tkCat').value,body:$('tkBody').value.trim()}); await loadTickets(); render(); };
+    const tc=$('tkcsv'); if(tc) tc.onclick=()=>{ const rows=[['subject','category','priority','status','requester','requester_type','sla_due','created','resolved']].concat((TICKETS.tickets||[]).map(t=>[t.subject,t.category,t.priority,t.status,(t.requester_name||t.requester_email),t.requester_type,t.sla_due_at?fmtTs(t.sla_due_at):'',t.created_at?fmtTs(t.created_at):'',t.resolved_at?fmtTs(t.resolved_at):''])); const csv=rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='vitality-tickets-'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); };
   } else if(TAB==='reports' && REPORTS){
     const cc=$('callcsv'); if(cc) cc.onclick=()=>{ const rows=[['when','from','intent','outcome','seconds','transcript_ref','telnyx_call_id','review']].concat((REPORTS.calls||[]).map(c=>[c.ts,c.from,c.intent,c.outcome,c.dur,c.tref,c.telnyx,(!c.outcome||(c.dur!=null&&c.dur<5))?'flag':'ok'])); const csv=rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='vitality-calls-'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); };
   } else if(TAB==='vendors'){
