@@ -545,10 +545,17 @@ function doPrint(el){
   const reopened=[...el.querySelectorAll('details:not([open])')];
   reopened.forEach(d=>{ d.open=true; });
   const done=()=>{ reopened.forEach(d=>{ d.open=false; }); el.classList.remove('print-target'); document.body.classList.remove('printing'); window.removeEventListener('afterprint',done); };
-  window.addEventListener('afterprint',done);
-  el.classList.add('print-target'); document.body.classList.add('printing');
-  window.print();
-  setTimeout(done,1500);
+  // Force every lazy image in the print area to load BEFORE printing — otherwise the off-screen
+  // meal/exercise photos (loading="lazy") never load and print as blank boxes.
+  const imgs=[...el.querySelectorAll('img[loading="lazy"]')];
+  imgs.forEach(i=>{ i.loading='eager'; if(!i.complete){ const s=i.getAttribute('src'); if(s) i.setAttribute('src', s); } });
+  const waits=imgs.filter(i=>!i.complete).map(i=>new Promise(res=>{ const t=setTimeout(res,2500); i.addEventListener('load',()=>{clearTimeout(t);res();},{once:true}); i.addEventListener('error',()=>{clearTimeout(t);res();},{once:true}); }));
+  Promise.all(waits).then(()=>{
+    window.addEventListener('afterprint',done);
+    el.classList.add('print-target'); document.body.classList.add('printing');
+    window.print();
+    setTimeout(done,1500);
+  });
 }
 window.printReport=()=>doPrint(document.getElementById('inbodyReport'));
 window.printPlan=()=>doPrint(document.getElementById('planSection'));
