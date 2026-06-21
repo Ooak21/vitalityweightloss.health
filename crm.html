@@ -18,6 +18,10 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- 3D body viz (same stack as the IBS neuro scanner) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <style>
   :root{--bg:#ffffff;--surface:#ffffff;--surface-2:#f1f3f7;--border:#e6e9ee;--text:#16201d;--muted:#6b7280;--emerald:#0a6cf5}
   body{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:var(--bg);color:var(--text)}
@@ -37,6 +41,25 @@
   .scroll::-webkit-scrollbar{width:8px}.scroll::-webkit-scrollbar-thumb{background:#d8dce3;border-radius:8px}
   ::selection{background:rgba(10,108,245,.25)}
   .modal-bg{background:rgba(16,24,40,.45);backdrop-filter:blur(4px)}
+  /* ---- 3D body dock (shown when patient list is collapsed) ---- */
+  #bodyDock{display:none}
+  #bodyDock.show{display:flex}
+  #bodyDock .bd-stage{position:relative;flex:1;min-height:0;border-radius:20px;overflow:hidden;
+    background:radial-gradient(120% 90% at 50% 8%,#f4f9ff 0%,#eef3fb 42%,#e7edf6 100%);
+    border:1px solid #e6e9ee;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
+  #bodyDock canvas{display:block;width:100%;height:100%;cursor:grab}
+  #bodyDock canvas:active{cursor:grabbing}
+  .bd-lbl{position:absolute;transform:translate(-50%,-50%);pointer-events:none;white-space:nowrap;
+    font:600 10.5px/1 'Inter',sans-serif;letter-spacing:.01em;padding:3px 7px;border-radius:8px;
+    background:rgba(255,255,255,.86);backdrop-filter:blur(3px);box-shadow:0 2px 8px rgba(16,40,80,.14);
+    color:#16201d;opacity:0;transition:opacity .25s}
+  .bd-lbl .bd-v{font-weight:700}
+  .bd-lbl small{display:block;font-weight:600;font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;color:#8a93a3;margin-bottom:1px}
+  .bd-pill{padding:.35rem .7rem;border-radius:9999px;font:600 11.5px/1 'Inter',sans-serif;cursor:pointer;
+    color:#6b7280;border:1px solid #e6e9ee;background:#fff;transition:.15s}
+  .bd-pill.on{color:#fff;background:#0a6cf5;border-color:#0a6cf5}
+  .bd-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font:600 11px/1 'Inter',sans-serif;color:#9aa0ab;letter-spacing:.04em;text-transform:uppercase}
 </style>
 <style>html{visibility:hidden}</style>
 <script type="module">
@@ -100,8 +123,30 @@
     <div class="flex-1 overflow-y-auto scroll px-3 pb-4 pt-3" id="list"></div>
   </div>
   <!-- DETAIL -->
-  <div class="overflow-y-auto scroll" id="detail">
-    <div class="h-full flex items-center justify-center text-[#9aa0ab]">Select a patient to open their chart</div>
+  <div class="overflow-y-auto scroll flex min-h-0" id="detail">
+    <div id="detailMain" class="flex-1 min-w-0">
+      <div class="h-full flex items-center justify-center text-[#9aa0ab]">Select a patient to open their chart</div>
+    </div>
+    <!-- 3D body dock: appears in the dead space when the patient list is collapsed -->
+    <aside id="bodyDock" class="flex-col shrink-0 w-[400px] xl:w-[460px] p-5 pl-2 sticky top-0 self-start" style="height:calc(100vh - 64px)">
+      <div class="flex items-center justify-between mb-3 px-1">
+        <div>
+          <div class="font-display text-sm font-semibold text-[#16201d]">Body composition map</div>
+          <div id="bdSub" class="text-[11px] text-[#9aa0ab]">segmental analysis</div>
+        </div>
+        <div class="flex gap-1.5">
+          <button id="bdLean" class="bd-pill on" onclick="VBODY&&VBODY.setMode('lean')">Lean</button>
+          <button id="bdFat" class="bd-pill" onclick="VBODY&&VBODY.setMode('fat')">Fat</button>
+        </div>
+      </div>
+      <div class="bd-stage" id="bdStage">
+        <div class="bd-loading" id="bdLoading">Loading model…</div>
+      </div>
+      <div class="flex items-center justify-between mt-3 px-1">
+        <div id="bdVisceral" class="text-[11px] font-semibold"></div>
+        <div class="text-[10px] text-[#9aa0ab] flex items-center gap-1">⟲ drag to rotate</div>
+      </div>
+    </aside>
   </div>
 </div>
 
@@ -462,7 +507,7 @@
   function renderDetail(){
     const p=patients.find(x=>x.id===selId); if(!p){return;}
     const age = p.dob ? (new Date().getFullYear()-new Date(p.dob).getFullYear()) : '-';
-    $('#detail').innerHTML = `
+    $('#detailMain').innerHTML = `
       <div class="p-6 max-w-3xl">
         <div class="flex items-start justify-between gap-4 mb-6">
           <div>
@@ -550,6 +595,7 @@
           </div>
         </div>
       </div>`;
+    syncBodyDock();
   }
 
   // ---------------- actions ----------------
@@ -790,7 +836,17 @@ HARD RULES:
           tabs=document.getElementById('tabs'), list=document.getElementById('list'), today=document.getElementById('todayPanel');
     if(listOpen){ grid.style.gridTemplateColumns=''; tabs.style.display=''; list.style.display=''; today.style.display=''; btn.textContent='«'; btn.title='Collapse patient list'; }
     else { grid.style.gridTemplateColumns='56px 1fr'; tabs.style.display='none'; list.style.display='none'; today.style.display='none'; btn.textContent='»'; btn.title='Show patient list'; }
+    syncBodyDock();
   };
+  // Show the 3D body dock only when the list is collapsed AND there is room (wide screens).
+  function syncBodyDock(){
+    const dock=document.getElementById('bodyDock'); if(!dock) return;
+    const p=patients.find(x=>x.id===selId);
+    const room = !listOpen && window.innerWidth>=1180 && !!p;
+    if(room){ dock.classList.add('show'); if(window.VBODY){ VBODY.mount(document.getElementById('bdStage')); VBODY.bind(p); } }
+    else { dock.classList.remove('show'); }
+  }
+  window.addEventListener('resize',()=>{ syncBodyDock(); window.VBODY&&VBODY.resize(); });
 
   // ---------------- boot ----------------
   $('#search').addEventListener('input',renderList);
@@ -957,5 +1013,143 @@ HARD RULES:
   }
 </script>
 <script src="handbook-render.js"></script>
+<!-- ===================== 3D BODY COMPOSITION MAP =====================
+  Same stack as the IBS neuro scanner (three@0.128 + GLTFLoader + OrbitControls).
+  A neutral translucent figure (procedural by default) carries a data layer of
+  colored marker orbs + projected labels, anchored to normalized body positions
+  so they work on ANY mesh. Drop a real model at assets/body.glb and it auto-loads
+  in place of the procedural figure — no code change. Data: InBody segmental
+  lean / fat mass per limb, visceral level. Color = relative magnitude / L-R
+  balance; labels show the real lb. No clinical claims, no fabricated values. -->
+<script>
+(function(){
+  if(typeof THREE==='undefined'){ console.warn('three.js missing — body map disabled'); return; }
+  const fmtD = window.fmtDate || (d=> d? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '');
+  let R,scene,camera,controls,pivot,raf,stageEl,body,bodyMat,mounted=false,glbTried=false;
+  let mode='lean', patient=null, markers=[];
+  const SEGS=[
+    ['right_arm','R Arm',  -0.66, 0.34, 0.5],
+    ['left_arm','L Arm',    0.66, 0.34, 0.5],
+    ['trunk','Trunk',       0.00, 0.42, 0.9],
+    ['right_leg','R Leg',  -0.30,-0.42, 0.55],
+    ['left_leg','L Leg',    0.30,-0.42, 0.55],
+    ['visceral','Visceral', 0.00, 0.08, 1.0]
+  ];
+
+  function seg3(g,a,b,r){ const A=new THREE.Vector3(...a),B=new THREE.Vector3(...b),d=new THREE.Vector3().subVectors(B,A),L=d.length();
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,L,16),bodyMat); m.position.copy(A).lerp(B,.5);
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize()); g.add(m); }
+  function ball(g,x,y,z,r){ const m=new THREE.Mesh(new THREE.SphereGeometry(r,24,18),bodyMat); m.position.set(x,y,z); g.add(m); }
+  function buildProcedural(){
+    bodyMat=new THREE.MeshStandardMaterial({color:0xd7e4f4,metalness:.18,roughness:.42,transparent:true,opacity:.92,emissive:0x243a5e,emissiveIntensity:.28});
+    const g=new THREE.Group();
+    ball(g,0,.72,0,.135); seg3(g,[0,.56,0],[0,.63,0],.05);          // head + neck
+    seg3(g,[0,.12,0],[0,.52,0],.165); ball(g,0,.52,0,.18); ball(g,0,.12,0,.155); // torso
+    [-1,1].forEach(s=>{ const sh=[s*.21,.5,0],el=[s*.30,.27,0],wr=[s*.34,.06,0];
+      ball(g,...sh,.06); seg3(g,sh,el,.052); ball(g,...el,.05); seg3(g,el,wr,.045); ball(g,...wr,.05); }); // arms
+    [-1,1].forEach(s=>{ const hp=[s*.095,.0,0],kn=[s*.12,-.4,0],an=[s*.12,-.8,0];
+      ball(g,...hp,.078); seg3(g,hp,kn,.075); ball(g,...kn,.06); seg3(g,kn,an,.06); ball(g,...an,.062); }); // legs
+    pivot.add(g); body=g;
+  }
+  function buildMarkers(){
+    markers.forEach(m=>{ pivot.remove(m.mesh); m.lbl.remove(); }); markers=[];
+    const box=new THREE.Box3().setFromObject(body), c=box.getCenter(new THREE.Vector3()), s=box.getSize(new THREE.Vector3());
+    const hx=s.x/2,hy=s.y/2,hz=Math.max(s.z/2,.18);
+    SEGS.forEach(([key,name,fx,fy,fz])=>{
+      const pos=new THREE.Vector3(c.x+fx*hx, c.y+fy*hy, c.z+fz*hz);
+      const mat=new THREE.MeshStandardMaterial({color:0x9aa7b8,emissive:0x9aa7b8,emissiveIntensity:.65,metalness:.25,roughness:.28});
+      const orb=new THREE.Mesh(new THREE.SphereGeometry(key==='visceral'?.058:.05,22,16),mat); orb.position.copy(pos); pivot.add(orb);
+      const lbl=document.createElement('div'); lbl.className='bd-lbl'; stageEl.appendChild(lbl);
+      markers.push({key,name,pos,mesh:orb,mat,lbl,show:false});
+    });
+  }
+  function colorFor(key,v,ctx){
+    if(mode==='lean'){
+      const weak=new THREE.Color(0xf0b429), strong=new THREE.Color(0x10b981);
+      let t=1; if(key==='right_arm'||key==='left_arm') t=v/ctx.armMax; else if(key==='right_leg'||key==='left_leg') t=v/ctx.legMax; else t=0.93;
+      return weak.clone().lerp(strong, Math.max(0,Math.min(1,(t-0.85)/0.15)));
+    } else {
+      const lo=new THREE.Color(0x7fb2e6), hi=new THREE.Color(0xf43f5e);
+      return lo.clone().lerp(hi, Math.max(0,Math.min(1, v/(ctx.fatMax||1))));
+    }
+  }
+  function vBand(l){ return l==null?0x9aa7b8 : l<=9?0x10b981 : l<=14?0xf0b429 : 0xef4444; }
+  function refresh(){
+    if(!mounted) return;
+    const ib=patient&&patient.inbody;
+    const sub=document.getElementById('bdSub'); if(sub) sub.textContent= ib? `InBody ${ib.model||'570'} · ${fmtD(ib.test_date)} · ${mode==='lean'?'lean mass':'fat mass'}` : 'No InBody scan on file';
+    const data=(ib&&(mode==='lean'?ib.segmental_lean_lb:ib.segmental_fat_lb))||{};
+    const num=k=>{const n=parseFloat(data[k]); return isNaN(n)?null:n;};
+    const armMax=Math.max(num('right_arm')||0,num('left_arm')||0)||1, legMax=Math.max(num('right_leg')||0,num('left_leg')||0)||1;
+    const all=['right_arm','left_arm','trunk','right_leg','left_leg'].map(num).filter(v=>v!=null);
+    const fatMax=all.length?Math.max(...all):1;
+    markers.forEach(m=>{
+      if(m.key==='visceral'){ const l=ib?ib.visceral_fat_level:null; const col=vBand(l); m.mat.color.setHex(col); m.mat.emissive.setHex(col);
+        if(l!=null){ m.lbl.innerHTML=`<small>Visceral</small><span class="bd-v">Lv ${l}</span>`; m.show=true; } else { m.show=false; } return; }
+      const v=num(m.key);
+      if(v!=null){ const col=colorFor(m.key,v,{armMax,legMax,fatMax}); m.mat.color.copy(col); m.mat.emissive.copy(col);
+        m.lbl.innerHTML=`<small>${m.name}</small><span class="bd-v">${v.toFixed(1)}</span> lb`; m.show=true; }
+      else { m.mat.color.setHex(0xb6bfcb); m.mat.emissive.setHex(0xb6bfcb); m.show=false; }
+    });
+    const chip=document.getElementById('bdVisceral');
+    if(chip){ const l=ib?ib.visceral_fat_level:null; if(l!=null){ const hex='#'+vBand(l).toString(16).padStart(6,'0'); chip.innerHTML=`<span style="color:${hex}">●</span> Visceral fat · Level ${l}`; } else chip.textContent=''; }
+  }
+  function project(){
+    if(!stageEl) return; const w=stageEl.clientWidth,h=stageEl.clientHeight;
+    const camDir=camera.position.clone().normalize();
+    markers.forEach(m=>{
+      const facing=m.pos.clone().normalize().dot(camDir);
+      if(!m.show || facing<-0.02){ m.lbl.style.opacity=0; return; }
+      const v=m.pos.clone().project(camera);
+      m.lbl.style.left=((v.x*.5+.5)*w)+'px'; m.lbl.style.top=((-v.y*.5+.5)*h)+'px';
+      m.lbl.style.opacity = facing<0.18?0.28:1;
+    });
+  }
+  function loop(){ raf=requestAnimationFrame(loop); if(controls)controls.update(); R.render(scene,camera); project(); }
+  function tryGLB(){
+    if(glbTried) return; glbTried=true;
+    if(typeof THREE.GLTFLoader==='undefined') return;
+    new THREE.GLTFLoader().load('assets/body.glb', (gltf)=>{
+      pivot.remove(body); const m=gltf.scene;
+      let box=new THREE.Box3().setFromObject(m), sz=box.getSize(new THREE.Vector3());
+      m.scale.setScalar(1.6/(sz.y||1));
+      box=new THREE.Box3().setFromObject(m); const c=box.getCenter(new THREE.Vector3()); m.position.sub(c);
+      m.traverse(o=>{ if(o.isMesh&&o.material){ o.material.transparent=true; if(o.material.opacity===1)o.material.opacity=0.96; } });
+      pivot.add(m); body=m; buildMarkers(); refresh();
+      const sub=document.getElementById('bdSub'); // mark that the real model loaded
+    }, undefined, ()=>{ /* no asset present — procedural stays */ });
+  }
+  const VBODY={
+    mount(el){
+      if(!el) return;
+      if(mounted){ if(el!==stageEl){ el.appendChild(R.domElement); markers.forEach(m=>el.appendChild(m.lbl)); stageEl=el; } this.resize(); return; }
+      stageEl=el;
+      scene=new THREE.Scene();
+      camera=new THREE.PerspectiveCamera(38,1,0.1,100); camera.position.set(0,0.05,3.15);
+      R=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
+      R.setPixelRatio(Math.min(window.devicePixelRatio,2)); R.outputEncoding=THREE.sRGBEncoding;
+      el.appendChild(R.domElement);
+      scene.add(new THREE.AmbientLight(0xffffff,.6));
+      const key=new THREE.DirectionalLight(0xffffff,1.05); key.position.set(1.6,2,2.4); scene.add(key);
+      const rim=new THREE.DirectionalLight(0x66d2ff,1.25); rim.position.set(-2,1.2,-1.8); scene.add(rim);
+      const fill=new THREE.DirectionalLight(0xbcd6ff,.5); fill.position.set(-1.2,-1,1.6); scene.add(fill);
+      pivot=new THREE.Group(); scene.add(pivot);
+      buildProcedural(); buildMarkers();
+      controls=new THREE.OrbitControls(camera,R.domElement);
+      controls.enablePan=false; controls.enableZoom=false; controls.enableDamping=true; controls.dampingFactor=.08;
+      controls.minPolarAngle=Math.PI*0.30; controls.maxPolarAngle=Math.PI*0.70;
+      controls.autoRotate=true; controls.autoRotateSpeed=1.15; controls.target.set(0,0,0);
+      mounted=true; const ld=document.getElementById('bdLoading'); if(ld)ld.style.display='none';
+      this.resize(); loop(); tryGLB();
+    },
+    bind(p){ patient=p; refresh(); },
+    setMode(m){ mode=m; const a=document.getElementById('bdLean'),b=document.getElementById('bdFat');
+      if(a&&b){ a.classList.toggle('on',m==='lean'); b.classList.toggle('on',m==='fat'); } refresh(); },
+    resize(){ if(!mounted||!stageEl) return; const w=stageEl.clientWidth,h=stageEl.clientHeight; if(!w||!h) return;
+      camera.aspect=w/h; camera.updateProjectionMatrix(); R.setSize(w,h,false); }
+  };
+  window.VBODY=VBODY;
+})();
+</script>
 </body>
 </html>
