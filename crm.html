@@ -28,7 +28,7 @@
   .badge{font-size:.68rem;font-weight:600;letter-spacing:.03em;padding:2px 9px;border-radius:9999px;white-space:nowrap}
   .b-lead{background:rgba(37,99,235,.10);color:#1d4ed8}.b-new_patient{background:rgba(217,119,6,.12);color:#b45309}
   .b-active{background:rgba(16,185,129,.14);color:#047857}.b-inactive{background:rgba(100,116,139,.12);color:#475569}
-  .tab{padding:.4rem .85rem;border-radius:9999px;font-size:.8rem;font-weight:500;cursor:pointer;color:#6b7280;border:1px solid transparent}
+  .tab{padding:.35rem .55rem;border-radius:9999px;font-size:.75rem;font-weight:500;cursor:pointer;color:#6b7280;border:1px solid transparent;white-space:nowrap}
   .tab.on{color:#0a6cf5;font-weight:600}
   .cnt{display:inline-block;min-width:17px;text-align:center;font-size:.6rem;font-weight:700;padding:0 5px;border-radius:9999px;background:rgba(10,108,245,.12);color:#0a6cf5;vertical-align:middle}
   .tab.on .cnt{background:#0a6cf5;color:#fff}
@@ -91,7 +91,7 @@
   <div id="listPane" class="border-r border-[#e6e9ee] flex flex-col min-h-0">
     <div class="flex items-center gap-2 px-3 py-3 flex-shrink-0">
       <button id="listToggle" onclick="toggleList()" title="Collapse patient list" class="w-8 h-8 rounded-lg border border-[#e6e9ee] flex items-center justify-center text-[#6b7280] hover:bg-[#f1f3f7] hover:text-[#16201d] shrink-0 text-lg leading-none">«</button>
-      <div class="flex gap-2 flex-wrap" id="tabs">
+      <div class="flex gap-1.5 flex-nowrap" id="tabs">
         <div class="tab on" data-f="all">All <span class="cnt" data-c="all">0</span></div><div class="tab" data-f="lead">Leads <span class="cnt" data-c="lead">0</span></div>
         <div class="tab" data-f="new_patient">New <span class="cnt" data-c="new_patient">0</span></div><div class="tab" data-f="active">Active <span class="cnt" data-c="active">0</span></div>
       </div>
