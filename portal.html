@@ -477,7 +477,7 @@ function render(){
     <div><h1 class="font-display text-2xl font-semibold tracking-[-.5px]">Welcome back, ${esc(p.first)}</h1>
     <p class="text-sm text-[#6b7280] mt-1">${PROGRAMS[p.program]||'Your program'} · <span class="capitalize">${esc((p.status||'').replace('_',' '))}</span></p></div>
     <div class="grid lg:grid-cols-3 gap-6 items-start">
-      <div class="lg:col-span-2 space-y-6">${approved}<section class="card p-6 flex items-center justify-between gap-3"><div><h2 class="font-display text-lg font-semibold">Your full transformation handbook</h2><p class="text-sm text-[#6b7280] mt-0.5">Your complete personalized handbook: InBody breakdown, every metric decoded, nutrition, workouts, and habits.</p></div><button onclick="openMyHandbook()" class="shrink-0 px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">📖 Open</button></section>${team}${progress}${inbodyReport}${scanHistory}${planHtml}</div>
+      <div class="lg:col-span-2 space-y-6">${approved}${team}${progress}${inbodyReport}${scanHistory}<section class="card p-6 flex items-center justify-between gap-3"><div><h2 class="font-display text-lg font-semibold">Your full transformation handbook</h2><p class="text-sm text-[#6b7280] mt-0.5">Your complete personalized handbook: InBody breakdown, every metric decoded, nutrition, workouts, and habits.</p></div><button onclick="openMyHandbook()" class="shrink-0 px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">📖 Open</button></section>${planHtml}</div>
       <div class="space-y-6">${appt}${logging}${rewards}${companion}</div>
     </div>`;
   document.querySelectorAll('.reqBtn').forEach(b=>b.onclick=async()=>{
