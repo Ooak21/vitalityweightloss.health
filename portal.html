@@ -536,9 +536,12 @@ function doPrint(el){
   if(!el) return;
   const p=(DATA&&DATA.patient)||{};
   const lh=el.querySelector('.print-letterhead');
-  if(lh) lh.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #0a6cf5;padding-bottom:8px;margin-bottom:16px">
-    <div><div class="font-display" style="font-weight:700;letter-spacing:.15em;text-transform:uppercase;font-size:18px">VITALITY</div><div style="font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#0a6cf5">Weight Loss</div></div>
-    <div style="text-align:right;font-size:12px">${esc((p.first||'')+' '+(p.last||''))}<br><span style="color:#6b7280">${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</span></div>
+  if(lh) lh.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #0a6cf5;padding-bottom:10px;margin-bottom:18px">
+    <div style="display:flex;align-items:center;gap:11px">
+      <img src="assets/logo-icon.png" alt="Vitality Weight Loss" style="height:42px;width:auto;display:block">
+      <div><div class="font-display" style="font-weight:700;letter-spacing:.15em;text-transform:uppercase;font-size:18px;line-height:1;color:#16201d">VITALITY</div><div style="font-size:9px;letter-spacing:.32em;text-transform:uppercase;color:#0a6cf5;margin-top:3px">Weight Loss</div></div>
+    </div>
+    <div style="text-align:right;font-size:12px;line-height:1.45">${esc((p.first||'')+' '+(p.last||''))}<br><span style="color:#6b7280">${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</span></div>
   </div>`;
   // Expand every collapsed section inside the printed area so the FULL plan prints —
   // not just whatever the patient happened to leave open on screen. Restored afterward.
@@ -547,7 +550,7 @@ function doPrint(el){
   const done=()=>{ reopened.forEach(d=>{ d.open=false; }); el.classList.remove('print-target'); document.body.classList.remove('printing'); window.removeEventListener('afterprint',done); };
   // Force every lazy image in the print area to load BEFORE printing — otherwise the off-screen
   // meal/exercise photos (loading="lazy") never load and print as blank boxes.
-  const imgs=[...el.querySelectorAll('img[loading="lazy"]')];
+  const imgs=[...el.querySelectorAll('img')];   // all imgs incl. the letterhead logo, so they load before print
   imgs.forEach(i=>{ i.loading='eager'; if(!i.complete){ const s=i.getAttribute('src'); if(s) i.setAttribute('src', s); } });
   const waits=imgs.filter(i=>!i.complete).map(i=>new Promise(res=>{ const t=setTimeout(res,2500); i.addEventListener('load',()=>{clearTimeout(t);res();},{once:true}); i.addEventListener('error',()=>{clearTimeout(t);res();},{once:true}); }));
   Promise.all(waits).then(()=>{
