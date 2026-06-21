@@ -21,6 +21,7 @@
 <!-- 3D body viz (same stack as the IBS neuro scanner) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <style>
   :root{--bg:#ffffff;--surface:#ffffff;--surface-2:#f1f3f7;--border:#e6e9ee;--text:#16201d;--muted:#6b7280;--emerald:#0a6cf5}
@@ -1109,7 +1110,9 @@ HARD RULES:
   function tryGLB(){
     if(glbTried) return; glbTried=true;
     if(typeof THREE.GLTFLoader==='undefined') return;
-    new THREE.GLTFLoader().load('assets/body.glb', (gltf)=>{
+    const loader=new THREE.GLTFLoader();
+    if(typeof THREE.DRACOLoader!=='undefined'){ const d=new THREE.DRACOLoader(); d.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/'); loader.setDRACOLoader(d); }
+    loader.load('assets/body.glb', (gltf)=>{
       pivot.remove(body); const m=gltf.scene;
       let box=new THREE.Box3().setFromObject(m), sz=box.getSize(new THREE.Vector3());
       m.scale.setScalar(1.6/(sz.y||1));
