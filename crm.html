@@ -668,7 +668,11 @@
         ? {action:'book_appt', patient_id:apptEdit.pid, scheduled_at:whenMs, type, provider, status}
         : {action:'update_appt', appt_id:apptEdit.apptId, scheduled_at:whenMs, type, provider, status};
       const r=await fetch(`${CONVEX_URL}/crm-data`,{method:'POST',headers:await convexHeaders(),body:JSON.stringify(payload)});
-      const j=await r.json(); if(!j.ok) throw new Error(j.error||'save failed');
+      const j=await r.json();
+      if(!j.ok){
+        if(j.error==='conflict' && j.conflict){ const c=j.conflict; alert(`${provider} is already booked at ${new Date(c.when).toLocaleString()} (${c.type} · ${c.patient}). Pick a different time or provider — slots are 30 minutes.`); sb.disabled=false; sb.textContent=o; return; }
+        throw new Error(j.error||'save failed');
+      }
       closeAppt(); await loadData();
     }catch(e){ alert('Could not save the appointment: '+e.message); }
     sb.disabled=false; sb.textContent=o;
