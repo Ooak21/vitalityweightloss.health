@@ -352,35 +352,7 @@
   const now = new Date(); // real time, so relative stamps + synthetic data stay current
   const ago = (h)=> new Date(now.getTime()-h*3600e3).toISOString();
   const ahead = (h)=> new Date(now.getTime()+h*3600e3).toISOString();
-  let patients = [
-    { id:'p1', first:'Marisol', last:'Reyes', email:'marisol.r@email.com', phone:'(702) 555-0143', dob:'1986-04-12', program:'glp1', status:'active', created:ago(720),
-      notes:[{type:'clinical_ref',author:'agent:receptionist',auto:true,ts:ago(1),body:'Patient called: nausea is back from the GLP-1. Asked Dr. DeBry to call her back today. Provider notified by email.'},
-             {type:'staff',author:'Front Desk',auto:false,ts:ago(48),body:'Sent welcome packet. Very motivated, has a wedding in the fall.'}],
-      appts:[{type:'Follow-up',status:'scheduled',when:ahead(20),provider:'DeVera'},{type:'Consult',status:'completed',when:ago(696),provider:'DeBry'}],
-      calls:[{dir:'inbound',intent:'question',outcome:'routed',ts:ago(2),dur:184}] },
-    { id:'p2', first:'Derek', last:'Okafor', email:'d.okafor@email.com', phone:'(702) 555-0177', dob:'1979-11-30', program:'metabolic', status:'new_patient', created:ago(96),
-      notes:[{type:'intake',author:'agent:intake',auto:true,ts:ago(96),body:'New web intake. Program interest: metabolic. Height: 6\'1". Current weight: 244 lbs. Heard via: Google.'}],
-      appts:[{type:'Consult',status:'confirmed',when:ahead(2),provider:'DeBry'}],
-      calls:[] },
-    { id:'p3', first:'Janelle', last:'Brooks', email:'janelle.b@email.com', phone:'(702) 555-0190', dob:'1992-07-08', program:'glp1', status:'lead', created:ago(5), review:['thyroid','gallbladder'],
-      notes:[{type:'call',author:'agent:receptionist',auto:true,ts:ago(5),body:'Inbound call captured by receptionist. Interested in tirzepatide. Took a message, wants a callback after 5pm. Dropped into CRM as a new lead.'}],
-      appts:[], calls:[{dir:'inbound',intent:'new_lead',outcome:'message_taken',ts:ago(5),dur:96}] },
-    { id:'p4', first:'Anthony', last:'Cole', email:'a.cole@email.com', phone:'(702) 555-0112', dob:'1968-02-21', program:'coaching', status:'active', created:ago(1400),
-      notes:[{type:'staff',author:'A. Black',auto:false,ts:ago(120),body:'Down 14 lbs since March. Adjusted macros, added two strength days.'}],
-      appts:[{type:'Coaching',status:'scheduled',when:ahead(72),provider:'Black'}], calls:[] },
-    { id:'p5', first:'Priya', last:'Nair', email:'priya.nair@email.com', phone:'(702) 555-0155', dob:'1990-09-15', program:'unsure', status:'lead', created:ago(28),
-      notes:[{type:'intake',author:'agent:intake',auto:true,ts:ago(28),body:'New web intake. Program interest: not sure. Heard via: Instagram / Facebook.'}],
-      appts:[], calls:[] },
-    { id:'p6', first:'Marcus', last:'Lee', email:'marcus.lee@email.com', phone:'(702) 555-0166', dob:'1984-12-02', program:'glp1', status:'new_patient', created:ago(50),
-      notes:[{type:'system',author:'agent:receptionist',auto:true,ts:ago(50),body:'Inbound. Booked consult for next week with DeBry. Insurance: yes, eligibility to verify.'}],
-      appts:[{type:'Consult',status:'scheduled',when:ahead(120),provider:'DeBry'}], calls:[{dir:'inbound',intent:'book',outcome:'booked',ts:ago(50),dur:212}] },
-    { id:'p7', first:'Tasha', last:'Williams', email:'tasha.w@email.com', phone:'(702) 555-0188', dob:'1995-03-19', program:'metabolic', status:'active', created:ago(900),
-      notes:[{type:'staff',author:'R. DeVera',auto:false,ts:ago(240),body:'Labs back, TSH normal, started protocol. Energy improving.'}],
-      appts:[{type:'Follow-up',status:'scheduled',when:ahead(6),provider:'DeVera'}], calls:[] },
-    { id:'p8', first:'Hector', last:'Mendoza', email:'h.mendoza@email.com', phone:'(702) 555-0121', dob:'1973-06-27', program:'coaching', status:'inactive', created:ago(2200),
-      notes:[{type:'staff',author:'Front Desk',auto:false,ts:ago(600),body:'Paused program, travel for work. Follow up in 30 days.'}],
-      appts:[], calls:[] },
-  ];
+  let patients = []; // seed removed: live Convex board only (no synthetic fallback)
 
   // ---------------- helpers ----------------
   const $ = s=>document.querySelector(s);
@@ -980,7 +952,13 @@ HARD RULES:
   // Live-first when wired, no synthetic flash. Seed only renders if the live load fails.
   if(USE_SUPABASE || USE_CONVEX){
     document.getElementById('list').innerHTML='<div class="text-center text-[#9aa0ab] text-sm py-10">Loading patients…</div>';
-    loadData().finally(()=>{ if(!liveLoaded){ kpis(); renderList(); if(patients[0]) select(pickDefault()); } });
+    // Retry the live load through the auth warm-up race (token may not be ready on the first
+    // try). NEVER render a synthetic roster — show a Retry state if it genuinely can't load,
+    // so the board only ever shows the real Convex patients (no "phantom batch" on a cold load).
+    (async()=>{
+      for(let i=0;i<6 && !liveLoaded;i++){ await loadData(); if(!liveLoaded) await new Promise(r=>setTimeout(r,500)); }
+      if(!liveLoaded){ document.getElementById('list').innerHTML='<div class="text-center text-rose-500 text-sm py-10">Couldn\'t load patients.<br><button onclick="location.reload()" class="underline mt-1">Retry</button></div>'; }
+    })();
     if (USE_SUPABASE) setInterval(loadData, 15000);  // Convex is reactive; no polling needed
   } else {
     kpis(); renderList(); if(patients[0]) select(pickDefault());
