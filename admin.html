@@ -339,12 +339,14 @@ function viewVendors(){
 
 function render(){
   $('who').textContent=(DATA.me?DATA.me.email:'')+' · '+(DATA.me?DATA.me.role:'');
-  // Providers get a Tickets-only view (no Systems/Access/Reporting/Audit/etc).
+  // Providers (DeBry / NP) get their clinical work surface: the Task board (where paid
+  // GLP-1 enrollments drop an Rx-review task, patient + medication revealed to providers)
+  // plus the support ticket queue. No Systems/Access/Reporting/Billing/Vendor/Audit.
   const TABS = PROVIDER_MODE
-    ? [['tickets','Tickets']]
+    ? [['tasks','My queue'],['tickets','Tickets']]
     : [['systems','Systems'],['access','Access control'],['tasks','Tasks'],['tickets','Tickets'],['reports','Reporting'],['billing','Billing'],['vendors','Vendor risk'],['audit','Audit log']];
   const head = PROVIDER_MODE
-    ? '<div><h1 class="font-display text-2xl font-semibold tracking-[-.5px]">Support</h1><p class="text-sm text-[#6b7280] mt-1">Open and track support tickets for the platform.</p></div>'
+    ? '<div><h1 class="font-display text-2xl font-semibold tracking-[-.5px]">Provider workspace</h1><p class="text-sm text-[#6b7280] mt-1">Your Rx review queue and support tickets.</p></div>'
     : '<div><h1 class="font-display text-2xl font-semibold tracking-[-.5px]">Operations</h1><p class="text-sm text-[#6b7280] mt-1">Access control, the task board, and the compliance audit trail.</p></div>';
   $('app').innerHTML=`
     ${head}
@@ -392,7 +394,7 @@ else if (DATA && /admin only/i.test(DATA.error||'')){
   // The /tickets route allows any staff role; if it loads, drop into a Tickets-only view.
   await loadTickets();
   if (TICKETS && TICKETS.ok){
-    PROVIDER_MODE=true; TAB='tickets';
+    PROVIDER_MODE=true; TAB='tasks';
     DATA={ ok:true, me:{ email:'', role:'provider' } };
     $('app').classList.remove('hidden'); render();
   } else {
