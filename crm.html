@@ -179,7 +179,7 @@
 <div id="apptModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
   <div class="bg-white border border-[#e6e9ee] rounded-3xl max-w-sm w-full overflow-hidden shadow-[0_18px_44px_-22px_rgba(16,24,40,0.25)]">
     <div class="p-5 border-b border-[#e6e9ee] flex items-center justify-between">
-      <div><h3 class="font-display font-semibold text-lg">Edit appointment</h3><div id="apptPatient" class="text-xs text-[#6b7280] mt-0.5"></div></div>
+      <div><h3 id="apptModalTitle" class="font-display font-semibold text-lg">Edit appointment</h3><div id="apptPatient" class="text-xs text-[#6b7280] mt-0.5"></div></div>
       <button onclick="closeAppt()" class="text-[#6b7280] hover:text-[#16201d] text-xl">×</button>
     </div>
     <div class="p-5 space-y-3">
@@ -194,10 +194,10 @@
       <div><label class="text-xs text-[#6b7280] font-semibold">Status</label><select id="apptStatus" class="field mt-1"><option value="scheduled">Scheduled</option><option value="confirmed">Confirmed</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="no_show">No-show</option></select></div>
     </div>
     <div class="p-5 border-t border-[#e6e9ee] flex justify-between gap-3 items-center">
-      <button onclick="cancelAppt()" class="px-3 py-2 rounded-xl border border-rose-200 text-rose-600 text-sm font-semibold hover:bg-rose-50">Cancel appt</button>
+      <button id="apptCancelBtn" onclick="cancelAppt()" class="px-3 py-2 rounded-xl border border-rose-200 text-rose-600 text-sm font-semibold hover:bg-rose-50">Cancel appt</button>
       <div class="flex gap-2">
         <button onclick="closeAppt()" class="px-4 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-sm hover:bg-[#f1f3f7]">Close</button>
-        <button onclick="saveAppt()" class="px-5 py-2 rounded-xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8]">Save</button>
+        <button id="apptSaveBtn" onclick="saveAppt()" class="px-5 py-2 rounded-xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8]">Save</button>
       </div>
     </div>
   </div>
@@ -448,7 +448,7 @@
     const apptDays=new Set(), byDay={};
     patients.forEach(p=>(p.appts||[]).forEach(a=>{ const d=new Date(a.when);
       if(d.getFullYear()===y&&d.getMonth()===m){ const dd=d.getDate(); apptDays.add(dd);
-        (byDay[dd]=byDay[dd]||[]).push({when:a.when,type:a.type,provider:a.provider,pid:p.id,name:p.first+' '+p.last}); } }));
+        (byDay[dd]=byDay[dd]||[]).push({id:a.id,when:a.when,type:a.type,provider:a.provider,pid:p.id,name:p.first+' '+p.last}); } }));
     const dayAppts=(byDay[selDay]||[]).sort((a,b)=> new Date(a.when)-new Date(b.when));
     let cells=''; for(let i=0;i<startDay;i++) cells+='<div></div>';
     for(let d=1;d<=dim;d++){ const isToday=d===t.getDate(), isSel=d===selDay, has=apptDays.has(d);
@@ -469,7 +469,7 @@
             <span class="text-[11px] font-semibold text-[#0a6cf5] w-12 shrink-0">${new Date(a.when).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>
             <span class="text-xs text-[#16201d] truncate">${a.name}</span></span>
           <span class="text-[10px] text-[#6b7280] shrink-0">${a.type}</span>
-          <button onclick="editAppt('${a.pid}','${a.when}')" title="Edit appointment" class="shrink-0 text-[#9aa0ab] hover:text-[#0a6cf5] px-1 leading-none">✎</button></div>`).join('')
+          <button onclick="editAppt('${a.pid}','${a.id}')" title="Edit appointment" class="shrink-0 text-[#9aa0ab] hover:text-[#0a6cf5] px-1 leading-none">✎</button></div>`).join('')
         : '<div class="text-xs text-[#9aa0ab] py-1.5">No appointments this day.</div>'}`;
   }
   function renderList(){
@@ -494,7 +494,7 @@
     const items=[
       ...p.notes.map(n=>({ts:n.ts,kind:n.auto?'auto':'note',author:n.author,body:n.body,ntype:n.type})),
       ...p.calls.map(c=>({ts:c.ts,kind:'call',author:'Receptionist',body:`${c.dir==='inbound'?'Inbound':'Outbound'} call · ${c.intent} · ${c.outcome} · ${Math.floor(c.dur/60)}m${c.dur%60}s`})),
-      ...p.appts.map(a=>({ts:a.when,kind:'appt',author:a.provider,body:`${a.type} · ${a.status} · ${fmtDT(a.when)} · ${a.provider}`,pid:p.id,when:a.when})),
+      ...p.appts.map(a=>({ts:a.when,kind:'appt',author:a.provider,body:`${a.type} · ${a.status} · ${fmtDT(a.when)} · ${a.provider}`,pid:p.id,when:a.when,apptId:a.id})),
     ].sort((x,y)=> new Date(y.ts).getTime() - new Date(x.ts).getTime());
     const dot={auto:'bg-blue-400',note:'bg-[#6b7280]',call:'bg-[#0a6cf5]',appt:'bg-amber-400'};
     return items.map(it=>{
@@ -505,7 +505,7 @@
         <div class="flex flex-col items-center"><div class="w-2 h-2 rounded-full ${d} mt-1.5"></div><div class="w-px flex-1 bg-[#e6e9ee] mt-1"></div></div>
         <div class="flex-1 -mt-0.5 ${clin?'border-l-2 border-rose-500/40 pl-3 -ml-1':''}">
           <div class="flex items-center gap-2 text-xs text-[#6b7280]"><span class="font-semibold text-[#3d4a45]">${it.author}</span>${clin?'<span class="badge" style="background:rgba(244,63,94,.15);color:#be123c">⚑ Clinical · provider</span>':(it.kind==='auto'?'<span class="badge b-active">auto</span>':'')}<span>·</span><span>${rel(it.ts)}</span></div>
-          <div class="text-sm ${clin?'text-[#9f1239]':'text-[#16201d]'} mt-1 leading-relaxed">${it.body}${it.kind==='appt'?` <button onclick="editAppt('${it.pid}','${it.when}')" class="text-[#0a6cf5] text-xs font-semibold ml-1 hover:underline">edit</button>`:''}</div>
+          <div class="text-sm ${clin?'text-[#9f1239]':'text-[#16201d]'} mt-1 leading-relaxed">${it.body}${it.kind==='appt'?` <button onclick="editAppt('${it.pid}','${it.apptId}')" class="text-[#0a6cf5] text-xs font-semibold ml-1 hover:underline">edit</button>`:''}</div>
         </div>
       </div>`;}).join('');
   }
@@ -650,41 +650,65 @@
     kpis(); renderList(); renderDetail(); }
   function addNote(id){ const v=$('#noteInput').value.trim(); if(!v)return; const p=patients.find(x=>x.id===id);
     p.notes.push({type:'staff',author:'Front Desk',auto:false,ts:new Date().toISOString(),body:v}); renderDetail(); renderList(); }
-  function bookAppt(id){ const p=patients.find(x=>x.id===id);
-    p.appts.push({type:'Consult',status:'scheduled',when:ahead(48),provider:'DeBry'});
-    p.notes.push({type:'system',author:'Front Desk',auto:true,ts:new Date().toISOString(),body:'Appointment booked: Consult in 2 days with DeBry.'});
-    renderDetail(); renderList(); kpis(); }
-
-  // ---- appointment edit (reschedule / change / cancel) ----
+  // ---- appointments (book / reschedule / change / cancel) — persisted on Convex ----
   let apptEdit=null;
-  window.editAppt=function(pid, whenIso){
+  function openApptModal(p){
+    document.getElementById('apptPatient').textContent=`${p.first} ${p.last}`;
+    const mo=document.getElementById('apptModal'); mo.classList.remove('hidden'); mo.classList.add('flex');
+  }
+  window.bookAppt=function(id){
+    const p=patients.find(x=>x.id===id); if(!p)return;
+    apptEdit={pid:id, apptId:null, isNew:true};
+    const d=new Date(); d.setDate(d.getDate()+2); const pad=n=>String(n).padStart(2,'0');
+    document.getElementById('apptDate').value=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    document.getElementById('apptTime').value='09:00';
+    document.getElementById('apptType').value='Consult';
+    document.getElementById('apptProvider').value='DeBry';
+    document.getElementById('apptStatus').value='scheduled';
+    document.getElementById('apptModalTitle').textContent='Book appointment';
+    document.getElementById('apptCancelBtn').style.display='none';
+    openApptModal(p);
+  };
+  window.editAppt=function(pid, apptId){
     const p=patients.find(x=>x.id===pid); if(!p)return;
-    const idx=(p.appts||[]).findIndex(a=>a.when===whenIso); if(idx<0)return;
-    apptEdit={pid,idx}; const a=p.appts[idx]; const d=new Date(a.when); const pad=n=>String(n).padStart(2,'0');
+    const a=(p.appts||[]).find(x=>x.id===apptId); if(!a)return;
+    apptEdit={pid, apptId, isNew:false};
+    const d=new Date(a.when); const pad=n=>String(n).padStart(2,'0');
     document.getElementById('apptDate').value=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
     document.getElementById('apptTime').value=`${pad(d.getHours())}:${pad(d.getMinutes())}`;
     document.getElementById('apptType').value=a.type||'Consult';
     document.getElementById('apptProvider').value=a.provider||'DeBry';
     document.getElementById('apptStatus').value=a.status||'scheduled';
-    document.getElementById('apptPatient').textContent=`${p.first} ${p.last}`;
-    const mo=document.getElementById('apptModal'); mo.classList.remove('hidden'); mo.classList.add('flex');
+    document.getElementById('apptModalTitle').textContent='Edit appointment';
+    document.getElementById('apptCancelBtn').style.display='';
+    openApptModal(p);
   };
   window.closeAppt=function(){ const mo=document.getElementById('apptModal'); mo.classList.add('hidden'); mo.classList.remove('flex'); apptEdit=null; };
   window.saveAppt=async function(){
-    if(!apptEdit)return; const p=patients.find(x=>x.id===apptEdit.pid); if(!p)return; const a=p.appts[apptEdit.idx]; if(!a)return;
+    if(!apptEdit)return;
     const dt=document.getElementById('apptDate').value, tm=document.getElementById('apptTime').value||'09:00';
-    const when=new Date(`${dt}T${tm}`).toISOString();
-    a.when=when; a.type=document.getElementById('apptType').value; a.provider=document.getElementById('apptProvider').value; a.status=document.getElementById('apptStatus').value;
-    if(USE_SUPABASE && window.__vitSb && a.id){ try{ await window.__vitSb.from('vit_appointments').update({scheduled_at:when,type:a.type,provider:a.provider,status:a.status}).eq('id',a.id);}catch(e){console.warn('saveAppt',e);} }
-    p.notes.push({type:'system',author:'Front Desk',auto:true,ts:new Date().toISOString(),body:`Appointment updated: ${a.type} with ${a.provider}, ${fmtDT(when)} (${a.status}).`});
-    closeAppt(); renderDetail(); renderList(); kpis();
+    if(!dt){ alert('Pick a date.'); return; }
+    const whenMs=new Date(`${dt}T${tm}`).getTime();
+    const type=document.getElementById('apptType').value, provider=document.getElementById('apptProvider').value, status=document.getElementById('apptStatus').value;
+    const sb=document.getElementById('apptSaveBtn'); const o=sb.textContent; sb.disabled=true; sb.textContent='Saving…';
+    try{
+      const payload = apptEdit.isNew
+        ? {action:'book_appt', patient_id:apptEdit.pid, scheduled_at:whenMs, type, provider, status}
+        : {action:'update_appt', appt_id:apptEdit.apptId, scheduled_at:whenMs, type, provider, status};
+      const r=await fetch(`${CONVEX_URL}/crm-data`,{method:'POST',headers:await convexHeaders(),body:JSON.stringify(payload)});
+      const j=await r.json(); if(!j.ok) throw new Error(j.error||'save failed');
+      closeAppt(); await loadData();
+    }catch(e){ alert('Could not save the appointment: '+e.message); }
+    sb.disabled=false; sb.textContent=o;
   };
   window.cancelAppt=async function(){
-    if(!apptEdit)return; const p=patients.find(x=>x.id===apptEdit.pid); if(!p)return; const a=p.appts[apptEdit.idx]; if(!a)return;
-    if(USE_SUPABASE && window.__vitSb && a.id){ try{ await window.__vitSb.from('vit_appointments').update({status:'cancelled'}).eq('id',a.id);}catch(e){console.warn(e);} }
-    const when=a.when, type=a.type; p.appts.splice(apptEdit.idx,1);
-    p.notes.push({type:'system',author:'Front Desk',auto:true,ts:new Date().toISOString(),body:`Appointment cancelled: ${type}, ${fmtDT(when)}.`});
-    closeAppt(); renderDetail(); renderList(); kpis();
+    if(!apptEdit||apptEdit.isNew||!apptEdit.apptId){ closeAppt(); return; }
+    if(!confirm('Cancel this appointment?')) return;
+    try{
+      const r=await fetch(`${CONVEX_URL}/crm-data`,{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'cancel_appt',appt_id:apptEdit.apptId})});
+      const j=await r.json(); if(!j.ok) throw new Error(j.error||'cancel failed');
+      closeAppt(); await loadData();
+    }catch(e){ alert('Could not cancel the appointment: '+e.message); }
   };
 
   // ---------------- branded email ----------------
