@@ -288,7 +288,7 @@
   window.openVbisHandbook = async function(pid){
     let ov=document.getElementById('hbOverlay');
     if(!ov){ ov=document.createElement('div'); ov.id='hbOverlay'; ov.className='fixed inset-0 z-[70] bg-black/40 overflow-y-auto'; ov.onclick=e=>{ if(e.target===ov) ov.remove(); }; document.body.appendChild(ov); }
-    ov.innerHTML='<div class="max-w-3xl mx-auto my-8 px-3"><div class="flex justify-between items-center mb-3"><div class="font-display font-semibold text-lg text-white">VBIS Handbook</div><button onclick="document.getElementById(\'hbOverlay\').remove()" class="w-9 h-9 rounded-full bg-white text-2xl leading-none text-[#16201d]">×</button></div><div id="hbBody">Loading…</div></div>';
+    ov.innerHTML='<div class="max-w-3xl mx-auto my-8 px-3"><div class="flex justify-between items-center mb-3"><div class="font-display font-semibold text-lg text-white">VBIS Handbook</div><div class="flex items-center gap-2"><button onclick="window.__printEl(\'hbBody\',\'VBIS Handbook\')" class="px-3 h-9 rounded-full bg-white text-sm font-semibold text-[#16201d]">🖨 Print</button><button onclick="document.getElementById(\'hbOverlay\').remove()" class="w-9 h-9 rounded-full bg-white text-2xl leading-none text-[#16201d]">×</button></div></div><div id="hbBody">Loading…</div></div>';
     try{
       const r=await fetch(CONVEX_URL+'/handbook-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({patient_id:pid})});
       const j=await r.json();
@@ -300,6 +300,48 @@
     const o=btn?btn.textContent:''; if(btn){ btn.disabled=true; btn.textContent='Starting…'; }
     try{ const r=await fetch(CONVEX_URL+'/generate-handbook',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({patient_id:pid})}); const j=await r.json(); alert(j.ok?'Handbook generation started — it takes ~2-3 minutes. Click “View handbook” to check.':'Failed: '+(j.error||'unknown')); }catch(e){ alert('Error: '+e.message); }
     if(btn){ btn.disabled=false; btn.textContent=o; }
+  };
+
+  // ---- Print helper: clean window with the rendered content, force-open <details>, print ----
+  window.__printEl = function(elId, title){
+    const el=document.getElementById(elId); if(!el) return;
+    const w=window.open('','_blank','width=900,height=1000'); if(!w){ alert('Allow pop-ups to print this.'); return; }
+    w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+title+'</title><scr'+'ipt src="https://cdn.tailwindcss.com"></scr'+'ipt><style>body{font-family:Inter,system-ui,sans-serif;color:#16201d;padding:24px;max-width:820px;margin:0 auto}img{max-width:120px;border-radius:8px}summary{cursor:default}@media print{details{break-inside:avoid}}</style></head><body><h2 style="font-size:20px;font-weight:700;margin:0 0 14px">'+title+'</h2>'+el.innerHTML+'</body></html>');
+    w.document.close();
+    setTimeout(()=>{ try{ w.document.querySelectorAll('details').forEach(d=>d.open=true); w.focus(); w.print(); }catch(e){} }, 900);
+  };
+
+  // ---- Provider/staff PLAN viewer (the patient's generated meal + workout plan) ----
+  function renderPlanDoc(hb, patient, goal){
+    if(!hb) return '<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">No plan yet for this patient. Click “Generate plan,” then re-open.</div>';
+    const e=esc, n=hb.nutrition||{}, w=hb.workouts||{};
+    const macro=(l,v)=>(v==null||v==='')?'':`<div class="bg-[#f7f8fa] border border-[#e6e9ee] rounded-xl p-3"><div class="text-[11px] text-[#6b7280]">${l}</div><div class="font-semibold text-lg">${e(v)}</div></div>`;
+    const meals=(hb.meals||[]).map((d,i)=>`<details ${i===0?'open':''} class="rounded-xl border border-[#eef0f4] bg-[#fbfcfe] mb-2"><summary class="flex justify-between p-3 cursor-pointer"><span class="font-semibold">${e(d.day)}</span><span class="text-xs text-[#6b7280]">${e(d.kcal||'')} kcal</span></summary><div class="px-3 pb-3 space-y-2">${(d.items||[]).map(m=>`<div class="border-l-2 border-[#d6e6ff] pl-3"><div class="text-[11px] uppercase tracking-wide text-[#0a6cf5] font-semibold">${e(m.meal||'')}</div><div class="text-sm font-semibold">${e(m.name||'')} <span class="text-[#9aa0ab] font-normal">${m.kcal?'· '+e(m.kcal)+' kcal':''} ${m.protein?'· '+e(m.protein)+'g P':''}</span></div>${m.ingredients?`<div class="text-xs text-[#6b7280]">${e(m.ingredients)}</div>`:''}${m.instructions?`<div class="text-xs text-[#9aa0ab] italic">${e(m.instructions)}</div>`:''}</div>`).join('')}</div></details>`).join('');
+    const workouts=(w.phases||[]).map((ph,i)=>`<details ${i===0?'open':''} class="rounded-xl border border-[#eef0f4] bg-[#fbfcfe] mb-2"><summary class="flex justify-between p-3 cursor-pointer"><span class="font-semibold">${e(ph.name||'')}</span><span class="text-xs text-[#6b7280]">${ph.weeks?'Weeks '+e(ph.weeks):''}</span></summary><div class="px-3 pb-3"><div class="text-xs text-[#6b7280] mb-1">${ph.focus?'<b>Focus:</b> '+e(ph.focus):''}</div><div class="text-xs text-[#6b7280] mb-2">${ph.structure?'<b>Structure:</b> '+e(ph.structure):''}</div><div class="space-y-1.5">${(ph.exercises||[]).map(x=>`<div class="border-l-2 border-[#d6e6ff] pl-3 text-sm"><span class="font-semibold">${e(x.name||'')}</span>${(x.sets||x.reps)?` <span class="text-[#9aa0ab]">· ${e(x.sets||'')}${x.reps?'×'+e(x.reps):''}</span>`:''}${(x.cue||x.notes)?`<div class="text-xs text-[#9aa0ab] italic">${e(x.cue||x.notes)}</div>`:''}</div>`).join('')}</div></div></details>`).join('');
+    const roadmap=(hb.roadmap||[]).map(m=>`<div class="rounded-xl border border-[#eef0f4] bg-[#fbfcfe] p-3 mb-1.5"><div class="text-sm font-semibold">${e(m.label||m.month||m.title||'')}</div><div class="text-xs text-[#6b7280]">${e(m.focus||m.detail||m.text||'')}</div></div>`).join('');
+    const habits=(hb.habits||[]).map(h=>`<div class="rounded-xl border border-[#eef0f4] bg-[#fbfcfe] p-3 mb-1.5"><div class="text-sm font-semibold">${h.week?'Week '+e(h.week)+' · ':''}${e(h.title||'')}</div><div class="text-xs text-[#6b7280]">${e(h.benefit||'')}</div></div>`).join('');
+    const subs=(hb.substitutions||[]).map(s=>`<li class="text-xs text-[#6b7280]">→ ${e(typeof s==='string'?s:(s&&s.from?(s.from+' → '+s.to):JSON.stringify(s)))}</li>`).join('');
+    const sec=(t,body)=>body?`<div class="mb-5"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-2">${t}</div>${body}</div>`:'';
+    return `<div class="bg-white rounded-2xl p-6">
+      <div class="mb-4"><div class="font-display text-xl font-semibold">${e((patient&&((patient.first||'')+' '+(patient.last||'')).trim())||'Patient')} · Plan</div>${goal?`<div class="text-sm text-[#6b7280]">Goal weight: ${e(goal)} lb</div>`:''}</div>
+      ${sec('Daily targets', `<div class="grid grid-cols-3 gap-2">${macro('Calories',n.calories)}${macro('Protein',(n.protein!=null?n.protein+'g':''))}${macro('Carbs',(n.carbs!=null?n.carbs+'g':''))}${macro('Fat',(n.fat!=null?n.fat+'g':''))}${macro('Fiber',(n.fiber!=null?n.fiber+'g':''))}${macro('Water',(n.water!=null?n.water+'oz':''))}</div>${(n.tags&&n.tags.length)?`<div class="text-xs text-[#6b7280] mt-2">Tailored for: ${n.tags.map(e).join(' · ')}</div>`:''}`)}
+      ${sec('7-day meal plan', meals)}
+      ${sec('Workout program'+(w.type?' · '+e(w.type):''), workouts)}
+      ${sec('Roadmap', roadmap)}
+      ${sec('Habits', habits)}
+      ${sec('Smart swaps', subs?`<ul class="space-y-1">${subs}</ul>`:'')}
+    </div>`;
+  }
+  window.openPlan = async function(pid){
+    let ov=document.getElementById('planOverlay');
+    if(!ov){ ov=document.createElement('div'); ov.id='planOverlay'; ov.className='fixed inset-0 z-[70] bg-black/40 overflow-y-auto'; ov.onclick=e=>{ if(e.target===ov) ov.remove(); }; document.body.appendChild(ov); }
+    ov.innerHTML='<div class="max-w-3xl mx-auto my-8 px-3"><div class="flex justify-between items-center mb-3"><div class="font-display font-semibold text-lg text-white">Patient Plan</div><div class="flex items-center gap-2"><button onclick="window.__printEl(\'planBody\',\'Patient Plan\')" class="px-3 h-9 rounded-full bg-white text-sm font-semibold text-[#16201d]">🖨 Print</button><button onclick="document.getElementById(\'planOverlay\').remove()" class="w-9 h-9 rounded-full bg-white text-2xl leading-none text-[#16201d]">×</button></div></div><div id="planBody">Loading…</div></div>';
+    try{
+      const r=await fetch(CONVEX_URL+'/plan-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({patient_id:pid})});
+      const j=await r.json();
+      if(!j.ok||!j.handbook){ document.getElementById('planBody').innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">No plan yet for this patient. Click “Generate plan,” then re-open.</div>'; return; }
+      document.getElementById('planBody').innerHTML=renderPlanDoc(j.handbook,j.patient,j.goal_weight);
+    }catch(e){ document.getElementById('planBody').innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">Error: '+e.message+'</div>'; }
   };
 
   const CLINIC = { name:"Vitality Weight Loss", addr:"6140 Brent Thurman Way, Suite 100, Las Vegas, NV 89148", phone:"(702) 602-5002" };
@@ -540,6 +582,7 @@
           <button onclick="openEmail()" class="px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8]">✉ Send branded email</button>
           <button onclick="bookAppt('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">+ Book appointment</button>
           <button onclick="generatePlan('${p.id}', false, this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ ${p.plan? 'Regenerate plan':'Generate plan'}</button>
+          <button onclick="openPlan('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">📋 View plan</button>
           <button onclick="openVbisHandbook('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">📋 View handbook</button>
           <button onclick="genVbisHandbook('${p.id}', this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ Generate VBIS handbook</button>
           <button onclick="portalLogin('${p.id}',${!!p.has_login})" ${p.email?'':'title="Add an email first"'} class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7]">🔑 ${p.has_login?'Reset portal password':'Create portal login'}</button>
