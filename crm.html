@@ -760,30 +760,37 @@
     c.getContext('2d').drawImage(img,0,0,w,h);
     return c.toDataURL('image/jpeg', quality).split(',')[1];
   }
+  // Downscale a photo to a Blob (canvas JPEG) before upload — keeps Claude fast/cheap.
+  async function downscaleImageToBlob(file, maxDim, quality){
+    const dataUrl=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
+    const img=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=dataUrl; });
+    let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+    if(Math.max(w,h)>maxDim){ const s=maxDim/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s); }
+    const c=document.createElement('canvas'); c.width=w; c.height=h;
+    c.getContext('2d').drawImage(img,0,0,w,h);
+    return await new Promise(res=>c.toBlob(res,'image/jpeg',quality));
+  }
   window.importScan = function(){
     const inp=document.createElement('input'); inp.type='file'; inp.accept='application/pdf,image/*';
     inp.onchange=async()=>{ const f=inp.files[0]; if(!f) return;
-      const btn=document.getElementById('importBtn'); const orig=btn.textContent; btn.textContent='Reading scan…'; btn.disabled=true;
+      const btn=document.getElementById('importBtn'); const orig=btn.textContent; btn.disabled=true;
       try{
         const isPdf=(f.type||'').includes('pdf')||/\.pdf$/i.test(f.name);
-        let payload;
-        if(isPdf){
-          const b64=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(f); });
-          // Guard: a giant PDF (multi-page scanned photo) also exceeds the 64MB cap. ~9MB base64 ≈ 6.6MB file.
-          if(b64.length>9_000_000){ alert('That PDF is too large to process. Please upload a single-page PDF or a photo of the results sheet.'); btn.textContent=orig; btn.disabled=false; return; }
-          payload={pdf_base64:b64,filename:f.name,patient_id:selId};
-        } else {
-          const b64=await downscaleImageToB64(f,1600,0.85);
-          payload={image_base64:b64,media_type:'image/jpeg',filename:f.name,patient_id:selId};
-        }
-        let r, j;
-        if (USE_CONVEX) {
-          r = await fetch(`${CONVEX_URL}/inbody-intake`, { method:'POST', headers:await convexHeaders(), body:JSON.stringify(payload) });
-          j = await r.json();
-        } else {
-          r = await fetch(`${SB}/functions/v1/vit-inbody-intake`, { method:'POST', headers:{'content-type':'application/json','apikey':ANON,'authorization':`Bearer ${ANON}`}, body:JSON.stringify(payload) });
-          j = await r.json();
-        }
+        let uploadBlob, srcMedia;
+        if(isPdf){ uploadBlob=f; srcMedia='application/pdf'; }
+        else { btn.textContent='Preparing…'; uploadBlob=await downscaleImageToBlob(f,1600,0.85); srcMedia='image/jpeg'; }
+        // 1) one-time upload URL (staff-gated)
+        btn.textContent='Uploading…';
+        const u=await fetch(`${CONVEX_URL}/inbody-upload-url`,{method:'POST',headers:await convexHeaders()});
+        const uj=await u.json(); if(!uj.ok||!uj.uploadUrl) throw new Error(uj.error||'could not start upload');
+        // 2) raw file straight to Convex storage — no size limit, never touches an httpAction body
+        const up=await fetch(uj.uploadUrl,{method:'POST',headers:{'Content-Type':srcMedia},body:uploadBlob});
+        if(!up.ok) throw new Error('upload failed ('+up.status+')');
+        const { storageId }=await up.json();
+        // 3) extract (Claude vision in a 512MB action) + attach to the chart
+        btn.textContent='Reading scan…';
+        const r=await fetch(`${CONVEX_URL}/inbody-process`,{method:'POST',headers:await convexHeaders(),body:JSON.stringify({storage_id:storageId,src_media:srcMedia,filename:f.name,patient_id:selId})});
+        const j=await r.json();
         if(j.ok){ await loadData();
           const who=patients.find(p=>p.id===j.patient_id);
           alert(j.matched ? `InBody scan imported to ${who?who.first+' '+who.last:'the matched profile'}.` : 'Scan imported, but no patient matched the phone on the sheet, created an unmatched record.');
