@@ -705,14 +705,34 @@
   }
 
   // ---------------- Import InBody scan (PDF → vit-inbody-intake) ----------------
+  // Downscale a photo to a max dimension + JPEG-compress it before upload. A full-res phone
+  // photo (10MB+) blows the Convex httpAction's 64MB memory cap (the base64 is held several
+  // times server-side). 1600px is plenty for Claude vision to read an InBody results sheet.
+  async function downscaleImageToB64(file, maxDim, quality){
+    const dataUrl=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
+    const img=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=dataUrl; });
+    let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+    if(Math.max(w,h)>maxDim){ const s=maxDim/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s); }
+    const c=document.createElement('canvas'); c.width=w; c.height=h;
+    c.getContext('2d').drawImage(img,0,0,w,h);
+    return c.toDataURL('image/jpeg', quality).split(',')[1];
+  }
   window.importScan = function(){
     const inp=document.createElement('input'); inp.type='file'; inp.accept='application/pdf,image/*';
     inp.onchange=async()=>{ const f=inp.files[0]; if(!f) return;
       const btn=document.getElementById('importBtn'); const orig=btn.textContent; btn.textContent='Reading scan…'; btn.disabled=true;
       try{
-        const b64=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(f); });
         const isPdf=(f.type||'').includes('pdf')||/\.pdf$/i.test(f.name);
-        const payload=isPdf?{pdf_base64:b64,filename:f.name,patient_id:selId}:{image_base64:b64,media_type:f.type||'image/jpeg',filename:f.name,patient_id:selId};
+        let payload;
+        if(isPdf){
+          const b64=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(f); });
+          // Guard: a giant PDF (multi-page scanned photo) also exceeds the 64MB cap. ~9MB base64 ≈ 6.6MB file.
+          if(b64.length>9_000_000){ alert('That PDF is too large to process. Please upload a single-page PDF or a photo of the results sheet.'); btn.textContent=orig; btn.disabled=false; return; }
+          payload={pdf_base64:b64,filename:f.name,patient_id:selId};
+        } else {
+          const b64=await downscaleImageToB64(f,1600,0.85);
+          payload={image_base64:b64,media_type:'image/jpeg',filename:f.name,patient_id:selId};
+        }
         let r, j;
         if (USE_CONVEX) {
           r = await fetch(`${CONVEX_URL}/inbody-intake`, { method:'POST', headers:await convexHeaders(), body:JSON.stringify(payload) });
