@@ -1727,10 +1727,10 @@ function viewPay(p) {
     <div style="max-width:420px;margin:0 auto;text-align:left;">
       <label class="sig-label">Card number</label>
       <div id="card-number" class="clv-field"></div>
-      <div style="display:flex;gap:10px;">
-        <div style="flex:2;"><label class="sig-label">Expiry</label><div id="card-date" class="clv-field"></div></div>
-        <div style="flex:1.4;"><label class="sig-label">CVV</label><div id="card-cvv" class="clv-field"></div></div>
-        <div style="flex:1.6;"><label class="sig-label">ZIP</label><div id="card-postal" class="clv-field"></div></div>
+      <div class="card-row" style="display:flex;gap:10px;">
+        <div style="flex:2;min-width:0;"><label class="sig-label">Expiry</label><div id="card-date" class="clv-field"></div></div>
+        <div style="flex:1.4;min-width:0;"><label class="sig-label">CVV</label><div id="card-cvv" class="clv-field"></div></div>
+        <div style="flex:1.6;min-width:0;"><label class="sig-label">ZIP</label><div id="card-postal" class="clv-field"></div></div>
       </div>
     </div>
     <button class="cta cta-green" id="payBtn" type="button" style="margin-top:14px;">Pay ${amountLabel}</button>
@@ -1780,14 +1780,14 @@ function viewPay(p) {
 async function initCloverPay(showErr) {
   if (!document.getElementById('clvStyle')) {
     const st = document.createElement('style'); st.id = 'clvStyle';
-    st.textContent = '.clv-field{border:1.5px solid var(--line,#e6e9ee);border-radius:11px;padding:0 12px;background:#fff;margin:4px 0 12px;height:48px;overflow:hidden;display:flex;align-items:center;} .clv-field iframe{height:44px!important;width:100%!important;border:0!important;}';
+    st.textContent = '.clv-field{border:1.5px solid var(--line,#e6e9ee);border-radius:11px;padding:0 12px;background:#fff;margin:4px 0 12px;height:52px;overflow:hidden;display:flex;align-items:center;} .clv-field iframe{height:48px!important;width:100%!important;border:0!important;} @media (max-width:560px){.card-row{flex-direction:column!important;gap:0!important;}}';
     document.head.appendChild(st);
   }
   try { await loadCloverSdk(); } catch (e) { return showErr('Could not load the secure payment form. Please refresh and try again.'); }
   try {
     const clover = new Clover(CLOVER_PUBLIC_KEY, { merchantId: CLOVER_MERCHANT_ID });
     const elements = clover.elements();
-    const styles = { body: { fontFamily: 'Inter, sans-serif', fontSize: '15px' } };
+    const styles = { body: { fontFamily: 'Inter, sans-serif', fontSize: '16px' } };
     elements.create('CARD_NUMBER', styles).mount('#card-number');
     elements.create('CARD_DATE', styles).mount('#card-date');
     elements.create('CARD_CVV', styles).mount('#card-cvv');
