@@ -4,6 +4,8 @@
 // renderVbisHandbook(hb, opts) and renderVbisHandbookProgressive(hb, opts) -> HTML string.
 (function () {
   function esc(s) { return s == null ? "" : String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  // Strip the AI "slop" tell: em-dash -> comma, en-dash (ranges) -> hyphen. Applied to the full output.
+  function noDash(s) { return s.replace(/\s*—\s*/g, ", ").replace(/\s*&mdash;\s*/g, ", ").replace(/–/g, "-").replace(/&ndash;/g, "-"); }
   function arr(a) { return Array.isArray(a) ? a : []; }
   function bullets(a) { return arr(a).map(function (x) { return '<li class="flex gap-2"><span class="text-[#0a6cf5] mt-[2px]">›</span><span>' + esc(x) + "</span></li>"; }).join(""); }
   function para(s) { return esc(s).replace(/\n+/g, "</p><p class=\"mt-2\">"); }
@@ -230,12 +232,12 @@
 
   window.renderVbisHandbook = function (hb, opts) {
     opts = opts || {}; hb = hb || {}; var p = opts.patient || {};
-    return PRINT_CSS + '<div class="hb-root space-y-5">' + [
+    return PRINT_CSS + noDash('<div class="hb-root space-y-5">' + [
       printCover(hb, p, opts), screenHeader(hb, p),
       execSummary(hb), interpretations(hb), aiAnalysis(hb), whyPlan(hb),
       nutrition(hb), workout(hb), habits(hb), projections(hb), nextScan(hb),
       staticCounseling(), staticFacility(),
-    ].filter(Boolean).join("") + "</div>";
+    ].filter(Boolean).join("") + "</div>");
   };
 
   // Progressive renderer — placeholders for sections not yet ready while status is generating/partial.
@@ -266,6 +268,6 @@
       }),
     ];
     if (status === "complete") parts.push(staticCounseling(), staticFacility());
-    return '<div class="hb-root space-y-5">' + parts.filter(Boolean).join("") + "</div>";
+    return noDash('<div class="hb-root space-y-5">' + parts.filter(Boolean).join("") + "</div>");
   };
 })();
