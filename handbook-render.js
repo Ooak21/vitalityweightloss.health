@@ -143,8 +143,17 @@
   }
   function projections(hb) {
     var ps = arr(hb.timeline_projections); if (!ps.length) return "";
-    var rows = ps.map(function (p) { return '<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 text-center"><div class="text-[10px] uppercase tracking-wide text-[#0a6cf5] font-semibold">Day ' + esc(p.day) + '</div><div class="font-display text-lg font-semibold text-[#16201d] mt-0.5">' + esc(p.projected_weight_lb) + ' lb</div><div class="text-[11px] text-[#6b7280]">' + esc(p.projected_body_fat_pct) + '% BF</div><div class="text-[11px] text-[#9aa0ab] mt-1">' + esc(p.milestone) + "</div></div>"; }).join("");
-    return card(head("", "Progress projections", "trending") + '<div class="grid grid-cols-2 sm:grid-cols-5 gap-2">' + rows + "</div>");
+    var rows = ps.map(function (p) {
+      return '<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-4 flex gap-4 items-center">' +
+        '<div class="shrink-0 text-center" style="width:92px">' +
+          '<div class="text-[10px] uppercase tracking-wide text-[#0a6cf5] font-semibold">Day ' + esc(p.day) + '</div>' +
+          '<div class="font-display text-2xl font-semibold text-[#16201d] leading-none mt-1">' + esc(p.projected_weight_lb) + '<span class="text-sm text-[#9aa0ab]"> lb</span></div>' +
+          '<div class="text-[11px] text-[#6b7280] mt-1">' + esc(p.projected_body_fat_pct) + '% BF</div>' +
+        '</div>' +
+        '<div class="text-sm text-[#4b5563] leading-relaxed">' + esc(p.milestone) + '</div>' +
+      '</div>';
+    }).join("");
+    return card(head("", "Progress projections", "trending") + '<div class="space-y-3">' + rows + "</div>");
   }
   function nextScan(hb) {
     if (!hb.next_inbody_recommendation_days) return "";
@@ -152,11 +161,16 @@
   }
 
   function staticNotes() {
-    var lines = "";
-    for (var i = 0; i < 16; i++) lines += '<div style="border-bottom:1px solid #e3e7ec;height:32px"></div>';
+    var lined = function (n) { var s = ""; for (var i = 0; i < n; i++) s += '<div style="border-bottom:1px solid #e3e7ec;height:30px"></div>'; return s; };
+    var block = function (t, n) {
+      return '<div class="hb-note-block mt-5"><div class="text-[11px] uppercase tracking-[0.14em] text-[#0a6cf5] font-semibold mb-2">' + esc(t) + "</div>" + lined(n) + "</div>";
+    };
     return card(head("For your journey", "Notes & questions", "pen") +
-      '<p class="text-sm text-[#6b7280] mb-4">Use this space to track your wins, jot down questions for your care team before each visit, and note how you feel as your body changes.</p>' +
-      "<div>" + lines + "</div>");
+      '<p class="text-sm text-[#6b7280]">Use this space throughout your program, and bring it to each visit with your care team.</p>' +
+      block("Weekly check-in notes", 5) +
+      block("Progress observations", 4) +
+      block("Questions for your provider", 4) +
+      block("General questions", 4));
   }
   function sectionPlaceholder(label) {
     return '<div class="rounded-2xl border border-dashed border-[#d6e6ff] bg-[#f7faff] p-8 text-center"><div class="text-sm text-[#6b7280]"><span class="inline-flex items-center justify-center gap-2"><span class="w-2 h-2 rounded-full bg-[#0a6cf5] animate-pulse"></span>Generating ' + esc(label) + "…</span></div></div>";
@@ -228,6 +242,7 @@
     '.md\\:grid-cols-2{grid-template-columns:1fr!important}' +
     /* box atoms whole, EXCEPT large meal-days which may break between meals so they don't leave giant gaps */
     '.rounded-xl:not(.hb-mealday){break-inside:avoid}' +
+    '.hb-note-block{break-inside:avoid}' +
     '.hb-mealday{break-inside:auto!important}' +
     '.hb-mealday .border-l-2{break-inside:avoid}' +  /* never split a single meal */
     'details:not(.hb-mealday){break-inside:avoid}' +
