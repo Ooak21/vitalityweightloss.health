@@ -35,7 +35,7 @@
     return (eyebrow ? '<p class="text-[11px] uppercase tracking-[0.2em] text-[#0a6cf5] font-semibold mb-1">' + esc(eyebrow) + "</p>" : "") +
       '<h2 class="font-display text-xl font-semibold text-[#16201d] border-b border-[#eef0f4] pb-2 mb-4 flex items-center gap-2">' + (ic ? icon(ic) : "") + "<span>" + esc(title) + "</span></h2>";
   };
-  var sub = function (t, ic) { return '<h3 class="font-display text-base font-semibold text-[#16201d] mt-4 mb-1 flex items-center gap-2">' + (ic ? icon(ic, "w-4 h-4") : "") + "<span>" + esc(t) + "</span></h3>"; };
+  var sub = function (t, ic) { return '<h3 class="hb-sub font-display text-base font-semibold text-[#16201d] mt-4 mb-1 flex items-center gap-2">' + (ic ? icon(ic, "w-4 h-4") : "") + "<span>" + esc(t) + "</span></h3>"; };
   function statusDot(s) { var c = s === "positive" ? "#10b981" : s === "watch" ? "#f59e0b" : s === "priority" ? "#ef4444" : "#9aa0ab"; return '<span class="inline-block w-2.5 h-2.5 rounded-full shrink-0" style="background:' + c + '"></span>'; }
 
   function staticCounseling() {
@@ -114,7 +114,7 @@
     var tgt = function (l, v, u) { return v == null ? "" : '<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 text-center"><div class="font-display text-xl font-semibold text-[#16201d]">' + esc(v) + (u || "") + '</div><div class="text-[10px] uppercase tracking-wide text-[#9aa0ab] font-semibold">' + l + "</div></div>"; };
     var meal = function (slot, m) { if (!m) return ""; return '<div class="border-l-2 border-[#d6e6ff] pl-3 py-1"><div class="text-[10px] uppercase tracking-wide text-[#0a6cf5] font-semibold">' + slot + '</div><div class="text-sm font-semibold text-[#16201d]">' + esc(m.name) + ' <span class="text-[#9aa0ab] font-normal">· ' + esc(m.calories) + " kcal · " + esc(m.protein_g) + 'g P</span></div><div class="text-xs text-[#6b7280]">' + esc(arr(m.ingredients).join(", ")) + (m.serving ? " · " + esc(m.serving) : "") + '</div>' + (m.prep ? '<div class="text-xs text-[#9aa0ab] italic">' + esc(m.prep) + "</div>" : "") + "</div>"; };
     var days = arr(n.week_one_meal_plan).map(function (d, i) {
-      return '<details ' + (i === 0 ? "open" : "") + ' class="rounded-xl border border-[#eef0f4] bg-[#fbfcfe]"><summary class="flex items-center justify-between p-3 cursor-pointer"><span class="font-semibold text-sm text-[#16201d]">' + esc(d.day) + '</span><span class="text-xs text-[#6b7280]">' + esc(d.daily_total_calories) + " kcal · " + esc(d.daily_total_protein_g) + 'g protein</span></summary><div class="px-3 pb-3 space-y-2">' + meal("Breakfast", d.breakfast) + meal("Lunch", d.lunch) + meal("Dinner", d.dinner) + meal("Snack", d.snack) + "</div></details>";
+      return '<details ' + (i === 0 ? "open" : "") + ' class="hb-mealday rounded-xl border border-[#eef0f4] bg-[#fbfcfe]"><summary class="flex items-center justify-between p-3 cursor-pointer"><span class="font-semibold text-sm text-[#16201d]">' + esc(d.day) + '</span><span class="text-xs text-[#6b7280]">' + esc(d.daily_total_calories) + " kcal · " + esc(d.daily_total_protein_g) + 'g protein</span></summary><div class="px-3 pb-3 space-y-2">' + meal("Breakfast", d.breakfast) + meal("Lunch", d.lunch) + meal("Dinner", d.dinner) + meal("Snack", d.snack) + "</div></details>";
     }).join("");
     var roadmap = arr(n.monthly_roadmap).map(function (m) { return '<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3"><div class="flex items-center justify-between"><div class="font-semibold text-sm text-[#16201d]">Month ' + esc(m.month) + " · " + esc(m.focus) + '</div><span class="text-xs text-[#0a6cf5] font-medium">' + esc(m.calorie_adjustment) + "</span></div>" + (arr(m.key_swaps).length ? '<ul class="text-xs text-[#6b7280] mt-1 space-y-0.5">' + bullets(m.key_swaps) + "</ul>" : "") + "</div>"; }).join("");
     return card(head("Nutrition program", "Your eating plan", "apple") +
@@ -209,14 +209,18 @@
     '.hb-cover-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;border-top:1px solid #e6e9ee;padding-top:18px;font-family:Inter,system-ui,sans-serif}' +
     /* FLOW the sections: strip the outer section-card box so content fills pages instead of */
     /* drawing a border around empty space / running down every page edge. */
-    '.hb-root>*+*{margin-top:26px!important}' +
+    '.hb-root>*+*{margin-top:40px!important}' +       /* clear air before every new section heading */
     '.hb-card{break-inside:auto!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:0!important;margin:0!important;background:transparent!important}' +
-    /* keep the eyebrow + serif title glued to the first block -> no orphaned headers at page bottoms */
-    '.hb-card>p:first-child,.hb-card>h2{break-after:avoid}' +
+    /* keep eyebrow + serif title + sub-headings glued to the first block -> no orphaned headers */
+    '.hb-card>p:first-child,.hb-card>h2,.hb-sub{break-after:avoid}' +
     'p{orphans:3;widows:3}' +
-    /* box ONLY the atoms (metric cards, meal days, tiles, rationale, blue box) and keep each whole */
-    '.rounded-xl{break-inside:avoid}' +
-    'details{break-inside:avoid}' +
+    /* long-text 2-col grids (readiness, rationale, counseling) -> single full-width column in print */
+    '.md\\:grid-cols-2{grid-template-columns:1fr!important}' +
+    /* box atoms whole, EXCEPT large meal-days which may break between meals so they don't leave giant gaps */
+    '.rounded-xl:not(.hb-mealday){break-inside:avoid}' +
+    '.hb-mealday{break-inside:auto!important}' +
+    '.hb-mealday .border-l-2{break-inside:avoid}' +  /* never split a single meal */
+    'details:not(.hb-mealday){break-inside:avoid}' +
     'details>summary{list-style:none}' +
     'details>summary::-webkit-details-marker{display:none}' +
     'details>*:not(summary){display:block!important}' +
