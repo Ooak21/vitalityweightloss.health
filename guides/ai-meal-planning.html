@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Personal Chef Is an AI Chatbot | Vitality Weight Loss</title>
+  <meta name="description" content="How five minutes with a free AI tool can replace an hour of meal planning, with the exact prompts to use, plus guidance for patients on GLP-1 medications. From the Vitality Weight Loss Patient Wellness Series.">
+  <link rel="icon" type="image/png" href="../assets/favicon.png">
+  <link rel="canonical" href="https://vitalityweightloss.health/guides/ai-meal-planning/">
+  <link rel="alternate" type="text/plain" title="llms.txt" href="/llms.txt">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@graph":[
+      {
+        "@type":"MedicalWebPage",
+        "name":"Your Personal Chef Is an AI Chatbot",
+        "headline":"Your Personal Chef Is an AI Chatbot",
+        "description":"How five minutes with a free AI tool can replace an hour of meal planning, with the exact prompts to use, plus guidance for patients on GLP-1 medications.",
+        "datePublished":"2026-06-23","dateModified":"2026-06-23","inLanguage":"en-US",
+        "about":{"@type":"Thing","name":"AI-assisted meal planning for weight loss"},
+        "author":{"@id":"https://vitalityweightloss.health/#clinic"},
+        "reviewedBy":{"@id":"https://vitalityweightloss.health/#debry"},
+        "lastReviewed":"2026-06-23",
+        "publisher":{"@id":"https://vitalityweightloss.health/#clinic"}
+      },
+      {"@type":"MedicalClinic","@id":"https://vitalityweightloss.health/#clinic","name":"Vitality Weight Loss","url":"https://vitalityweightloss.health/","telephone":"+1-702-602-5002","address":{"@type":"PostalAddress","streetAddress":"6140 Brent Thurman Way, Suite 100","addressLocality":"Las Vegas","addressRegion":"NV","postalCode":"89148","addressCountry":"US"}},
+      {"@type":"Physician","@id":"https://vitalityweightloss.health/#debry","name":"Peter DeBry, MD","jobTitle":"Medical Director, Obesity Medicine","identifier":{"@type":"PropertyValue","propertyID":"NPI","value":"1831137991"},"medicalSpecialty":"Bariatric","worksFor":{"@id":"https://vitalityweightloss.health/#clinic"}}
+    ]
+  }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #F0EDE8;
+      font-family: 'Inter', sans-serif;
+      color: #2D2D2D;
+      -webkit-font-smoothing: antialiased;
+      padding: 40px 20px;
+    }
+
+    .mag-root {
+      background: #FAF7F2;
+      max-width: 760px;
+      margin: 0 auto;
+      box-shadow: 0 4px 40px rgba(0,0,0,0.14);
+    }
+
+    /* ── HEADER ─────────────────────────────────────────────── */
+    .mag-header {
+      background: #1B4332;
+      padding: 11px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .mag-header-brand {
+      font-family: 'Inter', sans-serif;
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      color: #A7C4A0;
+      text-transform: uppercase;
+    }
+    .mag-header-issue {
+      font-family: 'Inter', sans-serif;
+      font-size: 10px;
+      color: #6B9E6A;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── HERO ───────────────────────────────────────────────── */
+    .mag-hero {
+      background: #1B4332;
+      padding: 52px 32px 44px;
+      position: relative;
+      overflow: hidden;
+    }
+    .mag-hero::before {
+      content: '';
+      position: absolute;
+      top: -30px; right: -30px;
+      width: 280px; height: 280px;
+      border-radius: 50%;
+      background: rgba(232, 101, 42, 0.10);
+      pointer-events: none;
+    }
+    .mag-hero::after {
+      content: '';
+      position: absolute;
+      bottom: -60px; left: 60%;
+      width: 180px; height: 180px;
+      border-radius: 50%;
+      background: rgba(167, 196, 160, 0.07);
+      pointer-events: none;
+    }
+    .mag-eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      color: #E8652A;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .mag-headline {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 52px;
+      font-weight: 900;
+      line-height: 1.04;
+      color: #FAF7F2;
+      margin: 0 0 20px 0;
+      max-width: 580px;
+    }
+    .mag-headline em {
+      font-style: italic;
+      color: #E8652A;
+    }
+    .mag-deck {
+      font-size: 15.5px;
+      font-weight: 300;
+      line-height: 1.68;
+      color: #A7C4A0;
+      max-width: 520px;
+    }
+
+    /* ── META BAR ───────────────────────────────────────────── */
+    .mag-meta-bar {
+      background: #E8652A;
+      padding: 9px 32px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .mag-meta-item {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      color: #FAF7F2;
+      text-transform: uppercase;
+    }
+    .mag-meta-dot {
+      width: 3px; height: 3px;
+      border-radius: 50%;
+      background: rgba(250,247,242,0.45);
+      flex-shrink: 0;
+    }
+
+    /* ── BODY ───────────────────────────────────────────────── */
+    .mag-body {
+      display: grid;
+      grid-template-columns: 1fr 220px;
+    }
+
+    .mag-main {
+      padding: 32px 28px 32px 32px;
+      border-right: 1px solid #D4E1C9;
+    }
+
+    /* ── TYPOGRAPHY ─────────────────────────────────────────── */
+    .drop-cap-para {
+      font-size: 15.5px;
+      line-height: 1.78;
+      color: #3A3A3A;
+      margin: 0 0 20px 0;
+    }
+    .drop-cap-para::first-letter {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 72px;
+      font-weight: 900;
+      color: #1B4332;
+      float: left;
+      line-height: 0.72;
+      margin: 10px 7px -4px 0;
+    }
+    .mag-body-para {
+      font-size: 15px;
+      line-height: 1.78;
+      color: #3A3A3A;
+      margin: 0 0 18px 0;
+    }
+    .mag-body-para strong {
+      font-weight: 600;
+      color: #1B4332;
+    }
+    .mag-body-para em {
+      font-style: italic;
+      color: #4A5568;
+    }
+    .mag-section-head {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: #1B4332;
+      margin: 28px 0 12px 0;
+      padding-bottom: 7px;
+      border-bottom: 2.5px solid #E8652A;
+      display: inline-block;
+    }
+
+    /* ── PULL QUOTE ─────────────────────────────────────────── */
+    .pull-quote {
+      margin: 28px -28px 28px -32px;
+      padding: 24px 32px 24px 32px;
+      background: #1B4332;
+    }
+    .pull-quote-mark {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 88px;
+      line-height: 0.55;
+      color: #E8652A;
+      display: block;
+      margin-bottom: 10px;
+    }
+    .pull-quote-text {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 18px;
+      font-style: italic;
+      font-weight: 400;
+      line-height: 1.52;
+      color: #FAF7F2;
+      margin: 0 0 10px 0;
+    }
+    .pull-quote-attr {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      color: #A7C4A0;
+      text-transform: uppercase;
+    }
+
+    /* ── PROMPT CARDS ───────────────────────────────────────── */
+    .prompt-card {
+      background: #FAF7F2;
+      border: 1px solid #D4E1C9;
+      border-left: 3.5px solid #E8652A;
+      border-radius: 0 6px 6px 0;
+      padding: 13px 16px;
+      margin-bottom: 10px;
+    }
+    .prompt-card-label {
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      color: #E8652A;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .prompt-card-text {
+      font-size: 13px;
+      font-style: italic;
+      color: #2D2D2D;
+      line-height: 1.6;
+    }
+
+    /* ── STEP GRID ──────────────────────────────────────────── */
+    .step-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 18px 0;
+    }
+    .step-box {
+      background: #EFF5EB;
+      border: 1px solid #C5D9BC;
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .step-box-num {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 26px;
+      font-weight: 900;
+      color: #1B4332;
+      opacity: 0.25;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .step-box-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #1B4332;
+      margin-bottom: 5px;
+    }
+    .step-box-body {
+      font-size: 11.5px;
+      color: #4A5568;
+      line-height: 1.55;
+    }
+
+    /* ── DIVIDER ────────────────────────────────────────────── */
+    .divider-ornament {
+      text-align: center;
+      color: #C5D9BC;
+      font-size: 18px;
+      margin: 22px 0;
+      letter-spacing: 10px;
+    }
+
+    /* ── SIDEBAR ────────────────────────────────────────────── */
+    .mag-sidebar {
+      padding: 32px 22px;
+      background: #EFF5EB;
+    }
+    .sidebar-head {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: #1B4332;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin: 0 0 14px 0;
+      padding-bottom: 7px;
+      border-bottom: 1px solid #C5D9BC;
+    }
+    .sidebar-tip {
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #C5D9BC;
+    }
+    .sidebar-tip:last-of-type {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .sidebar-tip-num {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 30px;
+      font-weight: 900;
+      color: #E8652A;
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+    .sidebar-tip-title {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #1B4332;
+      margin-bottom: 4px;
+    }
+    .sidebar-tip-body {
+      font-size: 11.5px;
+      line-height: 1.58;
+      color: #4A4A4A;
+    }
+    .sidebar-stat-box {
+      background: #1B4332;
+      border-radius: 8px;
+      padding: 18px 16px;
+      margin-top: 22px;
+      text-align: center;
+    }
+    .sidebar-stat-box + .sidebar-stat-box {
+      margin-top: 10px;
+    }
+    .sidebar-stat-num {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 46px;
+      font-weight: 900;
+      color: #E8652A;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .sidebar-stat-label {
+      font-size: 11px;
+      font-weight: 400;
+      color: #A7C4A0;
+      line-height: 1.45;
+    }
+
+    /* ── CTA STRIP ──────────────────────────────────────────── */
+    .cta-strip {
+      background: #E8652A;
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .cta-text {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 15.5px;
+      font-style: italic;
+      color: #FAF7F2;
+      flex: 1;
+      line-height: 1.45;
+    }
+    .cta-btn {
+      background: #FAF7F2;
+      color: #1B4332;
+      border: none;
+      border-radius: 4px;
+      padding: 12px 22px;
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      white-space: nowrap;
+      text-decoration: none;
+      display: inline-block;
+      transition: background 0.15s, color 0.15s;
+    }
+    .cta-btn:hover {
+      background: #1B4332;
+      color: #FAF7F2;
+    }
+
+    /* ── FOOTER ─────────────────────────────────────────────── */
+    .mag-footer {
+      background: #1B4332;
+      padding: 13px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .mag-footer-left {
+      font-size: 10px;
+      color: #6B9E6A;
+      letter-spacing: 0.07em;
+    }
+    .mag-footer-right {
+      font-size: 10px;
+      color: #6B9E6A;
+    }
+
+    /* ── PRINT STYLES ───────────────────────────────────────── */
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+      }
+      .mag-root {
+        box-shadow: none;
+        max-width: 100%;
+      }
+      .cta-btn { border: 2px solid #1B4332; }
+    }
+
+    /* ── RESPONSIVE ─────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .mag-body {
+        grid-template-columns: 1fr;
+      }
+      .mag-sidebar {
+        border-top: 2px solid #C5D9BC;
+      }
+      .mag-main {
+        border-right: none;
+        padding: 24px 20px;
+      }
+      .mag-headline {
+        font-size: 36px;
+      }
+      .pull-quote {
+        margin: 24px -20px;
+        padding: 20px;
+      }
+      .cta-strip {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 20px;
+      }
+      .step-grid {
+        grid-template-columns: 1fr;
+      }
+      .mag-header, .mag-footer {
+        flex-direction: column;
+        gap: 4px;
+        text-align: center;
+      }
+      .site-nav, .site-subfooter { max-width: 100%; }
+    }
+
+    /* ── SITE NAV (added for vitalityweightloss.health) ─────── */
+    .site-nav {
+      max-width: 760px;
+      margin: 0 auto;
+      padding-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .site-nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .site-nav-brand img { height: 30px; width: auto; }
+    .site-nav-lockup { display: flex; flex-direction: column; align-items: center; line-height: 1; }
+    .site-nav-name { font-weight: 600; font-size: 16px; letter-spacing: 0.15em; color: #1B4332; }
+    .site-nav-sub { font-size: 7px; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; color: #1B4332; margin-top: 2px; }
+    .site-nav-link { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #1B4332; text-decoration: none; }
+    .site-nav-link:hover { color: #E8652A; }
+    .site-subfooter {
+      max-width: 760px;
+      margin: 18px auto 0;
+      text-align: center;
+      font-size: 11px;
+      color: #6b7280;
+    }
+    .site-subfooter a { color: #1B4332; text-decoration: none; font-weight: 600; }
+    .site-subfooter a:hover { color: #E8652A; }
+  </style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a class="site-nav-brand" href="../index.html">
+    <img src="../assets/logo-icon.png" alt="Vitality Weight Loss">
+    <span class="site-nav-lockup"><span class="site-nav-name">VITALITY</span><span class="site-nav-sub">Weight Loss</span></span>
+  </a>
+  <a class="site-nav-link" href="index.html">&larr; All Guides</a>
+</nav>
+
+<div class="mag-root">
+
+  <!-- HEADER -->
+  <div class="mag-header">
+    <span class="mag-header-brand">Vitality Weight Loss &nbsp;·&nbsp; Patient Wellness Series</span>
+    <span class="mag-header-issue">Nutrition Technology</span>
+  </div>
+
+  <!-- HERO -->
+  <div class="mag-hero">
+    <p class="mag-eyebrow">Food &amp; Technology</p>
+    <h1 class="mag-headline">Your Personal<br><em>Chef</em> Is an<br>AI Chatbot</h1>
+    <p class="mag-deck">How five minutes with a free AI tool can replace an hour of meal planning, and why the best weight loss tool in your pocket isn't your calorie tracker.</p>
+  </div>
+
+  <!-- META BAR -->
+  <div class="mag-meta-bar">
+    <span class="mag-meta-item">By Vitality Weight Loss</span>
+    <div class="mag-meta-dot"></div>
+    <span class="mag-meta-item">5 min read</span>
+    <div class="mag-meta-dot"></div>
+    <span class="mag-meta-item">Nutrition · AI Tools</span>
+  </div>
+
+  <!-- BODY: TWO COLUMNS -->
+  <div class="mag-body">
+
+    <!-- MAIN COLUMN -->
+    <div class="mag-main">
+
+      <p class="drop-cap-para">magine sitting down with a personal chef, nutritionist, and grocery expert, all in one, who knows your calorie targets, remembers you hate cilantro, only has 30 minutes to cook on weeknights, and can produce a complete two-week dinner plan with a sorted shopping list in the time it takes to make your morning coffee. That person exists now. They live at claude.ai or chat.openai.com. And they're free.</p>
+
+      <p class="mag-body-para">Meal planning has long been one of the most evidence-backed habits in weight loss research. Studies show that people who plan their meals in advance consume significantly fewer calories, make better food choices, and lose more weight than those who decide what to eat in the moment. The problem has never been that people don't know meal planning works. The problem is that it takes time, creativity, and knowledge most of us simply don't have at 7pm on a Sunday.</p>
+
+      <p class="mag-body-para">AI changes that equation entirely.</p>
+
+      <div class="pull-quote">
+        <span class="pull-quote-mark">&ldquo;</span>
+        <p class="pull-quote-text">The best meal plan is not the most nutritionally perfect one. It's the one you'll actually follow, and AI makes following one dramatically easier.</p>
+        <span class="pull-quote-attr">Vitality Weight Loss Nutrition Team</span>
+      </div>
+
+      <h2 class="mag-section-head">What to Actually Say</h2>
+
+      <p class="mag-body-para">The secret to getting a useful meal plan from AI is specificity. A vague prompt gets a generic plan. A specific prompt gets something you'll actually eat. Here are the four prompts that do the most work:</p>
+
+      <div class="prompt-card">
+        <div class="prompt-card-label">Prompt 1 · The Opening</div>
+        <p class="prompt-card-text">"I'm working on a weight loss program with my doctor. I need a 2-week meal plan at about 1,500 calories per day, Mediterranean-style, with dinners under 30 minutes. I dislike shellfish and cilantro. I cook for two people."</p>
+      </div>
+
+      <div class="prompt-card">
+        <div class="prompt-card-label">Prompt 2 · The Refinement</div>
+        <p class="prompt-card-text">"Replace Monday dinner, I don't like salmon. Give me something with similar protein and calories using chicken instead."</p>
+      </div>
+
+      <div class="prompt-card">
+        <div class="prompt-card-label">Prompt 3 · The Grocery List</div>
+        <p class="prompt-card-text">"Create a grocery list for both weeks, organized by store section: Produce, Proteins, Dairy, Grains, Frozen. Include exact quantities. Assume I have basic spices."</p>
+      </div>
+
+      <div class="prompt-card">
+        <div class="prompt-card-label">Prompt 4 · The Recipe</div>
+        <p class="prompt-card-text">"Give me step-by-step instructions for the Wednesday dinner. I've never made spaghetti squash before."</p>
+      </div>
+
+      <div class="divider-ornament">· &nbsp; · &nbsp; ·</div>
+
+      <h2 class="mag-section-head">The Five-Step System</h2>
+
+      <p class="mag-body-para">Think of AI meal planning as a five-step workflow rather than a single magic question. Each step builds on the last, and the whole process takes about ten minutes the first time, five minutes every time after.</p>
+
+      <div class="step-grid">
+        <div class="step-box">
+          <div class="step-box-num">01</div>
+          <div class="step-box-title">Set your parameters</div>
+          <p class="step-box-body">Calories, dietary style, cook time, dislikes, and household size. Give all of these upfront in your first message.</p>
+        </div>
+        <div class="step-box">
+          <div class="step-box-num">02</div>
+          <div class="step-box-title">Get your plan</div>
+          <p class="step-box-body">Request a full 7-day plan with breakfast, lunch, and dinner. Week 2 comes from a single follow-up prompt.</p>
+        </div>
+        <div class="step-box">
+          <div class="step-box-num">03</div>
+          <div class="step-box-title">Refine freely</div>
+          <p class="step-box-body">Swap any meal you dislike. The AI adjusts instantly and never gets frustrated by changes.</p>
+        </div>
+        <div class="step-box">
+          <div class="step-box-num">04</div>
+          <div class="step-box-title">Generate the list</div>
+          <p class="step-box-body">Ask for a quantity-specific grocery list by store section. Print it or save it to your phone notes.</p>
+        </div>
+      </div>
+
+      <p class="mag-body-para">The fifth step is the most important one: <strong>actually using it.</strong> Print your plan, tape it to the fridge, and do one batch-prep session on Sunday. The AI will even tell you the most efficient order to cook your proteins and grains if you ask: <em>"Give me a 60-minute Sunday meal prep plan for Week 1."</em></p>
+
+      <h2 class="mag-section-head">For Patients on GLP-1 Medications</h2>
+
+      <p class="mag-body-para">If you're taking semaglutide or tirzepatide, AI meal planning becomes even more powerful, and more specific. On days when appetite is very low, you can ask: <em>"Give me three high-protein meals under 250 calories that are easy on the stomach."</em> The AI produces options designed specifically for low-appetite days, ensuring your protein intake stays adequate even when eating feels difficult.</p>
+
+      <p class="mag-body-para">This matters clinically. GLP-1 medications create a calorie deficit, but without adequate protein intake, some weight lost can come from muscle rather than fat. High-protein meal plans generated and refreshed every two weeks by AI keep your muscle-preserving nutrition on track automatically, without requiring hours of dietary research on your part.</p>
+
+      <p class="mag-body-para">The best part: you don't need to become a nutrition expert. You just need to ask good questions. And now you know exactly what those questions are.</p>
+
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="mag-sidebar">
+
+      <p class="sidebar-head">5 Rules for Better AI Meal Plans</p>
+
+      <div class="sidebar-tip">
+        <div class="sidebar-tip-num">01</div>
+        <div class="sidebar-tip-title">Be specific</div>
+        <p class="sidebar-tip-body">Name your calorie target, dietary style, cook time, and dislikes in the very first message.</p>
+      </div>
+      <div class="sidebar-tip">
+        <div class="sidebar-tip-num">02</div>
+        <div class="sidebar-tip-title">Stay in one chat</div>
+        <p class="sidebar-tip-body">The AI builds on prior context. Don't start a new conversation, refine in the same window.</p>
+      </div>
+      <div class="sidebar-tip">
+        <div class="sidebar-tip-num">03</div>
+        <div class="sidebar-tip-title">Ask for changes</div>
+        <p class="sidebar-tip-body">Swap any meal you dislike. There is no such thing as too many revisions.</p>
+      </div>
+      <div class="sidebar-tip">
+        <div class="sidebar-tip-num">04</div>
+        <div class="sidebar-tip-title">Print the list</div>
+        <p class="sidebar-tip-body">Save your grocery list to your phone or print it. A list in hand means fewer impulse buys.</p>
+      </div>
+      <div class="sidebar-tip">
+        <div class="sidebar-tip-num">05</div>
+        <div class="sidebar-tip-title">Rotate every 2 weeks</div>
+        <p class="sidebar-tip-body">Ask for a new plan every two weeks. Variety prevents boredom, the number one reason meal plans fail.</p>
+      </div>
+
+      <div class="sidebar-stat-box">
+        <div class="sidebar-stat-num">10</div>
+        <div class="sidebar-stat-label">minutes to generate a complete 2-week meal plan &amp; grocery list with AI</div>
+      </div>
+
+      <div class="sidebar-stat-box">
+        <div class="sidebar-stat-num">200</div>
+        <div class="sidebar-stat-label">fewer calories per day consumed by people who plan meals in advance (research-backed)</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CTA STRIP -->
+  <div class="cta-strip">
+    <p class="cta-text">Ready to try it? Go to claude.ai, create a free account, and use Prompt 1 above to build your first meal plan today, then bring it to your next Vitality appointment.</p>
+    <a class="cta-btn" href="https://claude.ai" target="_blank" rel="noopener">Get Started &rarr;</a>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="mag-footer">
+    <span class="mag-footer-left">vitalityweightloss.health &nbsp;&nbsp;·&nbsp;&nbsp; (702) 602-5002</span>
+    <span class="mag-footer-right">&copy; 2025 Vitality Weight Loss, Las Vegas NV</span>
+  </div>
+
+</div>
+
+<p class="site-subfooter"><a href="index.html">&larr; Back to all Vitality guides</a> &nbsp;·&nbsp; <a href="../index.html">vitalityweightloss.health</a></p>
+
+</body>
+</html>
