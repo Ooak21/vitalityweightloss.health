@@ -357,7 +357,11 @@
   // ---------------- helpers ----------------
   const $ = s=>document.querySelector(s);
   const PROG = {glp1:'GLP-1',metabolic:'Metabolic',coaching:'Coaching',unsure:'Undecided'};
-  const STAT = {lead:'Lead',new_patient:'New Patient',active:'Active',inactive:'Inactive'};
+  const STAT = {lead:'Lead',new_patient:'New Patient',active:'Active',inactive:'Inactive',rx_written:'Rx written',rx_declined:'Rx declined'};
+  function isProvider(){
+    const r = (window.__vca && window.__vca.role) || (window.__vitUser && window.__vitUser.app_metadata && window.__vitUser.app_metadata.role) || '';
+    return r === 'vitality_provider' || r === 'provider';
+  }
   // Provider-facing decode for intake review flags. Data layer carries only the neutral code
   // (e.g. tag "review:thyroid"); the clinical reason is decoded here so the provider knows WHY.
   const REVIEW_DECODE = {
@@ -552,6 +556,8 @@
           </div>
         </div>`:''}
 
+        ${isProvider() ? '<div id="clinicalReviewPanel" class="mb-6"></div>' : ''}
+
         <div class="flex gap-2 mb-2 flex-wrap">
           <button onclick="openEmail()" class="px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8]">✉ Send branded email</button>
           <button onclick="bookAppt('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">+ Book appointment</button>
@@ -614,7 +620,88 @@
         </div>
       </div>`;
     syncBodyDock();
+    if (isProvider()) loadClinicalReview(p.id);
   }
+
+  const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  async function loadClinicalReview(pid){
+    const el = document.getElementById('clinicalReviewPanel');
+    if (!el) return;
+    el.innerHTML = '<div class="text-xs text-[#9aa0ab] py-3">Loading clinical review…</div>';
+    try {
+      const r = await fetch(`${CONVEX_URL}/clinical-review`, { method:'POST', headers: await convexHeaders(), body: JSON.stringify({ patient_id: pid }) });
+      const j = await r.json();
+      if (!j.ok || !j.review) { el.innerHTML = ''; return; }
+      const rv = j.review;
+      const items = (rv.clinical && rv.clinical.items) || [];
+      const contra = (rv.clinical && rv.clinical.contraindications) || [];
+      const att = rv.attestation || {};
+      const labs = rv.labs;
+      const qaHtml = items.length
+        ? items.map(it => `<div class="rounded-xl bg-white border border-[#e6e9ee] p-3"><div class="text-xs font-semibold text-[#6b7280]">${esc(it.q)}</div><div class="text-sm text-[#16201d] mt-0.5">${esc(it.a)}</div></div>`).join('')
+        : '<div class="text-xs text-[#9aa0ab]">No screening answers on file.</div>';
+      const contraHtml = contra.length
+        ? `<div class="mt-3 space-y-2">${contra.map(c => `<div class="rounded-xl bg-[#fff7ed] border border-[#ffd9a8] p-3 text-sm text-[#9a5a00] font-semibold">${esc(c)}</div>`).join('')}</div>`
+        : '';
+      const attHtml = att.signedAt || att.signature
+        ? `<div class="text-xs text-[#6b7280] mt-2">Consent signed ${att.signedAt ? esc(new Date(att.signedAt).toLocaleString()) : ''}${att.signature ? ' · e-signature on file' : ''}</div>`
+        : '';
+      const labsHtml = labs
+        ? `<div class="rounded-xl bg-white border border-[#e6e9ee] p-3 text-sm"><span class="text-xs font-semibold text-[#6b7280] uppercase tracking-wide">Labs</span><div class="mt-1 text-[#16201d]">${esc(typeof labs === 'string' ? labs : JSON.stringify(labs))}</div></div>`
+        : '';
+      const idHtml = rv.id_image_url
+        ? `<div class="mt-3"><div class="text-xs font-semibold text-[#6b7280] uppercase tracking-wide mb-2">Government ID (verification)</div><img src="${esc(rv.id_image_url)}" alt="ID verification" class="max-w-full max-h-64 rounded-xl border border-[#e6e9ee] object-contain bg-[#f7f8fa]"></div>`
+        : '<div class="text-xs text-[#9aa0ab] mt-2">No ID image on file.</div>';
+      const decided = ['rx_written','rx_declined'].includes((patients.find(x=>x.id===pid)||{}).status);
+      const actions = decided ? `<div class="text-xs text-[#6b7280] mt-3">Rx decision recorded — see chart timeline.</div>` : `
+        <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[#e6e9ee]">
+          <button onclick="recordRxDecision('${pid}','approved')" class="px-4 py-2.5 rounded-xl bg-[#0a7a3d] text-white font-semibold text-sm hover:bg-[#066032]">Approve &amp; prescribe</button>
+          <button onclick="recordRxDecision('${pid}','declined')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">Decline / needs info</button>
+        </div>
+        <textarea id="rxDecisionNote" class="field w-full mt-3 text-sm" rows="2" placeholder="Optional provider note for the chart…"></textarea>`;
+      el.innerHTML = `
+        <div class="rounded-2xl border border-[#d6e6ff] bg-[#f7fbff] p-5">
+          <div class="flex items-center justify-between gap-3 mb-1">
+            <div class="font-display text-base font-semibold text-[#0a6cf5]">Clinical review</div>
+            <span class="badge b-active text-[10px]">Provider only</span>
+          </div>
+          <div class="text-xs text-[#6b7280] mb-4">${esc(rv.drug_label)} · captured ${rv.created_at ? new Date(rv.created_at).toLocaleString() : ''}</div>
+          <div class="text-xs font-semibold tracking-wide text-[#6b7280] uppercase mb-2">Intake screening</div>
+          <div class="space-y-2">${qaHtml}</div>
+          ${contraHtml}
+          ${labsHtml}
+          <div class="mt-4 text-xs font-semibold tracking-wide text-[#6b7280] uppercase mb-2">Attestation &amp; consent</div>
+          ${attHtml || '<div class="text-xs text-[#9aa0ab]">No attestation detail on file.</div>'}
+          ${idHtml}
+          ${actions}
+        </div>`;
+    } catch (e) {
+      el.innerHTML = '';
+      console.warn('clinical review load failed:', e.message);
+    }
+  }
+  window.recordRxDecision = async function(pid, decision){
+    const noteEl = document.getElementById('rxDecisionNote');
+    const note = noteEl ? noteEl.value.trim() : '';
+    if (decision === 'declined' && !note && !confirm('Decline without a note? The patient may need more information.')) return;
+    if (decision === 'approved' && !confirm('Approve and mark Rx written? This completes the clinical Rx task.')) return;
+    try {
+      const r = await fetch(`${CONVEX_URL}/record-rx-decision`, {
+        method:'POST', headers: await convexHeaders(),
+        body: JSON.stringify({ patient_id: pid, decision, note: note || undefined }),
+      });
+      const j = await r.json();
+      if (!j.ok) { alert('Could not record decision: ' + (j.error || 'unknown')); return; }
+      const p = patients.find(x => x.id === pid);
+      if (p) {
+        p.status = j.status || (decision === 'approved' ? 'rx_written' : 'rx_declined');
+        p.notes.push({ type:'rx_decision', author:'Provider', auto:false, ts:new Date().toISOString(),
+          body: `Rx ${decision}. ${note || ''}`.trim() });
+      }
+      await loadData();
+      alert(decision === 'approved' ? 'Approved — Rx marked written and task completed.' : 'Declined — note saved to chart.');
+    } catch (e) { alert('Network error: ' + e.message); }
+  };
 
   // ---------------- actions ----------------
   function changeStatus(id,val){ const p=patients.find(x=>x.id===id); const old=p.status; p.status=val;

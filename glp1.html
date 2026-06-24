@@ -1723,11 +1723,12 @@ async function goToBillingSetup(parentRef) {
       body: JSON.stringify(payload),
     });
     const j = await r.json().catch(() => ({}));
-    if (r.ok && j.already) { finalizeAfterPayment(true); return; }
+    if (r.ok && j.already) { finalizeAfterPayment({ subscriptionEstablished: true }); return; }
     if (r.ok && j.href) { window.location.href = j.href; return; }
-    alert('Monthly billing setup is unavailable. Please call (702) 602-5002.');
+    // Calm fallback — enrollment may already be complete; do not alarm mid-success.
+    finalizeAfterPayment({ subscriptionEstablished: false, billingSetupUnavailable: true });
   } catch (e) {
-    alert('Unable to start billing setup. Please call (702) 602-5002.');
+    finalizeAfterPayment({ subscriptionEstablished: false, billingSetupUnavailable: true });
   }
 }
 window.goToBillingSetup = goToBillingSetup;
@@ -1854,7 +1855,13 @@ function viewPay(p) {
       if (r.ok && j.ok) {
         state.charge = j.charge; state.athenaPatientId = j.patientId; save();
         hideProcessingOverlay();
-        finalizeAfterPayment();
+        const subEstablished = !!(j.subscriptionEstablished || (j.subscribe && j.cloverCustomerId && j.recurringCents));
+        finalizeAfterPayment({
+          subscriptionEstablished: subEstablished,
+          introCents: j.introCents || amountCents,
+          recurringCents: j.recurringCents || recurCents,
+          nextBillAt: j.nextBillAt,
+        });
       } else if (j.error === 'paid_but_chart_failed') {
         hideProcessingOverlay();
         // Charge succeeded but the chart didn't — never silently swallow this.
@@ -1956,37 +1963,60 @@ async function pollPaymentStatus(ref) {
   } catch (e) { return null; }
 }
 
-function finalizeAfterPayment(billingComplete) {
-  render({ id:'paid', section:'Confirmed', view: (wrap) => viewPaid(wrap, billingComplete) });
+function paymentInfoFromStatus(st) {
+  if (!st || !st.processed) return { subscriptionEstablished: false };
+  return {
+    subscriptionEstablished: !!st.subscriptionEstablished,
+    introCents: (PRICING[state.drug] ? PRICING[state.drug].intro : 149) * 100,
+    recurringCents: (PRICING[state.drug] ? PRICING[state.drug].monthly : 199) * 100,
+    nextBillAt: st.subscriptionEstablished ? Date.now() + 30 * 24 * 3600 * 1000 : undefined,
+  };
+}
+
+function finalizeAfterPayment(info) {
+  const payload = (info === true) ? { subscriptionEstablished: true }
+    : (info === false || info == null) ? { subscriptionEstablished: false }
+    : (typeof info === 'object' ? info : { subscriptionEstablished: !!info });
+  render({ id:'paid', section:'Confirmed', view: (wrap) => viewPaid(wrap, payload) });
   setProgress(1);
 }
-function viewPaid(p, billingComplete) {
+function viewPaid(p, info) {
   const fn = state.firstName || 'there';
   const ref = new URLSearchParams(location.search).get('ref') || state.orderRef;
-  const monthly = (PRICING[state.drug] ? PRICING[state.drug].monthly : 199);
-  const needsBilling = !billingComplete && new URLSearchParams(location.search).get('billing') !== 'done';
+  const intro = (info && info.introCents != null) ? (info.introCents / 100) : (PRICING[state.drug] ? PRICING[state.drug].intro : 149);
+  const monthly = (info && info.recurringCents != null) ? Math.round(info.recurringCents / 100) : (PRICING[state.drug] ? PRICING[state.drug].monthly : 199);
+  const established = !!(info && info.subscriptionEstablished);
+  const billingDone = new URLSearchParams(location.search).get('billing') === 'done';
+  const needsBilling = !established && !billingDone;
+  const nextBill = (info && info.nextBillAt) ? new Date(info.nextBillAt) : new Date(Date.now() + 30 * 24 * 3600 * 1000);
+  const nextBillLabel = nextBill.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   const card = h('div', { class:'center-card notrans' });
   let billingCta = '';
   if (needsBilling) {
+    const calm = info && info.billingSetupUnavailable;
     billingCta = `
     <div class="info warn" style="text-align:left;margin:16px auto;max-width:480px;">
-      <strong>One more step for monthly billing</strong><br>
-      <span style="color:var(--muted)">Authorize your card for <strong>$${monthly}/mo</strong> recurring (after your intro month). A $1 verification charge on Clover&rsquo;s secure page saves your card for monthly renewals.</span>
+      <strong>${calm ? 'Optional: save your card for monthly renewals' : 'One more step for monthly billing'}</strong><br>
+      <span style="color:var(--muted)">${calm
+        ? `Your enrollment is complete. If you&rsquo;d like automatic <strong>$${monthly}/mo</strong> renewals after your intro month, you can authorize your card on Clover&rsquo;s secure page — or call (702)&nbsp;602-5002 and we&rsquo;ll help.`
+        : `Authorize your card for <strong>$${monthly}/mo</strong> recurring (after your intro month). A $1 verification charge on Clover&rsquo;s secure page saves your card for monthly renewals.`}</span>
     </div>
     <a class="cta cta-green" href="#" onclick="goToBillingSetup('${ref||''}');return false;" style="display:inline-flex;text-decoration:none;margin-top:4px;cursor:pointer;">Secure monthly billing &rarr;</a>`;
   }
+  const enrolledCopy = established
+    ? `<p class="lede" style="margin:0 auto 16px;max-width:480px;">You&rsquo;re enrolled &mdash; <strong>$${intro}</strong> charged today, <strong>$${monthly}/mo</strong> starting <strong>${nextBillLabel}</strong>. Your prescription is with <strong>Dr. DeBry</strong> for clinical review; when approved, you&rsquo;ll pick up at our Las Vegas clinic (typically within 24 hours).</p>`
+    : `<p class="lede" style="margin:0 auto 16px;max-width:480px;">Payment received. Your intake is with <strong>Dr. DeBry</strong> for clinical review; when appropriate, he writes your prescription for pickup at our Las Vegas clinic (typically within 24 hours).</p>`;
   card.innerHTML = `
     <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-    <h1>Payment received, ${fn}.</h1>
-    <p class="lede" style="margin:0 auto 16px;max-width:480px;">Your request is on its way to <strong>Dr. DeBry</strong>. He reviews your intake and, when appropriate, writes your prescription for pickup at our Las Vegas clinic typically within 24 hours.</p>
+    <h1>${established ? "You're enrolled, " + fn + '.' : 'Payment received, ' + fn + '.'}</h1>
+    ${enrolledCopy}
     ${billingCta}
     <div class="skip-info">You&rsquo;ll get an email confirmation shortly.${ref ? ' Ref: ' + ref.slice(0,8) + '…' : ''}</div>
   `;
   p.appendChild(card);
   if (ref && needsBilling) {
     pollPaymentStatus(ref).then((st) => {
-      if (st && st.processed && st.subscriptionEstablished) finalizeAfterPayment(true);
-      else if (st && st.processed && !st.billingSetupNeeded) finalizeAfterPayment(true);
+      if (st && st.processed && st.subscriptionEstablished) finalizeAfterPayment(paymentInfoFromStatus(st));
     });
   }
 }
@@ -2054,10 +2084,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (ref) state.orderRef = ref;
     save();
     const billingDone = qs.get('billing') === 'done';
-    if (billingDone) { finalizeAfterPayment(true); return; }
+    if (billingDone) { finalizeAfterPayment({ subscriptionEstablished: true }); return; }
     const st = ref ? await pollPaymentStatus(ref) : null;
-    const subOk = st && st.subscriptionEstablished;
-    finalizeAfterPayment(!!subOk);
+    finalizeAfterPayment(st && st.subscriptionEstablished ? paymentInfoFromStatus(st) : { subscriptionEstablished: false });
     return;
   }
   if (qs.get('paid') === '0') {
