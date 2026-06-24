@@ -211,8 +211,8 @@
     '.hb-cover-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;border-top:1px solid #e6e9ee;padding-top:18px;font-family:Inter,system-ui,sans-serif}' +
     /* FLOW the sections: strip the outer section-card box so content fills pages instead of */
     /* drawing a border around empty space / running down every page edge. */
-    '.hb-root>*+*{margin-top:40px!important}' +       /* clear air before every new section heading */
-    '.hb-card{break-inside:auto!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:0!important;margin:0!important;background:transparent!important}' +
+    /* clear air between sections (margin-bottom on the card itself, so .hb-card margin doesn't override it) */
+    '.hb-card{break-inside:auto!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:0!important;margin:0 0 46px 0!important;background:transparent!important}' +
     /* keep eyebrow + serif title + sub-headings glued to the first block -> no orphaned headers */
     '.hb-card>p:first-child,.hb-card>h2,.hb-sub{break-after:avoid}' +
     'p{orphans:3;widows:3}' +
