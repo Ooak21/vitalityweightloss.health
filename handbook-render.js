@@ -207,8 +207,15 @@
     '.hb-cover-name{font-family:Georgia,"Times New Roman",serif;font-size:58px;line-height:1.02;font-weight:600;color:#16201d;letter-spacing:-1px}' +
     '.hb-cover-sub{font-family:Inter,system-ui,sans-serif;font-size:20px;color:#4b5563;margin-top:8px}' +
     '.hb-cover-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;border-top:1px solid #e6e9ee;padding-top:18px;font-family:Inter,system-ui,sans-serif}' +
-    '.hb-card{break-inside:auto;box-shadow:none!important;border-color:#e6e9ee!important}' +
-    '.hb-card h2{break-after:avoid}' +
+    /* FLOW the sections: strip the outer section-card box so content fills pages instead of */
+    /* drawing a border around empty space / running down every page edge. */
+    '.hb-root>*+*{margin-top:26px!important}' +
+    '.hb-card{break-inside:auto!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:0!important;margin:0!important;background:transparent!important}' +
+    /* keep the eyebrow + serif title glued to the first block -> no orphaned headers at page bottoms */
+    '.hb-card>p:first-child,.hb-card>h2{break-after:avoid}' +
+    'p{orphans:3;widows:3}' +
+    /* box ONLY the atoms (metric cards, meal days, tiles, rationale, blue box) and keep each whole */
+    '.rounded-xl{break-inside:avoid}' +
     'details{break-inside:avoid}' +
     'details>summary{list-style:none}' +
     'details>summary::-webkit-details-marker{display:none}' +
