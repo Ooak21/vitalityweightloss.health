@@ -173,8 +173,8 @@
     var metaCell = function (l, v) { return '<div><div class="text-[10px] uppercase tracking-[0.18em] text-[#9aa0ab] font-semibold">' + esc(l) + '</div><div class="font-semibold text-[#16201d] mt-1">' + esc(v) + "</div></div>"; };
     return '<div class="hb-cover">' +
       '<div class="hb-cover-top">' +
-        '<span class="hb-brand"><span class="hb-brand-v">VITALITY</span><span class="hb-brand-wl">WEIGHT LOSS</span></span>' +
-        '<span class="hb-vbis">VBIS · Vitality Body Intelligence System</span>' +
+        '<img class="hb-logo" src="https://vitalityweightloss.health/assets/logo-icon.png" alt="Vitality">' +
+        '<div class="hb-vbis-lockup"><div class="hb-vbis-title">VBIS</div><div class="hb-vbis-name">Vitality Body Intelligence System</div></div>' +
         '<span class="hb-cover-kicker">Patient Handbook</span>' +
       "</div>" +
       '<div class="hb-cover-main">' +
@@ -191,15 +191,16 @@
     '<style id="hb-print-css">' +
     '.hb-cover{display:none}' +
     '@media print{' +
-    '@page{margin:0.55in}' +
-    'body{-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+    '@page{margin:0}' +                               /* kill the browser-injected header/footer (e.g. "VBIS Handbook") */
+    'body{-webkit-print-color-adjust:exact;print-color-adjust:exact;padding:0!important;max-width:none!important}' +
+    '.hb-root{padding:0.5in 0.55in!important}' +       /* margins live on the content, not @page */
     '.hb-screen-cover,.hb-status-banner{display:none!important}' +
-    '.hb-cover{display:flex!important;flex-direction:column;justify-content:space-between;min-height:9.3in;break-after:page;page-break-after:always}' +
-    '.hb-cover-top{display:flex;align-items:center;gap:14px;border-bottom:1px solid #e6e9ee;padding-bottom:16px;font-family:Inter,system-ui,sans-serif}' +
-    '.hb-brand{display:flex;flex-direction:column;line-height:1}' +
-    '.hb-brand-v{font-family:Montserrat,Inter,sans-serif;font-weight:700;letter-spacing:.12em;color:#16201d;font-size:16px}' +
-    '.hb-brand-wl{font-weight:600;letter-spacing:.26em;color:#73982e;font-size:8px;margin-top:2px}' +
-    '.hb-vbis{font-size:11px;letter-spacing:.04em;color:#6b7280}' +
+    '.hb-cover{display:flex!important;flex-direction:column;justify-content:space-between;min-height:9.1in;break-after:page;page-break-after:always}' +
+    '.hb-cover-top{display:flex;align-items:center;gap:16px;border-bottom:1px solid #e6e9ee;padding-bottom:18px;font-family:Inter,system-ui,sans-serif}' +
+    '.hb-logo{height:48px;width:auto}' +
+    '.hb-vbis-lockup{line-height:1.05}' +
+    '.hb-vbis-title{font-family:Montserrat,Inter,sans-serif;font-weight:700;font-size:23px;letter-spacing:.04em;color:#16201d}' +
+    '.hb-vbis-name{font-size:11px;letter-spacing:.17em;text-transform:uppercase;color:#6b7280;margin-top:3px}' +
     '.hb-cover-kicker{margin-left:auto;font-size:13px;font-weight:600;color:#16201d}' +
     '.hb-cover-main{margin-top:auto;margin-bottom:auto;padding:24px 0}' +
     '.hb-cover-name{font-family:Georgia,"Times New Roman",serif;font-size:58px;line-height:1.02;font-weight:600;color:#16201d;letter-spacing:-1px}' +
