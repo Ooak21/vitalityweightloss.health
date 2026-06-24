@@ -174,6 +174,7 @@
     try { issued = new Date(opts && opts.generated_at ? opts.generated_at : Date.now()).toLocaleDateString("en-US", { year: "numeric", month: "numeric", day: "numeric" }); } catch (e) { issued = ""; }
     var metaCell = function (l, v) { return '<div><div class="text-[10px] uppercase tracking-[0.18em] text-[#9aa0ab] font-semibold">' + esc(l) + '</div><div class="font-semibold text-[#16201d] mt-1">' + esc(v) + "</div></div>"; };
     return '<div class="hb-cover">' +
+      '<div class="hb-cover-wm"></div>' +
       '<div class="hb-cover-top">' +
         '<img class="hb-logo" src="https://vitalityweightloss.health/assets/logo-icon.png" alt="Vitality">' +
         '<div class="hb-vbis-lockup"><div class="hb-vbis-title">VBIS</div><div class="hb-vbis-name">Vitality Body Intelligence System</div></div>' +
@@ -198,7 +199,10 @@
     '.hb-screen-cover,.hb-status-banner{display:none!important}' +
     /* print on white: gray inner boxes waste ink and look muddy — keep them white (the blue facility box stays) */
     '.bg-\\[\\#f7f8fa\\],.bg-\\[\\#fbfcfe\\],.bg-\\[\\#fafbff\\]{background:#fff!important}' +
-    '.hb-cover{display:flex!important;flex-direction:column;justify-content:space-between;min-height:9.1in;break-after:page;page-break-after:always}' +
+    '.hb-cover{display:flex!important;flex-direction:column;justify-content:space-between;min-height:9.1in;break-after:page;page-break-after:always;position:relative;overflow:hidden}' +
+    /* embossed brand watermark — soft, faded edges, multiply blends the white into the cover */
+    ".hb-cover-wm{position:absolute;inset:0;z-index:0;pointer-events:none;background:url('https://vitalityweightloss.health/assets/cover-watermark.png') no-repeat center 50%;background-size:64% auto;opacity:.7;mix-blend-mode:multiply;-webkit-mask-image:radial-gradient(ellipse 56% 56% at 50% 50%,#000 46%,transparent 86%);mask-image:radial-gradient(ellipse 56% 56% at 50% 50%,#000 46%,transparent 86%)}" +
+    '.hb-cover-top,.hb-cover-main,.hb-cover-meta{position:relative;z-index:1}' +
     '.hb-cover-top{display:flex;align-items:center;gap:16px;border-bottom:1px solid #e6e9ee;padding-bottom:18px;font-family:Inter,system-ui,sans-serif}' +
     '.hb-logo{height:48px;width:auto}' +
     '.hb-vbis-lockup{line-height:1.05}' +
