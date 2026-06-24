@@ -191,10 +191,11 @@
     '<style id="hb-print-css">' +
     '.hb-cover{display:none}' +
     '@media print{' +
-    '@page{margin:0}' +                               /* kill the browser-injected header/footer (e.g. "VBIS Handbook") */
+    '@page{margin:0.65in}' +                          /* per-page top/bottom breathing room on every page */
     'body{-webkit-print-color-adjust:exact;print-color-adjust:exact;padding:0!important;max-width:none!important}' +
-    '.hb-root{padding:0.5in 0.55in!important}' +       /* margins live on the content, not @page */
     '.hb-screen-cover,.hb-status-banner{display:none!important}' +
+    /* print on white: gray inner boxes waste ink and look muddy — keep them white (the blue facility box stays) */
+    '.bg-\\[\\#f7f8fa\\],.bg-\\[\\#fbfcfe\\],.bg-\\[\\#fafbff\\]{background:#fff!important}' +
     '.hb-cover{display:flex!important;flex-direction:column;justify-content:space-between;min-height:9.1in;break-after:page;page-break-after:always}' +
     '.hb-cover-top{display:flex;align-items:center;gap:16px;border-bottom:1px solid #e6e9ee;padding-bottom:18px;font-family:Inter,system-ui,sans-serif}' +
     '.hb-logo{height:48px;width:auto}' +
