@@ -25,7 +25,8 @@
     stethoscope: '<path d="M4 2v6a6 6 0 0 0 12 0V2"/><path d="M8 15v1a6 6 0 0 0 12 0v-4"/><circle cx="20" cy="10" r="2"/>',
     heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
     building: '<rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/>',
-    pin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>'
+    pin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+    pen: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>'
   };
   function icon(name, cls) {
     if (!name || !ICONS[name]) return "";
@@ -150,6 +151,13 @@
     return card('<div class="flex items-center justify-between"><div><h2 class="font-display text-base font-semibold text-[#16201d] flex items-center gap-2">' + icon("scan", "w-4 h-4") + '<span>Next InBody scan</span></h2><p class="text-sm text-[#6b7280] mt-0.5">Re-scan to recalibrate your plan against real progress.</p></div><div class="text-right"><div class="font-display text-2xl font-semibold text-[#0a6cf5]">' + esc(hb.next_inbody_recommendation_days) + '</div><div class="text-[10px] uppercase tracking-wide text-[#9aa0ab] font-semibold">days</div></div></div>');
   }
 
+  function staticNotes() {
+    var lines = "";
+    for (var i = 0; i < 16; i++) lines += '<div style="border-bottom:1px solid #e3e7ec;height:32px"></div>';
+    return card(head("For your journey", "Notes & questions", "pen") +
+      '<p class="text-sm text-[#6b7280] mb-4">Use this space to track your wins, jot down questions for your care team before each visit, and note how you feel as your body changes.</p>' +
+      "<div>" + lines + "</div>");
+  }
   function sectionPlaceholder(label) {
     return '<div class="rounded-2xl border border-dashed border-[#d6e6ff] bg-[#f7faff] p-8 text-center"><div class="text-sm text-[#6b7280]"><span class="inline-flex items-center justify-center gap-2"><span class="w-2 h-2 rounded-full bg-[#0a6cf5] animate-pulse"></span>Generating ' + esc(label) + "…</span></div></div>";
   }
@@ -174,7 +182,6 @@
     try { issued = new Date(opts && opts.generated_at ? opts.generated_at : Date.now()).toLocaleDateString("en-US", { year: "numeric", month: "numeric", day: "numeric" }); } catch (e) { issued = ""; }
     var metaCell = function (l, v) { return '<div><div class="text-[10px] uppercase tracking-[0.18em] text-[#9aa0ab] font-semibold">' + esc(l) + '</div><div class="font-semibold text-[#16201d] mt-1">' + esc(v) + "</div></div>"; };
     return '<div class="hb-cover">' +
-      '<div class="hb-cover-wm"></div>' +
       '<div class="hb-cover-top">' +
         '<img class="hb-logo" src="https://vitalityweightloss.health/assets/logo-icon.png" alt="Vitality">' +
         '<div class="hb-vbis-lockup"><div class="hb-vbis-title">VBIS</div><div class="hb-vbis-name">Vitality Body Intelligence System</div></div>' +
@@ -199,10 +206,7 @@
     '.hb-screen-cover,.hb-status-banner{display:none!important}' +
     /* print on white: gray inner boxes waste ink and look muddy — keep them white (the blue facility box stays) */
     '.bg-\\[\\#f7f8fa\\],.bg-\\[\\#fbfcfe\\],.bg-\\[\\#fafbff\\]{background:#fff!important}' +
-    '.hb-cover{display:flex!important;flex-direction:column;justify-content:space-between;min-height:9.1in;break-after:page;page-break-after:always;position:relative;overflow:hidden}' +
-    /* embossed brand watermark — soft, faded edges, multiply blends the white into the cover */
-    ".hb-cover-wm{position:absolute;inset:0;z-index:0;pointer-events:none;background:url('https://vitalityweightloss.health/assets/cover-watermark.png') no-repeat 50% 70%;background-size:50% auto;opacity:.55;mix-blend-mode:multiply;-webkit-mask-image:radial-gradient(ellipse 50% 50% at 50% 70%,#000 50%,transparent 88%);mask-image:radial-gradient(ellipse 50% 50% at 50% 70%,#000 50%,transparent 88%)}" +
-    '.hb-cover-top,.hb-cover-main,.hb-cover-meta{position:relative;z-index:1}' +
+    '.hb-cover{display:flex!important;flex-direction:column;justify-content:space-between;min-height:9.1in;break-after:page;page-break-after:always}' +
     '.hb-cover-top{display:flex;align-items:center;gap:16px;border-bottom:1px solid #e6e9ee;padding-bottom:18px;font-family:Inter,system-ui,sans-serif}' +
     '.hb-logo{height:48px;width:auto}' +
     '.hb-vbis-lockup{line-height:1.05}' +
@@ -240,7 +244,7 @@
       printCover(hb, p, opts), screenHeader(hb, p),
       execSummary(hb), interpretations(hb), aiAnalysis(hb), whyPlan(hb),
       nutrition(hb), workout(hb), habits(hb), projections(hb), nextScan(hb),
-      staticCounseling(), staticFacility(),
+      staticCounseling(), staticFacility(), staticNotes(),
     ].filter(Boolean).join("") + "</div>");
   };
 
@@ -271,7 +275,7 @@
         return [workout(h), habits(h), projections(h), nextScan(h)].filter(Boolean).join("");
       }),
     ];
-    if (status === "complete") parts.push(staticCounseling(), staticFacility());
+    if (status === "complete") parts.push(staticCounseling(), staticFacility(), staticNotes());
     return noDash('<div class="hb-root space-y-5">' + parts.filter(Boolean).join("") + "</div>");
   };
 })();
