@@ -126,6 +126,22 @@
     return card('<div class="flex items-center justify-between"><div><h2 class="font-display text-base font-semibold text-[#16201d]">Next InBody scan</h2><p class="text-sm text-[#6b7280] mt-0.5">Re-scan to recalibrate your plan against real progress.</p></div><div class="text-right"><div class="font-display text-2xl font-semibold text-[#0a6cf5]">' + esc(hb.next_inbody_recommendation_days) + '</div><div class="text-[10px] uppercase tracking-wide text-[#9aa0ab] font-semibold">days</div></div></div>');
   }
 
+  function sectionPlaceholder(label) {
+    return '<div class="rounded-2xl border border-dashed border-[#d6e6ff] bg-[#f7faff] p-8 text-center"><div class="text-sm text-[#6b7280]"><span class="inline-flex items-center justify-center gap-2"><span class="w-2 h-2 rounded-full bg-[#0a6cf5] animate-pulse"></span>Generating ' + esc(label) + "…</span></div></div>";
+  }
+  function statusBanner(status) {
+    if (status === "generating") {
+      return '<div class="rounded-xl bg-[#eaf2ff] border border-[#d6e6ff] p-3 text-sm text-[#0a3d7a]">Handbook generating — sections appear below as they finish.</div>';
+    }
+    if (status === "partial") {
+      return '<div class="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900">Some sections could not be generated. Content below may be incomplete.</div>';
+    }
+    if (status === "complete") {
+      return '<div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-900">Handbook complete.</div>';
+    }
+    return "";
+  }
+
   window.renderVbisHandbook = function (hb, opts) {
     opts = opts || {}; hb = hb || {}; var p = opts.patient || {};
     var cover = card('<div class="flex items-center justify-between flex-wrap gap-3"><div><p class="text-[11px] uppercase tracking-[0.2em] text-[#0a6cf5] font-semibold">Patient handbook · Personalized transformation plan</p><h1 class="font-display text-2xl font-semibold text-[#16201d] mt-1">' + esc((p.first || "") + " " + (p.last || "")).trim() + '</h1></div><div class="text-right text-xs text-[#6b7280]"><div><span class="uppercase tracking-wide text-[#9aa0ab]">Program</span><br><span class="font-medium text-[#16201d]">' + esc((hb.workout && hb.workout.program_type) || "Personalized") + '</span></div><div class="mt-1.5"><span class="uppercase tracking-wide text-[#9aa0ab]">Provider</span><br><span class="font-medium text-[#16201d]">Vitality Academies</span></div></div></div>');
@@ -134,5 +150,37 @@
       nutrition(hb), workout(hb), habits(hb), projections(hb), nextScan(hb),
       staticCounseling(), staticFacility(),
     ].filter(Boolean).join("") + "</div>";
+  };
+
+  // Progressive renderer — placeholders for sections not yet in sections_ready while status is generating/partial.
+  window.renderVbisHandbookProgressive = function (hb, opts) {
+    opts = opts || {}; hb = hb || {};
+    var ready = opts.sections_ready || [];
+    var status = opts.status;
+    var isLive = status === "generating" || status === "partial";
+    var has = function (k) { return ready.indexOf(k) >= 0; };
+    var slot = function (key, label, fn) {
+      if (has(key)) return fn(hb);
+      if (isLive) return sectionPlaceholder(label);
+      return fn(hb);
+    };
+    var p = opts.patient || {};
+    var cover = card('<div class="flex items-center justify-between flex-wrap gap-3"><div><p class="text-[11px] uppercase tracking-[0.2em] text-[#0a6cf5] font-semibold">Patient handbook · Personalized transformation plan</p><h1 class="font-display text-2xl font-semibold text-[#16201d] mt-1">' + esc((p.first || "") + " " + (p.last || "")).trim() + '</h1></div><div class="text-right text-xs text-[#6b7280]"><div><span class="uppercase tracking-wide text-[#9aa0ab]">Program</span><br><span class="font-medium text-[#16201d]">' + esc((hb.workout && hb.workout.program_type) || "Personalized") + '</span></div><div class="mt-1.5"><span class="uppercase tracking-wide text-[#9aa0ab]">Provider</span><br><span class="font-medium text-[#16201d]">Vitality Academies</span></div></div></div>');
+    var parts = [
+      statusBanner(status),
+      cover,
+      slot("overview", "Executive summary & clinical overview", execSummary),
+      slot("interpretations", "InBody metric interpretations", interpretations),
+      has("overview") ? aiAnalysis(hb) : (isLive ? "" : aiAnalysis(hb)),
+      has("overview") ? whyPlan(hb) : (isLive ? "" : whyPlan(hb)),
+      slot("nutrition", "Nutrition program (7-day meal plan)", nutrition),
+      slot("program", "Workout program, habits & projections", function (h) {
+        return [workout(h), habits(h), projections(h), nextScan(h)].filter(Boolean).join("");
+      }),
+    ];
+    if (status === "complete") {
+      parts.push(staticCounseling(), staticFacility());
+    }
+    return '<div class="space-y-5">' + parts.filter(Boolean).join("") + "</div>";
   };
 })();
