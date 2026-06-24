@@ -743,11 +743,10 @@
 const CLOVER_URL_SEMA = 'https://link.clover.com/urlshortener/fw4vjT';  // sema inj: $149 intro / $199 x5
 const CLOVER_URL_TIRZ = 'https://link.clover.com/urlshortener/2T5N7F';  // tirz inj: $249 intro / $399 x5
 const CLOVER_URL_ORAL = 'https://link.clover.com/urlshortener/9h9CJ7';  // oral sema: $199 intro / $299 x5
-// Athena middleware creates the athenaOne patient AFTER Clover payment (Option B).
-// Now served by the Convex backend (HIPAA-eligible, under BAA). The /checkout-init +
-// /clover-webhook routes live on the .convex.site domain. This points at the DEV
-// deployment (synthetic data, no signed BAA yet) — swap to the PROD Convex deployment
-// at go-live, after the BAA + athena Platform Services contract land.
+// Convex backend (HIPAA-eligible) hosts /pay (iframe path), /checkout-init + /clover-webhook (hosted path for webviews).
+// /checkout-init stashes intake (athenaPayload + pricing flags) and returns a Clover hosted session href.
+// Webhook on verified paid creates vit_patients / vit_tasks / vit_processed (pickup branch) + optional sub.
+// Per-drug intro+recurring preserved in payload for both paths. See isInAppWebview() + goToHostedCheckout().
 const ATHENA_MIDDLEWARE_URL = 'https://quixotic-cat-492.convex.site';
 const PRICING = {
   sema: { intro: 149, monthly: 199, label: '$149 first month · $199/mo thereafter', term: 1140 },
@@ -765,8 +764,29 @@ const CLOVER_PUBLIC_KEY  = 'f9d8910605425172a0b627094e16f27b';
 const CLOVER_MERCHANT_ID = 'ECK6FJ94X1JM1';
 const CLOVER_SDK_URL     = 'https://checkout.clover.com/sdk.js';   // production
 const CLOVER_PAY_URL     = ATHENA_MIDDLEWARE_URL + '/pay';
-const TEST_DOLLAR        = false;  // LIVE: real charge, no verification-charge label
+// Test mode: ?test=1 forces $1 intro via CLOVER_TEST_AMOUNT_CENTS on Convex, or client testMode flag.
+// ?webview=1 simulates in-app browser → hosted checkout path. Use sandbox + 4242424242424242 for live Clover test.
+const TEST_DOLLAR        = new URLSearchParams(location.search).get('test') === '1';
+const FORCE_WEBVIEW      = new URLSearchParams(location.search).get('webview') === '1';
 let __cloverSdkPromise = null;
+
+// Webview / iframe-hostile browser detection for Clover embedded fields.
+// These environments (in-app email browsers, FB/IG/Line/Yahoo/Gmail WKWebView) break
+// the Clover SDK iframe + postMessage + createToken. We route them to top-level
+// Clover Hosted Checkout (server-created via /checkout-init) instead.
+function isInAppWebview() {
+  if (FORCE_WEBVIEW) return true;
+  const ua = (navigator.userAgent || '').toLowerCase();
+  // Explicit in-app markers
+  if (/fban|fbav|instagram|line|yahoo|gsa|messenger|snapchat/.test(ua)) return true;
+  // Generic iOS WKWebView used by many in-app browsers: has "iPhone|iPad" + "AppleWebKit" but NO "Safari/"
+  // (Safari adds "Version/XX Safari/"; many wrappers strip it or use their own UA).
+  const isIOS = /iphone|ipad|ipod/.test(ua);
+  const isWebKit = /applewebkit/.test(ua);
+  const hasSafari = /safari\//.test(ua);
+  if (isIOS && isWebKit && !hasSafari) return true;
+  return false;
+}
 function loadCloverSdk() {
   if (window.Clover) return Promise.resolve();
   if (__cloverSdkPromise) return __cloverSdkPromise;
@@ -1639,18 +1659,87 @@ function viewSubmitted(p) {
 
 window.goToClover = function() {
   state.checkoutStarted = true; save();
+  // Legacy static links (preconfigured in Clover dashboard as 1x intro + recurring bundle).
+  // These do NOT go through /checkout-init + Convex webhook for intake stash.
+  // Prefer the dynamic server-created hosted path below for full CRM + subscription wiring.
   let url = state.drug === 'tirz' ? CLOVER_URL_TIRZ
           : state.drug === 'oral' ? CLOVER_URL_ORAL
           : CLOVER_URL_SEMA;
-  // Carry the orderRef so Clover round-trips it into the payment webhook.
-  // (Depends on the Clover product preserving a reference; confirm in the Clover dashboard.)
   if (state.orderRef) url += (url.indexOf('?') > -1 ? '&' : '?') + 'ref=' + encodeURIComponent(state.orderRef);
   window.location.href = url;
 };
 
-// ----- ON-PAGE payment: card iframe + synchronous charge (no redirect) -----
+// Server-created Clover Hosted Checkout (top-level redirect to scl.clover.com).
+// Works in webviews where embedded iframes are blocked. The /checkout-init stashes
+// the full athenaPayload + pricing + flags; webhook on paid creates the same records
+// (pickup path) as the on-page /pay path.
+async function goToHostedCheckout() {
+  state.checkoutStarted = true; save();
+  const amountCents = (PRICING[state.drug] ? PRICING[state.drug].intro : 149) * 100;
+  const recurCents  = (PRICING[state.drug] ? PRICING[state.drug].monthly : 199) * 100;
+  const payload = Object.assign({}, athenaPayload(), {
+    amountCents,
+    recurringCents: recurCents,
+    program: state.drug,
+    fulfillment: 'pickup',
+    subscribe: true,
+    testMode: TEST_DOLLAR,
+  });
+  try {
+    const r = await fetch(ATHENA_MIDDLEWARE_URL + '/checkout-init', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && j.orderRef) state.orderRef = j.orderRef;
+    if (r.ok && j.href) {
+      save();
+      window.location.href = j.href;
+      return;
+    }
+    alert('Secure checkout is not available right now. Please call (702) 602-5002 to complete enrollment.');
+  } catch (e) {
+    alert('Unable to start secure checkout. Please call (702) 602-5002.');
+  }
+}
+
+// Option B: after intro paid via hosted checkout without COF, $1 Clover-hosted authorization vaults the card for cron rebills.
+async function goToBillingSetup(parentRef) {
+  const recurCents = (PRICING[state.drug] ? PRICING[state.drug].monthly : 199) * 100;
+  const payload = {
+    parentOrderRef: parentRef || state.orderRef,
+    recurringCents: recurCents,
+    program: state.drug,
+    email: state.email,
+    firstName: state.firstName,
+    lastName: state.lastName,
+    testMode: TEST_DOLLAR,
+  };
+  try {
+    const r = await fetch(ATHENA_MIDDLEWARE_URL + '/billing-setup-init', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && j.already) { finalizeAfterPayment(true); return; }
+    if (r.ok && j.href) { window.location.href = j.href; return; }
+    alert('Monthly billing setup is unavailable. Please call (702) 602-5002.');
+  } catch (e) {
+    alert('Unable to start billing setup. Please call (702) 602-5002.');
+  }
+}
+window.goToBillingSetup = goToBillingSetup;
+
+// ----- ON-PAGE payment (iframe) with webview fallback to Hosted Checkout -----
 window.goToPayment = function() {
   state.checkoutStarted = true; save();
+  if (isInAppWebview()) {
+    // Route webview users to top-level hosted checkout (no iframe).
+    goToHostedCheckout();
+    return;
+  }
   render({ id:'pay', section:'Payment', view: viewPay });
   setProgress(1);
 };
@@ -1747,13 +1836,18 @@ function viewPay(p) {
   const showErr = (m) => { payErr.textContent = m; payErr.style.display = 'block'; };
 
   payBtn.onclick = async () => {
-    if (!__cloverInst) return showErr('The payment form is still loading — please wait a moment and tap Pay again.');
+    if (!__cloverInst) {
+      // iframe not ready — offer the webview-safe hosted path
+      hideProcessingOverlay();
+      payBtn.disabled = false; payBtn.textContent = orig || 'Pay ' + amountLabel;
+      return goToHostedCheckout();
+    }
     payErr.style.display = 'none';
     const orig = payBtn.textContent; payBtn.disabled = true; payBtn.textContent = 'Processing…';
     try {
       const res = await __cloverInst.createToken();
       if (res && res.errors) { payBtn.disabled = false; payBtn.textContent = orig; return showErr(Object.values(res.errors).map(x => (x && x.message) || x).join(' ')); }
-      const body = Object.assign({}, athenaPayload(), { source: res.token, amountCents, fulfillment: 'pickup', subscribe: true, recurringCents: recurCents });
+      const body = Object.assign({}, athenaPayload(), { source: res.token, amountCents, fulfillment: 'pickup', subscribe: true, recurringCents: recurCents, testMode: TEST_DOLLAR });
       showProcessingOverlay();   // prominent full-screen wait — the athena chart build runs ~60-90s
       const r = await fetch(CLOVER_PAY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const j = await r.json().catch(() => ({}));
@@ -1793,13 +1887,19 @@ async function initCloverPay(showErr) {
     elements.create('CARD_CVV', styles).mount('#card-cvv');
     elements.create('CARD_POSTAL_CODE', styles).mount('#card-postal');
     __cloverInst = clover;   // ready — the Pay button now proceeds to charge
-  } catch (e) { showErr('Card form error: ' + ((e && e.message) || e)); }
+  } catch (e) {
+    // iframe init failed (common in webviews) — fall back to hosted redirect path
+    showErr('Card form could not load in this browser. Using secure hosted checkout instead...');
+    setTimeout(() => goToHostedCheckout(), 900);
+  }
 }
 
-// ----- Secure flow: the athenaOne patient is created by Clover's payment-confirmed
-// WEBHOOK (server-verified), NOT this redirect. Submit stashes the intake server-side
-// via /checkout-init (orderRef); the webhook creates the chart record on real payment.
-// athenaPayload() is the intake we stash at submit.
+// ----- Secure flow:
+// - Normal browsers: on-page Clover iframe (sdk.js + createToken) -> /pay (creates customer+charge+sub+records).
+// - In-app webviews (or iframe failure): /checkout-init (stash + server create hosted session) -> top-level redirect to Clover hosted -> webhook on paid.
+//   Webhook now mirrors /pay's pickup branch: upsertFromIntake + createRxPending + notify + processed.
+//   Recurring (vit_subscriptions) only if Clover provides a usable customer id from the hosted payment (see clover.ts + webhook for limitation).
+// Submit stashes via client or /checkout-init. athenaPayload() is the shared intake shape.
 // Clinical intake summary, mapped to readable question + answer for the chart.
 const CLINICAL_FIELDS = [
   { k:'sex', q:'Sex at birth', m:{female:'Female', male:'Male'} },
@@ -1848,22 +1948,47 @@ function athenaPayload() {
     idImageBase64: state.idImageBase64 || undefined,   // front-of-ID JPEG → athena driver's-license upload
   };
 }
-function finalizeAfterPayment() {
-  // Thank-you only. The chart record is created server-side by the Clover payment
-  // webhook (server-verified), never from this client redirect.
-  render({ id:'paid', section:'Confirmed', view: viewPaid });
+async function pollPaymentStatus(ref) {
+  if (!ref) return null;
+  try {
+    const r = await fetch(ATHENA_MIDDLEWARE_URL + '/payment-status?ref=' + encodeURIComponent(ref));
+    return await r.json().catch(() => null);
+  } catch (e) { return null; }
+}
+
+function finalizeAfterPayment(billingComplete) {
+  render({ id:'paid', section:'Confirmed', view: (wrap) => viewPaid(wrap, billingComplete) });
   setProgress(1);
 }
-function viewPaid(p) {
+function viewPaid(p, billingComplete) {
   const fn = state.firstName || 'there';
+  const ref = new URLSearchParams(location.search).get('ref') || state.orderRef;
+  const monthly = (PRICING[state.drug] ? PRICING[state.drug].monthly : 199);
+  const needsBilling = !billingComplete && new URLSearchParams(location.search).get('billing') !== 'done';
   const card = h('div', { class:'center-card notrans' });
+  let billingCta = '';
+  if (needsBilling) {
+    billingCta = `
+    <div class="info warn" style="text-align:left;margin:16px auto;max-width:480px;">
+      <strong>One more step for monthly billing</strong><br>
+      <span style="color:var(--muted)">Authorize your card for <strong>$${monthly}/mo</strong> recurring (after your intro month). A $1 verification charge on Clover&rsquo;s secure page saves your card for monthly renewals.</span>
+    </div>
+    <a class="cta cta-green" href="#" onclick="goToBillingSetup('${ref||''}');return false;" style="display:inline-flex;text-decoration:none;margin-top:4px;cursor:pointer;">Secure monthly billing &rarr;</a>`;
+  }
   card.innerHTML = `
     <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
     <h1>Payment received, ${fn}.</h1>
     <p class="lede" style="margin:0 auto 16px;max-width:480px;">Your request is on its way to <strong>Dr. DeBry</strong>. He reviews your intake and, when appropriate, writes your prescription for pickup at our Las Vegas clinic typically within 24 hours.</p>
-    <div class="skip-info">You&rsquo;ll get an email confirmation shortly.</div>
+    ${billingCta}
+    <div class="skip-info">You&rsquo;ll get an email confirmation shortly.${ref ? ' Ref: ' + ref.slice(0,8) + '…' : ''}</div>
   `;
   p.appendChild(card);
+  if (ref && needsBilling) {
+    pollPaymentStatus(ref).then((st) => {
+      if (st && st.processed && st.subscriptionEstablished) finalizeAfterPayment(true);
+      else if (st && st.processed && !st.billingSetupNeeded) finalizeAfterPayment(true);
+    });
+  }
 }
 
 // SUBMIT ---------------------------------------------------------------------
@@ -1921,10 +2046,26 @@ const DOCS = {
   `
 };
 
-// BOOT
-document.addEventListener('DOMContentLoaded', () => {
-  if (new URLSearchParams(location.search).get('paid') === '1') finalizeAfterPayment();
-  else go(0);
+// BOOT — success redirect from Clover (?paid=1&ref=...). Records are created by webhook, not this URL.
+document.addEventListener('DOMContentLoaded', async () => {
+  const qs = new URLSearchParams(location.search);
+  if (qs.get('paid') === '1') {
+    const ref = qs.get('ref');
+    if (ref) state.orderRef = ref;
+    save();
+    const billingDone = qs.get('billing') === 'done';
+    if (billingDone) { finalizeAfterPayment(true); return; }
+    const st = ref ? await pollPaymentStatus(ref) : null;
+    const subOk = st && st.subscriptionEstablished;
+    finalizeAfterPayment(!!subOk);
+    return;
+  }
+  if (qs.get('paid') === '0') {
+    alert('Payment was not completed. You can try again or call (702) 602-5002.');
+    go(0);
+    return;
+  }
+  go(0);
 });
 </script>
 <script>
