@@ -201,7 +201,7 @@
     '.bg-\\[\\#f7f8fa\\],.bg-\\[\\#fbfcfe\\],.bg-\\[\\#fafbff\\]{background:#fff!important}' +
     '.hb-cover{display:flex!important;flex-direction:column;justify-content:space-between;min-height:9.1in;break-after:page;page-break-after:always;position:relative;overflow:hidden}' +
     /* embossed brand watermark — soft, faded edges, multiply blends the white into the cover */
-    ".hb-cover-wm{position:absolute;inset:0;z-index:0;pointer-events:none;background:url('https://vitalityweightloss.health/assets/cover-watermark.png') no-repeat center 50%;background-size:64% auto;opacity:.7;mix-blend-mode:multiply;-webkit-mask-image:radial-gradient(ellipse 56% 56% at 50% 50%,#000 46%,transparent 86%);mask-image:radial-gradient(ellipse 56% 56% at 50% 50%,#000 46%,transparent 86%)}" +
+    ".hb-cover-wm{position:absolute;inset:0;z-index:0;pointer-events:none;background:url('https://vitalityweightloss.health/assets/cover-watermark.png') no-repeat 50% 70%;background-size:50% auto;opacity:.55;mix-blend-mode:multiply;-webkit-mask-image:radial-gradient(ellipse 50% 50% at 50% 70%,#000 50%,transparent 88%);mask-image:radial-gradient(ellipse 50% 50% at 50% 70%,#000 50%,transparent 88%)}" +
     '.hb-cover-top,.hb-cover-main,.hb-cover-meta{position:relative;z-index:1}' +
     '.hb-cover-top{display:flex;align-items:center;gap:16px;border-bottom:1px solid #e6e9ee;padding-bottom:18px;font-family:Inter,system-ui,sans-serif}' +
     '.hb-logo{height:48px;width:auto}' +
