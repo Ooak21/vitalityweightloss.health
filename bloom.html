@@ -1021,6 +1021,37 @@ const flow = [
       'Re-enter the phone number you provided earlier. This serves as your second identifier alongside date of birth.'
     ]));
 
+    // Government photo ID upload (identity verification)
+    const idWrap = h('div', { class: 'field' });
+    idWrap.appendChild(h('span', { class: 'lab' }, ['Upload a photo of your government ID (driver’s license or state ID)']));
+    const idSlot = h('label', { class: 'photo-slot', style: 'display:block;max-width:300px;' });
+    const idInput = h('input', { type: 'file', accept: 'image/*' });
+    if (state.idPhotoPreview) idSlot.appendChild(h('img', { src: state.idPhotoPreview, alt: 'Government ID' }));
+    else idSlot.appendChild(h('span', { class: 'ph' }, ['+ Upload ID']));
+    idInput.onchange = async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      state.idPhotoPreview = url; save();
+      idSlot.innerHTML = ''; idSlot.appendChild(h('img', { src: url, alt: 'Government ID' })); idSlot.appendChild(idInput);
+      validateCta();
+      try {
+        const ur = await fetch(PHOTO_UPLOAD_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        const uj = await ur.json();
+        if (uj && uj.uploadUrl) {
+          const put = await fetch(uj.uploadUrl, { method: 'POST', headers: { 'Content-Type': file.type }, body: file });
+          const pj = await put.json().catch(() => ({}));
+          if (pj && pj.storageId) { state.id_photo_storage_id = pj.storageId; save(); validateCta(); }
+        }
+      } catch (err) { console.warn('ID upload (continues):', err); }
+    };
+    idSlot.appendChild(idInput);
+    idWrap.appendChild(idSlot);
+    p.appendChild(idWrap);
+    p.appendChild(h('p', { style: 'font-size:13px;color:var(--muted);margin:6px 0 16px;' }, [
+      'Your ID is used only to verify your identity, stored securely, and reviewed by Dr. DeBry.'
+    ]));
+
     const provider = h('div', { class: 'provider-block' });
     provider.innerHTML = `
       <div class="name">Dr. Peter DeBry, MD</div>
@@ -1036,7 +1067,8 @@ const flow = [
   }, canContinue: (s) =>
     (s.dob || '').length === 10 &&
     (s.phoneConfirm || '').replace(/\D/g, '') === (s.phone || '').replace(/\D/g, '') &&
-    (s.phoneConfirm || '').replace(/\D/g, '').length >= 10
+    (s.phoneConfirm || '').replace(/\D/g, '').length >= 10 &&
+    !!s.idPhotoPreview
   },
 
   // 6. TELEHEALTH CONSENT ----------------------------------------------------
