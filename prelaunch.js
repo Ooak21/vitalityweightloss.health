@@ -7,7 +7,7 @@
    PHI-free (clinical intake happens later, consented, in the real flow). */
 (function () {
   "use strict";
-  var PRELAUNCH = true;                  // <-- flip to false on 7/1 to open real intake
+  var PRELAUNCH = false;                 // OPENED for Dr. DeBry walkthrough: real intake/checkout live (was waitlist-gated; set true to re-gate)
   if (!PRELAUNCH) return;
 
   var CONVEX_SITE = "https://quixotic-cat-492.convex.cloud".replace(".convex.cloud", ".convex.site");
