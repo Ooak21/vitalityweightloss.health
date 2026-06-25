@@ -326,9 +326,12 @@
     await __pollHandbook(pid);
   };
   window.genVbisHandbook = async function(pid, btn){
+    const tog=document.getElementById('hbGlp1Toggle');
+    const include_glp1 = tog ? !!tog.checked : undefined;
+    const payload = include_glp1===undefined ? {patient_id:pid} : {patient_id:pid, include_glp1};
     const o=btn?btn.textContent:''; if(btn){ btn.disabled=true; btn.textContent='Starting…'; }
     try{
-      const r=await fetch(CONVEX_URL+'/generate-handbook',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({patient_id:pid})});
+      const r=await fetch(CONVEX_URL+'/generate-handbook',{method:'POST',headers:await convexHeaders(),body:JSON.stringify(payload)});
       const j=await r.json();
       if(!j.ok){ alert('Failed: '+(j.error||'unknown')); return; }
       __ensureHbOverlay();
@@ -600,6 +603,9 @@
           <button onclick="generatePlan('${p.id}', false, this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ ${p.plan? 'Regenerate plan':'Generate plan'}</button>
           <button onclick="openPlan('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">📋 View plan</button>
           <button onclick="openVbisHandbook('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">📋 View handbook</button>
+          <label id="hbGlp1Wrap" class="px-3 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm flex items-center gap-2 cursor-pointer hover:bg-[#f1f3f7]" title="Checked: the handbook includes GLP-1 medication guidance. Unchecked: lifestyle-only handbook (no GLP-1/semaglutide/tirzepatide mentions). Defaults from the patient's program.">
+            <input type="checkbox" id="hbGlp1Toggle" ${/glp1|sema|tirz|oral|medicare_glp1/i.test(p.program||'')?'checked':''} class="accent-[#0a6cf5] w-4 h-4"> Include GLP-1
+          </label>
           <button onclick="genVbisHandbook('${p.id}', this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ Generate VBIS handbook</button>
           <button onclick="portalLogin('${p.id}',${!!p.has_login})" ${p.email?'':'title="Add an email first"'} class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7]">🔑 ${p.has_login?'Reset portal password':'Create portal login'}</button>
           <button id="veeBtn" onclick="veeToggle('${p.id}','provider')" class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10 flex items-center gap-2"><span id="veeDot" class="w-2 h-2 rounded-full bg-[#0a6cf5]"></span>🎙 Discuss with Vee</button>
