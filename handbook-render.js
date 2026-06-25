@@ -176,15 +176,15 @@
     return '<div class="rounded-2xl border border-dashed border-[#d6e6ff] bg-[#f7faff] p-8 text-center"><div class="text-sm text-[#6b7280]"><span class="inline-flex items-center justify-center gap-2"><span class="w-2 h-2 rounded-full bg-[#0a6cf5] animate-pulse"></span>Generating ' + esc(label) + "…</span></div></div>";
   }
   function statusBanner(status) {
-    if (status === "generating") return '<div class="hb-status-banner rounded-xl bg-[#eaf2ff] border border-[#d6e6ff] p-3 text-sm text-[#0a3d7a]">Handbook generating — sections appear below as they finish.</div>';
+    if (status === "generating") return '<div class="hb-status-banner rounded-xl bg-[#eaf2ff] border border-[#d6e6ff] p-3 text-sm text-[#0a3d7a]">Personal Transformation Plan generating · sections appear below as they finish.</div>';
     if (status === "partial") return '<div class="hb-status-banner rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900">Some sections could not be generated. Content below may be incomplete.</div>';
-    if (status === "complete") return '<div class="hb-status-banner rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-900">Handbook complete.</div>';
+    if (status === "complete") return '<div class="hb-status-banner rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-900">Personal Transformation Plan complete.</div>';
     return "";
   }
 
   // Compact on-screen header (hidden on print — the full cover page takes over).
   function screenHeader(hb, p) {
-    return '<section class="hb-screen-cover hb-card rounded-2xl border border-[#e6e9ee] bg-white p-6 shadow-[0_1px_2px_rgba(16,32,29,.04)]"><div class="flex items-center justify-between flex-wrap gap-3"><div><p class="text-[11px] uppercase tracking-[0.2em] text-[#0a6cf5] font-semibold">Patient handbook · Personalized transformation plan</p><h1 class="font-display text-2xl font-semibold text-[#16201d] mt-1">' + esc(((p.first || "") + " " + (p.last || "")).trim()) + '</h1></div><div class="text-right text-xs text-[#6b7280]"><div><span class="uppercase tracking-wide text-[#9aa0ab]">Program</span><br><span class="font-medium text-[#16201d]">' + esc((hb.workout && hb.workout.program_type) || "Personalized") + '</span></div><div class="mt-1.5"><span class="uppercase tracking-wide text-[#9aa0ab]">Provider</span><br><span class="font-medium text-[#16201d]">Vitality Academies</span></div></div></div></section>';
+    return '<section class="hb-screen-cover hb-card rounded-2xl border border-[#e6e9ee] bg-white p-6 shadow-[0_1px_2px_rgba(16,32,29,.04)]"><div class="flex items-center justify-between flex-wrap gap-3"><div><p class="text-[11px] uppercase tracking-[0.2em] text-[#0a6cf5] font-semibold">Personal Transformation Plan</p><h1 class="font-display text-2xl font-semibold text-[#16201d] mt-1">' + esc(((p.first || "") + " " + (p.last || "")).trim()) + '</h1></div><div class="text-right text-xs text-[#6b7280]"><div><span class="uppercase tracking-wide text-[#9aa0ab]">Program</span><br><span class="font-medium text-[#16201d]">' + esc((hb.workout && hb.workout.program_type) || "Personalized") + '</span></div><div class="mt-1.5"><span class="uppercase tracking-wide text-[#9aa0ab]">Provider</span><br><span class="font-medium text-[#16201d]">Vitality Academies</span></div></div></div></section>';
   }
 
   // Full-page PRINT cover (hidden on screen, full page on print).
@@ -199,10 +199,10 @@
       '<div class="hb-cover-top">' +
         '<img class="hb-logo" src="https://vitalityweightloss.health/assets/logo-icon.png" alt="Vitality">' +
         '<div class="hb-vbis-lockup"><div class="hb-vbis-title">VBIS</div><div class="hb-vbis-name">Vitality Body Intelligence System</div></div>' +
-        '<span class="hb-cover-kicker">Patient Handbook</span>' +
+        '<span class="hb-cover-kicker">Personal Transformation Plan</span>' +
       "</div>" +
       '<div class="hb-cover-main">' +
-        '<p class="text-[12px] uppercase tracking-[0.22em] text-[#0a6cf5] font-semibold mb-3">Personalized Transformation Plan</p>' +
+        '<p class="text-[12px] uppercase tracking-[0.22em] text-[#0a6cf5] font-semibold mb-3">Personal Transformation Plan</p>' +
         '<h1 class="hb-cover-name">' + esc(name) + "</h1>" +
         '<p class="hb-cover-sub">' + esc(days) + "-day Vitality program</p>" +
       "</div>" +

@@ -295,7 +295,7 @@
       ov.onclick=e=>{ if(e.target===ov){ __stopHbPoll(); ov.remove(); } };
       document.body.appendChild(ov);
     }
-    ov.innerHTML='<div class="max-w-3xl mx-auto my-8 px-3"><div class="flex justify-between items-center mb-3"><div class="font-display font-semibold text-lg text-white">VBIS Handbook</div><div class="flex items-center gap-2"><button onclick="window.__printEl(\'hbBody\',\'VBIS Handbook\')" class="px-3 h-9 rounded-full bg-white text-sm font-semibold text-[#16201d]">🖨 Print</button><button onclick="__stopHbPoll();document.getElementById(\'hbOverlay\').remove()" class="w-9 h-9 rounded-full bg-white text-2xl leading-none text-[#16201d]">×</button></div></div><div id="hbBody">Loading…</div></div>';
+    ov.innerHTML='<div class="max-w-3xl mx-auto my-8 px-3"><div class="flex justify-between items-center mb-3"><div class="font-display font-semibold text-lg text-white">Personal Transformation Plan</div><div class="flex items-center gap-2"><button onclick="window.__printEl(\'hbBody\',\'Personal Transformation Plan\')" class="px-3 h-9 rounded-full bg-white text-sm font-semibold text-[#16201d]">🖨 Print</button><button onclick="__stopHbPoll();document.getElementById(\'hbOverlay\').remove()" class="w-9 h-9 rounded-full bg-white text-2xl leading-none text-[#16201d]">×</button></div></div><div id="hbBody">Loading…</div></div>';
     return ov;
   }
   function __renderHbPayload(j){
@@ -309,7 +309,7 @@
       const j=await r.json();
       if(!j.ok){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">Error: '+(j.error||'unknown')+'</div>'; __stopHbPoll(); return; }
       if(!j.handbook && j.status!=='generating'){
-        body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">No handbook yet for this patient. Click “Generate VBIS handbook” to start.</div>';
+        body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">No Personal Transformation Plan yet for this patient. Click “Generate Personal Transformation Plan” to start.</div>';
         __stopHbPoll(); return;
       }
       body.innerHTML=__renderHbPayload(j);
@@ -602,11 +602,11 @@
           <button onclick="bookAppt('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">+ Book appointment</button>
           <button onclick="generatePlan('${p.id}', false, this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ ${p.plan? 'Regenerate plan':'Generate plan'}</button>
           <button onclick="openPlan('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">📋 View plan</button>
-          <button onclick="openVbisHandbook('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">📋 View handbook</button>
+          <button onclick="openVbisHandbook('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">📋 View Personal Transformation Plan</button>
           <label id="hbGlp1Wrap" class="px-3 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm flex items-center gap-2 cursor-pointer hover:bg-[#f1f3f7]" title="Checked: the handbook includes GLP-1 medication guidance. Unchecked: lifestyle-only handbook (no GLP-1/semaglutide/tirzepatide mentions). Defaults from the patient's program.">
             <input type="checkbox" id="hbGlp1Toggle" ${/glp1|sema|tirz|oral|medicare_glp1/i.test(p.program||'')?'checked':''} class="accent-[#0a6cf5] w-4 h-4"> Include GLP-1
           </label>
-          <button onclick="genVbisHandbook('${p.id}', this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ Generate VBIS handbook</button>
+          <button onclick="genVbisHandbook('${p.id}', this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ Generate Personal Transformation Plan</button>
           <button onclick="portalLogin('${p.id}',${!!p.has_login})" ${p.email?'':'title="Add an email first"'} class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7]">🔑 ${p.has_login?'Reset portal password':'Create portal login'}</button>
           <button id="veeBtn" onclick="veeToggle('${p.id}','provider')" class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10 flex items-center gap-2"><span id="veeDot" class="w-2 h-2 rounded-full bg-[#0a6cf5]"></span>🎙 Discuss with Vee</button>
           <button onclick="veeToggle('${p.id}','patient')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7] flex items-center gap-2">👤 Patient review</button>
