@@ -462,6 +462,7 @@
       <span class="brand-name">Vitality<span class="sub">Bloom</span></span>
     </a>
     <div class="topbar-right">
+      <button type="button" onclick="bloomStartOver()" style="background:none;border:1px solid var(--line,#e6e9ee);border-radius:999px;padding:6px 14px;font-size:13px;font-weight:600;color:#4b5563;cursor:pointer;">↻ Start over</button>
       <div class="trust-pill" id="trustPill">MD-reviewed · Nevada only</div>
     </div>
   </div>
@@ -482,6 +483,9 @@ const CLOVER_MERCHANT_ID = 'ECK6FJ94X1JM1';
 const CLOVER_SDK_URL     = 'https://checkout.clover.com/sdk.js';
 // $1 TEST RUN (Fred runs it on his Clover). Flip BLOOM_TEST_DOLLAR=false to restore real pricing.
 const BLOOM_TEST_DOLLAR = true;
+// Red-flag safety screening no longer HARD-STOPS the async flow. Selections are still recorded and
+// flagged for Dr. DeBry to review; the patient continues all the way through to checkout.
+const BLOOM_RED_FLAG_HARDSTOP = false;
 // Clover: vault the tokenized card on file (no charge); Dr. DeBry charges it on approval.
 const SAVE_CARD_URL = 'https://quixotic-cat-492.convex.site/bloom-save-card';
 // TODO backend: Convex direct-to-storage upload, HIPAA
@@ -519,6 +523,13 @@ function save() {
   const { photoPreviews, ...persist } = state;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(persist));
 }
+
+// Clear all saved answers and restart the intake from the top (re-take the questionnaire).
+window.bloomStartOver = function() {
+  if (!confirm('Start the intake over from the beginning? This clears your current answers.')) return;
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  location.reload();
+};
 
 let currentIdx = 0;
 const root = document.getElementById('root');
@@ -840,7 +851,7 @@ const flow = [
     textareaField(p, 'familyHistory', 'Family history of hair loss', 'Parents, siblings, grandparents — or "none known"');
 
     p.appendChild(h('h2', { style: 'font-size:18px;' }, ['Safety screening']));
-    p.appendChild(h('p', { style: 'font-size:14px;color:var(--muted);margin:-8px 0 12px;' }, ['Check any that apply. These may require a live visit instead of async care.']));
+    p.appendChild(h('p', { style: 'font-size:14px;color:var(--muted);margin:-8px 0 12px;' }, ['Let us know if any of these apply. If none do, choose “None of these apply” to continue.']));
 
     state.redFlags = state.redFlags || [];
     const flagGroup = h('div', { class: 'opt-group' });
@@ -856,6 +867,15 @@ const flow = [
         { id: 'breastfeeding', label: 'Currently breastfeeding' }
       );
     }
+    // "None of these apply" — clear, deliberate way to proceed (mutually exclusive with the flags)
+    const noneBtn = h('button', { class: 'opt checkbox', type: 'button' }, [
+      h('span', { class: 'check' }),
+      h('div', { class: 'opt-body' }, [document.createTextNode('None of these apply')])
+    ]);
+    if (state.noRedFlags) noneBtn.classList.add('selected');
+    flagGroup.appendChild(noneBtn);
+
+    const flagBtns = [];
     allFlags.forEach(f => {
       const btn = h('button', { class: 'opt checkbox', type: 'button' }, [
         h('span', { class: 'check' }),
@@ -863,21 +883,31 @@ const flow = [
       ]);
       if ((state.redFlags || []).includes(f.id)) btn.classList.add('selected');
       btn.onclick = () => {
+        state.noRedFlags = false; noneBtn.classList.remove('selected');
         const arr = state.redFlags || [];
         const i = arr.indexOf(f.id);
         if (i >= 0) arr.splice(i, 1); else arr.push(f.id);
         state.redFlags = arr;
         save();
         btn.classList.toggle('selected');
+        validateCta();
       };
+      flagBtns.push(btn);
       flagGroup.appendChild(btn);
     });
+    noneBtn.onclick = () => {
+      state.noRedFlags = true; state.redFlags = []; save();
+      flagBtns.forEach(b => b.classList.remove('selected'));
+      noneBtn.classList.add('selected');
+      validateCta();
+    };
     p.appendChild(flagGroup);
 
     ctaBtn(p, {
       disabled: true,
       onClick: () => {
-        if (hasRedFlags(state)) return routeToLiveVisit();
+        // Hard-stop disabled by default — flags are recorded for Dr. DeBry but never block the flow.
+        if (BLOOM_RED_FLAG_HARDSTOP && hasRedFlags(state)) return routeToLiveVisit();
         next();
       }
     });
@@ -889,7 +919,8 @@ const flow = [
     (s.medicalHistory || '').trim().length >= 2 &&
     (s.currentMeds || '').trim().length >= 2 &&
     (s.allergies || '').trim().length >= 2 &&
-    (s.familyHistory || '').trim().length >= 2
+    (s.familyHistory || '').trim().length >= 2 &&
+    (!!s.noRedFlags || (s.redFlags || []).length > 0)
   },
 
   // 3. PHOTO UPLOAD ----------------------------------------------------------
