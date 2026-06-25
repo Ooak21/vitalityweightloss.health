@@ -60,7 +60,9 @@
   @keyframes inbodyPop{to{transform:translateX(0) scale(.8)}}
   #medicarePromo{transform:translateX(-115%) scale(.8);transform-origin:left center;animation:medPop .75s cubic-bezier(.34,1.32,.5,1) 1.4s forwards}
   @keyframes medPop{to{transform:translateX(0) scale(.8)}}
-  @media (prefers-reduced-motion:reduce){#inbodyPromo,#medicarePromo{transform:scale(.8);transform-origin:left center;animation:none}}
+  #bloomPromo{transform:translateX(-115%) scale(.8);transform-origin:left center;animation:bloomPop .75s cubic-bezier(.34,1.32,.5,1) 1.7s forwards}
+  @keyframes bloomPop{to{transform:translateX(0) scale(.8)}}
+  @media (prefers-reduced-motion:reduce){#inbodyPromo,#medicarePromo,#bloomPromo{transform:scale(.8);transform-origin:left center;animation:none}}
   /* interactive FAQ: question rail + swapping detail cards */
   .faqq{display:flex;align-items:center;justify-content:space-between;gap:.75rem;width:100%;text-align:left;border:1px solid #e6e9ee;border-radius:1rem;padding:.95rem 1.15rem;font-weight:600;color:#4b5563;background:#fff;transition:all .18s;cursor:pointer;line-height:1.3}
   .faqq:hover{border-color:rgba(10,108,245,.45);color:#16201d}
@@ -247,6 +249,15 @@
       <div class="text-sm text-[#4b5563] leading-snug">Eligible Medicare members get brand-name Wegovy or Zepbound for about $50 a month. <span class="text-[#0a6cf5] font-semibold whitespace-nowrap">Check eligibility &rarr;</span></div>
     </div>
   </a>
+  <!-- HERO PROMO 3: Vitality Bloom (hair loss, async), pops out from the left above the Medicare card -->
+  <a href="bloom.html" id="bloomPromo" class="hidden lg:flex absolute left-0 bottom-[73%] z-20 items-center gap-4 bg-white/95 backdrop-blur rounded-r-3xl shadow-2xl shadow-black/30 border border-[#e6e9ee] pl-5 pr-6 py-4 max-w-sm hover:bg-white transition-colors">
+    <img src="assets/logo-icon.png" alt="Vitality Bloom" class="shrink-0 h-14 w-auto self-center select-none pointer-events-none">
+    <div class="text-left">
+      <div class="inline-flex self-start items-center gap-1.5 mb-2 text-[11px] font-extrabold uppercase tracking-[0.1em] text-white bg-[#0a6cf5] rounded-full px-3 py-1">★ New</div>
+      <div class="font-display text-xl font-semibold text-[#16201d] leading-[1.15] mb-1.5">Vitality <span class="text-[#0a6cf5]">Bloom</span> hair loss.</div>
+      <div class="text-sm text-[#4b5563] leading-snug">Physician-reviewed hair regrowth, fully online. From $59/mo. <span class="text-[#0a6cf5] font-semibold whitespace-nowrap">Start now &rarr;</span></div>
+    </div>
+  </a>
   <div class="max-w-5xl mx-auto px-6 md:px-8 pt-24 pb-56 text-center relative z-10">
     <h1 class="font-display text-5xl md:text-7xl font-semibold tracking-[-3.5px] leading-[0.95] mb-6 text-white hero-text">
       Lose the weight.<br>
@@ -367,9 +378,9 @@
     <div class="text-center max-w-2xl mx-auto mb-12">
       <span class="text-xs font-semibold tracking-[0.18em] text-[#0a6cf5] uppercase">Programs</span>
       <h2 class="font-display text-3xl md:text-5xl font-semibold tracking-[-2px] mt-3 mb-3">Choose your path.</h2>
-      <p class="text-[#4b5563] text-lg">Start with the medication, the full transformation, or men's health. Every path is physician-led and reviewed within 24 hours.</p>
+      <p class="text-[#4b5563] text-lg">Start with the medication, the full transformation, men's health, or hair loss. Every path is physician-led and reviewed within 24 hours.</p>
     </div>
-    <div class="grid md:grid-cols-3 gap-6 items-stretch">
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
       <!-- GLP-1 -->
       <div class="lift border border-[#e6e9ee] rounded-3xl p-8 flex flex-col bg-white shadow-sm reveal">
         <span class="text-xs font-semibold tracking-[0.12em] text-[#0a6cf5] uppercase">Most popular</span>
@@ -401,6 +412,17 @@
           <div class="font-display text-2xl font-bold text-[#16201d]">Built for you</div>
           <div class="text-xs text-[#9aa0ab] mt-0.5">priced at your consultation</div>
           <a href="intake.html" class="mt-5 block text-center px-6 py-3 rounded-2xl bg-white border border-[#0a6cf5] text-[#0a6cf5] font-semibold text-sm hover:bg-[#eef4ff] transition">Become a patient &rarr;</a>
+        </div>
+      </div>
+      <!-- Vitality Bloom (hair loss, async) -->
+      <div class="lift border border-[#e6e9ee] rounded-3xl p-8 flex flex-col bg-white shadow-sm reveal">
+        <span class="text-xs font-semibold tracking-[0.12em] text-[#0a6cf5] uppercase">New &middot; Hair loss</span>
+        <h3 class="font-display text-2xl font-semibold mt-2 mb-3">Vitality Bloom</h3>
+        <p class="text-[#4b5563] text-[15px] mb-5">Physician-reviewed hair-loss treatment, fully online. Answer a few questions and upload photos; Dr. DeBry reviews on his own time. Your card isn't charged until you're approved.</p>
+        <div class="mt-auto">
+          <div class="flex items-baseline gap-2"><span class="font-display text-3xl font-bold text-[#16201d]">$59</span><span class="text-sm text-[#6b7280]">per month</span></div>
+          <div class="text-xs text-[#9aa0ab] mt-0.5">men $59 &middot; women $69 &middot; cancel anytime</div>
+          <a href="bloom.html" class="mt-5 block text-center px-6 py-3 rounded-2xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8] transition">Start Vitality Bloom &rarr;</a>
         </div>
       </div>
     </div>
@@ -1172,7 +1194,8 @@ function playVwl(){
   var ROWH=24, COPIES=30, STEP=5;
   var msgs=[
     {html:'<span class="font-semibold text-[#16201d]">Medicare $50/mo GLP-1 Bridge</span> <span class="text-[#16201d]/55">&middot; coming July 1</span>', href:'guides/semaglutide-medicare-nevada.html'},
-    {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Free webinar</span> <span class="text-[#16201d]/55">&middot; Thu Jun 25, 7PM PT with Dr. DeBry &rarr;</span>', href:'webinar.html'}
+    {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Free webinar</span> <span class="text-[#16201d]/55">&middot; Thu Jun 25, 7PM PT with Dr. DeBry &rarr;</span>', href:'webinar.html'},
+    {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Vitality Bloom</span> <span class="text-[#16201d]/55">&middot; new online hair-loss treatment &rarr;</span>', href:'bloom.html'}
   ];
   var reel=document.createElement('div'); reel.id='navSlotReel'; reel.style.willChange='transform';
   for(var i=0;i<COPIES;i++){ var m=msgs[i%2]; var a=document.createElement('a'); a.href=m.href;
