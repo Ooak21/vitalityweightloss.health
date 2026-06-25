@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Vitality Bloom — Hair Loss Telehealth</title>
+<meta name="description" content="Physician-reviewed online hair-loss treatment in Nevada. Vitality Bloom by Dr. Peter DeBry, MD. Your card is not charged until approved.">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+  :root {
+    --navy:#16201d;
+    --navy-2:#334155;
+    --ink:#16201d;
+    --muted:#6b7280;
+    --line:#e6e9ee;
+    --line-2:#eef0f4;
+    --cream:#ffffff;
+    --cream-2:#f7f8fa;
+    --bone:#ffffff;
+    --white:#ffffff;
+    --green:#0a6cf5;
+    --green-deep:#0856c8;
+    --green-soft:#bcd6ff;
+    --blue:#0a6cf5;
+    --accent:#0a6cf5;
+    --shadow-1: 0 1px 2px rgba(16,24,40,.06), 0 8px 24px rgba(16,24,40,.06);
+    --shadow-2: 0 2px 4px rgba(16,24,40,.08), 0 16px 40px rgba(16,24,40,.10);
+    --shadow-lift: 0 1px 0 rgba(16,24,40,.04), 0 2px 4px rgba(16,24,40,.04), 0 10px 30px rgba(16,24,40,.08);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin:0; padding:0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: #ffffff;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content:'';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(60% 50% at 50% 0%, rgba(10,108,245,.07), rgba(10,108,245,0) 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(255,255,255,.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid rgba(16,24,40,.06);
+  }
+  .topbar-inner {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .brand { display:flex; align-items:center; gap:10px; text-decoration:none; }
+  .brand-logo { height:30px; width:auto; flex-shrink:0; display:block; }
+  .brand-name {
+    font-family: 'Montserrat','Inter',sans-serif;
+    font-weight: 600;
+    font-size: 1.18rem;
+    color: var(--ink);
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    line-height: 1;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .brand-name .sub {
+    display: block;
+    font-weight: 500;
+    font-size: .5rem;
+    letter-spacing: .30em;
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+  .trust-pill {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: .04em;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .trust-pill::before {
+    content:''; width:6px; height:6px; border-radius:50%;
+    background: var(--green); box-shadow: 0 0 0 3px rgba(10,108,245,.18);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity:.6; } 50% { opacity:1; } }
+  .progress-bar {
+    position: fixed; top: 65px; left: 0; right: 0;
+    height: 2px;
+    background: rgba(16,24,40,.08);
+    z-index: 49;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #0856c8 0%, #0a6cf5 35%, #0a6cf5 100%);
+    width: 0;
+    transition: width .55s cubic-bezier(.65,.05,.36,1);
+    box-shadow: 0 0 12px rgba(10,108,245,.5), 0 0 24px rgba(10,108,245,.25);
+  }
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 56px 24px 140px;
+    min-height: calc(100vh - 64px);
+  }
+  .screen { animation: enter .55s cubic-bezier(.2,.7,.3,1); }
+  @keyframes enter {
+    from { opacity:0; transform: translateY(14px); }
+    to   { opacity:1; transform: none; }
+  }
+  .section-tag {
+    display: inline-flex; align-items:center; gap:8px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--green-deep);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  h1 {
+    font-family: 'Montserrat','Inter',sans-serif;
+    font-weight: 400;
+    font-size: clamp(30px, 5vw, 42px);
+    line-height: 1.1;
+    letter-spacing: -.025em;
+    color: var(--navy);
+    margin: 0 0 16px;
+  }
+  h1 em {
+    font-style: italic;
+    font-weight: 400;
+    background: linear-gradient(120deg, #0856c8 0%, #0a6cf5 30%, #0a6cf5 80%, #1f6db3 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  h2 {
+    font-family: 'Montserrat','Inter',sans-serif;
+    font-weight: 500;
+    font-size: 22px;
+    color: var(--navy);
+    margin: 32px 0 12px;
+  }
+  .lede {
+    font-size: 16.5px;
+    color: var(--muted);
+    margin: 0 0 32px;
+    line-height: 1.55;
+    max-width: 540px;
+  }
+  .back-btn {
+    background: none; border: 0;
+    color: var(--muted);
+    font-family: inherit; font-size: 13.5px; font-weight: 500;
+    padding: 4px 0;
+    cursor: pointer;
+    margin-bottom: 18px;
+    display: flex; width: fit-content; align-items: center; gap: 6px;
+  }
+  .back-btn:hover { color: var(--navy); }
+  .back-btn svg { width:14px; height:14px; }
+  .opt-group { display: flex; flex-direction: column; gap: 10px; margin: 12px 0 24px; }
+  .opt {
+    appearance:none; background: var(--white);
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 20px;
+    text-align: left; cursor: pointer;
+    font-family: inherit;
+    font-size: 15.5px;
+    font-weight: 500;
+    color: var(--ink);
+    display: flex; align-items: center; gap: 14px;
+    transition: all .2s cubic-bezier(.2,.7,.3,1);
+  }
+  .opt:hover { border-color: var(--navy); transform: translateY(-1px); box-shadow: var(--shadow-1); }
+  .opt .check {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid var(--line);
+    background: var(--cream-2);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .opt.checkbox .check { border-radius: 6px; }
+  .opt.selected { border-color: var(--navy); box-shadow: var(--shadow-1); }
+  .opt.selected .check { border-color: var(--green); background: var(--green); }
+  .opt.selected .check::after {
+    content:''; position: absolute;
+    left: 6px; top: 2px;
+    width: 6px; height: 11px;
+    border: solid white; border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .opt-body { flex:1; }
+  .opt-body small { display: block; font-size: 13px; color: var(--muted); margin-top: 3px; font-weight: 400; }
+  .field { display: block; margin-bottom: 14px; }
+  .field .lab {
+    display:block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    margin-bottom: 8px;
+  }
+  input[type="text"], input[type="email"], input[type="tel"],
+  input[type="number"], input[type="date"], textarea, select {
+    width: 100%;
+    background: var(--white);
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    font-family: inherit;
+    font-size: 16px;
+    color: var(--ink);
+    transition: all .18s;
+    -webkit-appearance: none;
+  }
+  textarea { resize: vertical; min-height: 100px; line-height: 1.5; }
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--navy);
+    box-shadow: 0 0 0 4px rgba(16,24,40,.08);
+  }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .cta {
+    display: inline-flex; align-items:center; justify-content:center; gap: 10px;
+    background: linear-gradient(135deg, #334155 0%, #16201d 100%);
+    color: var(--white);
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 15.5px;
+    padding: 17px 28px;
+    border-radius: 999px;
+    border: 0;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .22s cubic-bezier(.2,.7,.3,1);
+    margin-top: 20px;
+    box-shadow: 0 1px 2px rgba(16,24,40,.2), 0 6px 18px rgba(16,24,40,.16);
+    min-width: 220px;
+  }
+  .cta-green {
+    background: linear-gradient(135deg, #4ab33d 0%, #0a6cf5 35%, #0856c8 100%);
+    box-shadow: 0 10px 28px rgba(8,86,200,.32);
+  }
+  .cta:hover:not(:disabled) { transform: translateY(-1px); }
+  .cta:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+  .cta svg { width: 16px; height: 16px; }
+  .hero { text-align: center; padding-top: 24px; }
+  .hero-logo { width: auto; height: 84px; display:block; margin: 0 auto 28px; }
+  .hero h1 { font-size: clamp(36px, 6vw, 56px); margin-bottom: 18px; }
+  .hero .lede { margin-left: auto; margin-right: auto; font-size: 17px; max-width: 460px; }
+  .trust-row {
+    display: flex; flex-wrap: wrap; gap: 14px 24px;
+    justify-content: center;
+    margin: 36px 0 10px;
+    font-size: 12.5px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .trust-row span { display: flex; align-items: center; gap: 6px; }
+  .trust-row svg { width: 14px; height: 14px; color: var(--green-deep); }
+  .info {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--blue);
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 14px;
+    color: var(--ink);
+    margin: 22px 0;
+    line-height: 1.55;
+  }
+  .info.warn { border-left-color: var(--accent); background: linear-gradient(180deg, #fdfaf3 0%, var(--white) 100%); }
+  .info strong { color: var(--navy); }
+  .drug-cards { display:flex; flex-direction:column; gap: 14px; margin: 18px 0 12px; }
+  .drug-card {
+    background: var(--white);
+    border: 1.5px solid var(--line);
+    border-radius: 18px;
+    padding: 22px;
+    cursor: pointer;
+    transition: all .25s cubic-bezier(.2,.7,.3,1);
+    position: relative;
+  }
+  .drug-card:hover { border-color: var(--navy); transform: translateY(-2px); box-shadow: var(--shadow-2); }
+  .drug-card.selected {
+    border-color: var(--green);
+    background: linear-gradient(180deg, #f4faec 0%, #ffffff 60%);
+    box-shadow: 0 0 0 3px rgba(10,108,245,.18), var(--shadow-2);
+  }
+  .drug-card h3 {
+    font-family: 'Montserrat','Inter',sans-serif;
+    font-weight: 500;
+    font-size: 22px;
+    color: var(--navy);
+    margin: 0 0 6px;
+  }
+  .drug-card .from { font-size: 13px; color: var(--green-deep); font-weight: 600; margin-bottom: 12px; }
+  .drug-card .body { font-size: 14.5px; color: var(--ink); line-height: 1.55; }
+  .center-card {
+    text-align: center;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 44px 32px;
+    box-shadow: var(--shadow-lift);
+  }
+  .center-card .icon-wrap {
+    width: 72px; height: 72px;
+    margin: 0 auto 22px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, var(--green) 0%, var(--green-deep) 100%);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 24px rgba(10,108,245,.32);
+  }
+  .center-card .icon-wrap svg { width: 38px; height: 38px; color: white; }
+  .next-steps {
+    background: var(--cream-2);
+    border-radius: 14px;
+    padding: 18px 20px;
+    text-align: left;
+    margin: 24px 0;
+  }
+  .next-steps h3 {
+    font-family: 'Montserrat','Inter',sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    margin: 0 0 12px;
+    color: var(--navy);
+  }
+  .next-steps ol { margin: 0; padding-left: 18px; font-size: 14px; color: var(--ink); }
+  .next-steps li { margin-bottom: 8px; line-height: 1.55; }
+  .provider-block {
+    background: linear-gradient(180deg, #f7faff 0%, var(--white) 100%);
+    border: 1.5px solid var(--green-soft);
+    border-radius: 16px;
+    padding: 20px 22px;
+    margin: 24px 0;
+    text-align: left;
+  }
+  .provider-block .name {
+    font-family: 'Montserrat','Inter',sans-serif;
+    font-weight: 600;
+    font-size: 18px;
+    color: var(--navy);
+    margin-bottom: 6px;
+  }
+  .provider-block .meta { font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 16px 0 24px;
+  }
+  .photo-slot {
+    border: 1.5px dashed var(--line);
+    border-radius: 14px;
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+    position: relative;
+    background: var(--cream-2);
+    transition: border-color .15s;
+  }
+  .photo-slot:hover { border-color: var(--green); }
+  .photo-slot img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-slot .ph { font-size: 11px; color: var(--muted); text-align: center; padding: 8px; }
+  .photo-slot input { display: none; }
+  .consent-box {
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 20px;
+    background: var(--cream-2);
+    font-size: 14px;
+    line-height: 1.55;
+    margin: 16px 0;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .consent-row {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    margin-top: 14px;
+    cursor: pointer;
+    background: var(--white);
+  }
+  .consent-row.checked { border-color: var(--green); background: linear-gradient(180deg, #f4faec 0%, var(--white) 100%); }
+  .checkout-panel {
+    background: var(--white);
+    border: 1.5px solid var(--line);
+    border-radius: 18px;
+    padding: 22px;
+    margin: 20px 0;
+    box-shadow: var(--shadow-1);
+  }
+  .summary-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 14px; padding: 9px 0; border-bottom: 1px solid var(--line-2);
+  }
+  .summary-row.total { border-bottom: 0; padding-top: 14px; font-size: 17px; }
+  .summary-row.total b { font-family: 'Montserrat',sans-serif; color: var(--navy); }
+  .summary-row .m { color: var(--muted); }
+  .compliance-block {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink);
+    margin: 18px 0;
+    padding: 16px 18px;
+    background: var(--cream-2);
+    border-radius: 12px;
+    border: 1px solid var(--line-2);
+  }
+  .compliance-block p { margin: 0 0 12px; }
+  .compliance-block p:last-child { margin-bottom: 0; }
+  #payment-element { margin: 16px 0 4px; min-height: 42px; }
+  .pay-err { display: none; color: #c0392b; font-size: 13px; margin-top: 12px; }
+  .footer-note { text-align: center; margin-top: 24px; font-size: 11.5px; color: var(--muted); }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  @media (max-width: 520px) {
+    .topbar-inner { padding: 12px 18px; }
+    main { padding: 40px 20px 120px; }
+    .trust-pill { display: none; }
+    .cta { width: 100%; }
+    .row { grid-template-columns: 1fr; }
+    .photo-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="#" class="brand" aria-label="Vitality Bloom home" onclick="if(typeof go==='function'){go(0);}return false;">
+      <img class="brand-logo" src="assets/logo-icon.png" alt="Vitality Weight Loss" />
+      <span class="brand-name">Vitality<span class="sub">Bloom</span></span>
+    </a>
+    <div class="topbar-right">
+      <div class="trust-pill" id="trustPill">MD-reviewed · Nevada only</div>
+    </div>
+  </div>
+</header>
+
+<div class="progress-bar" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></div>
+
+<main id="root"></main>
+
+<script>
+// CONFIG ---------------------------------------------------------------------
+const CLINICIAN = { name: 'Peter DeBry, MD', npi: '1831137991' };
+const STRIPE_PK = 'pk_test_51TVDRaIoJ1VounaVLOfsROIt1bFHNGfqGLP5YnlTfEzQ47E5Q2PhDdUidrjnZAzUdDsf3P8AgEeA5tAoanewgJMg00dcrnW0Ys';
+// TODO backend: Stripe SetupIntent now, capture/charge on provider approval
+const STRIPE_SETUP_URL = 'https://quixotic-cat-492.convex.site/bloom-setup-intent';
+// TODO backend: Convex direct-to-storage upload, HIPAA
+const PHOTO_UPLOAD_URL = 'https://quixotic-cat-492.convex.site/bloom-photos';
+// TODO backend: persist intake + card authorization
+const INTAKE_SUBMIT_URL = 'https://quixotic-cat-492.convex.site/bloom-intake';
+
+const PLANS = {
+  men:      { id: 'men',      name: "Men's Hair Loss Plan",      price: 59,  label: '$59/month' },
+  women:    { id: 'women',    name: "Women's Hair Loss Plan",    price: 69,  label: '$69/month' },
+  premium:  { id: 'premium',  name: 'Premium Topical Plan',      price: 99,  label: '$99/month' }
+};
+
+// TODO confirm final list with Dr. DeBry
+const RED_FLAG_IDS = ['sudden_patchy', 'scalp_scarring', 'autoimmune'];
+const RED_FLAG_WOMEN_IDS = ['pregnant', 'trying_conceive', 'breastfeeding'];
+
+const US_STATES = [
+  ['AL','Alabama'],['AK','Alaska'],['AZ','Arizona'],['AR','Arkansas'],['CA','California'],
+  ['CO','Colorado'],['CT','Connecticut'],['DE','Delaware'],['FL','Florida'],['GA','Georgia'],
+  ['HI','Hawaii'],['ID','Idaho'],['IL','Illinois'],['IN','Indiana'],['IA','Iowa'],
+  ['KS','Kansas'],['KY','Kentucky'],['LA','Louisiana'],['ME','Maine'],['MD','Maryland'],
+  ['MA','Massachusetts'],['MI','Michigan'],['MN','Minnesota'],['MS','Mississippi'],['MO','Missouri'],
+  ['MT','Montana'],['NE','Nebraska'],['NV','Nevada'],['NH','New Hampshire'],['NJ','New Jersey'],
+  ['NM','New Mexico'],['NY','New York'],['NC','North Carolina'],['ND','North Dakota'],['OH','Ohio'],
+  ['OK','Oklahoma'],['OR','Oregon'],['PA','Pennsylvania'],['RI','Rhode Island'],['SC','South Carolina'],
+  ['SD','South Dakota'],['TN','Tennessee'],['TX','Texas'],['UT','Utah'],['VT','Vermont'],
+  ['VA','Virginia'],['WA','Washington'],['WV','West Virginia'],['WI','Wisconsin'],['WY','Wyoming']
+];
+
+// STATE ----------------------------------------------------------------------
+const STORAGE_KEY = 'vitality_bloom_intake_v1';
+const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+function save() {
+  const { photoPreviews, ...persist } = state;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(persist));
+}
+
+let currentIdx = 0;
+const root = document.getElementById('root');
+const progressFill = document.getElementById('progressFill');
+let stripe = null, elements = null, paymentEl = null;
+
+// HELPERS --------------------------------------------------------------------
+function h(tag, attrs, children) {
+  const el = document.createElement(tag);
+  if (attrs) for (const k in attrs) {
+    if (k === 'onClick') el.onclick = attrs[k];
+    else if (k === 'html') el.innerHTML = attrs[k];
+    else el.setAttribute(k, attrs[k]);
+  }
+  (children || []).forEach(c => {
+    if (typeof c === 'string') el.appendChild(document.createTextNode(c));
+    else if (c) el.appendChild(c);
+  });
+  return el;
+}
+
+function setProgress(p) { progressFill.style.width = (p * 100) + '%'; }
+
+function go(idx) {
+  if (idx < 0 || idx >= flow.length) return;
+  currentIdx = idx;
+  const screen = flow[idx];
+  if (screen.relevantWhen && !screen.relevantWhen(state)) return go(idx + 1);
+  render(screen);
+  setProgress((idx + 1) / flow.length);
+  save();
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function next() { go(currentIdx + 1); }
+
+function back() {
+  let i = currentIdx - 1;
+  while (i >= 0 && flow[i].relevantWhen && !flow[i].relevantWhen(state)) i--;
+  if (i >= 0) go(i);
+}
+
+function ctaArrow() {
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  s.setAttribute('viewBox', '0 0 24 24');
+  s.setAttribute('fill', 'none');
+  s.setAttribute('stroke', 'currentColor');
+  s.setAttribute('stroke-width', '2.2');
+  s.innerHTML = '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>';
+  return s;
+}
+
+function ctaBtn(parent, opts = {}) {
+  const btn = h('button', { class: 'cta cta-green', type: 'button' }, [
+    document.createTextNode(opts.text || 'Continue'),
+    ctaArrow()
+  ]);
+  btn.id = opts.id || 'mainCta';
+  btn.onclick = opts.onClick || next;
+  if (opts.disabled) btn.disabled = true;
+  parent.appendChild(btn);
+  validateCta();
+  return btn;
+}
+
+function validateCta() {
+  const cta = document.getElementById('mainCta');
+  if (!cta) return;
+  const screen = flow[currentIdx];
+  if (!screen || !screen.canContinue) { cta.disabled = false; return; }
+  cta.disabled = !screen.canContinue(state);
+}
+
+function textInput(parent, key, label, ph, type, opts = {}) {
+  const wrap = h('label', { class: 'field' }, [h('span', { class: 'lab' }, [label])]);
+  const input = h('input', { type: type || 'text', placeholder: ph || '', value: state[key] || '' });
+  input.oninput = e => { state[key] = e.target.value; save(); if (opts.onChange) opts.onChange(); validateCta(); };
+  if (opts.autocomplete) input.setAttribute('autocomplete', opts.autocomplete);
+  wrap.appendChild(input);
+  parent.appendChild(wrap);
+  return input;
+}
+
+function textareaField(parent, key, label, ph) {
+  const wrap = h('label', { class: 'field' }, [h('span', { class: 'lab' }, [label])]);
+  const ta = h('textarea', { rows: '3', placeholder: ph || '' });
+  ta.value = state[key] || '';
+  ta.oninput = e => { state[key] = e.target.value; save(); validateCta(); };
+  wrap.appendChild(ta);
+  parent.appendChild(wrap);
+}
+
+function singleSelectChip(parent, key, options, opts = {}) {
+  const group = h('div', { class: 'opt-group' });
+  options.forEach(o => {
+    const btn = h('button', { class: 'opt', type: 'button' }, [
+      h('span', { class: 'check' }),
+      h('div', { class: 'opt-body' }, [document.createTextNode(o.label)])
+    ]);
+    if (state[key] === o.value) btn.classList.add('selected');
+    btn.onclick = () => {
+      state[key] = o.value; save();
+      [...group.children].forEach(c => c.classList.remove('selected'));
+      btn.classList.add('selected');
+      if (opts.onSelect) opts.onSelect(o.value);
+      validateCta();
+    };
+    group.appendChild(btn);
+  });
+  parent.appendChild(group);
+}
+
+function render(screen) {
+  root.innerHTML = '';
+  const wrap = h('div', { class: 'screen' });
+  if (currentIdx > 0 && !screen.terminal) {
+    const b = h('button', { class: 'back-btn', type: 'button' });
+    b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Back';
+    b.onclick = back;
+    wrap.appendChild(b);
+  }
+  if (screen.section) {
+    const tag = h('div', { class: 'section-tag' });
+    tag.textContent = screen.section;
+    wrap.appendChild(tag);
+  }
+  screen.view(wrap);
+  root.appendChild(wrap);
+  if (screen.afterRender) screen.afterRender();
+}
+
+function hasRedFlags(s) {
+  const flags = s.redFlags || [];
+  const general = RED_FLAG_IDS.some(id => flags.includes(id));
+  const women = s.sex === 'female' && RED_FLAG_WOMEN_IDS.some(id => flags.includes(id));
+  return general || women;
+}
+
+function routeToLiveVisit() {
+  state.routedToLiveVisit = true;
+  state.redFlagTriggered = true;
+  save();
+  render({ id: 'live-visit', section: 'Next step', terminal: true, view: viewLiveVisit });
+  setProgress(1);
+}
+
+function routeToNonNV() {
+  state.routedToNonNV = true;
+  save();
+  render({ id: 'non-nv', section: 'Service area', terminal: true, view: viewNonNV });
+  setProgress(1);
+}
+
+function getAuthCheckboxText(price) {
+  return 'I authorize Vitality to charge this card $' + price + ' per month until I cancel, and I agree to the Terms and Telehealth Consent.';
+}
+
+function getSelectedPlan() {
+  return PLANS[state.plan] || PLANS.men;
+}
+
+// BRANCH VIEWS ---------------------------------------------------------------
+function viewLiveVisit(p) {
+  const card = h('div', { class: 'center-card' });
+  card.innerHTML = `
+    <div class="icon-wrap" style="background:linear-gradient(180deg,#3AA0E0 0%,#2c7eb3 100%);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+    </div>
+    <h1>Let's set up a live visit instead</h1>
+    <p class="lede" style="margin:0 auto 20px;max-width:480px;">Based on your answers, a synchronous video visit with Dr. DeBry is the safest next step. Our async hair-loss program isn't the right fit for this situation.</p>
+  `;
+  const steps = h('div', { class: 'next-steps' });
+  steps.innerHTML = `
+    <h3>Book a live telehealth visit</h3>
+    <ol>
+      <li>Schedule a video visit with <strong>Dr. Peter DeBry, MD</strong></li>
+      <li>Bring your photos and medical history to the appointment</li>
+      <li>Get a personalized treatment plan reviewed in real time</li>
+    </ol>
+  `;
+  card.appendChild(steps);
+  const btnWrap = h('div', { style: 'margin-top:8px;' });
+  const a = h('a', { class: 'cta cta-green', href: 'https://vitalityweightloss.health/contact/', target: '_blank', rel: 'noopener' }, [
+    document.createTextNode('Book a visit'),
+    ctaArrow()
+  ]);
+  btnWrap.appendChild(a);
+  card.appendChild(btnWrap);
+  p.appendChild(card);
+}
+
+function viewNonNV(p) {
+  const card = h('div', { class: 'center-card' });
+  card.innerHTML = `
+    <div class="icon-wrap" style="background:linear-gradient(180deg,#3AA0E0 0%,#2c7eb3 100%);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <h1>We currently serve Nevada only</h1>
+    <p class="lede" style="margin:0 auto 20px;max-width:480px;">Vitality Bloom is available to Nevada residents right now. We're expanding to more states soon — leave your email with our team and we'll notify you when we open in ${state.stateLabel || 'your state'}.</p>
+    <div class="info" style="text-align:left;margin:0 auto;max-width:480px;">
+      <strong>Flag:</strong> Non-Nevada resident attempted async hair-loss intake (state: ${state.state || 'unknown'}).
+    </div>
+  `;
+  const btnWrap = h('div', { style: 'margin-top:8px;' });
+  btnWrap.appendChild(h('a', { class: 'cta', href: 'mailto:support@vitalityweightloss.health', style: 'display:inline-flex;text-decoration:none;' }, [
+    document.createTextNode('Notify me when available'),
+    ctaArrow()
+  ]));
+  card.appendChild(btnWrap);
+  p.appendChild(card);
+}
+
+function viewSubmitted(p) {
+  const card = h('div', { class: 'center-card' });
+  card.innerHTML = `
+    <div class="icon-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <h1>Thanks — Dr. DeBry will review your information and you'll hear back.</h1>
+    <p class="lede" style="margin:0 auto;max-width:480px;">Your card has not been charged.</p>
+  `;
+  p.appendChild(card);
+}
+
+// STRIPE (authorize-only / SetupIntent) --------------------------------------
+function mountStripe() {
+  const mount = document.getElementById('payment-element');
+  if (!mount) return;
+  if (!STRIPE_PK) {
+    mount.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:14px;border:1px dashed var(--line);border-radius:11px;">Stripe publishable key required.</div>';
+    return;
+  }
+  const plan = getSelectedPlan();
+  stripe = Stripe(STRIPE_PK);
+  elements = stripe.elements({
+    mode: 'setup',
+    currency: 'usd',
+    appearance: {
+      theme: 'stripe',
+      variables: {
+        colorPrimary: '#0a6cf5',
+        fontFamily: 'Inter, sans-serif',
+        borderRadius: '11px',
+        colorText: '#16201d'
+      }
+    }
+  });
+  paymentEl = elements.create('payment', { layout: 'tabs' });
+  paymentEl.mount('#payment-element');
+}
+
+// FLOW -----------------------------------------------------------------------
+const flow = [
+  // 1. WELCOME ---------------------------------------------------------------
+  { id: 'welcome', view: (p) => {
+    const hero = h('div', { class: 'hero' });
+    hero.innerHTML = `
+      <img class="hero-logo" src="assets/logo-icon.png" alt="Vitality Bloom" />
+      <h1>Welcome to <em>Vitality Bloom</em></h1>
+      <p class="lede">Physician-reviewed online hair-loss treatment for Nevada residents. Complete a short intake, upload a few scalp photos, and Dr. Peter DeBry, MD reviews your case asynchronously. <strong>Your card is not charged until your treatment is approved.</strong></p>
+    `;
+    p.appendChild(hero);
+
+    const trust = h('div', { class: 'trust-row' });
+    trust.innerHTML = `
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg> MD-reviewed</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg> Nevada only</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg> Card saved, not charged until approved</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg> Cancel anytime</span>
+    `;
+    p.appendChild(trust);
+
+    const btnWrap = h('div', { style: 'text-align:center;margin-top:8px;' });
+    const b = h('button', { class: 'cta cta-green', type: 'button' }, [document.createTextNode('Begin intake'), ctaArrow()]);
+    b.onclick = next;
+    btnWrap.appendChild(b);
+    p.appendChild(btnWrap);
+
+    p.appendChild(h('div', { class: 'footer-note' }, [
+      'Dr. Peter DeBry, MD · NPI ' + CLINICIAN.npi + ' · Nevada-licensed · HIPAA-protected'
+    ]));
+  }},
+
+  // 2. QUESTIONNAIRE ---------------------------------------------------------
+  { id: 'questionnaire', section: 'Hair-loss intake', view: (p) => {
+    p.appendChild(h('h1', {}, ['Tell us about your hair loss']));
+    p.appendChild(h('p', { class: 'lede' }, ['This helps Dr. DeBry understand your history and whether async care is appropriate.']));
+
+    p.appendChild(h('h2', { style: 'margin-top:0;font-size:18px;' }, ['About you']));
+    singleSelectChip(p, 'sex', [
+      { label: 'Female', value: 'female' },
+      { label: 'Male', value: 'male' }
+    ], {
+      onSelect: (val) => {
+        if (val === 'male') {
+          state.redFlags = (state.redFlags || []).filter(id => !RED_FLAG_WOMEN_IDS.includes(id));
+          save();
+        }
+        go(currentIdx);
+      }
+    });
+
+    textInput(p, 'lossStarted', 'When did you notice hair loss?', 'e.g., 6 months ago, after pregnancy, gradually over 2 years');
+    textInput(p, 'lossPattern', 'What pattern are you seeing?', 'e.g., receding hairline, crown thinning, diffuse shedding, widening part');
+    textInput(p, 'goals', 'What are your treatment goals?', 'e.g., stop shedding, regrow hairline, thicken existing hair');
+
+    p.appendChild(h('h2', { style: 'font-size:18px;' }, ['Medical background']));
+    textareaField(p, 'medicalHistory', 'Relevant medical history', 'Conditions, surgeries, thyroid issues, etc. — or "none"');
+    textareaField(p, 'currentMeds', 'Current medications', 'Include dose if known — or "none"');
+    textareaField(p, 'allergies', 'Drug allergies', 'Drug + reaction — or "none"');
+    textareaField(p, 'familyHistory', 'Family history of hair loss', 'Parents, siblings, grandparents — or "none known"');
+
+    p.appendChild(h('h2', { style: 'font-size:18px;' }, ['Safety screening']));
+    p.appendChild(h('p', { style: 'font-size:14px;color:var(--muted);margin:-8px 0 12px;' }, ['Check any that apply. These may require a live visit instead of async care.']));
+
+    state.redFlags = state.redFlags || [];
+    const flagGroup = h('div', { class: 'opt-group' });
+    const allFlags = [
+      { id: 'sudden_patchy', label: 'Sudden or patchy hair loss' },
+      { id: 'scalp_scarring', label: 'Scalp scarring or visible skin changes on the scalp' },
+      { id: 'autoimmune', label: 'Signs of an autoimmune issue (e.g., joint pain with hair loss, other autoimmune diagnosis)' }
+    ];
+    if (state.sex === 'female') {
+      allFlags.push(
+        { id: 'pregnant', label: 'Currently pregnant' },
+        { id: 'trying_conceive', label: 'Trying to conceive' },
+        { id: 'breastfeeding', label: 'Currently breastfeeding' }
+      );
+    }
+    allFlags.forEach(f => {
+      const btn = h('button', { class: 'opt checkbox', type: 'button' }, [
+        h('span', { class: 'check' }),
+        h('div', { class: 'opt-body' }, [document.createTextNode(f.label)])
+      ]);
+      if ((state.redFlags || []).includes(f.id)) btn.classList.add('selected');
+      btn.onclick = () => {
+        const arr = state.redFlags || [];
+        const i = arr.indexOf(f.id);
+        if (i >= 0) arr.splice(i, 1); else arr.push(f.id);
+        state.redFlags = arr;
+        save();
+        btn.classList.toggle('selected');
+      };
+      flagGroup.appendChild(btn);
+    });
+    p.appendChild(flagGroup);
+
+    ctaBtn(p, {
+      disabled: true,
+      onClick: () => {
+        if (hasRedFlags(state)) return routeToLiveVisit();
+        next();
+      }
+    });
+  }, canContinue: (s) =>
+    (s.sex === 'female' || s.sex === 'male') &&
+    (s.lossStarted || '').trim().length >= 2 &&
+    (s.lossPattern || '').trim().length >= 2 &&
+    (s.goals || '').trim().length >= 2 &&
+    (s.medicalHistory || '').trim().length >= 2 &&
+    (s.currentMeds || '').trim().length >= 2 &&
+    (s.allergies || '').trim().length >= 2 &&
+    (s.familyHistory || '').trim().length >= 2
+  },
+
+  // 3. PHOTO UPLOAD ----------------------------------------------------------
+  { id: 'photos', section: 'Scalp photos', view: (p) => {
+    p.appendChild(h('h1', {}, ['Upload scalp photos']));
+    p.appendChild(h('p', { class: 'lede' }, ['Add 2–3 clear photos of thinning areas or your scalp. Good lighting, no filters. Photos are stored securely for Dr. DeBry\'s review.']));
+
+    state.photos = state.photos || [];
+    state.photoPreviews = state.photoPreviews || [];
+
+    const grid = h('div', { class: 'photo-grid' });
+    const labels = ['Top of head', 'Hairline / part', 'Thinning area'];
+    labels.forEach((label, idx) => {
+      const slot = h('label', { class: 'photo-slot' });
+      const input = h('input', { type: 'file', accept: 'image/*' });
+      const preview = state.photoPreviews[idx];
+      if (preview) {
+        const img = h('img', { src: preview, alt: label });
+        slot.appendChild(img);
+      } else {
+        slot.appendChild(h('span', { class: 'ph' }, ['+ ' + label]));
+      }
+      input.onchange = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const url = URL.createObjectURL(file);
+        state.photoPreviews[idx] = url;
+        state.photos[idx] = { name: file.name, size: file.size, type: file.type, slot: idx, uploading: true };
+        state.photo_storage_ids = state.photo_storage_ids || [];
+        save();
+        slot.innerHTML = '';
+        slot.appendChild(h('img', { src: url, alt: label }));
+        slot.appendChild(input);
+        validateCta();
+        // HIPAA direct-to-storage: one-time upload URL → POST the raw file → keep the storage id.
+        try {
+          const ur = await fetch(PHOTO_UPLOAD_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+          const uj = await ur.json();
+          if (uj && uj.uploadUrl) {
+            const put = await fetch(uj.uploadUrl, { method: 'POST', headers: { 'Content-Type': file.type }, body: file });
+            const pj = await put.json().catch(() => ({}));
+            if (pj && pj.storageId) {
+              state.photo_storage_ids[idx] = pj.storageId;
+              state.photos[idx].storageId = pj.storageId;
+              state.photos[idx].uploading = false;
+              save();
+            }
+          }
+        } catch (err) { console.warn('photo upload (demo continues):', err); }
+      };
+      slot.appendChild(input);
+      grid.appendChild(slot);
+    });
+    p.appendChild(grid);
+
+    p.appendChild(h('div', { class: 'info' }, [
+      'Photos are uploaded to secure HIPAA-eligible storage when the backend is connected. For this demo, previews stay in your browser session only.'
+    ]));
+
+    ctaBtn(p, { disabled: true, text: 'Continue' });
+  }, canContinue: (s) => (s.photos || []).filter(Boolean).length >= 1 },
+
+  // 4. ACCOUNT & LOCATION ----------------------------------------------------
+  { id: 'account', section: 'Your details', view: (p) => {
+    p.appendChild(h('h1', {}, ['Account & location']));
+    p.appendChild(h('p', { class: 'lede' }, ['We\'ll use this to create your patient record and reach you about your care.']));
+
+    const row = h('div', { class: 'row' });
+    const w1 = h('label', { class: 'field' }, [h('span', { class: 'lab' }, ['First name'])]);
+    const i1 = h('input', { type: 'text', value: state.firstName || '', autocomplete: 'given-name' });
+    i1.oninput = e => { state.firstName = e.target.value; save(); validateCta(); };
+    w1.appendChild(i1);
+    const w2 = h('label', { class: 'field' }, [h('span', { class: 'lab' }, ['Last name'])]);
+    const i2 = h('input', { type: 'text', value: state.lastName || '', autocomplete: 'family-name' });
+    i2.oninput = e => { state.lastName = e.target.value; save(); validateCta(); };
+    w2.appendChild(i2);
+    row.appendChild(w1); row.appendChild(w2);
+    p.appendChild(row);
+
+    textInput(p, 'email', 'Email', 'you@email.com', 'email', { autocomplete: 'email' });
+    textInput(p, 'phone', 'Phone', '(702) 555-0123', 'tel', { autocomplete: 'tel' });
+
+    const stateWrap = h('label', { class: 'field' }, [h('span', { class: 'lab' }, ['State'])]);
+    const sel = h('select', {});
+    const def = h('option', { value: '' }, ['Select your state']);
+    sel.appendChild(def);
+    US_STATES.forEach(([code, name]) => {
+      const opt = h('option', { value: code }, [name]);
+      if (state.state === code) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.onchange = e => {
+      state.state = e.target.value;
+      state.stateLabel = e.target.options[e.target.selectedIndex].text;
+      save();
+      validateCta();
+    };
+    stateWrap.appendChild(sel);
+    p.appendChild(stateWrap);
+
+    ctaBtn(p, {
+      disabled: true,
+      onClick: () => {
+        if (state.state !== 'NV') return routeToNonNV();
+        next();
+      }
+    });
+  }, canContinue: (s) =>
+    (s.firstName || '').length >= 1 &&
+    (s.lastName || '').length >= 1 &&
+    /.+@.+\..+/.test(s.email || '') &&
+    (s.phone || '').replace(/\D/g, '').length >= 10 &&
+    !!s.state
+  },
+
+  // 5. IDENTITY CHECK --------------------------------------------------------
+  { id: 'identity', section: 'Identity verification', view: (p) => {
+    p.appendChild(h('h1', {}, ['Confirm your identity']));
+    p.appendChild(h('p', { class: 'lede' }, ['Federal telehealth rules require us to verify who you are before treatment.']));
+
+    textInput(p, 'dob', 'Date of birth', '', 'date', { autocomplete: 'bday' });
+
+    const phoneWrap = h('label', { class: 'field' }, [h('span', { class: 'lab' }, ['Confirm phone number (second identifier)'])]);
+    const phoneIn = h('input', { type: 'tel', value: state.phoneConfirm || state.phone || '', autocomplete: 'tel' });
+    phoneIn.oninput = e => { state.phoneConfirm = e.target.value; save(); validateCta(); };
+    phoneWrap.appendChild(phoneIn);
+    p.appendChild(phoneWrap);
+    p.appendChild(h('p', { style: 'font-size:13px;color:var(--muted);margin:-6px 0 16px;' }, [
+      'Re-enter the phone number you provided earlier. This serves as your second identifier alongside date of birth.'
+    ]));
+
+    const provider = h('div', { class: 'provider-block' });
+    provider.innerHTML = `
+      <div class="name">Dr. Peter DeBry, MD</div>
+      <div class="meta">
+        Board-certified physician · Nevada-licensed<br>
+        NPI ${CLINICIAN.npi}<br>
+        Your intake will be reviewed by Dr. DeBry before any treatment is prescribed or any charge is made.
+      </div>
+    `;
+    p.appendChild(provider);
+
+    ctaBtn(p, { disabled: true });
+  }, canContinue: (s) =>
+    (s.dob || '').length === 10 &&
+    (s.phoneConfirm || '').replace(/\D/g, '') === (s.phone || '').replace(/\D/g, '') &&
+    (s.phoneConfirm || '').replace(/\D/g, '').length >= 10
+  },
+
+  // 6. TELEHEALTH CONSENT ----------------------------------------------------
+  { id: 'consent', section: 'Telehealth consent', view: (p) => {
+    p.appendChild(h('h1', {}, ['Telehealth consent']));
+    p.appendChild(h('p', { class: 'lede' }, ['Please read and agree before continuing to checkout.']));
+
+    const box = h('div', { class: 'consent-box' });
+    box.innerHTML = `
+      <p><strong>Informed telehealth consent — final language pending counsel</strong></p>
+      <p>You are consenting to asynchronous (store-and-forward) telehealth with Dr. Peter DeBry, MD for evaluation of hair loss. This is not for medical emergencies — call 911 for emergencies.</p>
+      <p>Your health information is protected under HIPAA and Nevada telehealth law (NRS 629.515). Completing this intake does not guarantee a prescription. Dr. DeBry may determine that treatment is not appropriate or that a live visit is required.</p>
+      <p>By checking the box below, you consent to telehealth evaluation of your submitted information and photos.</p>
+    `;
+    p.appendChild(box);
+
+    state.telehealthConsent = !!state.telehealthConsent;
+    const row = h('label', { class: 'consent-row' + (state.telehealthConsent ? ' checked' : '') });
+    const cb = h('input', { type: 'checkbox' });
+    cb.checked = state.telehealthConsent;
+    cb.onchange = e => {
+      state.telehealthConsent = e.target.checked;
+      row.classList.toggle('checked', e.target.checked);
+      save();
+      validateCta();
+    };
+    row.appendChild(cb);
+    row.appendChild(h('div', { style: 'font-size:14px;line-height:1.5;' }, [
+      'I have read the telehealth consent and agree to asynchronous care with Dr. Peter DeBry, MD.'
+    ]));
+    p.appendChild(row);
+
+    ctaBtn(p, {
+      disabled: true,
+      onClick: () => {
+        state.telehealthConsentAt = new Date().toISOString();
+        save();
+        next();
+      }
+    });
+  }, canContinue: (s) => !!s.telehealthConsent },
+
+  // 7. PRODUCT SELECT + CHECKOUT ---------------------------------------------
+  { id: 'checkout', section: 'Plan & payment', view: (p) => {
+    p.appendChild(h('h1', {}, ['Choose your plan']));
+    p.appendChild(h('p', { class: 'lede' }, ['Select a monthly plan. Cash pay — cancel anytime. Your card is saved for authorization only; you are not charged until Dr. DeBry approves your treatment.']));
+
+    if (!state.plan) state.plan = state.sex === 'female' ? 'women' : 'men';
+
+    const cards = h('div', { class: 'drug-cards' });
+    Object.values(PLANS).forEach(plan => {
+      const card = h('div', { class: 'drug-card' + (state.plan === plan.id ? ' selected' : '') }, [
+        h('h3', {}, [plan.name]),
+        h('div', { class: 'from' }, [plan.label + ' · monthly subscription, cancel anytime.']),
+        h('div', { class: 'body' }, ['Cash pay · billed monthly · cancel anytime'])
+      ]);
+      card.onclick = () => {
+        state.plan = plan.id;
+        save();
+        [...cards.querySelectorAll('.drug-card')].forEach(x => x.classList.remove('selected'));
+        card.classList.add('selected');
+        syncCheckoutCopy();
+        syncAuthCheckbox();
+      };
+      cards.appendChild(card);
+    });
+    p.appendChild(cards);
+
+    const panel = h('div', { class: 'checkout-panel', id: 'checkoutPanel' });
+    panel.innerHTML = `
+      <div class="summary-row"><span class="m" id="sumName">Plan</span><span id="sumPrice">$59/month</span></div>
+      <div class="summary-row total"><span class="m">Monthly subscription, cancel anytime.</span><b id="sumTotal">$59/month</b></div>
+    `;
+    p.appendChild(panel);
+
+    const compliance = h('div', { class: 'compliance-block', id: 'complianceBlock' });
+    compliance.innerHTML = `
+      <p><strong>A licensed physician reviews your information first. Your card is not charged and nothing ships unless your treatment is approved. If you are not approved, you will not be charged.</strong></p>
+      <p id="renewalDisclosure"></p>
+      <p><strong>Medications are cash pay and not billed to insurance.</strong></p>
+    `;
+    p.appendChild(compliance);
+
+    p.appendChild(h('div', { class: 'field' }, [h('span', { class: 'lab' }, ['Card details (authorize only — not charged now)'])]));
+    p.appendChild(h('div', { id: 'payment-element' }));
+
+    state.authConsent = !!state.authConsent;
+    const authRow = h('label', { class: 'consent-row' + (state.authConsent ? ' checked' : ''), id: 'authRow' });
+    const authCb = h('input', { type: 'checkbox', id: 'authCb' });
+    authCb.checked = state.authConsent;
+    authCb.onchange = e => {
+      state.authConsent = e.target.checked;
+      authRow.classList.toggle('checked', e.target.checked);
+      save();
+      validateCta();
+    };
+    authRow.appendChild(authCb);
+    const authText = h('div', { id: 'authText', style: 'font-size:14px;line-height:1.5;' });
+    authRow.appendChild(authText);
+    p.appendChild(authRow);
+
+    const err = h('div', { class: 'pay-err', id: 'payErr' });
+    p.appendChild(err);
+
+    ctaBtn(p, {
+      id: 'submitBtn',
+      text: 'Submit intake & authorize card',
+      disabled: true,
+      onClick: submitCheckout
+    });
+
+    p.appendChild(h('div', { class: 'footer-note' }, [
+      'Encrypted · processed by Stripe · Authorization only until provider approval'
+    ]));
+  }, canContinue: (s) => !!s.authConsent && !!s.plan, afterRender: () => {
+    syncCheckoutCopy();
+    syncAuthCheckbox();
+    mountStripe();
+  }}
+];
+
+function syncCheckoutCopy() {
+  const plan = getSelectedPlan();
+  const sumName = document.getElementById('sumName');
+  const sumPrice = document.getElementById('sumPrice');
+  const sumTotal = document.getElementById('sumTotal');
+  const renewal = document.getElementById('renewalDisclosure');
+  if (sumName) sumName.textContent = plan.name;
+  if (sumPrice) sumPrice.textContent = '$' + plan.price + '/month';
+  if (sumTotal) sumTotal.textContent = '$' + plan.price + '/month';
+  if (renewal) {
+    renewal.textContent = 'Your selected plan is $' + plan.price + '/month. It bills automatically every month until you cancel. To cancel, email support@vitalityweightloss.health or use the patient portal.';
+  }
+}
+
+function syncAuthCheckbox() {
+  const plan = getSelectedPlan();
+  const authText = document.getElementById('authText');
+  if (authText) authText.textContent = getAuthCheckboxText(plan.price);
+}
+
+async function submitCheckout() {
+  const btn = document.getElementById('submitBtn');
+  const err = document.getElementById('payErr');
+  if (!btn) return;
+  err.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  state.submittedAt = new Date().toISOString();
+  state.cardAuthorized = false;
+  save();
+
+  try {
+    if (elements && stripe) {
+      const { error: submitErr } = await elements.submit();
+      if (submitErr) throw new Error(submitErr.message);
+
+      // TODO backend: Stripe SetupIntent now, capture/charge on provider approval
+      let setupDone = false;
+      try {
+        const r = await fetch(STRIPE_SETUP_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: state.email,
+            plan: state.plan,
+            amountCents: getSelectedPlan().price * 100,
+            firstName: state.firstName,
+            lastName: state.lastName
+          })
+        });
+        const j = await r.json().catch(() => ({}));
+        // link the saved card to this submission so Dr. DeBry can charge it on approval
+        if (j.customerId) state.stripe_customer_id = j.customerId;
+        if (j.setupIntentId) state.stripe_setup_intent_id = j.setupIntentId;
+        if (j.clientSecret) {
+          const { error: confErr } = await stripe.confirmSetup({
+            elements,
+            clientSecret: j.clientSecret,
+            confirmParams: { return_url: window.location.href.split('?')[0] + '?setup=1' },
+            redirect: 'if_required'
+          });
+          if (confErr) throw new Error(confErr.message);
+          setupDone = true;
+        }
+      } catch (fetchErr) {
+        console.warn('Stripe setup placeholder (demo continues):', fetchErr);
+      }
+      if (!setupDone) await new Promise(res => setTimeout(res, 900));
+      state.cardAuthorized = true;
+      state.cardAuthorizedAt = new Date().toISOString();
+    }
+
+    // TODO backend: persist intake + card authorization
+    try {
+      await fetch(INTAKE_SUBMIT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...state,
+          clinician: CLINICIAN,
+          planDetails: getSelectedPlan()
+        })
+      });
+    } catch (e) { console.warn('intake submit placeholder (demo continues):', e); }
+
+    save();
+    render({ id: 'submitted', section: 'Submitted', terminal: true, view: viewSubmitted });
+    setProgress(1);
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Submit intake & authorize card';
+    err.textContent = (e && e.message) || 'Could not save card authorization. Please try again.';
+    err.style.display = 'block';
+  }
+}
+
+// BOOT -----------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+  const qs = new URLSearchParams(location.search);
+  if (qs.get('setup') === '1') {
+    state.cardAuthorized = true;
+    state.cardAuthorizedAt = new Date().toISOString();
+    save();
+    render({ id: 'submitted', section: 'Submitted', terminal: true, view: viewSubmitted });
+    setProgress(1);
+    return;
+  }
+  if (state.routedToLiveVisit) {
+    render({ id: 'live-visit', section: 'Next step', terminal: true, view: viewLiveVisit });
+    setProgress(1);
+    return;
+  }
+  if (state.routedToNonNV) {
+    render({ id: 'non-nv', section: 'Service area', terminal: true, view: viewNonNV });
+    setProgress(1);
+    return;
+  }
+  go(0);
+});
+</script>
+</body>
+</html>

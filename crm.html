@@ -102,6 +102,7 @@
     <button onclick="openAddPatient()" class="px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add patient</button>
     <button id="importBtn" onclick="importScan()" class="px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">⬆ Import InBody scan</button>
     <button onclick="openRx()" title="GLP-1 medication reference (FDA)" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7]">℞ Med reference</button>
+    <button onclick="openBloomQueue()" title="Vitality Bloom hair-loss review queue" class="px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">🌱 Bloom queue</button>
     <input id="search" class="field w-56 hidden md:block" placeholder="Search patients…">
     <a href="admin.html" class="text-xs text-[#6b7280] hover:text-[#16201d]" title="Admin & Operations (admins only)">⚙ Admin</a>
     <button onclick="(window.__vca?window.__vca.signOut():(window.__vitSb?window.__vitSb.auth.signOut():Promise.resolve())).then(()=>location.replace('login.html'))" class="text-xs text-[#6b7280] hover:text-[#16201d]">Sign out</button>
@@ -339,6 +340,66 @@
       await __pollHandbook(pid);
     }catch(e){ alert('Error: '+e.message); }
     finally{ if(btn){ btn.disabled=false; btn.textContent=o; } }
+  };
+
+  // ---- Vitality Bloom — provider review queue (PHI shown to providers; admins see redacted stubs) ----
+  const besc=(s)=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  window.openBloomQueue = async function(){
+    let ov=document.getElementById('bloomOverlay');
+    if(!ov){ ov=document.createElement('div'); ov.id='bloomOverlay'; ov.className='fixed inset-0 z-[70] bg-black/40 overflow-y-auto'; ov.onclick=e=>{ if(e.target===ov) ov.remove(); }; document.body.appendChild(ov); }
+    ov.innerHTML='<div class="max-w-3xl mx-auto my-8 px-3"><div class="flex justify-between items-center mb-3"><div class="font-display font-semibold text-lg text-white">🌱 Vitality Bloom — review queue</div><button onclick="document.getElementById(\'bloomOverlay\').remove()" class="w-9 h-9 rounded-full bg-white text-2xl leading-none text-[#16201d]">×</button></div><div id="bloomBody"><div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Loading…</div></div></div>';
+    await loadBloomQueue();
+  };
+  async function loadBloomQueue(){
+    const body=document.getElementById('bloomBody'); if(!body) return;
+    try{
+      const r=await fetch(CONVEX_URL+'/bloom-queue',{method:'POST',headers:await convexHeaders(),body:'{}'});
+      const j=await r.json();
+      if(!j.ok){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">'+besc(j.error||'Could not load')+'</div>'; return; }
+      window.__bloomSubs=j.submissions||[];
+      if(!window.__bloomSubs.length){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">No submissions yet.</div>'; return; }
+      const badge=(s)=>({pending_review:'bg-amber-100 text-amber-800',approved:'bg-emerald-100 text-emerald-800',declined:'bg-rose-100 text-rose-700',needs_visit:'bg-blue-100 text-blue-800'}[s]||'bg-gray-100 text-gray-700');
+      const lbl=(s)=>({pending_review:'Pending review',approved:'Approved',declined:'Declined',needs_visit:'Needs live visit'}[s]||s);
+      body.innerHTML='<div class="space-y-2">'+window.__bloomSubs.map(x=>{
+        const who=x.locked?('Patient #'+besc(x.ref)):besc((((x.first_name||'')+' '+(x.last_name||'')).trim()||'(no name)')+' · '+(x.email||''));
+        const flags=(x.red_flag?'<span class="ml-1 text-[11px] font-semibold text-rose-600">⚑ red flag</span>':'')+(x.non_nevada?'<span class="ml-1 text-[11px] font-semibold text-amber-700">⚑ non-NV</span>':'');
+        return '<div class="bg-white rounded-2xl border border-[#e6e9ee] p-4 flex items-center justify-between gap-3 '+(x.locked?'':'cursor-pointer hover:border-[#0a6cf5]')+'"'+(x.locked?'':' onclick="openBloomDetail(\''+x.id+'\')"')+'>'+
+          '<div><div class="font-semibold text-[#16201d]">'+who+' '+flags+'</div><div class="text-xs text-[#6b7280] mt-0.5">'+besc(x.plan||'')+' · $'+((x.plan_price_cents||0)/100).toFixed(0)+'/mo'+(x.locked?' · provider-only':'')+'</div></div>'+
+          '<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full '+badge(x.status)+'">'+lbl(x.status)+'</span>'+
+        '</div>';
+      }).join('')+'</div>';
+    }catch(e){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">Error: '+besc(e.message)+'</div>'; }
+  }
+  window.openBloomDetail=function(id){
+    const x=(window.__bloomSubs||[]).find(s=>s.id===id); if(!x){ loadBloomQueue(); return; }
+    const body=document.getElementById('bloomBody'); if(!body) return;
+    const row=(l,v)=>v?'<div class="flex gap-2 text-sm"><span class="text-[#6b7280] w-32 shrink-0">'+l+'</span><span class="text-[#16201d]">'+besc(v)+'</span></div>':'';
+    const ans=x.answers?'<pre class="text-xs bg-[#f7f8fa] border border-[#eef0f4] rounded-xl p-3 whitespace-pre-wrap">'+besc(JSON.stringify(x.answers,null,2))+'</pre>':'<div class="text-sm text-[#9aa0ab]">No answers recorded.</div>';
+    const photos=(x.photos||[]).map(u=>'<a href="'+besc(u)+'" target="_blank"><img src="'+besc(u)+'" class="h-28 w-28 object-cover rounded-xl border border-[#e6e9ee]"></a>').join('')||'<div class="text-sm text-[#9aa0ab]">No photos uploaded.</div>';
+    const decided=x.status!=='pending_review';
+    const canDecide=!decided&&!x.red_flag&&!x.non_nevada;
+    const price='$'+((x.plan_price_cents||0)/100).toFixed(0);
+    body.innerHTML='<div class="bg-white rounded-2xl p-6 space-y-4">'+
+      '<button onclick="loadBloomQueue()" class="text-xs text-[#0a6cf5] font-semibold">&larr; Back to queue</button>'+
+      '<div class="font-display text-xl font-semibold">'+besc(((x.first_name||'')+' '+(x.last_name||'')).trim()||'Patient')+'</div>'+
+      '<div class="space-y-1">'+row('Email',x.email)+row('Phone',x.phone)+row('DOB',x.dob)+row('State',x.state)+row('Sex',x.sex)+row('Plan',(x.plan||'')+' · '+price+'/mo')+row('Consent',x.consent_signed_at)+row('Card on file',x.card_on_file?'Yes (authorize-only, not yet charged)':'No')+'</div>'+
+      (x.red_flag?'<div class="rounded-xl bg-rose-50 border border-rose-200 p-3 text-sm text-rose-700">⚑ Red flag — routed to a live visit. Not eligible for async approval.</div>':'')+
+      (x.non_nevada?'<div class="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">⚑ Outside Nevada — not serviceable async.</div>':'')+
+      '<div><div class="text-xs font-semibold uppercase tracking-wide text-[#0a6cf5] mb-1">Questionnaire</div>'+ans+'</div>'+
+      '<div><div class="text-xs font-semibold uppercase tracking-wide text-[#0a6cf5] mb-1">Scalp photos</div><div class="flex gap-2 flex-wrap">'+photos+'</div></div>'+
+      (decided?'<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 text-sm">Decision: <b>'+besc(x.status)+'</b>'+(x.decided_by?' by '+besc(x.decided_by):'')+(x.decision_note?' · '+besc(x.decision_note):'')+'</div>':'')+
+      (canDecide?'<div class="flex gap-2 pt-2"><button onclick="bloomDecide(\''+x.id+'\',\'approve\')" class="px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700">✓ Approve & charge '+price+'</button><button onclick="bloomDecide(\''+x.id+'\',\'decline\')" class="px-5 py-2.5 rounded-xl border border-rose-300 text-rose-700 font-semibold text-sm hover:bg-rose-50">Decline (no charge)</button></div>':'')+
+    '</div>';
+  };
+  window.bloomDecide=async function(id,decision){
+    if(decision==='approve'&&!confirm('Approve and charge the saved card now? This starts the monthly subscription.')) return;
+    if(decision==='decline'&&!confirm('Decline this submission? The card will not be charged.')) return;
+    try{
+      const r=await fetch(CONVEX_URL+'/bloom-decide',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({id,decision})});
+      const j=await r.json();
+      if(!j.ok){ alert('Failed: '+(j.error||'unknown')); return; }
+      await loadBloomQueue();
+    }catch(e){ alert('Error: '+besc(e.message)); }
   };
 
   // ---- Print helper: clean window with the rendered content, force-open <details>, print ----
