@@ -770,6 +770,25 @@ const TEST_DOLLAR        = new URLSearchParams(location.search).get('test') === 
 const FORCE_WEBVIEW      = new URLSearchParams(location.search).get('webview') === '1';
 let __cloverSdkPromise = null;
 
+// Clean TEST path: visiting glp1.html?test=1 charges $1 (refundable) instead of the
+// real $149+ price. This banner makes that unmistakable during a walkthrough. It only
+// renders in test mode, so the live flow is never touched.
+if (TEST_DOLLAR) {
+  (function () {
+    function addBadge() {
+      if (document.getElementById('vwl-testbar')) return;
+      var bar = document.createElement('div');
+      bar.id = 'vwl-testbar';
+      bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:100000;background:#0a7a3d;color:#fff;font:600 13px/1.45 Inter,system-ui,sans-serif;text-align:center;padding:9px 16px;letter-spacing:.01em;box-shadow:0 2px 14px rgba(0,0,0,.2)';
+      bar.innerHTML = '🧪 TEST MODE · your card is charged <strong>$1</strong> (refundable), not the real price · remove <code style="background:rgba(255,255,255,.2);padding:1px 6px;border-radius:5px">?test=1</code> from the URL for live pricing';
+      document.body.appendChild(bar);
+      document.body.style.paddingTop = bar.offsetHeight + 'px';
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addBadge);
+    else addBadge();
+  })();
+}
+
 // Webview / iframe-hostile browser detection for Clover embedded fields.
 // These environments (in-app email browsers, FB/IG/Line/Yahoo/Gmail WKWebView) break
 // the Clover SDK iframe + postMessage + createToken. We route them to top-level
