@@ -585,7 +585,8 @@ function ctaBtn(parent, opts = {}) {
 }
 
 function validateCta() {
-  const cta = document.getElementById('mainCta');
+  // checkout uses id 'submitBtn'; every other screen uses 'mainCta' — handle both.
+  const cta = document.getElementById('mainCta') || document.getElementById('submitBtn');
   if (!cta) return;
   const screen = flow[currentIdx];
   if (!screen || !screen.canContinue) { cta.disabled = false; return; }
