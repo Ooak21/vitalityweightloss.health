@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://js.stripe.com/v3/"></script>
+<!-- Clover SDK is loaded on demand at the checkout step (loadCloverSdk) -->
 <style>
   :root {
     --navy:#16201d;
@@ -474,18 +474,25 @@
 <script>
 // CONFIG ---------------------------------------------------------------------
 const CLINICIAN = { name: 'Peter DeBry, MD', npi: '1831137991' };
-const STRIPE_PK = 'pk_test_51TVDRaIoJ1VounaVLOfsROIt1bFHNGfqGLP5YnlTfEzQ47E5Q2PhDdUidrjnZAzUdDsf3P8AgEeA5tAoanewgJMg00dcrnW0Ys';
-// TODO backend: Stripe SetupIntent now, capture/charge on provider approval
-const STRIPE_SETUP_URL = 'https://quixotic-cat-492.convex.site/bloom-setup-intent';
+// Clover is the live payment rail (same prod merchant account as the GLP-1 flow). The card is
+// tokenized in Clover's iframe (clv_ source), vaulted card-on-file with NO charge, and charged
+// only when Dr. DeBry approves. Publishable key + merchant id are safe in client code.
+const CLOVER_PUBLIC_KEY  = 'f9d8910605425172a0b627094e16f27b';
+const CLOVER_MERCHANT_ID = 'ECK6FJ94X1JM1';
+const CLOVER_SDK_URL     = 'https://checkout.clover.com/sdk.js';
+// $1 TEST RUN (Fred runs it on his Clover). Flip BLOOM_TEST_DOLLAR=false to restore real pricing.
+const BLOOM_TEST_DOLLAR = true;
+// Clover: vault the tokenized card on file (no charge); Dr. DeBry charges it on approval.
+const SAVE_CARD_URL = 'https://quixotic-cat-492.convex.site/bloom-save-card';
 // TODO backend: Convex direct-to-storage upload, HIPAA
 const PHOTO_UPLOAD_URL = 'https://quixotic-cat-492.convex.site/bloom-photos';
 // TODO backend: persist intake + card authorization
 const INTAKE_SUBMIT_URL = 'https://quixotic-cat-492.convex.site/bloom-intake';
 
 const PLANS = {
-  men:      { id: 'men',      name: "Men's Hair Loss Plan",      price: 59,  label: '$59/month' },
-  women:    { id: 'women',    name: "Women's Hair Loss Plan",    price: 69,  label: '$69/month' },
-  premium:  { id: 'premium',  name: 'Premium Topical Plan',      price: 99,  label: '$99/month' }
+  men:      { id: 'men',      name: "Men's Hair Loss Plan",      price: BLOOM_TEST_DOLLAR ? 1 : 59,  label: BLOOM_TEST_DOLLAR ? '$1/month (test)' : '$59/month' },
+  women:    { id: 'women',    name: "Women's Hair Loss Plan",    price: BLOOM_TEST_DOLLAR ? 1 : 69,  label: BLOOM_TEST_DOLLAR ? '$1/month (test)' : '$69/month' },
+  premium:  { id: 'premium',  name: 'Premium Topical Plan',      price: BLOOM_TEST_DOLLAR ? 1 : 99,  label: BLOOM_TEST_DOLLAR ? '$1/month (test)' : '$99/month' }
 };
 
 // TODO confirm final list with Dr. DeBry
@@ -516,7 +523,7 @@ function save() {
 let currentIdx = 0;
 const root = document.getElementById('root');
 const progressFill = document.getElementById('progressFill');
-let stripe = null, elements = null, paymentEl = null;
+let __cloverInst = null, __cloverSdkPromise = null;
 
 // HELPERS --------------------------------------------------------------------
 function h(tag, attrs, children) {
@@ -736,31 +743,38 @@ function viewSubmitted(p) {
   p.appendChild(card);
 }
 
-// STRIPE (authorize-only / SetupIntent) --------------------------------------
-function mountStripe() {
-  const mount = document.getElementById('payment-element');
-  if (!mount) return;
-  if (!STRIPE_PK) {
-    mount.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:14px;border:1px dashed var(--line);border-radius:11px;">Stripe publishable key required.</div>';
-    return;
-  }
-  const plan = getSelectedPlan();
-  stripe = Stripe(STRIPE_PK);
-  elements = stripe.elements({
-    mode: 'setup',
-    currency: 'usd',
-    appearance: {
-      theme: 'stripe',
-      variables: {
-        colorPrimary: '#0a6cf5',
-        fontFamily: 'Inter, sans-serif',
-        borderRadius: '11px',
-        colorText: '#16201d'
-      }
-    }
+// CLOVER (authorize-only / card-on-file) -------------------------------------
+// Tokenize the card in Clover's iframe → clv_ source → vaulted card-on-file (no charge) on submit.
+function loadCloverSdk() {
+  if (window.Clover) return Promise.resolve();
+  if (__cloverSdkPromise) return __cloverSdkPromise;
+  __cloverSdkPromise = new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = CLOVER_SDK_URL; s.onload = res; s.onerror = rej; document.head.appendChild(s);
   });
-  paymentEl = elements.create('payment', { layout: 'tabs' });
-  paymentEl.mount('#payment-element');
+  return __cloverSdkPromise;
+}
+async function mountClover() {
+  if (!document.getElementById('clvStyle')) {
+    const st = document.createElement('style'); st.id = 'clvStyle';
+    st.textContent = '.clv-field{border:1.5px solid var(--line,#e6e9ee);border-radius:11px;padding:0 12px;background:#fff;margin:4px 0 12px;height:52px;overflow:hidden;display:flex;align-items:center;} .clv-field iframe{height:48px!important;width:100%!important;border:0!important;} .card-row{display:flex;gap:10px;} @media (max-width:560px){.card-row{flex-direction:column!important;gap:0!important;}}';
+    document.head.appendChild(st);
+  }
+  const errEl = document.getElementById('payErr');
+  const showErr = (m) => { if (errEl) { errEl.textContent = m; errEl.style.display = 'block'; } };
+  try { await loadCloverSdk(); } catch (e) { return showErr('Could not load the secure payment form. Please refresh and try again.'); }
+  try {
+    const clover = new Clover(CLOVER_PUBLIC_KEY, { merchantId: CLOVER_MERCHANT_ID });
+    const elements = clover.elements();
+    const styles = { body: { fontFamily: 'Inter, sans-serif', fontSize: '16px' } };
+    elements.create('CARD_NUMBER', styles).mount('#card-number');
+    elements.create('CARD_DATE', styles).mount('#card-date');
+    elements.create('CARD_CVV', styles).mount('#card-cvv');
+    elements.create('CARD_POSTAL_CODE', styles).mount('#card-postal');
+    __cloverInst = clover;
+  } catch (e) {
+    showErr('Card form could not load in this browser. Please try a different browser.');
+  }
 }
 
 // FLOW -----------------------------------------------------------------------
@@ -1105,8 +1119,12 @@ const flow = [
     `;
     p.appendChild(compliance);
 
-    p.appendChild(h('div', { class: 'field' }, [h('span', { class: 'lab' }, ['Card details (authorize only — not charged now)'])]));
-    p.appendChild(h('div', { id: 'payment-element' }));
+    const cardWrap = h('div', {});
+    cardWrap.innerHTML =
+      '<div class="field"><span class="lab">Card details (authorize only · not charged now)</span></div>' +
+      '<div class="clv-field" id="card-number"></div>' +
+      '<div class="card-row"><div class="clv-field" id="card-date" style="flex:1"></div><div class="clv-field" id="card-cvv" style="flex:1"></div><div class="clv-field" id="card-postal" style="flex:1"></div></div>';
+    p.appendChild(cardWrap);
 
     state.authConsent = !!state.authConsent;
     const authRow = h('label', { class: 'consent-row' + (state.authConsent ? ' checked' : ''), id: 'authRow' });
@@ -1134,12 +1152,12 @@ const flow = [
     });
 
     p.appendChild(h('div', { class: 'footer-note' }, [
-      'Encrypted · processed by Stripe · Authorization only until provider approval'
+      'Encrypted · processed by Clover · Authorization only until provider approval'
     ]));
   }, canContinue: (s) => !!s.authConsent && !!s.plan, afterRender: () => {
     syncCheckoutCopy();
     syncAuthCheckbox();
-    mountStripe();
+    mountClover();
   }}
 ];
 
@@ -1176,45 +1194,22 @@ async function submitCheckout() {
   save();
 
   try {
-    if (elements && stripe) {
-      const { error: submitErr } = await elements.submit();
-      if (submitErr) throw new Error(submitErr.message);
-
-      // TODO backend: Stripe SetupIntent now, capture/charge on provider approval
-      let setupDone = false;
-      try {
-        const r = await fetch(STRIPE_SETUP_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: state.email,
-            plan: state.plan,
-            amountCents: getSelectedPlan().price * 100,
-            firstName: state.firstName,
-            lastName: state.lastName
-          })
-        });
-        const j = await r.json().catch(() => ({}));
-        // link the saved card to this submission so Dr. DeBry can charge it on approval
-        if (j.customerId) state.stripe_customer_id = j.customerId;
-        if (j.setupIntentId) state.stripe_setup_intent_id = j.setupIntentId;
-        if (j.clientSecret) {
-          const { error: confErr } = await stripe.confirmSetup({
-            elements,
-            clientSecret: j.clientSecret,
-            confirmParams: { return_url: window.location.href.split('?')[0] + '?setup=1' },
-            redirect: 'if_required'
-          });
-          if (confErr) throw new Error(confErr.message);
-          setupDone = true;
-        }
-      } catch (fetchErr) {
-        console.warn('Stripe setup placeholder (demo continues):', fetchErr);
-      }
-      if (!setupDone) await new Promise(res => setTimeout(res, 900));
-      state.cardAuthorized = true;
-      state.cardAuthorizedAt = new Date().toISOString();
-    }
+    // Tokenize the card in Clover's iframe → vault it card-on-file (NO charge). The card is
+    // required: without a saved card there is nothing for Dr. DeBry to charge on approval.
+    if (!__cloverInst) throw new Error('The secure card form is still loading. Please wait a moment and try again.');
+    const tok = await __cloverInst.createToken();
+    if (tok && tok.errors) throw new Error(Object.values(tok.errors).map(x => (x && x.message) || x).join(' '));
+    if (!tok || !tok.token) throw new Error('Could not read the card. Please check the details and try again.');
+    const sr = await fetch(SAVE_CARD_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: tok.token, email: state.email, firstName: state.firstName, lastName: state.lastName })
+    });
+    const sj = await sr.json().catch(() => ({}));
+    if (!sj.ok || !sj.customerId) throw new Error(sj.detail || 'We could not save your card. Please try again.');
+    state.clover_customer_id = sj.customerId;
+    state.cardAuthorized = true;
+    state.cardAuthorizedAt = new Date().toISOString();
+    save();
 
     // TODO backend: persist intake + card authorization
     try {
