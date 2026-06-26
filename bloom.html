@@ -526,18 +526,60 @@ function save() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(persist));
 }
 
-// iPhone photos arrive as HEIC, which browsers can't render in <img>. Convert to JPEG before upload
-// so the preview, the patient flow, and Dr. DeBry's review queue all display the image.
+// Make sure heic2any is available even if the <head> CDN script hasn't loaded yet (race-safe).
+var __heicPromise = null;
+function ensureHeic2any() {
+  if (window.heic2any) return Promise.resolve(window.heic2any);
+  if (__heicPromise) return __heicPromise;
+  __heicPromise = new Promise(function (res) {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+    s.onload = function () { res(window.heic2any || null); };
+    s.onerror = function () { res(null); };
+    document.head.appendChild(s);
+  });
+  return __heicPromise;
+}
+
+// Re-encode any decodable image to a downscaled JPEG via canvas (normalizes format + shrinks size).
+function reencodeToJpeg(blob, maxPx) {
+  return new Promise(function (resolve) {
+    var url = URL.createObjectURL(blob);
+    var img = new Image();
+    img.onload = function () {
+      var w = img.naturalWidth, h = img.naturalHeight;
+      var scale = Math.min(1, maxPx / Math.max(w, h));
+      w = Math.max(1, Math.round(w * scale)); h = Math.max(1, Math.round(h * scale));
+      var c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      c.toBlob(function (b) { resolve(b ? new File([b], 'photo.jpg', { type: 'image/jpeg' }) : null); }, 'image/jpeg', 0.88);
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); resolve(null); };
+    img.src = url;
+  });
+}
+
+// Convert ANY uploaded photo to a browser-friendly JPEG. iPhones shoot HEIC (which browsers can't
+// decode) — those go through heic2any first; then a canvas pass downscales + normalizes everything
+// (HEIC, PNG, TIFF, big JPEGs) to a clean JPEG so previews + Dr. DeBry's queue always display it.
 async function toUploadableImage(file) {
-  const isHeic = /heic|heif/i.test(file.type || '') || /\.(heic|heif)$/i.test(file.name || '');
-  if (isHeic && window.heic2any) {
-    try {
-      const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
-      const blob = Array.isArray(out) ? out[0] : out;
-      return new File([blob], (file.name || 'photo').replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
-    } catch (e) { console.warn('HEIC convert failed, uploading original:', e); }
+  var working = file;
+  var isHeic = /heic|heif/i.test(file.type || '') || /\.(heic|heif)$/i.test(file.name || '');
+  if (isHeic) {
+    var heic = await ensureHeic2any();
+    if (heic) {
+      try {
+        var out = await heic({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+        working = new File([Array.isArray(out) ? out[0] : out], 'photo.jpg', { type: 'image/jpeg' });
+      } catch (e) { console.warn('HEIC convert failed:', e); }
+    }
   }
-  return file;
+  try {
+    var jpeg = await reencodeToJpeg(working, 1600);
+    if (jpeg && jpeg.size > 0) return jpeg;
+  } catch (e) { /* fall through */ }
+  return working;
 }
 
 // Clear all saved answers and restart the intake from the top (re-take the questionnaire).
@@ -959,7 +1001,7 @@ const flow = [
     const labels = ['Top of head', 'Hairline / part', 'Thinning area'];
     labels.forEach((label, idx) => {
       const slot = h('label', { class: 'photo-slot' });
-      const input = h('input', { type: 'file', accept: 'image/*' });
+      const input = h('input', { type: 'file', accept: 'image/*,.heic,.heif' });
       const preview = state.photoPreviews[idx];
       if (preview) {
         const img = h('img', { src: preview, alt: label });
@@ -970,6 +1012,7 @@ const flow = [
       input.onchange = async (e) => {
         const file0 = e.target.files && e.target.files[0];
         if (!file0) return;
+        slot.innerHTML = ''; slot.appendChild(h('span', { class: 'ph' }, ['Uploading…']));
         const file = await toUploadableImage(file0);
         const url = URL.createObjectURL(file);
         state.photoPreviews[idx] = url;
@@ -1081,12 +1124,13 @@ const flow = [
     const idWrap = h('div', { class: 'field' });
     idWrap.appendChild(h('span', { class: 'lab' }, ['Upload a photo of your government ID (driver’s license or state ID)']));
     const idSlot = h('label', { class: 'photo-slot', style: 'display:block;max-width:300px;' });
-    const idInput = h('input', { type: 'file', accept: 'image/*' });
+    const idInput = h('input', { type: 'file', accept: 'image/*,.heic,.heif' });
     if (state.idPhotoPreview) idSlot.appendChild(h('img', { src: state.idPhotoPreview, alt: 'Government ID' }));
     else idSlot.appendChild(h('span', { class: 'ph' }, ['+ Upload ID']));
     idInput.onchange = async (e) => {
       const file0 = e.target.files && e.target.files[0];
       if (!file0) return;
+      idSlot.innerHTML = ''; idSlot.appendChild(h('span', { class: 'ph' }, ['Uploading…']));
       const file = await toUploadableImage(file0);
       const url = URL.createObjectURL(file);
       state.idPhotoPreview = url; save();
