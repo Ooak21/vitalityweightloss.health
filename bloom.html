@@ -719,6 +719,7 @@ function viewLiveVisit(p) {
   ]);
   btnWrap.appendChild(a);
   card.appendChild(btnWrap);
+  card.appendChild(h('a', { href: '/', style: 'display:inline-block;margin-top:16px;color:var(--muted);font-size:14px;text-decoration:underline;' }, ['Back to Vitality home']));
   p.appendChild(card);
 }
 
@@ -740,6 +741,7 @@ function viewNonNV(p) {
     ctaArrow()
   ]));
   card.appendChild(btnWrap);
+  card.appendChild(h('a', { href: '/', style: 'display:inline-block;margin-top:16px;color:var(--muted);font-size:14px;text-decoration:underline;' }, ['Back to Vitality home']));
   p.appendChild(card);
 }
 
@@ -752,6 +754,12 @@ function viewSubmitted(p) {
     <h1>Thanks — Dr. DeBry will review your information and you'll hear back.</h1>
     <p class="lede" style="margin:0 auto;max-width:480px;">Your card has not been charged.</p>
   `;
+  const homeWrap = h('div', { style: 'margin-top:24px;' });
+  homeWrap.appendChild(h('a', { class: 'cta cta-green', href: '/', style: 'display:inline-flex;text-decoration:none;' }, [
+    document.createTextNode('Back to Vitality home'),
+    ctaArrow()
+  ]));
+  card.appendChild(homeWrap);
   p.appendChild(card);
 }
 
