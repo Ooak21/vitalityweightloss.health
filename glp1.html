@@ -1822,6 +1822,12 @@ function hideProcessingOverlay() {
 }
 
 let __cloverInst = null;
+// Stable idempotency key for this payment attempt — generated when the card form mounts and reused
+// across retries (double-click, retry-after-error), so the backend never double-charges the card.
+let __payIdemKey = null;
+function __newPayIdemKey() {
+  __payIdemKey = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('idem_' + Date.now() + '_' + Math.random().toString(36).slice(2));
+}
 function viewPay(p) {
   const amountCents = (PRICING[state.drug] ? PRICING[state.drug].intro : 149) * 100;   // first-month price of the selected drug
   const recurCents  = (PRICING[state.drug] ? PRICING[state.drug].monthly : 199) * 100; // monthly thereafter, per drug
@@ -1867,11 +1873,13 @@ function viewPay(p) {
     try {
       const res = await __cloverInst.createToken();
       if (res && res.errors) { payBtn.disabled = false; payBtn.textContent = orig; return showErr(Object.values(res.errors).map(x => (x && x.message) || x).join(' ')); }
-      const body = Object.assign({}, athenaPayload(), { source: res.token, amountCents, fulfillment: 'pickup', subscribe: true, recurringCents: recurCents, testMode: TEST_DOLLAR });
+      if (!__payIdemKey) __newPayIdemKey();
+      const body = Object.assign({}, athenaPayload(), { source: res.token, amountCents, fulfillment: 'pickup', subscribe: true, recurringCents: recurCents, testMode: TEST_DOLLAR, idempotencyKey: __payIdemKey });
       showProcessingOverlay();   // prominent full-screen wait — the athena chart build runs ~60-90s
       const r = await fetch(CLOVER_PAY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const j = await r.json().catch(() => ({}));
       if (r.ok && j.ok) {
+        __payIdemKey = null;   // paid + recorded — next genuine payment gets a fresh key
         state.charge = j.charge; state.athenaPatientId = j.patientId; save();
         hideProcessingOverlay();
         const subEstablished = !!(j.subscriptionEstablished || (j.subscribe && j.cloverCustomerId && j.recurringCents));
