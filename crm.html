@@ -1180,6 +1180,21 @@
           <button onclick="addPracticeTask('${p.id}')" class="px-3 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">＋ Task</button>
         </div>
 
+        ${(()=>{ const nu=p.nurture||{}; return `
+        <div class="flex items-center justify-between gap-3 border border-[#e6e9ee] rounded-2xl px-4 py-3 mb-6 ${nu.enrolled&&!nu.done?'bg-[#f0f6ff]':''}">
+          <div class="min-w-0">
+            <div class="text-sm font-semibold text-[#16201d]">Email nurture cadence</div>
+            <div class="text-xs text-[#6b7280] mt-0.5">${
+              nu.done ? `Completed all ${nu.total} touches` :
+              nu.enrolled ? `On · touch ${Math.min((nu.step||0)+1,nu.total)} of ${nu.total}${nu.next_touch_at?` · next ${fmtDate(nu.next_touch_at)}`:''} · <span class="text-[#9a5a00]">preview until enabled</span>` :
+              'Off · a spaced email sequence to keep this partner warm'
+            }</div>
+          </div>
+          ${nu.enrolled&&!nu.done
+            ? `<button onclick="toggleNurture('${p.id}',false)" class="shrink-0 px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#16201d] text-xs font-semibold hover:bg-[#f1f3f7]">Pause</button>`
+            : `<button onclick="toggleNurture('${p.id}',true)" class="shrink-0 px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">${nu.done?'Restart':'Start nurture'}</button>`}
+        </div>`; })()}
+
         <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-2">Contact</div>
         <div class="border border-[#e6e9ee] rounded-2xl mb-6 divide-y divide-[#eef1f4]">
           ${prRow(p,'phone','Phone')}${prRow(p,'website','Website')}${prRow(p,'address','Address')}${prRow(p,'type','Type / specialty')}${prRow(p,'city','City')}${prRow(p,'owner','Relationship owner')}
@@ -1304,6 +1319,10 @@
         if(selId) renderPracticeView(selId);
       }
     });
+  };
+  window.toggleNurture=async function(pid,on){
+    try{ await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:on?'enroll_nurture':'pause_nurture',practice_id:pid})}); renderPracticeView(pid); }
+    catch(e){ console.warn('toggleNurture',e); }
   };
   window.addPracticeTask=function(pid){
     openFormModal({ title:'New follow-up task',
