@@ -50,6 +50,7 @@ const FN = SB + '/functions/v1/vit-admin';
 const $=(id)=>document.getElementById(id);
 const esc=(s)=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let TOKEN=null, DATA=null, TAB='systems', TASKS=null, REPORTS=null, SYS=null, TICKETS=null, TREPORT=null, BILLING=null, PROVIDER_MODE=false;
+let EMAIL=null, EMAIL_DAYS=30, EMAIL_CAT='all';
 // Billing: the contract covers API costs for the first 30 days from this date; amendable after.
 const CONTRACT_START=new Date('2026-06-18T00:00:00').getTime();
 const COVER_DAYS=30;
@@ -337,6 +338,49 @@ function viewVendors(){
   </section>`;
 }
 
+// ---- Email tracking metrics (Resend events → HubSpot-style view for Fred) ----
+const EMAIL_CATLABEL={inquiry_alert:'New-inquiry alerts',referral_nurture:'Partner nurture',lead_nurture:'Lead nurture',webinar:'Webinar',onboarding:'Onboarding',insurance_check:'Insurance check',rx_ready:'Rx ready',other:'Other'};
+const emCatName=(c)=>EMAIL_CATLABEL[c]||c;
+async function loadEmailMetrics(){
+  const since = EMAIL_DAYS>=3650 ? 0 : Date.now()-EMAIL_DAYS*864e5;
+  try{ const r=await fetch(CONVEX_URL+'/email-metrics',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getAuthToken()},body:JSON.stringify({since,category:EMAIL_CAT})}); EMAIL=await r.json(); }
+  catch(e){ EMAIL={ok:false}; }
+}
+function viewEmail(){
+  if(!EMAIL){ loadEmailMetrics().then(()=>render()); return '<section class="mt-6 text-sm text-[#9aa0ab] py-10 text-center">Loading email metrics…</section>'; }
+  if(!EMAIL.ok){ return '<section class="mt-6 text-sm text-rose-600 py-10 text-center">Could not load email metrics.</section>'; }
+  const t=EMAIL.totals||{}, cats=EMAIL.categories||[], recent=EMAIL.recent||[];
+  const card=(label,val,sub,color)=>`<div class="rounded-xl border border-[#e6e9ee] bg-white p-4"><div class="text-[11px] uppercase tracking-wide text-[#6b7280] font-semibold">${label}</div><div class="font-display text-2xl font-semibold mt-1 ${color||''}">${val}</div>${sub?`<div class="text-[11px] text-[#9aa0ab] mt-0.5">${sub}</div>`:''}</div>`;
+  const badge=(s)=>{ const m={sent:['Sent','#6b7280'],delivered:['Delivered','#0a7a3d'],opened:['Opened','#0a6cf5'],clicked:['Clicked','#7c3aed'],bounced:['Bounced','#be123c'],complained:['Complained','#be123c'],delivery_delayed:['Delayed','#9a5a00']}; const x=m[s]||[s,'#6b7280']; return `<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold" style="background:${x[1]}1a;color:${x[1]}">${x[0]}</span>`; };
+  const ranges=[[7,'7 days'],[30,'30 days'],[90,'90 days'],[3650,'All time']];
+  return `<section class="mt-6">
+    <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+      <div class="flex gap-2 items-center">
+        <select id="emRange" class="field">${ranges.map(([d,l])=>`<option value="${d}" ${d===EMAIL_DAYS?'selected':''}>Last ${l}</option>`).join('')}</select>
+        <select id="emCat" class="field"><option value="all" ${EMAIL_CAT==='all'?'selected':''}>All categories</option>${cats.map(c=>`<option value="${c.category}" ${EMAIL_CAT===c.category?'selected':''}>${emCatName(c.category)}</option>`).join('')}</select>
+      </div>
+      <button id="emRefresh" class="px-3 py-2 rounded-lg border border-[#e6e9ee] text-sm font-medium hover:bg-[#f1f3f7]">↻ Refresh</button>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+      ${card('Sent', t.sent||0)}
+      ${card('Delivered', t.delivered||0, t.sent?Math.round((t.delivered/t.sent)*100)+'% of sent':'')}
+      ${card('Open rate', (t.openRate||0)+'%', 'approximate', 'text-[#0a6cf5]')}
+      ${card('Click rate', (t.clickRate||0)+'%', '', 'text-[#7c3aed]')}
+      ${card('Bounced', t.bounced||0, (t.bounceRate||0)+'% rate', t.bounced?'text-rose-600':'')}
+    </div>
+    <div class="rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-[11px] text-amber-700 mb-6">Open rate is <b>approximate</b> — Apple Mail and Gmail auto-load tracking pixels, which inflates opens. Click rate is the reliable engagement signal.</div>
+    <div class="font-display text-lg font-semibold mb-2">By email type</div>
+    <div class="overflow-x-auto mb-6"><table class="w-full text-sm">
+      <thead><tr class="text-[11px] uppercase tracking-wide text-[#6b7280] text-left border-b border-[#e6e9ee]"><th class="py-2 pr-3">Type</th><th class="py-2 pr-3">Sent</th><th class="py-2 pr-3">Delivered</th><th class="py-2 pr-3">Open %</th><th class="py-2 pr-3">Click %</th><th class="py-2">Bounce %</th></tr></thead>
+      <tbody>${cats.length?cats.map(c=>`<tr class="border-b border-[#f1f3f7]"><td class="py-2 pr-3 font-medium">${emCatName(c.category)}</td><td class="py-2 pr-3">${c.sent}</td><td class="py-2 pr-3">${c.delivered}</td><td class="py-2 pr-3 text-[#0a6cf5]">${c.openRate}%</td><td class="py-2 pr-3 text-[#7c3aed]">${c.clickRate}%</td><td class="py-2 ${c.bounced?'text-rose-600':''}">${c.bounceRate}%</td></tr>`).join(''):'<tr><td colspan="6" class="py-4 text-center text-[#9aa0ab]">No email events in this range yet.</td></tr>'}</tbody>
+    </table></div>
+    <div class="flex items-center justify-between mb-2"><div class="font-display text-lg font-semibold">Recent emails</div><button id="emcsv" class="text-xs text-[#0a6cf5] font-semibold hover:underline">⤓ Export CSV</button></div>
+    <div class="overflow-x-auto"><table class="w-full text-sm">
+      <thead><tr class="text-[11px] uppercase tracking-wide text-[#6b7280] text-left border-b border-[#e6e9ee]"><th class="py-2 pr-3">Recipient</th><th class="py-2 pr-3">Subject</th><th class="py-2 pr-3">Type</th><th class="py-2 pr-3">Status</th><th class="py-2">When</th></tr></thead>
+      <tbody>${recent.length?recent.map(r=>`<tr class="border-b border-[#f1f3f7]"><td class="py-2 pr-3">${esc(r.to||'—')}</td><td class="py-2 pr-3"><div class="max-w-[280px] truncate">${esc(r.subject||'—')}</div></td><td class="py-2 pr-3 text-xs text-[#6b7280]">${emCatName(r.category)}</td><td class="py-2 pr-3">${badge(r.status)}</td><td class="py-2 text-xs text-[#9aa0ab] whitespace-nowrap">${r.at?fmtTs(r.at):'—'}</td></tr>`).join(''):'<tr><td colspan="5" class="py-4 text-center text-[#9aa0ab]">No emails yet. Sends appear here once Resend posts events.</td></tr>'}</tbody>
+    </table></div>
+  </section>`;
+}
 function render(){
   $('who').textContent=(DATA.me?DATA.me.email:'')+' · '+(DATA.me?DATA.me.role:'');
   // Providers (DeBry / NP) get their clinical work surface: the Task board (where paid
@@ -344,7 +388,7 @@ function render(){
   // plus the support ticket queue. No Systems/Access/Reporting/Billing/Vendor/Audit.
   const TABS = PROVIDER_MODE
     ? [['tasks','My queue'],['tickets','Tickets']]
-    : [['systems','Systems'],['access','Access control'],['tasks','Tasks'],['tickets','Tickets'],['reports','Reporting'],['billing','Billing'],['vendors','Vendor risk'],['audit','Audit log']];
+    : [['systems','Systems'],['access','Access control'],['tasks','Tasks'],['tickets','Tickets'],['reports','Reporting'],['email','Email metrics'],['billing','Billing'],['vendors','Vendor risk'],['audit','Audit log']];
   const head = PROVIDER_MODE
     ? '<div><h1 class="font-display text-2xl font-semibold tracking-[-.5px]">Provider workspace</h1><p class="text-sm text-[#6b7280] mt-1">Your Rx review queue and support tickets.</p></div>'
     : '<div><h1 class="font-display text-2xl font-semibold tracking-[-.5px]">Operations</h1><p class="text-sm text-[#6b7280] mt-1">Access control, the task board, and the compliance audit trail.</p></div>';
@@ -353,7 +397,7 @@ function render(){
     <div class="flex gap-2 flex-wrap">
       ${TABS.map(([k,label])=>`<span class="tab ${TAB===k?'on':''}" data-t="${k}">${label}</span>`).join('')}
     </div>
-    ${TAB==='systems'?viewSystems():TAB==='access'?viewAccess():TAB==='tasks'?viewTasks():TAB==='tickets'?viewTickets():TAB==='reports'?viewReports():TAB==='billing'?viewBilling():TAB==='vendors'?viewVendors():viewAudit()}`;
+    ${TAB==='systems'?viewSystems():TAB==='access'?viewAccess():TAB==='tasks'?viewTasks():TAB==='tickets'?viewTickets():TAB==='reports'?viewReports():TAB==='email'?viewEmail():TAB==='billing'?viewBilling():TAB==='vendors'?viewVendors():viewAudit()}`;
   document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{ TAB=t.dataset.t; render(); });
   if(TAB==='systems' && SYS){
     const rc=$('runChk'); if(rc) rc.onclick=async()=>{ rc.disabled=true; rc.textContent='Running…'; await sysApi({action:'run'}); SYS=await sysApi({action:'load'}); render(); };
@@ -382,6 +426,11 @@ function render(){
     const vc=$('vcsv'); if(vc) vc.onclick=()=>{ const lastRev=(DATA.audit||[]).find(a=>a.code==='V-001'); const revStamp=lastRev?(fmtTs(lastRev.ts)+(lastRev.actor?' by '+lastRev.actor:'')):'never'; const rows=[['side','vendor','category','use','data_class','baa','risk','flag','mitigation','last_reviewed','note']].concat(VENDORS.map(v=>[v.side==='them'?'clinic':'ours',v.name,v.cat,v.use,v.data,v.baa,v.risk,vFlag(v)?'flag':'',v.mit,revStamp,v.note])); const csv=rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='vitality-vendor-risk-'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); };
   } else if(TAB==='audit'){
     $('csv').onclick=()=>{ const rows=[['timestamp','code','action','by','entity','entity_id','hash','onchain_tx']].concat((DATA.audit||[]).map(r=>[r.ts,r.code,decode(r.code),r.actor,r.entity,r.entity_id,r.hash,r.tx||''])); const csv=rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='vitality-audit-'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); };
+  } else if(TAB==='email' && EMAIL && EMAIL.ok){
+    const rg=$('emRange'); if(rg) rg.onchange=()=>{ EMAIL_DAYS=parseInt(rg.value,10); EMAIL=null; render(); };
+    const ec=$('emCat'); if(ec) ec.onchange=()=>{ EMAIL_CAT=ec.value; EMAIL=null; render(); };
+    const er=$('emRefresh'); if(er) er.onclick=()=>{ EMAIL=null; render(); };
+    const ex=$('emcsv'); if(ex) ex.onclick=()=>{ const rows=[['recipient','subject','type','status','when']].concat((EMAIL.recent||[]).map(r=>[r.to,r.subject,emCatName(r.category),r.status,r.at?fmtTs(r.at):''])); const csv=rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='vitality-email-metrics-'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); };
   }
 }
 async function reload(){ DATA=await api({action:'load'}); render(); }
