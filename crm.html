@@ -116,15 +116,23 @@
   </div>
   <div class="flex items-center gap-3">
     <button onclick="openAddPatient()" class="px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add patient</button>
+    <div class="flex items-center rounded-xl border border-[#e6e9ee] overflow-hidden text-xs font-semibold" id="viewModeTabs" title="Switch what you see for the selected patient">
+      <button onclick="setViewMode('crm')" data-mode="crm" class="vm-btn px-3 py-2 bg-[#0a6cf5] text-white">CRM</button>
+      <button onclick="setViewMode('provider')" data-mode="provider" class="vm-btn px-3 py-2 text-[#4b5563] border-l border-[#e6e9ee]">Provider</button>
+      <button onclick="setViewMode('portal')" data-mode="portal" class="vm-btn px-3 py-2 text-[#4b5563] border-l border-[#e6e9ee]">Patient Portal</button>
+    </div>
+    <button id="boardToggle" onclick="toggleBoard()" title="Pipeline board (drag patients between stages)" class="relative px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7]">🗂 Board<span id="inqBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#be123c] text-white text-[10px] font-bold flex items-center justify-center" title="New inquiries waiting"></span></button>
     <button id="importBtn" onclick="importScan()" class="px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">⬆ Import InBody scan</button>
     <button onclick="openRx()" title="GLP-1 medication reference (FDA)" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7]">℞ Med reference</button>
     <button onclick="openBloomQueue()" title="Vitality Bloom hair-loss review queue" class="px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">🌱 Bloom queue</button>
-    <input id="search" class="field w-56 hidden md:block" placeholder="Search patients…">
     <a href="admin.html" class="text-xs text-[#6b7280] hover:text-[#16201d]" title="Admin & Operations (admins only)">⚙ Admin</a>
     <button onclick="(window.__vca?window.__vca.signOut():(window.__vitSb?window.__vitSb.auth.signOut():Promise.resolve())).then(()=>location.replace('login.html'))" class="text-xs text-[#6b7280] hover:text-[#16201d]">Sign out</button>
     <div id="userAvatar" title="Signed in" class="w-8 h-8 rounded-full bg-[#f1f3f7] border border-[#e6e9ee] flex items-center justify-center text-xs font-semibold text-[#4b5563]">··</div>
   </div>
 </div>
+
+<!-- PIPELINE BOARD (overlay; toggled by 🗂 Board) -->
+<div id="boardPane" class="hidden fixed left-0 right-0 top-16 bottom-0 bg-[#fbfcfd] z-30 overflow-hidden"></div>
 
 <!-- MAIN -->
 <div id="mainGrid" class="flex-1 grid grid-cols-1 md:grid-cols-[380px_1fr] gap-0 min-h-0">
@@ -132,10 +140,8 @@
   <div id="listPane" class="border-r border-[#e6e9ee] flex flex-col min-h-0">
     <div class="flex items-center gap-2 px-3 py-3 flex-shrink-0">
       <button id="listToggle" onclick="toggleList()" title="Collapse patient list" class="w-8 h-8 rounded-lg border border-[#e6e9ee] flex items-center justify-center text-[#6b7280] hover:bg-[#f1f3f7] hover:text-[#16201d] shrink-0 text-lg leading-none">«</button>
-      <div class="flex gap-1.5 flex-nowrap" id="tabs">
-        <div class="tab on" data-f="all">All <span class="cnt" data-c="all">0</span></div><div class="tab" data-f="lead">Leads <span class="cnt" data-c="lead">0</span></div>
-        <div class="tab" data-f="new_patient">New <span class="cnt" data-c="new_patient">0</span></div><div class="tab" data-f="active">Active <span class="cnt" data-c="active">0</span></div>
-      </div>
+      <input id="search" class="field flex-1" placeholder="🔍 Search name, DOB, or patient ID…" autocomplete="off">
+      <span id="tabs" class="hidden"></span>
     </div>
     <div id="todayPanel" class="px-3 pb-3 flex-shrink-0 border-b border-[#e6e9ee]"></div>
     <div class="flex-1 overflow-y-auto scroll px-3 pb-4 pt-3" id="list"></div>
@@ -565,21 +571,44 @@
           <button onclick="editAppt('${a.pid}','${a.id}')" title="Edit appointment" class="shrink-0 text-[#9aa0ab] hover:text-[#0a6cf5] px-1 leading-none">✎</button></div>`).join('')
         : '<div class="text-xs text-[#9aa0ab] py-1.5">No appointments this day.</div>'}`;
   }
+  // Search-first list: no roster on screen by default (cleaner + better minimum-necessary PHI
+  // posture). Type 2+ chars to find a patient by name, DOB, phone, or ID. The 🗂 Board is where
+  // you see everyone. Results show name + DOB so you confirm the right person before opening.
   function renderList(){
-    const q=($('#search').value||'').toLowerCase();
-    let rows = patients.filter(p=>filter==='all'||p.status===filter)
-      .filter(p=>!q || (p.first+' '+p.last+' '+p.email).toLowerCase().includes(q))
-      .sort((a,b)=> new Date(lastActivity(b)).getTime() - new Date(lastActivity(a)).getTime());
-    $('#list').innerHTML = rows.map(p=>`
-      <div class="row border border-transparent rounded-xl px-3 py-2 mb-0.5 ${p.id===selId?'sel':''}" onclick="select('${p.id}')">
+    updateInquiryBadge();
+    if(boardOpen) renderBoard();
+    const listEl=$('#list'); if(!listEl) return;
+    const ql=($('#search').value||'').trim().toLowerCase();
+    if(ql.length<2){
+      listEl.innerHTML = `<div class="text-center px-4 pt-12 select-none">
+        <div class="text-3xl mb-2 opacity-60">🔍</div>
+        <div class="font-medium text-[#6b7280] text-sm">Search to open a patient</div>
+        <div class="text-xs text-[#9aa0ab] mt-1">by name, DOB, or patient ID</div>
+        <button onclick="if(!boardOpen)toggleBoard()" class="mt-5 text-xs text-[#0a6cf5] font-semibold hover:underline">Need everyone? Open the board →</button>
+      </div>`;
+      return;
+    }
+    const digits=ql.replace(/\D/g,'');
+    const rows = patients.filter(p=>{
+      const name=((p.first||'')+' '+(p.last||'')).toLowerCase();
+      const hay=(name+' '+(p.email||'')+' '+(p.dob||'')+' '+(p.id||'')+' '+(p.display_id||'')).toLowerCase();
+      if(hay.includes(ql)) return true;
+      if(digits.length>=3){ const pd=(p.phone||'').replace(/\D/g,''), dd=(p.dob||'').replace(/\D/g,''); if((pd&&pd.includes(digits))||(dd&&dd.includes(digits))) return true; }
+      return false;
+    }).sort((a,b)=> new Date(lastActivity(b)).getTime()-new Date(lastActivity(a)).getTime()).slice(0,40);
+    listEl.innerHTML = rows.length ? rows.map(p=>{
+      const nm=((p.first||'')+' '+(p.last||'')).trim()||p.display_id||'Patient';
+      const clin=p.notes&&p.notes.some(n=>n.type==='clinical_ref');
+      return `<div class="row border border-transparent rounded-xl px-3 py-2 mb-0.5 ${p.id===selId?'sel':''}" onclick="select('${p.id}')">
         <div class="flex items-center justify-between gap-2">
-          <div class="font-semibold text-[13px] truncate">${p.first} ${p.last} ${p.notes.some(n=>n.type==='clinical_ref')?'<span class="text-rose-600" title="Open clinical message">⚑</span>':''}${p.review&&p.review.length?'<span class="text-[#9a5a00]" title="Needs clinical review">⚠</span>':''}</div>
-          <span class="badge b-${p.status}">${STAT[p.status]}</span>
+          <div class="font-semibold text-[13px] truncate">${esc(nm)} ${clin?'<span class="text-rose-600" title="Open clinical message">⚑</span>':''}${p.review&&p.review.length?'<span class="text-[#9a5a00]" title="Needs clinical review">⚠</span>':''}</div>
+          <span class="badge b-${p.status}">${STAT[p.status]||p.status}</span>
         </div>
         <div class="flex items-center justify-between mt-0.5 text-[11px] text-[#6b7280]">
-          <span>${PROG[p.program]||'-'}</span><span>${rel(lastActivity(p))}</span>
+          <span>DOB ${p.dob||'—'}</span><span>${PROG[p.program]||'-'}</span>
         </div>
-      </div>`).join('') || '<div class="text-center text-[#9aa0ab] text-sm py-8">No patients</div>';
+      </div>`;}).join('')
+      : '<div class="text-center text-[#9aa0ab] text-sm py-10">No patient matches "'+esc(ql)+'"</div>';
   }
   function select(id){ if(typeof veeActive!=='undefined'&&veeActive)veeStop(); selId=id; renderList(); renderDetail(); }
 
@@ -642,8 +671,50 @@
     inp.addEventListener('blur',()=>finish(true));
   };
 
+  // ---- View-mode dispatch: CRM (operational) / Provider (clinical) / Patient Portal ----
+  let viewMode = 'crm';
+  window.setViewMode = function(m){
+    viewMode = m;
+    document.querySelectorAll('.vm-btn').forEach(b=>{ const on = b.dataset.mode===m; b.classList.toggle('bg-[#0a6cf5]', on); b.classList.toggle('text-white', on); b.classList.toggle('text-[#4b5563]', !on); });
+    renderDetail();
+  };
+  function detailHeader(p, age){
+    return `
+      <div class="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h2 id="patName" onclick="editName('${p.id}')" title="Click to edit name" class="font-display text-2xl font-semibold tracking-[-1px] cursor-text hover:bg-[#f4f6f8] rounded px-1 -ml-1 inline-block">${p.first} ${p.last}</h2>
+          <div class="text-sm text-[#6b7280] mt-1">${PROG[p.program]||'-'} program · age ${age} · patient since ${fmtDate(p.created)}</div>
+        </div>
+        <select class="field w-auto" onchange="changeStatus('${p.id}',this.value)">
+          ${Object.entries(STAT).map(([k,v])=>`<option value="${k}" ${k===p.status?'selected':''}>${v}</option>`).join('')}
+        </select>
+      </div>`;
+  }
+  function renderEmptyState(){
+    const n = patients.length, leads = patients.filter(p=>p.status==='lead').length, active = patients.filter(p=>p.status==='active').length;
+    $('#detailMain').innerHTML = `
+      <div class="h-full flex items-center justify-center p-8">
+        <div class="text-center max-w-md">
+          <div class="w-14 h-14 rounded-2xl bg-[#eef4ff] flex items-center justify-center mx-auto mb-4 text-2xl">👈</div>
+          <div class="font-display text-xl font-semibold mb-1">Select a patient</div>
+          <div class="text-sm text-[#6b7280] mb-5">Pick someone from the list to open their record. You're in <b>${({crm:'CRM',provider:'Provider',portal:'Patient Portal'})[viewMode]}</b> view.</div>
+          <div class="flex justify-center gap-3 text-sm">
+            <div class="px-4 py-3 rounded-xl bg-[#f7f8fa] border border-[#e6e9ee]"><div class="font-display text-xl font-semibold">${n}</div><div class="text-[11px] text-[#6b7280]">patients</div></div>
+            <div class="px-4 py-3 rounded-xl bg-[#f7f8fa] border border-[#e6e9ee]"><div class="font-display text-xl font-semibold">${leads}</div><div class="text-[11px] text-[#6b7280]">leads</div></div>
+            <div class="px-4 py-3 rounded-xl bg-[#f7f8fa] border border-[#e6e9ee]"><div class="font-display text-xl font-semibold">${active}</div><div class="text-[11px] text-[#6b7280]">active</div></div>
+          </div>
+        </div>
+      </div>`;
+  }
   function renderDetail(){
-    const p=patients.find(x=>x.id===selId); if(!p){return;}
+    const p = patients.find(x=>x.id===selId);
+    if(!p){ renderEmptyState(); return; }
+    if(viewMode==='provider') return renderProviderView(p);
+    if(viewMode==='portal')   return renderPortalView(p);
+    return renderCrmView(p);
+  }
+
+  function renderProviderView(p){
     const age = p.dob ? (new Date().getFullYear()-new Date(p.dob).getFullYear()) : '-';
     $('#detailMain').innerHTML = `
       <div class="p-6 max-w-3xl">
@@ -743,7 +814,223 @@
     if (isProvider()) loadClinicalReview(p.id);
   }
 
+  // ============ CRM (operational) view ============
+  function apptRow(a){
+    const when = a.when || a.scheduled_at;
+    const dt = when ? fmtDT(when) : 'unscheduled';
+    const stColor = {scheduled:'#0a6cf5',booked:'#0a6cf5',completed:'#0a7a3d',cancelled:'#9aa0ab',no_show:'#be123c'}[a.status]||'#6b7280';
+    return `<div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-[#f1f3f7] last:border-0">
+      <div><div class="text-sm font-medium text-[#16201d]">${a.type||'Appointment'}</div><div class="text-xs text-[#6b7280] mt-0.5">${dt}${a.provider?` · ${a.provider}`:''}</div></div>
+      <div class="flex items-center gap-3"><span class="text-xs font-semibold" style="color:${stColor}">${a.status||'scheduled'}</span><button onclick="editAppt('${a.pid||''}','${a.id||''}')" class="text-[#0a6cf5] text-xs font-semibold hover:underline">edit</button></div>
+    </div>`;
+  }
+  function renderCrmView(p){
+    const age = p.dob ? (new Date().getFullYear()-new Date(p.dob).getFullYear()) : '-';
+    const appts = (p.appts||[]).map(a=>({...a,pid:p.id})).sort((a,b)=> new Date(b.when).getTime() - new Date(a.when).getTime());
+    $('#detailMain').innerHTML = `
+      <div class="p-6 max-w-3xl mx-auto">
+        ${detailHeader(p, age)}
+
+        <div class="flex gap-2 mb-6 flex-wrap">
+          <button onclick="openEmail()" class="px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8]">✉ Send branded email</button>
+          <button onclick="bookAppt('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">+ Book appointment</button>
+          <button onclick="addTask('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">＋ Add task</button>
+          <button onclick="portalLogin('${p.id}',${!!p.has_login})" ${p.email?'':'title="Add an email first"'} class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7]">🔑 ${p.has_login?'Reset portal password':'Create portal login'}</button>
+          <button onclick="setViewMode('provider')" class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">🩺 Clinical view</button>
+        </div>
+
+        <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-2">Contact &amp; lifecycle</div>
+        <div class="border border-[#e6e9ee] rounded-2xl mb-6 divide-y divide-[#eef1f4]">
+          ${infoRow(p,'email','Email')}
+          ${infoRow(p,'phone','Phone')}
+          ${infoRow(p,'dob','Date of birth')}
+          ${infoRow(p,'program','Program')}
+          <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Portal login</span><span class="text-sm ${p.has_login?'text-[#0a7a3d]':'text-[#9aa0ab]'}">${p.has_login?'Active':'Not set up'}</span></div>
+          <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Patient since</span><span class="text-sm text-[#16201d]">${fmtDate(p.created)}</span></div>
+          ${p.tags&&p.tags.length?`<div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Tags</span><span class="text-sm text-[#16201d] flex flex-wrap gap-1 justify-end">${p.tags.map(t=>`<span class="badge b-active">${t}</span>`).join('')}</span></div>`:''}
+        </div>
+
+        <div class="flex items-center justify-between mb-2"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Appointments</div><button onclick="bookAppt('${p.id}')" class="text-xs text-[#0a6cf5] font-semibold hover:underline">+ Book</button></div>
+        <div class="border border-[#e6e9ee] rounded-2xl mb-6">
+          ${appts.length? appts.map(apptRow).join('') : '<div class="px-4 py-5 text-sm text-[#9aa0ab] text-center">No appointments yet.</div>'}
+        </div>
+
+        <div class="flex items-center justify-between mb-2"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Tasks</div><button onclick="addTask('${p.id}')" class="text-xs text-[#0a6cf5] font-semibold hover:underline">+ Add task</button></div>
+        <div id="crmTasks" class="border border-[#e6e9ee] rounded-2xl mb-6"><div class="px-4 py-5 text-sm text-[#9aa0ab] text-center">Loading tasks…</div></div>
+
+        <div class="glass border border-[#e6e9ee] rounded-2xl p-5">
+          <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-4">Notes &amp; communications</div>
+          ${timeline(p)}
+          <div class="flex gap-2 mt-2 pt-3 border-t border-[#e6e9ee]">
+            <input id="noteInput" class="field" placeholder="Add a note…" onkeydown="if(event.key==='Enter')addNote('${p.id}')">
+            <button onclick="addNote('${p.id}')" class="px-4 py-2 rounded-lg bg-[#f1f3f7] border border-[#e6e9ee] text-sm font-medium hover:border-[#0a6cf5]/40">Add</button>
+          </div>
+        </div>
+      </div>`;
+    loadPatientTasks(p.id);
+  }
+  function taskRow(t){
+    const done = t.status==='done';
+    const prColor = {urgent:'#be123c',high:'#9a5a00'}[t.priority]||'#6b7280';
+    return `<div class="flex items-start gap-3 px-4 py-3 border-b border-[#f1f3f7] last:border-0">
+      <input type="checkbox" ${done?'checked':''} ${t.locked?'disabled':''} onchange="toggleTask('${t.id}',this.checked)" class="accent-[#0a6cf5] w-4 h-4 mt-0.5">
+      <div class="flex-1 min-w-0">
+        <div class="text-sm ${done?'line-through text-[#9aa0ab]':'text-[#16201d]'}">${esc(t.title)}${t.clinical?'<span class="badge ml-1" style="background:rgba(244,63,94,.15);color:#be123c">clinical</span>':''}</div>
+        ${t.notes?`<div class="text-xs text-[#6b7280] mt-0.5">${esc(t.notes)}</div>`:''}
+        <div class="text-[11px] text-[#9aa0ab] mt-0.5">${t.assignee?esc(t.assignee)+' · ':''}${t.due?'due '+t.due:'no due date'} · ${rel(t.ts)}</div>
+      </div>
+      <span class="text-[11px] font-semibold" style="color:${prColor}">${t.priority||'normal'}</span>
+    </div>`;
+  }
+  async function loadPatientTasks(pid){
+    const el = document.getElementById('crmTasks'); if(!el) return;
+    try{
+      const r = await fetch(CONVEX_URL+'/patient-tasks',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({patient_id:pid})});
+      const j = await r.json();
+      if(!j.ok){ el.innerHTML = '<div class="px-4 py-5 text-sm text-[#9aa0ab] text-center">Could not load tasks.</div>'; return; }
+      const open = j.tasks.filter(t=>t.status!=='done'), closed = j.tasks.filter(t=>t.status==='done');
+      el.innerHTML = j.tasks.length ? (open.map(taskRow).join('') + closed.map(taskRow).join(''))
+        : '<div class="px-4 py-5 text-sm text-[#9aa0ab] text-center">No tasks for this patient yet.</div>';
+    }catch(e){ console.warn('loadPatientTasks',e); el.innerHTML='<div class="px-4 py-5 text-sm text-[#9aa0ab] text-center">Could not load tasks.</div>'; }
+  }
+  window.addTask = async function(pid){
+    const p = patients.find(x=>x.id===pid); if(!p) return;
+    const title = prompt('New task for '+(p.first||'')+' '+(p.last||'')+':'); if(!title||!title.trim()) return;
+    try{
+      const r = await fetch(CONVEX_URL+'/tasks-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'create',title:title.trim(),patient_id:pid,patient_ref:`${p.first||''} ${p.last||''}`.trim()})});
+      const j = await r.json(); if(!j.ok){ alert('Could not add task'); return; }
+      loadPatientTasks(pid);
+    }catch(e){ console.warn('addTask',e); alert('Could not add task'); }
+  };
+  window.toggleTask = async function(id, done){
+    try{
+      await fetch(CONVEX_URL+'/tasks-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'update',id,status:done?'done':'todo'})});
+      if(selId) loadPatientTasks(selId);
+    }catch(e){ console.warn('toggleTask',e); }
+  };
+
+  // ============ Patient Portal view (provider sees what the patient sees, no sign-in) ============
+  async function renderPortalView(p){
+    $('#detailMain').innerHTML = `
+      <div class="p-6 max-w-3xl mx-auto">
+        <div class="rounded-xl bg-[#eef4ff] border border-[#cfe0ff] px-4 py-2.5 mb-5 text-xs text-[#0a52c0] flex items-center gap-2"><span>👁</span> Read-only patient-portal view · for in-visit review. The patient does not need to sign in.</div>
+        <div id="portalBody"><div class="text-sm text-[#9aa0ab] py-8 text-center">Loading ${esc(p.first||'patient')}'s portal…</div></div>
+      </div>`;
+    try{
+      const r = await fetch(CONVEX_URL+'/portal-view',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({patient_id:p.id})});
+      const j = await r.json();
+      const body = document.getElementById('portalBody'); if(!body) return;
+      if(!j.ok){ body.innerHTML = `<div class="text-sm text-[#be123c] py-8 text-center">${esc(j.error||'Could not load portal.')}</div>`; return; }
+      const pt = j.patient||{}, na = j.nextAppt, ib = (j.inbody&&j.inbody.length)?j.inbody[j.inbody.length-1]:null, plan = j.plan, logs = j.logs||[];
+      body.innerHTML = `
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-12 h-12 rounded-full bg-[#0a6cf5] text-white flex items-center justify-center font-display text-lg font-semibold">${esc((pt.first||'?')[0]+(pt.last||'')[0]||'?')}</div>
+          <div><div class="font-display text-xl font-semibold">Welcome back, ${esc(pt.first||'')}</div><div class="text-sm text-[#6b7280]">${PROG[pt.program]||pt.program||''} program</div></div>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-4 mb-6">
+          <div class="glass border border-[#e6e9ee] rounded-2xl p-5">
+            <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-3">Next appointment</div>
+            ${na? `<div class="font-display text-lg font-semibold">${esc(na.type||'Visit')}</div><div class="text-sm text-[#6b7280] mt-1">${fmtDT(na.when)}${na.provider?` · ${esc(na.provider)}`:''}</div>`
+                : '<div class="text-sm text-[#9aa0ab]">No upcoming appointment scheduled.</div>'}
+          </div>
+          <div class="glass border border-[#e6e9ee] rounded-2xl p-5">
+            <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-3">Latest body composition</div>
+            ${ib? `<div class="grid grid-cols-2 gap-2 text-sm">
+                <div><div class="text-[11px] text-[#6b7280]">Weight</div><div class="font-display text-lg font-semibold">${ib.weight_lb} lb</div></div>
+                <div><div class="text-[11px] text-[#6b7280]">Body fat</div><div class="font-display text-lg font-semibold">${ib.pbf_pct}%</div></div>
+                <div><div class="text-[11px] text-[#6b7280]">Muscle</div><div class="font-display text-lg font-semibold">${ib.smm_lb} lb</div></div>
+                <div><div class="text-[11px] text-[#6b7280]">BMI</div><div class="font-display text-lg font-semibold">${ib.bmi}</div></div>
+              </div>` : '<div class="text-sm text-[#9aa0ab]">No InBody scan on file yet.</div>'}
+          </div>
+        </div>
+        <div class="glass border border-[#e6e9ee] rounded-2xl p-5 mb-6">
+          <div class="flex items-center justify-between mb-3"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">My Personal Transformation Plan</div>${plan?`<button onclick="openVbisHandbook('${p.id}')" class="text-xs text-[#0a6cf5] font-semibold hover:underline">Open full plan →</button>`:''}</div>
+          ${plan? `<div class="text-sm text-[#16201d]">${esc((plan.handbook&&plan.handbook.summary)|| (plan.summary) ||'Your personalized plan is ready. Tap to open the full transformation plan.')}</div>`
+                : '<div class="text-sm text-[#9aa0ab]">No plan published yet. Your care team will generate one after your first scan.</div>'}
+        </div>
+        <div class="glass border border-[#e6e9ee] rounded-2xl p-5">
+          <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-4">My recent activity</div>
+          ${logs.length? logs.slice(0,12).map(l=>`<div class="flex items-center justify-between gap-3 py-2 border-b border-[#f1f3f7] last:border-0"><div class="text-sm text-[#16201d]">${esc(l.kind)}${l.body?` · ${esc(l.body)}`:''}</div><div class="text-xs text-[#9aa0ab] whitespace-nowrap">${l.value_num!=null?esc(l.value_num)+(l.unit?' '+esc(l.unit):'')+' · ':''}${rel(new Date(l.logged_at).toISOString())}</div></div>`).join('')
+                     : '<div class="text-sm text-[#9aa0ab] py-2">No activity logged yet.</div>'}
+        </div>
+      </div>`;
+    }catch(e){ console.warn('renderPortalView',e); const body=document.getElementById('portalBody'); if(body) body.innerHTML='<div class="text-sm text-[#be123c] py-8 text-center">Could not load portal.</div>'; }
+  }
+
   const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  // ============ Pipeline board (HubSpot-style Kanban) ============
+  // New Inquiry sits BEFORE Lead: brand-new inbound (web/phone/chat) lands here so real inquiries
+  // stop getting buried under already-seen "leads." pipeline_stage comes resolved from the backend
+  // (explicit drag wins, else derived from clinical status + scan/appt presence).
+  const PIPE = [
+    {k:'new_inquiry',    label:'New Inquiry',     accent:'#f59e0b', tint:'#fff7ed'},
+    {k:'lead',           label:'Lead',            accent:'#0a6cf5', tint:'#f7f8fa'},
+    {k:'consult_booked', label:'Consult Booked',  accent:'#0a6cf5', tint:'#f7f8fa'},
+    {k:'intake',         label:'Intake / Labs',   accent:'#8b5cf6', tint:'#f7f8fa'},
+    {k:'provider_review',label:'Provider Review', accent:'#8b5cf6', tint:'#f7f8fa'},
+    {k:'rx_written',     label:'Rx Written',      accent:'#0a7a3d', tint:'#f7f8fa'},
+    {k:'active',         label:'Active',          accent:'#0a7a3d', tint:'#f0fdf4'},
+    {k:'refill_due',     label:'Refill Due',      accent:'#f59e0b', tint:'#f7f8fa'},
+    {k:'at_risk',        label:'At Risk',         accent:'#be123c', tint:'#fef2f2'},
+    {k:'churned',        label:'Churned',         accent:'#9aa0ab', tint:'#f7f8fa'},
+  ];
+  let boardOpen = false;
+  function stageOf(p){ return p.pipeline_stage || 'new_inquiry'; }
+  window.toggleBoard = function(){
+    boardOpen = !boardOpen;
+    const pane=document.getElementById('boardPane'), btn=document.getElementById('boardToggle');
+    pane.classList.toggle('hidden', !boardOpen);
+    btn.classList.toggle('bg-[#0a6cf5]', boardOpen); btn.classList.toggle('text-white', boardOpen);
+    btn.childNodes[0].nodeValue = boardOpen ? '☰ List ' : '🗂 Board';
+    if(boardOpen) renderBoard();
+  };
+  function boardCard(p){
+    const ch = {phone:'📞',web:'🌐',chat:'💬'}[p.channel]||'';
+    const cold = p.last_activity && (Date.now()-p.last_activity > 7*864e5) && stageOf(p)!=='churned';
+    const na = p.next_appt ? fmtDT(p.next_appt) : '';
+    const nm = ((p.first||'')+' '+(p.last||'')).trim() || (p.display_id||'Patient');
+    return `<div draggable="true" ondragstart="dragCard(event,'${p.id}')" onclick="openFromBoard('${p.id}')" class="bg-white border border-[#e6e9ee] rounded-lg p-2.5 cursor-pointer hover:border-[#0a6cf5]/60 hover:shadow-sm transition">
+      <div class="flex items-center justify-between gap-1"><div class="text-sm font-semibold text-[#16201d] truncate">${esc(nm)}</div>${ch?`<span title="${p.channel} inquiry" class="flex-shrink-0">${ch}</span>`:''}</div>
+      <div class="text-[11px] text-[#6b7280] mt-0.5 truncate">${PROG[p.program]||p.program||'No program'}</div>
+      <div class="flex items-center justify-between mt-1.5 text-[10px] gap-1">${na?`<span class="text-[#0a6cf5] truncate">📅 ${na}</span>`:'<span></span>'}${cold?'<span class="text-[#be123c] flex-shrink-0" title="No activity in 7+ days">● cold</span>':(p.last_activity?`<span class="text-[#9aa0ab] flex-shrink-0">${rel(new Date(p.last_activity).toISOString())}</span>`:'')}</div>
+    </div>`;
+  }
+  function renderBoard(){
+    const pane=document.getElementById('boardPane'); if(!pane) return;
+    const byStage={}; PIPE.forEach(s=>byStage[s.k]=[]);
+    patients.forEach(p=>{ const k=stageOf(p); (byStage[k]||byStage['new_inquiry']).push(p); });
+    Object.values(byStage).forEach(arr=>arr.sort((a,b)=>(a.last_activity||0)-(b.last_activity||0))); // stalest first
+    pane.innerHTML = `<div class="h-full flex gap-3 overflow-x-auto px-4 py-4">${PIPE.map(s=>{
+      const cards=byStage[s.k]||[]; const isInq=s.k==='new_inquiry';
+      return `<div class="flex-shrink-0 w-60 flex flex-col h-full" ondragover="event.preventDefault()" ondrop="dropCard(event,'${s.k}')">
+        <div class="flex items-center justify-between mb-2 px-1">
+          <span class="text-[11px] font-bold uppercase tracking-wide" style="color:${s.accent}">${s.label}</span>
+          <span class="text-[11px] font-semibold ${isInq&&cards.length?'bg-[#be123c] text-white':'text-[#6b7280] bg-[#eef1f4]'} rounded-full px-2 py-0.5 min-w-[20px] text-center">${cards.length}</span>
+        </div>
+        <div class="flex-1 space-y-2 overflow-y-auto rounded-xl border ${isInq?'border-[#ffd9a8]':'border-[#eef1f4]'} p-2" style="background:${s.tint}">
+          ${cards.map(boardCard).join('')||'<div class="text-[11px] text-[#c0c5cd] text-center py-4">empty</div>'}
+        </div>
+      </div>`;}).join('')}</div>`;
+  }
+  let _dragId=null;
+  window.dragCard=function(e,id){ _dragId=id; try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',id); }catch(_){} };
+  window.dropCard=async function(e,stage){
+    e.preventDefault(); const id=_dragId||(e.dataTransfer&&e.dataTransfer.getData('text/plain')); _dragId=null; if(!id)return;
+    const p=patients.find(x=>x.id===id); if(!p||stageOf(p)===stage)return;
+    const prev=p.pipeline_stage; p.pipeline_stage=stage; renderBoard(); updateInquiryBadge(); // optimistic
+    try{ const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'set_stage',patient_id:id,stage})}); const j=await r.json(); if(!j.ok)throw new Error(j.error||'failed'); }
+    catch(err){ console.warn('set_stage',err); p.pipeline_stage=prev; renderBoard(); updateInquiryBadge(); alert('Could not move card'); }
+  };
+  window.openFromBoard=function(id){
+    boardOpen=false; document.getElementById('boardPane').classList.add('hidden');
+    const btn=document.getElementById('boardToggle'); btn.classList.remove('bg-[#0a6cf5]','text-white'); btn.childNodes[0].nodeValue='🗂 Board';
+    setViewMode('crm'); select(id);
+  };
+  function updateInquiryBadge(){
+    const n=patients.filter(p=>stageOf(p)==='new_inquiry').length, b=document.getElementById('inqBadge'); if(!b)return;
+    if(n>0){ b.textContent=n; b.classList.remove('hidden'); } else b.classList.add('hidden');
+  }
   async function loadClinicalReview(pid){
     const el = document.getElementById('clinicalReviewPanel');
     if (!el) return;
@@ -1147,7 +1434,9 @@ HARD RULES:
         if (j.ok && j.patients) {
           liveLoaded = true;
           patients = j.patients;
-          if (!patients.find(p => p.id === selId)) selId = pickDefault();
+          // Land NEUTRAL — never auto-open a random record. Keep the open patient if still
+          // present; if they vanished (or none selected yet), fall back to the empty state.
+          if (selId && !patients.find(p => p.id === selId)) selId = null;
           kpis(); renderList(); renderDetail();
         }
       } catch (e) { console.warn('convex load failed:', e.message); }
@@ -1157,7 +1446,7 @@ HARD RULES:
     try {
       const r = await fetch(`${SB}/functions/v1/vit-crm-data`, { method: 'POST', headers: { 'content-type': 'application/json', 'apikey': ANON, 'authorization': `Bearer ${ANON}` } });
       const j = await r.json();
-      if (j.ok && j.patients) { liveLoaded = true; patients = j.patients; if (!patients.find(p => p.id === selId)) selId = pickDefault(); kpis(); renderList(); renderDetail(); }
+      if (j.ok && j.patients) { liveLoaded = true; patients = j.patients; if (selId && !patients.find(p => p.id === selId)) selId = null; kpis(); renderList(); renderDetail(); }
     } catch (e) { console.warn('live load failed:', e.message); }
   }
   // Live-first when wired, no synthetic flash. Seed only renders if the live load fails.
@@ -1172,7 +1461,7 @@ HARD RULES:
     })();
     if (USE_SUPABASE) setInterval(loadData, 15000);  // Convex is reactive; no polling needed
   } else {
-    kpis(); renderList(); if(patients[0]) select(pickDefault());
+    kpis(); renderList(); renderDetail();
   }
 
   // ---------------- medication reference (OpenFDA, provider-side, no PHI sent) ----------------
