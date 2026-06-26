@@ -275,6 +275,10 @@
         <div><label class="text-xs text-[#6b7280] font-semibold">Program</label><select id="apProgram" class="field mt-1"><option value="glp1">GLP-1 weight loss</option><option value="medicare_glp1">Medicare GLP-1 Bridge</option><option value="metabolic">Metabolic &amp; hormone</option><option value="coaching">Coaching &amp; nutrition</option><option value="unsure">Not sure yet</option></select></div>
         <div><label class="text-xs text-[#6b7280] font-semibold">Status</label><select id="apStatus" class="field mt-1"><option value="lead">Lead</option><option value="new_patient">New Patient</option><option value="active">Active</option></select></div>
       </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-xs text-[#6b7280] font-semibold">Referred by (optional)</label><select id="apReferPractice" onchange="apReferProviderOpts()" class="field mt-1"><option value="">— none —</option></select></div>
+        <div><label class="text-xs text-[#6b7280] font-semibold">Referring doctor</label><select id="apReferProvider" class="field mt-1"><option value="">— any / unspecified —</option></select></div>
+      </div>
       <div><label class="text-xs text-[#6b7280] font-semibold">First note (optional)</label><textarea id="apNote" rows="2" class="field mt-1" placeholder="How they came in, what they want…"></textarea></div>
       <label class="flex items-start gap-2 text-sm text-[#3d4a45] cursor-pointer mt-1"><input id="apLogin" type="checkbox" class="w-4 h-4 mt-0.5 accent-[#0a6cf5]"><span>Create a patient portal login <span class="text-[#9aa0ab]">(needs an email · generates a temporary password to hand over)</span></span></label>
       <div id="apErr" class="text-sm text-rose-600 hidden"></div>
@@ -1807,11 +1811,27 @@ HARD RULES:
   function closeRx(){ $('#rxModal').classList.add('hidden'); $('#rxModal').classList.remove('flex'); }
 
   // ---------------- manual Add patient ----------------
+  // Referred-by selects on the add-patient form, populated from the referral picker cache.
+  async function populateAddReferPicker(){
+    const sel=document.getElementById('apReferPractice'); if(!sel) return;
+    const list=await loadReferralPicker();
+    sel.innerHTML='<option value="">— none —</option>'+list.map(pr=>`<option value="${pr.id}">${esc(pr.name)}</option>`).join('');
+    apReferProviderOpts();
+  }
+  window.apReferProviderOpts=function(){
+    const pid=(document.getElementById('apReferPractice')||{}).value||'';
+    const pr=(referralPickerCache||[]).find(x=>x.id===pid); const docs=(pr&&pr.providers)||[];
+    const dsel=document.getElementById('apReferProvider'); if(!dsel) return;
+    dsel.innerHTML='<option value="">— any / unspecified —</option>'+docs.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('');
+    dsel.disabled=!docs.length;
+  };
   window.openAddPatient = function(){
     ['apFirst','apLast','apPhone','apDob','apEmail','apNote'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
     document.getElementById('apProgram').value='glp1';
     document.getElementById('apStatus').value='lead';
     document.getElementById('apLogin').checked=false;
+    const rp=document.getElementById('apReferPractice'); if(rp) rp.value='';
+    populateAddReferPicker();
     const err=document.getElementById('apErr'); err.classList.add('hidden'); err.textContent='';
     const m=document.getElementById('addModal'); m.classList.remove('hidden'); m.classList.add('flex');
     setTimeout(()=>document.getElementById('apFirst').focus(),40);
@@ -1869,6 +1889,13 @@ HARD RULES:
         btn.disabled=false; btn.textContent='Add patient';
         if(j.existing_id){ closeAddPatient(); select(j.existing_id); }
         return;
+      }
+      // referral attribution: tag the new patient with the chosen partner/doctor (if any)
+      const rPid=(document.getElementById('apReferPractice')||{}).value||'';
+      const rProv=(document.getElementById('apReferProvider')||{}).value||'';
+      if(j.id && rPid){
+        try{ await fetch(`${CONVEX_URL}/referral-data`,{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'set_referred_by',patient_id:j.id,practice_id:rPid,provider_id:rProv||undefined})}); }
+        catch(e){ console.warn('set referred_by',e); }
       }
       let loginMsg='';
       if(wantLogin && j.id){
