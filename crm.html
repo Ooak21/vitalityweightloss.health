@@ -115,16 +115,21 @@
     <span class="ml-2 flex items-center gap-1.5 text-xs text-[#0a6cf5]"><span class="w-1.5 h-1.5 bg-[#0a6cf5] rounded-full animate-pulse"></span>Live</span>
   </div>
   <div class="flex items-center gap-3">
-    <button onclick="openAddPatient()" class="px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add patient</button>
-    <div class="flex items-center rounded-xl border border-[#e6e9ee] overflow-hidden text-xs font-semibold" id="viewModeTabs" title="Switch what you see for the selected patient">
+    <div class="flex items-center rounded-xl border border-[#e6e9ee] overflow-hidden text-xs font-semibold" id="sectionTabs" title="Switch between patients and referral partners">
+      <button onclick="setSection('patients')" data-sec="patients" class="sec-btn px-3 py-2 bg-[#16201d] text-white">Patients</button>
+      <button onclick="setSection('referrals')" data-sec="referrals" class="sec-btn px-3 py-2 text-[#4b5563] border-l border-[#e6e9ee]">Partners</button>
+    </div>
+    <button onclick="openAddPatient()" class="pt-only px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add patient</button>
+    <button onclick="addPractice()" class="rf-only hidden px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add practice</button>
+    <div class="pt-only flex items-center rounded-xl border border-[#e6e9ee] overflow-hidden text-xs font-semibold" id="viewModeTabs" title="Switch what you see for the selected patient">
       <button onclick="setViewMode('crm')" data-mode="crm" class="vm-btn px-3 py-2 bg-[#0a6cf5] text-white">CRM</button>
       <button onclick="setViewMode('provider')" data-mode="provider" class="vm-btn px-3 py-2 text-[#4b5563] border-l border-[#e6e9ee]">Provider</button>
       <button onclick="setViewMode('portal')" data-mode="portal" class="vm-btn px-3 py-2 text-[#4b5563] border-l border-[#e6e9ee]">Patient Portal</button>
     </div>
     <button id="boardToggle" onclick="toggleBoard()" title="Pipeline board (drag patients between stages)" class="relative px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7]">🗂 Board<span id="inqBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#be123c] text-white text-[10px] font-bold flex items-center justify-center" title="New inquiries waiting"></span></button>
-    <button id="importBtn" onclick="importScan()" class="px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">⬆ Import InBody scan</button>
-    <button onclick="openRx()" title="GLP-1 medication reference (FDA)" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7]">℞ Med reference</button>
-    <button onclick="openBloomQueue()" title="Vitality Bloom hair-loss review queue" class="px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">🌱 Bloom queue</button>
+    <button id="importBtn" onclick="importScan()" class="pt-only px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">⬆ Import InBody scan</button>
+    <button onclick="openRx()" title="GLP-1 medication reference (FDA)" class="pt-only px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7]">℞ Med reference</button>
+    <button onclick="openBloomQueue()" title="Vitality Bloom hair-loss review queue" class="pt-only px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">🌱 Bloom queue</button>
     <a href="admin.html" class="text-xs text-[#6b7280] hover:text-[#16201d]" title="Admin & Operations (admins only)">⚙ Admin</a>
     <button onclick="(window.__vca?window.__vca.signOut():(window.__vitSb?window.__vitSb.auth.signOut():Promise.resolve())).then(()=>location.replace('login.html'))" class="text-xs text-[#6b7280] hover:text-[#16201d]">Sign out</button>
     <div id="userAvatar" title="Signed in" class="w-8 h-8 rounded-full bg-[#f1f3f7] border border-[#e6e9ee] flex items-center justify-center text-xs font-semibold text-[#4b5563]">··</div>
@@ -133,6 +138,29 @@
 
 <!-- PIPELINE BOARD (overlay; toggled by 🗂 Board) -->
 <div id="boardPane" class="hidden fixed left-0 right-0 top-16 bottom-0 bg-[#fbfcfd] z-30 overflow-hidden"></div>
+
+<!-- Referred-by picker (tag which partner practice/doctor sent a patient) -->
+<div id="referModal" class="hidden fixed inset-0 bg-black/40 z-40 items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+    <div class="flex items-center justify-between mb-4"><h3 class="font-display text-lg font-semibold">Referred by</h3><button onclick="closeReferModal()" class="text-[#9aa0ab] hover:text-[#16201d] text-lg leading-none">✕</button></div>
+    <p class="text-xs text-[#6b7280] mb-4">Tag the referral partner who sent this patient. They'll show on that practice's record and roll up its referral count.</p>
+    <label class="text-xs font-semibold text-[#6b7280]">Practice</label>
+    <select id="referPractice" onchange="referPracticeChanged()" class="field w-full mb-3 mt-1"></select>
+    <label class="text-xs font-semibold text-[#6b7280]">Doctor (optional)</label>
+    <select id="referProvider" class="field w-full mb-5 mt-1"></select>
+    <div class="flex justify-end gap-2"><button onclick="closeReferModal()" class="px-4 py-2 rounded-xl border border-[#e6e9ee] text-sm font-semibold hover:bg-[#f1f3f7]">Cancel</button><button onclick="saveReferredBy()" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Save</button></div>
+  </div>
+</div>
+
+<!-- Reusable form-modal card (add practice / doctor / log touch / task) -->
+<div id="formModal" class="hidden fixed inset-0 bg-black/40 z-40 items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+    <div class="flex items-center justify-between mb-1"><h3 id="fmTitle" class="font-display text-lg font-semibold"></h3><button onclick="closeFormModal()" class="text-[#9aa0ab] hover:text-[#16201d] text-lg leading-none">✕</button></div>
+    <p id="fmSub" class="text-xs text-[#6b7280] mb-4"></p>
+    <div id="fmFields" class="space-y-3"></div>
+    <div class="flex justify-end gap-2 mt-6"><button onclick="closeFormModal()" class="px-4 py-2 rounded-xl border border-[#e6e9ee] text-sm font-semibold hover:bg-[#f1f3f7]">Cancel</button><button id="fmSave" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Save</button></div>
+  </div>
+</div>
 
 <!-- MAIN -->
 <div id="mainGrid" class="flex-1 grid grid-cols-1 md:grid-cols-[380px_1fr] gap-0 min-h-0">
@@ -575,6 +603,7 @@
   // posture). Type 2+ chars to find a patient by name, DOB, phone, or ID. The 🗂 Board is where
   // you see everyone. Results show name + DOB so you confirm the right person before opening.
   function renderList(){
+    if(section==='referrals'){ if(boardOpen) renderBoard(); renderPracticeList(); return; }
     updateInquiryBadge();
     if(boardOpen) renderBoard();
     const listEl=$('#list'); if(!listEl) return;
@@ -707,6 +736,7 @@
       </div>`;
   }
   function renderDetail(){
+    if(section==='referrals'){ if(!selId){ renderPartnerEmpty(); return; } renderPracticeView(selId); return; }
     const p = patients.find(x=>x.id===selId);
     if(!p){ renderEmptyState(); return; }
     if(viewMode==='provider') return renderProviderView(p);
@@ -845,6 +875,7 @@
           ${infoRow(p,'phone','Phone')}
           ${infoRow(p,'dob','Date of birth')}
           ${infoRow(p,'program','Program')}
+          <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Referred by</span><span class="text-sm cursor-pointer hover:bg-[#f4f6f8] rounded px-1.5 py-0.5 -mr-1 ${p.referred_by?'text-[#0a6cf5] font-medium':'text-[#9aa0ab] italic'}" title="Click to set the referral source" onclick="openReferPicker('${p.id}')">${p.referred_by?esc(p.referred_by.practice_name+(p.referred_by.provider_name?' · '+p.referred_by.provider_name:'')):'set referral source…'}</span></div>
           <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Portal login</span><span class="text-sm ${p.has_login?'text-[#0a7a3d]':'text-[#9aa0ab]'}">${p.has_login?'Active':'Not set up'}</span></div>
           <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Patient since</span><span class="text-sm text-[#16201d]">${fmtDate(p.created)}</span></div>
           ${p.tags&&p.tags.length?`<div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Tags</span><span class="text-sm text-[#16201d] flex flex-wrap gap-1 justify-end">${p.tags.map(t=>`<span class="badge b-active">${t}</span>`).join('')}</span></div>`:''}
@@ -905,6 +936,7 @@
   window.toggleTask = async function(id, done){
     try{
       await fetch(CONVEX_URL+'/tasks-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'update',id,status:done?'done':'todo'})});
+      if(section==='referrals'){ if(selId) renderPracticeView(selId); return; }
       if(selId) loadPatientTasks(selId);
     }catch(e){ console.warn('toggleTask',e); }
   };
@@ -997,6 +1029,7 @@
     </div>`;
   }
   function renderBoard(){
+    if(section==='referrals') return renderReferralBoard();
     const pane=document.getElementById('boardPane'); if(!pane) return;
     const byStage={}; PIPE.forEach(s=>byStage[s.k]=[]);
     patients.forEach(p=>{ const k=stageOf(p); (byStage[k]||byStage['new_inquiry']).push(p); });
@@ -1017,6 +1050,13 @@
   window.dragCard=function(e,id){ _dragId=id; try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',id); }catch(_){} };
   window.dropCard=async function(e,stage){
     e.preventDefault(); const id=_dragId||(e.dataTransfer&&e.dataTransfer.getData('text/plain')); _dragId=null; if(!id)return;
+    if(section==='referrals'){
+      const pr=practices.find(x=>x.id===id); if(!pr||pr.stage===stage)return;
+      const prev=pr.stage; pr.stage=stage; renderReferralBoard(); // optimistic
+      try{ const r=await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'set_stage',practice_id:id,stage})}); const j=await r.json(); if(!j.ok)throw new Error(j.error||'failed'); }
+      catch(err){ console.warn('ref set_stage',err); pr.stage=prev; renderReferralBoard(); alert('Could not move card'); }
+      return;
+    }
     const p=patients.find(x=>x.id===id); if(!p||stageOf(p)===stage)return;
     const prev=p.pipeline_stage; p.pipeline_stage=stage; renderBoard(); updateInquiryBadge(); // optimistic
     try{ const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'set_stage',patient_id:id,stage})}); const j=await r.json(); if(!j.ok)throw new Error(j.error||'failed'); }
@@ -1031,6 +1071,284 @@
     const n=patients.filter(p=>stageOf(p)==='new_inquiry').length, b=document.getElementById('inqBadge'); if(!b)return;
     if(n>0){ b.textContent=n; b.classList.remove('hidden'); } else b.classList.add('hidden');
   }
+
+  // ============ Referral Partners (B2B: clinics + doctors that refer patients) ============
+  const REF_STAGES = [
+    {k:'prospect',        label:'Prospect',        accent:'#6b7280', tint:'#f7f8fa'},
+    {k:'contacted',       label:'Contacted',       accent:'#0a6cf5', tint:'#f7f8fa'},
+    {k:'meeting_set',     label:'Meeting Set',     accent:'#8b5cf6', tint:'#f7f8fa'},
+    {k:'active_referrer', label:'Active Referrer', accent:'#0a7a3d', tint:'#f0fdf4'},
+    {k:'dormant',         label:'Dormant',         accent:'#9aa0ab', tint:'#f7f8fa'},
+  ];
+  const REF_LABEL={}, REF_ACCENT={}, REF_TINT={}; REF_STAGES.forEach(s=>{REF_LABEL[s.k]=s.label;REF_ACCENT[s.k]=s.accent;REF_TINT[s.k]=s.tint;});
+  const REF_KIND={call:'📞',visit:'🤝',email:'✉',note:'📝'};
+  let section='patients', practices=[];
+
+  window.setSection=function(sec){
+    if(section===sec)return; section=sec; selId=null;
+    document.querySelectorAll('.sec-btn').forEach(b=>{const on=b.dataset.sec===sec;b.classList.toggle('bg-[#16201d]',on);b.classList.toggle('text-white',on);b.classList.toggle('text-[#4b5563]',!on);});
+    document.querySelectorAll('.pt-only').forEach(e=>e.classList.toggle('hidden',sec!=='patients'));
+    document.querySelectorAll('.rf-only').forEach(e=>e.classList.toggle('hidden',sec!=='referrals'));
+    if(boardOpen){ boardOpen=false; document.getElementById('boardPane').classList.add('hidden'); const bt=document.getElementById('boardToggle'); bt.classList.remove('bg-[#0a6cf5]','text-white'); bt.childNodes[0].nodeValue='🗂 Board'; }
+    const s=$('#search'); s.value=''; s.placeholder = sec==='referrals' ? '🔍 Search practice, doctor, or city…' : '🔍 Search name, DOB, or patient ID…';
+    if(sec==='referrals') loadReferrals();
+    renderList(); renderDetail();
+  };
+  async function loadReferrals(){
+    try{ const r=await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:'{"action":"board"}'}); const j=await r.json(); if(j.ok){ practices=j.practices; if(section==='referrals'){ renderList(); if(boardOpen) renderReferralBoard(); } } }
+    catch(e){ console.warn('loadReferrals',e); }
+  }
+
+  function renderPartnerEmpty(){
+    $('#detailMain').innerHTML = `<div class="h-full flex items-center justify-center p-8"><div class="text-center max-w-md">
+      <div class="w-14 h-14 rounded-2xl bg-[#eef4ff] flex items-center justify-center mx-auto mb-4 text-2xl">🏥</div>
+      <div class="font-display text-xl font-semibold mb-1">Referral partners</div>
+      <div class="text-sm text-[#6b7280] mb-5">Pick a practice to see its doctors, referrals, and relationship history. Or open the 🗂 Board to work the whole pipeline.</div>
+      <button onclick="addPractice()" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold">+ Add practice</button>
+    </div></div>`;
+  }
+  function renderPracticeList(){
+    const listEl=$('#list'); if(!listEl) return;
+    if(!practices.length){ listEl.innerHTML=`<div class="text-center px-4 pt-12"><div class="text-3xl mb-2 opacity-60">🏥</div><div class="text-sm text-[#6b7280]">No referral partners yet.</div><button onclick="addPractice()" class="mt-4 text-xs text-[#0a6cf5] font-semibold hover:underline">+ Add your first practice</button></div>`; return; }
+    const ql=($('#search').value||'').trim().toLowerCase();
+    let rows=practices.slice();
+    if(ql) rows=rows.filter(p=>((p.name||'')+' '+(p.city||'')+' '+(p.type||'')).toLowerCase().includes(ql));
+    rows.sort((a,b)=>(b.last_referral_at||b.last_touch_at||0)-(a.last_referral_at||a.last_touch_at||0));
+    listEl.innerHTML = rows.length? rows.map(practiceRow).join('') : '<div class="text-center text-[#9aa0ab] text-sm py-10">No match</div>';
+  }
+  function practiceRow(p){
+    const overdue=p.next_checkin_at && p.next_checkin_at<Date.now();
+    return `<div class="row border border-transparent rounded-xl px-3 py-2 mb-0.5 ${p.id===selId?'sel':''}" onclick="select('${p.id}')">
+      <div class="flex items-center justify-between gap-2">
+        <div class="font-semibold text-[13px] truncate">${esc(p.name)}</div>
+        <span class="badge" style="background:${REF_TINT[p.stage]||'#eef1f4'};color:${REF_ACCENT[p.stage]||'#4b5563'}">${REF_LABEL[p.stage]||p.stage}</span>
+      </div>
+      <div class="flex items-center justify-between mt-0.5 text-[11px] text-[#6b7280]">
+        <span>${[p.type,p.city].filter(Boolean).join(' · ')||'—'}</span>
+        <span>${p.referral_count?`${p.referral_count} ref${p.referral_count>1?'s':''}`:''}${overdue?' <span class="text-[#be123c]">● check in</span>':''}</span>
+      </div>
+    </div>`;
+  }
+  function renderReferralBoard(){
+    const pane=document.getElementById('boardPane'); if(!pane) return;
+    const byStage={}; REF_STAGES.forEach(s=>byStage[s.k]=[]);
+    practices.forEach(p=>{ (byStage[p.stage]||byStage['prospect']).push(p); });
+    pane.innerHTML = `<div class="h-full flex gap-3 overflow-x-auto px-4 py-4">${REF_STAGES.map(s=>{
+      const cards=byStage[s.k]||[];
+      return `<div class="flex-shrink-0 w-64 flex flex-col h-full" ondragover="event.preventDefault()" ondrop="dropCard(event,'${s.k}')">
+        <div class="flex items-center justify-between mb-2 px-1"><span class="text-[11px] font-bold uppercase tracking-wide" style="color:${s.accent}">${s.label}</span><span class="text-[11px] font-semibold text-[#6b7280] bg-[#eef1f4] rounded-full px-2 py-0.5 min-w-[20px] text-center">${cards.length}</span></div>
+        <div class="flex-1 space-y-2 overflow-y-auto rounded-xl border border-[#eef1f4] p-2" style="background:${s.tint}">
+          ${cards.map(refCard).join('')||'<div class="text-[11px] text-[#c0c5cd] text-center py-4">empty</div>'}
+        </div>
+      </div>`;}).join('')}</div>`;
+  }
+  function refCard(p){
+    const overdue=p.next_checkin_at && p.next_checkin_at<Date.now();
+    return `<div draggable="true" ondragstart="dragCard(event,'${p.id}')" onclick="openRefFromBoard('${p.id}')" class="bg-white border border-[#e6e9ee] rounded-lg p-2.5 cursor-pointer hover:border-[#0a6cf5]/60 hover:shadow-sm transition">
+      <div class="text-sm font-semibold text-[#16201d] truncate">${esc(p.name)}</div>
+      <div class="text-[11px] text-[#6b7280] mt-0.5 truncate">${[p.type,p.city].filter(Boolean).join(' · ')||'—'}</div>
+      <div class="flex items-center justify-between mt-1.5 text-[10px] gap-1">${p.referral_count?`<span class="text-[#0a7a3d]">${p.referral_count} referred</span>`:'<span></span>'}${overdue?'<span class="text-[#be123c] flex-shrink-0" title="Overdue for a check-in">● check in</span>':(p.last_touch_at?`<span class="text-[#9aa0ab] flex-shrink-0">${rel(new Date(p.last_touch_at).toISOString())}</span>`:'')}</div>
+    </div>`;
+  }
+  window.openRefFromBoard=function(id){ boardOpen=false; document.getElementById('boardPane').classList.add('hidden'); const bt=document.getElementById('boardToggle'); bt.classList.remove('bg-[#0a6cf5]','text-white'); bt.childNodes[0].nodeValue='🗂 Board'; select(id); };
+
+  function prRow(p,field,label){ const v=p[field]; const disp=v?esc(String(v)):'<span class="text-[#9aa0ab] italic">add…</span>'; return `<div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">${label}</span><span class="text-sm text-[#16201d] cursor-text hover:bg-[#f4f6f8] rounded px-1.5 py-0.5 -mr-1" title="Click to edit" data-val="${esc(v?String(v):'')}" onclick="prEdit(this,'${p.id}','${field}')">${disp}</span></div>`; }
+  function refNoteRow(n){ return `<div class="flex gap-3 pb-4"><div class="flex flex-col items-center"><div class="w-2 h-2 rounded-full bg-[#0a6cf5] mt-1.5"></div><div class="w-px flex-1 bg-[#e6e9ee] mt-1"></div></div><div class="flex-1 -mt-0.5"><div class="flex items-center gap-2 text-xs text-[#6b7280]"><span>${REF_KIND[n.kind]||'📝'}</span><span class="font-semibold text-[#3d4a45] capitalize">${n.kind}</span>${n.author?`<span>· ${esc(n.author)}</span>`:''}<span>· ${rel(new Date(n.ts).toISOString())}</span></div><div class="text-sm text-[#16201d] mt-1 leading-relaxed">${esc(n.body)}</div></div></div>`; }
+  function doctorRow(pid,d){ return `<div class="flex items-start justify-between gap-3 px-4 py-3 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm font-medium text-[#16201d]">${esc(d.name)}${d.is_primary?'<span class="badge b-active ml-1">primary</span>':''}</div><div class="text-xs text-[#6b7280] mt-0.5">${[d.title,d.email,d.phone||d.cell].filter(Boolean).map(esc).join(' · ')||'no contact info'}</div></div><button onclick="editDoctor('${d.id}')" class="text-[#9aa0ab] hover:text-[#0a6cf5] text-xs shrink-0">edit</button></div>`; }
+
+  async function renderPracticeView(pid){
+    $('#detailMain').innerHTML = `<div class="p-6 max-w-3xl mx-auto"><div class="text-sm text-[#9aa0ab] py-10 text-center">Loading practice…</div></div>`;
+    let j;
+    try{ const r=await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'practice',practice_id:pid})}); j=await r.json(); }
+    catch(e){ $('#detailMain').innerHTML='<div class="p-6 text-[#be123c]">Could not load practice.</div>'; return; }
+    if(!j||!j.ok){ $('#detailMain').innerHTML=`<div class="p-6 text-[#be123c]">${esc((j&&j.error)||'Could not load')}</div>`; return; }
+    const p=j.practice; window._curProviders=j.providers;
+    const touchBtn=(k,icon,label)=>`<button onclick="logTouch('${p.id}','${k}')" class="px-3 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">${icon} ${label}</button>`;
+    $('#detailMain').innerHTML = `
+      <div class="p-6 max-w-3xl mx-auto">
+        <div class="flex items-start justify-between gap-4 mb-6">
+          <div>
+            <h2 class="font-display text-2xl font-semibold tracking-[-1px] cursor-text hover:bg-[#f4f6f8] rounded px-1 -ml-1 inline-block" title="Click to edit" data-val="${esc(p.name)}" onclick="prEdit(this,'${p.id}','name')">${esc(p.name)}</h2>
+            <div class="text-sm text-[#6b7280] mt-1">${[REF_LABEL[p.stage],p.type,p.city].filter(Boolean).join(' · ')}${j.referred.length?` · ${j.referred.length} referrals`:''}</div>
+          </div>
+          <select class="field w-auto" onchange="setPracticeStage('${p.id}',this.value)">
+            ${REF_STAGES.map(s=>`<option value="${s.k}" ${s.k===p.stage?'selected':''}>${s.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="flex gap-2 mb-6 flex-wrap">
+          ${touchBtn('call','📞','Log call')}${touchBtn('visit','🤝','Log visit')}${touchBtn('email','✉','Log email')}
+          <button onclick="addPracticeTask('${p.id}')" class="px-3 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">＋ Task</button>
+        </div>
+
+        <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-2">Contact</div>
+        <div class="border border-[#e6e9ee] rounded-2xl mb-6 divide-y divide-[#eef1f4]">
+          ${prRow(p,'phone','Phone')}${prRow(p,'website','Website')}${prRow(p,'address','Address')}${prRow(p,'type','Type / specialty')}${prRow(p,'city','City')}${prRow(p,'owner','Relationship owner')}
+          <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Last touch</span><span class="text-sm text-[#16201d]">${p.last_touch_at?rel(new Date(p.last_touch_at).toISOString()):'—'}</span></div>
+          <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Next check-in</span><span class="text-sm ${p.next_checkin_at&&p.next_checkin_at<Date.now()?'text-[#be123c] font-semibold':'text-[#16201d]'}">${p.next_checkin_at?fmtDate(p.next_checkin_at):'—'}</span></div>
+        </div>
+
+        <div class="flex items-center justify-between mb-2"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Doctors</div><button onclick="addDoctor('${p.id}')" class="text-xs text-[#0a6cf5] font-semibold hover:underline">+ Add doctor</button></div>
+        <div class="border border-[#e6e9ee] rounded-2xl mb-6">
+          ${j.providers.length? j.providers.map(d=>doctorRow(p.id,d)).join('') : '<div class="px-4 py-4 text-sm text-[#9aa0ab] text-center">No doctors added yet.</div>'}
+        </div>
+
+        <div class="flex items-center justify-between mb-2"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Patients referred</div><span class="text-[11px] text-[#6b7280]">${j.referred.length} total</span></div>
+        <div class="border border-[#e6e9ee] rounded-2xl mb-6">
+          ${j.referred.length? j.referred.slice(0,12).map(rp=>`<div class="flex items-center justify-between px-4 py-2.5 border-b border-[#f1f3f7] last:border-0"><span class="text-sm text-[#16201d]">${esc(((rp.first||'')+' '+(rp.last||'')).trim())}</span><span class="text-xs text-[#9aa0ab]">${STAT[rp.status]||rp.status||''} · ${rel(new Date(rp.at).toISOString())}</span></div>`).join('') : '<div class="px-4 py-4 text-sm text-[#9aa0ab] text-center">No referrals tagged yet. Set a patient’s &ldquo;Referred by&rdquo; to see them here.</div>'}
+        </div>
+
+        ${j.tasks.length?`<div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-2">Tasks</div>
+        <div class="border border-[#e6e9ee] rounded-2xl mb-6">${j.tasks.map(t=>`<div class="flex items-start gap-3 px-4 py-3 border-b border-[#f1f3f7] last:border-0"><input type="checkbox" ${t.status==='done'?'checked':''} onchange="toggleTask('${t.id}',this.checked)" class="accent-[#0a6cf5] w-4 h-4 mt-0.5"><div class="flex-1"><div class="text-sm ${t.status==='done'?'line-through text-[#9aa0ab]':'text-[#16201d]'}">${esc(t.title)}</div><div class="text-[11px] text-[#9aa0ab] mt-0.5">${t.due?'due '+t.due+' · ':''}${rel(t.ts)}</div></div></div>`).join('')}</div>`:''}
+
+        <div class="glass border border-[#e6e9ee] rounded-2xl p-5">
+          <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-4">Activity</div>
+          ${j.notes.length? j.notes.map(refNoteRow).join('') : '<div class="text-sm text-[#9aa0ab] pb-3">No activity logged yet. Log a call, visit, or email above.</div>'}
+          <div class="flex gap-2 mt-2 pt-3 border-t border-[#e6e9ee]">
+            <input id="prNoteInput" class="field" placeholder="Add a note…" onkeydown="if(event.key==='Enter')addPracticeNote('${p.id}')">
+            <button onclick="addPracticeNote('${p.id}')" class="px-4 py-2 rounded-lg bg-[#f1f3f7] border border-[#e6e9ee] text-sm font-medium hover:border-[#0a6cf5]/40">Add</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ---- reusable form-modal card (replaces prompt() boxes) ----
+  function openFormModal(opts){
+    document.getElementById('fmTitle').textContent=opts.title||'';
+    const sub=document.getElementById('fmSub'); sub.textContent=opts.subtitle||''; sub.style.display=opts.subtitle?'':'none';
+    const wrap=document.getElementById('fmFields');
+    wrap.innerHTML=(opts.fields||[]).map(f=>{
+      const id='fm_'+f.key;
+      if(f.type==='select') return `<div><label class="text-xs font-semibold text-[#6b7280]">${f.label}</label><select id="${id}" class="field w-full mt-1">${(f.options||[]).map(o=>`<option value="${o.v}" ${o.v===(f.value||'')?'selected':''}>${esc(o.t)}</option>`).join('')}</select></div>`;
+      if(f.type==='textarea') return `<div><label class="text-xs font-semibold text-[#6b7280]">${f.label}${f.required?' *':''}</label><textarea id="${id}" rows="3" class="field w-full mt-1" placeholder="${esc(f.placeholder||'')}">${esc(f.value||'')}</textarea></div>`;
+      if(f.type==='checkbox') return `<label class="flex items-center gap-2 text-sm text-[#16201d] cursor-pointer pt-1"><input type="checkbox" id="${id}" ${f.value?'checked':''} class="accent-[#0a6cf5] w-4 h-4">${f.label}</label>`;
+      return `<div><label class="text-xs font-semibold text-[#6b7280]">${f.label}${f.required?' *':''}</label><input id="${id}" type="${f.type||'text'}" value="${esc(f.value||'')}" placeholder="${esc(f.placeholder||'')}" class="field w-full mt-1"></div>`;
+    }).join('');
+    const saveBtn=document.getElementById('fmSave'); saveBtn.textContent=opts.submitLabel||'Save'; saveBtn.disabled=false;
+    saveBtn.onclick=async ()=>{
+      const vals={};
+      for(const f of (opts.fields||[])){ const el=document.getElementById('fm_'+f.key); vals[f.key]= f.type==='checkbox'? el.checked : (el.value||'').trim(); }
+      for(const f of (opts.fields||[])){ if(f.required && !vals[f.key]){ alert(f.label+' is required'); return; } }
+      saveBtn.disabled=true; saveBtn.textContent='Saving…';
+      try{ await opts.onSubmit(vals); closeFormModal(); }
+      catch(e){ console.warn('formModal',e); alert('Could not save'); saveBtn.disabled=false; saveBtn.textContent=opts.submitLabel||'Save'; }
+    };
+    const m=document.getElementById('formModal'); m.classList.remove('hidden'); m.classList.add('flex');
+    setTimeout(()=>{ const first=wrap.querySelector('input,textarea,select'); first&&first.focus(); },50);
+  }
+  window.closeFormModal=function(){ const m=document.getElementById('formModal'); m.classList.add('hidden'); m.classList.remove('flex'); };
+
+  // ---- referral writes (modal-card driven) ----
+  window.addPractice=function(){
+    openFormModal({ title:'Add referral partner', subtitle:'A clinic or practice that refers patients to Vitality.',
+      fields:[
+        {key:'name',label:'Practice / clinic name',required:true},
+        {key:'type',label:'Type / specialty',placeholder:'e.g. Primary care'},
+        {key:'city',label:'City'},
+        {key:'phone',label:'Phone',type:'tel'},
+        {key:'stage',label:'Stage',type:'select',value:'prospect',options:REF_STAGES.map(s=>({v:s.k,t:s.label}))},
+      ], submitLabel:'Add partner',
+      onSubmit: async (v)=>{ const r=await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'add_practice',name:v.name,type:v.type,city:v.city,phone:v.phone,stage:v.stage})}); const j=await r.json(); if(!j.ok)throw new Error(); await loadReferrals(); if(j.id) select(j.id); }
+    });
+  };
+  window.setPracticeStage=async function(pid,stage){
+    const pr=practices.find(x=>x.id===pid); if(pr)pr.stage=stage;
+    try{ await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'set_stage',practice_id:pid,stage})}); await loadReferrals(); if(boardOpen)renderReferralBoard(); }catch(e){console.warn(e);}
+  };
+  // inline click-to-edit for a practice contact field (no prompt box)
+  window.prEdit=function(el,pid,field){
+    const cur=el.dataset.val||''; const inp=document.createElement('input'); inp.value=cur; inp.className='field'; inp.style.maxWidth='240px'; inp.style.textAlign='right';
+    el.replaceWith(inp); inp.focus(); try{inp.select();}catch(_){}
+    let done=false;
+    const finish=async(save)=>{ if(done)return; done=true;
+      if(save && inp.value.trim()!==cur){ try{ await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'update_practice',practice_id:pid,field,value:inp.value.trim()})}); await loadReferrals(); }catch(e){console.warn(e);} }
+      renderPracticeView(pid); };
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();finish(true);} else if(e.key==='Escape')finish(false); });
+    inp.addEventListener('blur',()=>finish(true));
+  };
+  window.logTouch=function(pid,kind){
+    const titles={call:'Log a call',visit:'Log a visit',email:'Log an email'};
+    openFormModal({ title:titles[kind]||'Log activity',
+      fields:[{key:'body',label:'Notes',type:'textarea',required:true,placeholder:'What happened? (sets last touch + a 30-day check-in)'}], submitLabel:'Save',
+      onSubmit: async (v)=>{ const r=await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'add_note',practice_id:pid,kind,body:v.body})}); const j=await r.json(); if(!j.ok)throw new Error(); await loadReferrals(); renderPracticeView(pid); }
+    });
+  };
+  window.addPracticeNote=async function(pid){
+    const el=document.getElementById('prNoteInput'); const body=(el&&el.value||'').trim(); if(!body)return;
+    try{ await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'add_note',practice_id:pid,kind:'note',body})}); await loadReferrals(); renderPracticeView(pid); }catch(e){console.warn(e);}
+  };
+  window.addDoctor=function(pid){
+    openFormModal({ title:'Add doctor', subtitle:'A referring provider at this practice.',
+      fields:[
+        {key:'name',label:'Doctor name',required:true},
+        {key:'title',label:'Title / specialty',placeholder:'e.g. MD'},
+        {key:'email',label:'Email',type:'email'},
+        {key:'phone',label:'Phone',type:'tel'},
+        {key:'cell',label:'Cell',type:'tel'},
+        {key:'is_primary',label:'Primary contact',type:'checkbox'},
+      ], submitLabel:'Add doctor',
+      onSubmit: async (v)=>{ const r=await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'add_provider',practice_id:pid,name:v.name,title:v.title,email:v.email,phone:v.phone,cell:v.cell,is_primary:v.is_primary})}); const j=await r.json(); if(!j.ok)throw new Error(); renderPracticeView(pid); }
+    });
+  };
+  window.editDoctor=function(did){
+    const d=(window._curProviders||[]).find(x=>x.id===did); if(!d) return;
+    openFormModal({ title:'Edit doctor',
+      fields:[
+        {key:'name',label:'Doctor name',value:d.name,required:true},
+        {key:'title',label:'Title / specialty',value:d.title||''},
+        {key:'email',label:'Email',type:'email',value:d.email||''},
+        {key:'phone',label:'Phone',type:'tel',value:d.phone||''},
+        {key:'cell',label:'Cell',type:'tel',value:d.cell||''},
+      ], submitLabel:'Save',
+      onSubmit: async (v)=>{
+        for(const f of ['name','title','email','phone','cell']){ if((v[f]||'')!==(d[f]||'')){ await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'update_provider',provider_id:did,field:f,value:v[f]})}); } }
+        if(selId) renderPracticeView(selId);
+      }
+    });
+  };
+  window.addPracticeTask=function(pid){
+    openFormModal({ title:'New follow-up task',
+      fields:[{key:'title',label:'Task',required:true,placeholder:'e.g. Send Q3 referral summary'}], submitLabel:'Add task',
+      onSubmit: async (v)=>{ const r=await fetch(CONVEX_URL+'/tasks-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'create',title:v.title,practice_id:pid})}); const j=await r.json(); if(!j.ok)throw new Error(); renderPracticeView(pid); }
+    });
+  };
+
+  // ---- "Referred by" picker: tag a patient with the referral partner who sent them ----
+  let referralPickerCache=null, _referTargetPid=null;
+  async function loadReferralPicker(force){
+    if(referralPickerCache && !force) return referralPickerCache;
+    try{ const r=await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:'{"action":"picker"}'}); const j=await r.json(); if(j.ok) referralPickerCache=j.practices; }catch(e){ console.warn('picker',e); }
+    return referralPickerCache||[];
+  }
+  function referProviderOptions(selProvId){
+    const pid=document.getElementById('referPractice').value;
+    const pr=(referralPickerCache||[]).find(x=>x.id===pid); const docs=(pr&&pr.providers)||[];
+    const dsel=document.getElementById('referProvider');
+    dsel.innerHTML='<option value="">— any / unspecified —</option>'+docs.map(d=>`<option value="${d.id}" ${selProvId===d.id?'selected':''}>${esc(d.name)}</option>`).join('');
+    dsel.disabled=!docs.length;
+  }
+  window.referPracticeChanged=function(){ referProviderOptions(null); };
+  window.openReferPicker=async function(pid){
+    _referTargetPid=pid;
+    const list=await loadReferralPicker();
+    if(!list.length){ if(confirm('No referral partners yet. Add one in the Partners section first.\n\nGo to Partners now?')) setSection('referrals'); return; }
+    const p=patients.find(x=>x.id===pid)||{}; const cur=p.referred_by||{};
+    document.getElementById('referPractice').innerHTML='<option value="">— none —</option>'+list.map(pr=>`<option value="${pr.id}" ${cur.practice_id===pr.id?'selected':''}>${esc(pr.name)}</option>`).join('');
+    referProviderOptions(cur.provider_id||null);
+    const m=document.getElementById('referModal'); m.classList.remove('hidden'); m.classList.add('flex');
+  };
+  window.closeReferModal=function(){ const m=document.getElementById('referModal'); m.classList.add('hidden'); m.classList.remove('flex'); };
+  window.saveReferredBy=async function(){
+    const pid=_referTargetPid; if(!pid)return;
+    const practice_id=document.getElementById('referPractice').value||null;
+    const provider_id=document.getElementById('referProvider').value||null;
+    try{
+      const r=await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'set_referred_by',patient_id:pid,practice_id:practice_id||undefined,provider_id:provider_id||undefined})});
+      const j=await r.json(); if(!j.ok){ alert(j.error||'Could not save'); return; }
+      const p=patients.find(x=>x.id===pid);
+      if(p){ if(practice_id){ const pr=(referralPickerCache||[]).find(x=>x.id===practice_id); const d=pr&&pr.providers.find(x=>x.id===provider_id); p.referred_by={practice_id,provider_id:provider_id||null,practice_name:pr?pr.name:'',provider_name:d?d.name:null}; } else p.referred_by=null; }
+      closeReferModal(); renderDetail();
+    }catch(e){ console.warn('saveReferredBy',e); alert('Could not save'); }
+  };
   async function loadClinicalReview(pid){
     const el = document.getElementById('clinicalReviewPanel');
     if (!el) return;
