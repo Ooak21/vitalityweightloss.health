@@ -250,8 +250,8 @@
     </div>
   </a>
   <!-- HERO PROMO 3: Vitality Bloom (hair loss, async), pops out from the left above the Medicare card -->
-  <a href="bloom.html" id="bloomPromo" class="hidden lg:flex absolute left-0 bottom-[73%] z-20 items-center gap-4 bg-white/95 backdrop-blur rounded-r-3xl shadow-2xl shadow-black/30 border border-[#e6e9ee] pl-5 pr-6 py-4 max-w-sm hover:bg-white transition-colors">
-    <img src="assets/logo-icon.png" alt="Vitality Bloom" class="shrink-0 h-14 w-auto self-center select-none pointer-events-none">
+  <a href="bloom.html" id="bloomPromo" class="hidden lg:flex absolute left-0 bottom-[73%] z-20 items-center gap-3 bg-white/95 backdrop-blur rounded-r-3xl shadow-2xl shadow-black/30 border border-[#e6e9ee] pl-4 pr-6 py-4 max-w-md hover:bg-white transition-colors">
+    <img src="assets/bloom-hair.png" alt="Vitality Bloom hair loss" class="shrink-0 h-28 w-auto self-end -mt-12 -mb-2 select-none pointer-events-none">
     <div class="text-left">
       <div class="inline-flex self-start items-center gap-1.5 mb-2 text-[11px] font-extrabold uppercase tracking-[0.1em] text-white bg-[#0a6cf5] rounded-full px-3 py-1">★ New</div>
       <div class="font-display text-xl font-semibold text-[#16201d] leading-[1.15] mb-1.5">Vitality <span class="text-[#0a6cf5]">Bloom</span> hair loss.</div>
@@ -1198,7 +1198,7 @@ function playVwl(){
     {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Vitality Bloom</span> <span class="text-[#16201d]/55">&middot; new online hair-loss treatment &rarr;</span>', href:'bloom.html'}
   ];
   var reel=document.createElement('div'); reel.id='navSlotReel'; reel.style.willChange='transform';
-  for(var i=0;i<COPIES;i++){ var m=msgs[i%2]; var a=document.createElement('a'); a.href=m.href;
+  for(var i=0;i<COPIES;i++){ var m=msgs[i%msgs.length]; var a=document.createElement('a'); a.href=m.href;
     a.className='flex items-center justify-center whitespace-nowrap hover:opacity-75 transition-opacity';
     a.style.height=ROWH+'px'; a.style.lineHeight=ROWH+'px'; a.innerHTML=m.html; reel.appendChild(a); }
   slot.appendChild(reel);
@@ -1207,7 +1207,7 @@ function playVwl(){
   document.head.appendChild(st);
   var pos=0;
   function go(){
-    if(pos+STEP>COPIES-2){ reel.style.transition='none'; pos=pos%2; reel.style.transform='translateY('+(-pos*ROWH)+'px)'; reel.offsetHeight; }
+    if(pos+STEP>COPIES-2){ reel.style.transition='none'; pos=pos%msgs.length; reel.style.transform='translateY('+(-pos*ROWH)+'px)'; reel.offsetHeight; }
     pos+=STEP;
     reel.style.transition='transform 1.15s cubic-bezier(.16,.84,.3,1)';
     reel.classList.add('spin');
