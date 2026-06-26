@@ -11,6 +11,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- Clover SDK is loaded on demand at the checkout step (loadCloverSdk) -->
+<!-- heic2any: convert iPhone HEIC/HEIF photos to JPEG so they preview + display everywhere -->
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <style>
   :root {
     --navy:#16201d;
@@ -524,6 +526,20 @@ function save() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(persist));
 }
 
+// iPhone photos arrive as HEIC, which browsers can't render in <img>. Convert to JPEG before upload
+// so the preview, the patient flow, and Dr. DeBry's review queue all display the image.
+async function toUploadableImage(file) {
+  const isHeic = /heic|heif/i.test(file.type || '') || /\.(heic|heif)$/i.test(file.name || '');
+  if (isHeic && window.heic2any) {
+    try {
+      const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+      const blob = Array.isArray(out) ? out[0] : out;
+      return new File([blob], (file.name || 'photo').replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+    } catch (e) { console.warn('HEIC convert failed, uploading original:', e); }
+  }
+  return file;
+}
+
 // Clear all saved answers and restart the intake from the top (re-take the questionnaire).
 window.bloomStartOver = function() {
   if (!confirm('Start the intake over from the beginning? This clears your current answers.')) return;
@@ -952,8 +968,9 @@ const flow = [
         slot.appendChild(h('span', { class: 'ph' }, ['+ ' + label]));
       }
       input.onchange = async (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
+        const file0 = e.target.files && e.target.files[0];
+        if (!file0) return;
+        const file = await toUploadableImage(file0);
         const url = URL.createObjectURL(file);
         state.photoPreviews[idx] = url;
         state.photos[idx] = { name: file.name, size: file.size, type: file.type, slot: idx, uploading: true };
@@ -1068,8 +1085,9 @@ const flow = [
     if (state.idPhotoPreview) idSlot.appendChild(h('img', { src: state.idPhotoPreview, alt: 'Government ID' }));
     else idSlot.appendChild(h('span', { class: 'ph' }, ['+ Upload ID']));
     idInput.onchange = async (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
+      const file0 = e.target.files && e.target.files[0];
+      if (!file0) return;
+      const file = await toUploadableImage(file0);
       const url = URL.createObjectURL(file);
       state.idPhotoPreview = url; save();
       idSlot.innerHTML = ''; idSlot.appendChild(h('img', { src: url, alt: 'Government ID' })); idSlot.appendChild(idInput);
