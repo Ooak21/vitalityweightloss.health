@@ -946,6 +946,38 @@
   };
 
   // ============ Patient Portal view (provider sees what the patient sees, no sign-in) ============
+  // Mirror of the patient portal's client-side gamification (portal.html gamify()), so the
+  // read-only portal view shows the SAME rewards stats the patient sees. Derived from logs+inbody+plan.
+  function gamifyPortal(j){
+    const PTS={food:10,weigh_in:5,journal:5,activity:15,scan:10,module:25};
+    const logs=j.logs||[], ib=j.inbody||[], plan=j.plan, hb=plan&&plan.handbook;
+    const dk=(ms)=>new Date(ms).toDateString();
+    let points=0, ptsToday=0; const dates=new Set(); const today=new Date().toDateString();
+    logs.forEach(l=>{ const pt=PTS[l.kind]||5; points+=pt; const k=dk(l.logged_at); dates.add(k); if(k===today) ptsToday+=pt; });
+    let streak=0, cur=new Date(); if(!dates.has(cur.toDateString())) cur.setDate(cur.getDate()-1);
+    while(dates.has(cur.toDateString())){ streak++; cur.setDate(cur.getDate()-1); }
+    let week=0; for(let i=0;i<7;i++){ const d=new Date(); d.setDate(d.getDate()-i); if(dates.has(d.toDateString())) week++; }
+    const start=(hb&&hb.summary&&hb.summary.weight)||(ib[0]&&+ib[0].weight_lb)||null;
+    const goal=(plan&&plan.goal_weight)||(hb&&hb.summary&&hb.summary.goal_weight)||null;
+    const wlogs=logs.filter(l=>l.kind==='weigh_in'&&l.value_num!=null);
+    const latestW=ib.length?+ib[ib.length-1].weight_lb:null;
+    const cw=wlogs.length?+wlogs[0].value_num:(latestW!=null?latestW:start);
+    const lost=(start!=null&&cw!=null)?(start-cw):0, n=logs.length;
+    const B=(id,icon,label,earned)=>({id,icon,label,earned:!!earned});
+    const badges=[
+      B('first','👣','First step',n>=1),
+      B('weigh','⚖️','First weigh-in',logs.some(l=>l.kind==='weigh_in')),
+      B('food','🍽️','Food logged',logs.some(l=>l.kind==='food')),
+      B('s3','🔥','3-day streak',streak>=3),
+      B('s7','🗓️','Week warrior',streak>=7),
+      B('d5','📉','Down 5 lb',lost>=5),
+      B('d10','💪','Down 10 lb',lost>=10),
+      B('l50','⭐','50 logs',n>=50),
+      B('phd','🎓','PhD scholar',new Set(logs.filter(l=>l.kind==='module').map(l=>(l.body||'').split(':')[0])).size>=3),
+      B('goal','🏆','Goal reached',goal!=null&&cw!=null&&cw<=goal),
+    ];
+    return {points,ptsToday,streak,week,lost:Math.max(0,Math.round(lost*10)/10),badges,earned:badges.filter(b=>b.earned).length};
+  }
   async function renderPortalView(p){
     $('#detailMain').innerHTML = `
       <div class="p-6 max-w-3xl mx-auto">
@@ -958,6 +990,19 @@
       const body = document.getElementById('portalBody'); if(!body) return;
       if(!j.ok){ body.innerHTML = `<div class="text-sm text-[#be123c] py-8 text-center">${esc(j.error||'Could not load portal.')}</div>`; return; }
       const pt = j.patient||{}, na = j.nextAppt, ib = (j.inbody&&j.inbody.length)?j.inbody[j.inbody.length-1]:null, plan = j.plan, logs = j.logs||[];
+      const g = gamifyPortal(j);
+      const rewardsBlock = `
+        <div class="glass border border-[#e6e9ee] rounded-2xl p-5 mb-6">
+          <div class="flex items-center justify-between mb-3"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Rewards</div><span class="text-xs text-[#9aa0ab]">${g.earned}/${g.badges.length} badges${g.ptsToday?` · +${g.ptsToday} today`:''}</span></div>
+          <div class="grid grid-cols-3 gap-2.5 mb-4 text-center">
+            <div class="rounded-xl bg-[#fff4ed] border border-[#ffe2cf] p-3"><div class="font-display text-2xl font-semibold">${g.streak}<span class="text-base"> 🔥</span></div><div class="text-[10px] text-[#9a7b4f] font-semibold uppercase tracking-wide">day streak</div></div>
+            <div class="rounded-xl bg-[#eaf2ff] border border-[#d6e6ff] p-3"><div class="font-display text-2xl font-semibold">${g.points}</div><div class="text-[10px] text-[#0a3d7a] font-semibold uppercase tracking-wide">points</div></div>
+            <div class="rounded-xl bg-[#eafaf0] border border-[#cdeedd] p-3"><div class="font-display text-2xl font-semibold">${g.week}/7</div><div class="text-[10px] text-[#0a7a3d] font-semibold uppercase tracking-wide">this week</div></div>
+          </div>
+          <div class="grid grid-cols-5 gap-2">
+            ${g.badges.map(b=>`<div class="rounded-xl border p-2 text-center ${b.earned?'bg-white border-[#e6e9ee]':'bg-[#f7f8fa] border-[#eef0f4] opacity-40'}"><div class="text-2xl leading-none mb-1">${b.icon}</div><div class="text-[10px] font-semibold ${b.earned?'text-[#16201d]':'text-[#9aa0ab]'} leading-tight">${esc(b.label)}</div></div>`).join('')}
+          </div>
+        </div>`;
       body.innerHTML = `
         <div class="flex items-center gap-3 mb-6">
           <div class="w-12 h-12 rounded-full bg-[#0a6cf5] text-white flex items-center justify-center font-display text-lg font-semibold">${esc((pt.first||'?')[0]+(pt.last||'')[0]||'?')}</div>
@@ -979,6 +1024,7 @@
               </div>` : '<div class="text-sm text-[#9aa0ab]">No InBody scan on file yet.</div>'}
           </div>
         </div>
+        ${rewardsBlock}
         <div class="glass border border-[#e6e9ee] rounded-2xl p-5 mb-6">
           <div class="flex items-center justify-between mb-3"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">My Personal Transformation Plan</div>${plan?`<button onclick="openVbisHandbook('${p.id}')" class="text-xs text-[#0a6cf5] font-semibold hover:underline">Open full plan →</button>`:''}</div>
           ${plan? `<div class="text-sm text-[#16201d]">${esc((plan.handbook&&plan.handbook.summary)|| (plan.summary) ||'Your personalized plan is ready. Tap to open the full transformation plan.')}</div>`
