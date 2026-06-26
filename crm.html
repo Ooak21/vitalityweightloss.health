@@ -67,24 +67,40 @@
   import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
   // Milestone B: identity is Convex-native. Flip USE_CONVEX_AUTH=false to roll back to Supabase.
   const USE_CONVEX_AUTH = true;
+  // Initials for the top-right avatar, derived from the signed-in email (dynamic per user).
+  function vitInitials(email){
+    const local = (email||'').split('@')[0];
+    if(!local) return '··';
+    const parts = local.split(/[._\-]+/).filter(Boolean);
+    const s = (parts.length >= 2) ? (parts[0][0]+parts[1][0]) : local.slice(0,2);
+    return s.toUpperCase();
+  }
+  window.setUserAvatar = function(){
+    const el = document.getElementById('userAvatar');
+    if(el && window.__vitUserEmail){ el.textContent = vitInitials(window.__vitUserEmail); el.title = window.__vitUserEmail; }
+  };
+  document.addEventListener('DOMContentLoaded', function(){ if(window.__vitUserEmail) window.setUserAvatar(); });
   try {
     if (USE_CONVEX_AUTH) {
-      const { staffRole, signOut, getToken, STORE_STAFF } = await import('./auth-convex.js');
-      const role = await staffRole(STORE_STAFF);  // null = no session OR a non-staff (patient) token
+      const { staffInfo, signOut, getToken, STORE_STAFF } = await import('./auth-convex.js');
+      const info = await staffInfo(STORE_STAFF);  // null = no session OR a non-staff (patient) token
+      const role = info && info.role;
       if (!role) {
         // No staff role: clear any session and return to staff login. NEVER drop into the patient portal.
         await signOut(STORE_STAFF); location.replace('login.html');
       } else {
         window.__vca = { getToken: () => getToken(STORE_STAFF), signOut: () => signOut(STORE_STAFF), role };
-        window.__vitUser = { app_metadata: { role } };
+        window.__vitUser = { app_metadata: { role }, email: info.email };
+        window.__vitUserEmail = info.email || null;
         document.documentElement.style.visibility='visible';
+        window.setUserAvatar();
       }
     } else {
       const sb = createClient('https://jtifhcvbgxqwlywugvjv.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWZoY3ZiZ3hxd2x5d3Vndmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDc5NTgsImV4cCI6MjA4ODA4Mzk1OH0.UfRVLuvM8_HPvKXUEDXb0cxR50znv16L5Tf99AnSc7g',{ auth:{ storageKey:'sb-vit-staff', persistSession:true } });
       const { data:{ session } } = await sb.auth.getSession();
       if (!session) { location.replace('login.html'); }
       else if (!(session.user.app_metadata && session.user.app_metadata.role)) { sb.auth.signOut().then(()=>location.replace('login.html')); }
-      else { window.__vitSb = sb; window.__vitUser = session.user; document.documentElement.style.visibility='visible'; }
+      else { window.__vitSb = sb; window.__vitUser = session.user; window.__vitUserEmail = session.user.email || null; document.documentElement.style.visibility='visible'; window.setUserAvatar(); }
     }
   } catch(e){ console.warn('vit auth guard', e); document.documentElement.style.visibility='visible'; }
 </script>
@@ -106,7 +122,7 @@
     <input id="search" class="field w-56 hidden md:block" placeholder="Search patients…">
     <a href="admin.html" class="text-xs text-[#6b7280] hover:text-[#16201d]" title="Admin & Operations (admins only)">⚙ Admin</a>
     <button onclick="(window.__vca?window.__vca.signOut():(window.__vitSb?window.__vitSb.auth.signOut():Promise.resolve())).then(()=>location.replace('login.html'))" class="text-xs text-[#6b7280] hover:text-[#16201d]">Sign out</button>
-    <div class="w-8 h-8 rounded-full bg-[#f1f3f7] border border-[#e6e9ee] flex items-center justify-center text-xs font-semibold text-[#4b5563]">FD</div>
+    <div id="userAvatar" title="Signed in" class="w-8 h-8 rounded-full bg-[#f1f3f7] border border-[#e6e9ee] flex items-center justify-center text-xs font-semibold text-[#4b5563]">··</div>
   </div>
 </div>
 

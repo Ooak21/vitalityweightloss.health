@@ -89,3 +89,15 @@ export async function staffRole(storeKey){
     return (probe && probe.role) ? probe.role : null;
   } catch(_){ return null; }
 }
+
+// Like staffRole, but returns { role, email } for the logged-in staff member (single probe),
+// or null. Used to render the signed-in user (e.g. avatar initials) instead of a placeholder.
+export async function staffInfo(storeKey){
+  const token = await getToken(storeKey);
+  if(!token) return null;
+  try {
+    const c = await newClient(); c.setAuth(token);
+    const probe = await c.query('verifyAuth:staffProbe', {});
+    return (probe && probe.ok && probe.role) ? { role: probe.role, email: probe.email || null } : null;
+  } catch(_){ return null; }
+}
