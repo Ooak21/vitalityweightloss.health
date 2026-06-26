@@ -121,6 +121,7 @@
     </div>
     <button onclick="openAddPatient()" class="pt-only px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add patient</button>
     <button onclick="addPractice()" class="rf-only hidden px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add practice</button>
+    <button onclick="openImportPartners()" title="Import a HubSpot list (CSV)" class="rf-only hidden px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">⬆ Import list</button>
     <div class="pt-only flex items-center rounded-xl border border-[#e6e9ee] overflow-hidden text-xs font-semibold" id="viewModeTabs" title="Switch what you see for the selected patient">
       <button onclick="setViewMode('crm')" data-mode="crm" class="vm-btn px-3 py-2 bg-[#0a6cf5] text-white">CRM</button>
       <button onclick="setViewMode('provider')" data-mode="provider" class="vm-btn px-3 py-2 text-[#4b5563] border-l border-[#e6e9ee]">Provider</button>
@@ -149,6 +150,32 @@
     <label class="text-xs font-semibold text-[#6b7280]">Doctor (optional)</label>
     <select id="referProvider" class="field w-full mb-5 mt-1"></select>
     <div class="flex justify-end gap-2"><button onclick="closeReferModal()" class="px-4 py-2 rounded-xl border border-[#e6e9ee] text-sm font-semibold hover:bg-[#f1f3f7]">Cancel</button><button onclick="saveReferredBy()" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Save</button></div>
+  </div>
+</div>
+
+<!-- HubSpot list importer (CSV → referral partners) -->
+<div id="importModal" class="hidden fixed inset-0 bg-black/40 z-40 items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-1"><h3 class="font-display text-lg font-semibold">Import referral partners from HubSpot</h3><button onclick="closeImport()" class="text-[#9aa0ab] hover:text-[#16201d] text-lg leading-none">✕</button></div>
+    <p class="text-xs text-[#6b7280] mb-4">Export your HubSpot list as CSV, then drop it here. Rows are grouped by company into practices (deduped by name) with the doctors nested under them. New practices land in <b>Prospect</b>, no emails sent.</p>
+    <div id="impStep1">
+      <label class="block border-2 border-dashed border-[#cfe0ff] rounded-xl p-6 text-center cursor-pointer hover:bg-[#f7faff]">
+        <input id="impFile" type="file" accept=".csv,text/csv" class="hidden" onchange="impFileChosen(event)">
+        <div class="text-3xl mb-2">📄</div><div class="text-sm font-semibold text-[#0a6cf5]">Choose a CSV file</div><div class="text-xs text-[#9aa0ab] mt-1">HubSpot list export</div>
+      </label>
+    </div>
+    <div id="impStep2" class="hidden">
+      <div class="text-xs font-semibold text-[#6b7280] mb-3" id="impFileInfo"></div>
+      <div class="text-[11px] font-semibold tracking-wide text-[#0a6cf5] uppercase mb-2">Map columns <span class="text-[#9aa0ab] normal-case font-normal">— auto-detected, fix any that are off</span></div>
+      <div id="impMapping" class="grid grid-cols-2 gap-2.5 mb-4"></div>
+      <div><label class="text-xs font-semibold text-[#6b7280]">List name <span class="text-[#9aa0ab] font-normal">(saved on each imported practice)</span></label><input id="impListName" class="field w-full mt-1"></div>
+      <div id="impPreview" class="text-sm text-[#16201d] bg-[#f7f8fa] border border-[#e6e9ee] rounded-xl p-3 mt-3"></div>
+      <div id="impResult" class="hidden rounded-xl p-3 mt-3"></div>
+    </div>
+    <div class="flex justify-end gap-2 mt-6">
+      <button onclick="closeImport()" class="px-4 py-2 rounded-xl border border-[#e6e9ee] text-sm font-semibold hover:bg-[#f1f3f7]">Close</button>
+      <button id="impGo" onclick="runImport()" class="hidden px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Import</button>
+    </div>
   </div>
 </div>
 
@@ -1370,6 +1397,108 @@
       }
     });
   };
+  // ---- HubSpot list importer (CSV → referral partners) ----
+  const IMP_TARGETS=[
+    {k:'practice_name', label:'Practice / Company', req:true, hints:['company name','company','associated company','practice','account name','organization']},
+    {k:'person_first', label:'Doctor first name', hints:['first name','firstname']},
+    {k:'person_last', label:'Doctor last name', hints:['last name','lastname']},
+    {k:'person_name', label:'Doctor full name', hints:['full name','contact name','name']},
+    {k:'person_title', label:'Doctor title', hints:['job title','title','role']},
+    {k:'person_email', label:'Doctor email', hints:['email address','email']},
+    {k:'person_phone', label:'Doctor phone', hints:['phone number','mobile phone','mobile','cell','direct phone','phone']},
+    {k:'type', label:'Specialty / type', hints:['industry','specialty','practice type','type']},
+    {k:'city', label:'City', hints:['city','town']},
+    {k:'website', label:'Website', hints:['website url','website','domain']},
+  ];
+  let _impHeaders=[], _impRows=[];
+  function parseCSV(text){
+    const rows=[]; let row=[], field='', inQ=false;
+    for(let i=0;i<text.length;i++){ const c=text[i];
+      if(inQ){ if(c==='"'){ if(text[i+1]==='"'){field+='"';i++;} else inQ=false; } else field+=c; }
+      else { if(c==='"') inQ=true; else if(c===','){ row.push(field); field=''; } else if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=''; } else if(c!=='\r') field+=c; }
+    }
+    if(field.length||row.length){ row.push(field); rows.push(row); }
+    return rows.filter(r=>r.some(c=>(c||'').trim()!==''));
+  }
+  function autoIdx(hints){
+    const lower=_impHeaders.map(h=>h.toLowerCase().trim());
+    for(const h of hints){ const i=lower.indexOf(h); if(i>=0) return i; }
+    for(const h of hints){ const i=lower.findIndex(x=>x.includes(h)); if(i>=0) return i; }
+    return -1;
+  }
+  function buildImpMapping(){
+    document.getElementById('impMapping').innerHTML=IMP_TARGETS.map(t=>{
+      const sel=autoIdx(t.hints);
+      return `<div><label class="text-[11px] font-semibold text-[#6b7280]">${t.label}${t.req?' *':''}</label>
+        <select id="imap_${t.k}" onchange="updateImpPreview()" class="field w-full mt-0.5 text-sm py-1.5"><option value="-1">— none —</option>${_impHeaders.map((h,i)=>`<option value="${i}" ${i===sel?'selected':''}>${esc(h)}</option>`).join('')}</select></div>`;
+    }).join('');
+    updateImpPreview();
+  }
+  function buildImpRows(){
+    const m={}; IMP_TARGETS.forEach(t=>{ const el=document.getElementById('imap_'+t.k); m[t.k]=el?parseInt(el.value,10):-1; });
+    const out=[];
+    for(const row of _impRows){
+      const g=(k)=>{ const i=m[k]; return i>=0?((row[i]||'').trim()):''; };
+      let person=g('person_name'); if(!person) person=[g('person_first'),g('person_last')].filter(Boolean).join(' ').trim();
+      const pr={ practice_name:g('practice_name'), type:g('type'), city:g('city'), website:g('website'),
+        person_name:person, person_title:g('person_title'), person_email:g('person_email'), person_phone:g('person_phone') };
+      if(pr.practice_name || pr.person_name) out.push(pr);
+    }
+    return out;
+  }
+  window.updateImpPreview=function(){
+    const rows=buildImpRows();
+    const practices=new Set(rows.map(r=>(r.practice_name||r.person_name||'').toLowerCase().trim()).filter(Boolean));
+    const docs=rows.filter(r=>r.person_name).length;
+    document.getElementById('impPreview').innerHTML=`<b>${rows.length}</b> rows ready · ~<b>${practices.size}</b> practices · <b>${docs}</b> doctors. Duplicates against existing partners are skipped automatically.`;
+  };
+  window.impFileChosen=function(e){
+    const f=e.target.files[0]; if(!f) return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const rows=parseCSV(String(reader.result||''));
+      if(rows.length<2){ alert('That CSV looks empty or has no data rows.'); return; }
+      _impHeaders=rows[0].map(h=>(h||'').trim()); _impRows=rows.slice(1);
+      buildImpMapping();
+      document.getElementById('impFileInfo').textContent=`${f.name} · ${_impRows.length} rows · ${_impHeaders.length} columns`;
+      document.getElementById('impListName').value=f.name.replace(/\.csv$/i,'');
+      document.getElementById('impStep1').classList.add('hidden');
+      document.getElementById('impStep2').classList.remove('hidden');
+      document.getElementById('impGo').classList.remove('hidden');
+    };
+    reader.readAsText(f);
+  };
+  window.runImport=async function(){
+    const rows=buildImpRows(); if(!rows.length){ alert('No rows to import — check the column mapping (Practice / Company is required).'); return; }
+    const listName=(document.getElementById('impListName').value||'').trim();
+    const go=document.getElementById('impGo'); go.disabled=true;
+    let pc=0,dc=0,sk=0;
+    try{
+      for(let i=0;i<rows.length;i+=100){
+        const chunk=rows.slice(i,i+100);
+        const r=await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'import_partners',rows:chunk,list_name:listName})});
+        const j=await r.json(); if(!j.ok) throw new Error(j.error||'import failed');
+        pc+=j.practicesCreated; dc+=j.doctorsCreated; sk+=j.skipped;
+        go.textContent=`Importing… ${Math.min(i+100,rows.length)}/${rows.length}`;
+      }
+      const res=document.getElementById('impResult');
+      res.className='rounded-xl p-3 mt-3 text-sm bg-[#eafaf0] border border-[#cdeedd] text-[#0a7a3d]';
+      res.innerHTML=`✓ Imported <b>${pc}</b> new practices and <b>${dc}</b> doctors${sk?` · ${sk} rows skipped`:''}. Duplicates were merged into existing partners.`;
+      res.classList.remove('hidden'); go.classList.add('hidden');
+      await loadReferrals();
+    }catch(e){ console.warn('import',e); alert('Import failed: '+(e.message||e)); go.disabled=false; go.textContent='Import'; }
+  };
+  window.openImportPartners=function(){
+    _impHeaders=[]; _impRows=[];
+    document.getElementById('impStep1').classList.remove('hidden');
+    document.getElementById('impStep2').classList.add('hidden');
+    const go=document.getElementById('impGo'); go.classList.add('hidden'); go.disabled=false; go.textContent='Import';
+    document.getElementById('impResult').classList.add('hidden');
+    document.getElementById('impFile').value='';
+    const m=document.getElementById('importModal'); m.classList.remove('hidden'); m.classList.add('flex');
+  };
+  window.closeImport=function(){ const m=document.getElementById('importModal'); m.classList.add('hidden'); m.classList.remove('flex'); };
+
   window.toggleNurture=async function(pid,on){
     try{ await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:on?'enroll_nurture':'pause_nurture',practice_id:pid})}); renderPracticeView(pid); }
     catch(e){ console.warn('toggleNurture',e); }
