@@ -1400,13 +1400,14 @@
   // ---- HubSpot list importer (CSV → referral partners) ----
   const IMP_TARGETS=[
     {k:'practice_name', label:'Practice / Company', req:true, hints:['company name','company','associated company','practice','account name','organization']},
-    {k:'person_first', label:'Doctor first name', hints:['first name','firstname']},
-    {k:'person_last', label:'Doctor last name', hints:['last name','lastname']},
-    {k:'person_name', label:'Doctor full name', hints:['full name','contact name','name']},
+    {k:'person_first', label:'Doctor first name', hints:['first name','firstname','first']},
+    {k:'person_last', label:'Doctor last name', hints:['last name','lastname','last']},
+    {k:'person_name', label:'Doctor full name', hints:['full name','contact name']},
     {k:'person_title', label:'Doctor title', hints:['job title','title','role']},
     {k:'person_email', label:'Doctor email', hints:['email address','email']},
-    {k:'person_phone', label:'Doctor phone', hints:['phone number','mobile phone','mobile','cell','direct phone','phone']},
-    {k:'type', label:'Specialty / type', hints:['industry','specialty','practice type','type']},
+    {k:'person_phone', label:'Doctor cell / direct', hints:['mobile phone','direct phone','cell phone','mobile','cell']},
+    {k:'phone', label:'Practice phone', hints:['company phone','office phone','main phone','practice phone']},
+    {k:'type', label:'Specialty / type', hints:['specialty','industry','practice type','segment']},
     {k:'city', label:'City', hints:['city','town']},
     {k:'website', label:'Website', hints:['website url','website','domain']},
   ];
@@ -1421,9 +1422,11 @@
     return rows.filter(r=>r.some(c=>(c||'').trim()!==''));
   }
   function autoIdx(hints){
-    const lower=_impHeaders.map(h=>h.toLowerCase().trim());
-    for(const h of hints){ const i=lower.indexOf(h); if(i>=0) return i; }
-    for(const h of hints){ const i=lower.findIndex(x=>x.includes(h)); if(i>=0) return i; }
+    // normalize separators so underscore/hyphen headers (first_name, company_phone) match space hints
+    const norm=h=>h.toLowerCase().replace(/[_\-]+/g,' ').replace(/\s+/g,' ').trim();
+    const cols=_impHeaders.map(norm);
+    for(const h of hints){ const i=cols.indexOf(h); if(i>=0) return i; }                          // exact
+    for(const h of hints){ if(h.length<6 && !h.includes(' ')) continue; const i=cols.findIndex(x=>x.includes(h)); if(i>=0) return i; } // partial (skip greedy short single words like 'name'/'cell')
     return -1;
   }
   function buildImpMapping(){
@@ -1440,7 +1443,7 @@
     for(const row of _impRows){
       const g=(k)=>{ const i=m[k]; return i>=0?((row[i]||'').trim()):''; };
       let person=g('person_name'); if(!person) person=[g('person_first'),g('person_last')].filter(Boolean).join(' ').trim();
-      const pr={ practice_name:g('practice_name'), type:g('type'), city:g('city'), website:g('website'),
+      const pr={ practice_name:g('practice_name'), type:g('type'), city:g('city'), website:g('website'), phone:g('phone'),
         person_name:person, person_title:g('person_title'), person_email:g('person_email'), person_phone:g('person_phone') };
       if(pr.practice_name || pr.person_name) out.push(pr);
     }
