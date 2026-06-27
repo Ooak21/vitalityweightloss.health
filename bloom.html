@@ -496,9 +496,9 @@ const PHOTO_UPLOAD_URL = 'https://quixotic-cat-492.convex.site/bloom-photos';
 const INTAKE_SUBMIT_URL = 'https://quixotic-cat-492.convex.site/bloom-intake';
 
 const PLANS = {
-  men:      { id: 'men',      name: "Men's Hair Loss Plan",      price: BLOOM_TEST_DOLLAR ? 1 : 59,  label: BLOOM_TEST_DOLLAR ? '$1/month (test)' : '$59/month' },
-  women:    { id: 'women',    name: "Women's Hair Loss Plan",    price: BLOOM_TEST_DOLLAR ? 1 : 69,  label: BLOOM_TEST_DOLLAR ? '$1/month (test)' : '$69/month' },
-  premium:  { id: 'premium',  name: 'Premium Topical Plan',      price: BLOOM_TEST_DOLLAR ? 1 : 99,  label: BLOOM_TEST_DOLLAR ? '$1/month (test)' : '$99/month' }
+  men:      { id: 'men',      name: "Men's Hair Loss Plan",      price: BLOOM_TEST_DOLLAR ? 1 : 59,  label: BLOOM_TEST_DOLLAR ? '$1/month (test)' : '$59/month', meds: 'Finasteride · Minoxidil · Biotin' },
+  women:    { id: 'women',    name: "Women's Hair Loss Plan",    price: BLOOM_TEST_DOLLAR ? 1 : 69,  label: BLOOM_TEST_DOLLAR ? '$1/month (test)' : '$69/month', meds: 'Spironolactone · Minoxidil · Biotin' },
+  premium:  { id: 'premium',  name: 'Premium Topical Plan',      price: BLOOM_TEST_DOLLAR ? 1 : 99,  label: BLOOM_TEST_DOLLAR ? '$1/month (test)' : '$99/month', meds: 'Minoxidil · Finasteride · Azelaic Acid · Ketoconazole' }
 };
 
 // TODO confirm final list with Dr. DeBry
@@ -1223,6 +1223,7 @@ const flow = [
     Object.values(PLANS).forEach(plan => {
       const card = h('div', { class: 'drug-card' + (state.plan === plan.id ? ' selected' : '') }, [
         h('h3', {}, [plan.name]),
+        h('div', { class: 'meds' }, ['Contains: ' + plan.meds]),
         h('div', { class: 'from' }, [plan.label + ' · monthly subscription, cancel anytime.']),
         h('div', { class: 'body' }, ['Cash pay · billed monthly · cancel anytime'])
       ]);
