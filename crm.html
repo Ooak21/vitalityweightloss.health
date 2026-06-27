@@ -1076,6 +1076,13 @@
       if(!j.ok){ body.innerHTML = `<div class="text-sm text-[#be123c] py-8 text-center">${esc(j.error||'Could not load portal.')}</div>`; return; }
       const pt = j.patient||{}, na = j.nextAppt, ib = (j.inbody&&j.inbody.length)?j.inbody[j.inbody.length-1]:null, plan = j.plan, logs = j.logs||[];
       const g = gamifyPortal(j);
+      // Plan card summary: the real narrative is handbook.executive_summary (string). Guard against
+      // objects (handbook.ai_analysis etc. are objects → were rendering "[object Object]").
+      const _hb = (plan && plan.handbook) || {};
+      let planSummary = [_hb.executive_summary, _hb.inbody_analysis].find(v=>typeof v==='string'&&v.trim()) || '';
+      planSummary = planSummary.trim().replace(/\s+/g,' ');
+      if(planSummary.length>360) planSummary = planSummary.slice(0,360).replace(/\s+\S*$/,'')+'…';
+      if(!planSummary) planSummary = 'Your personalized plan is ready. Tap to open the full transformation plan.';
       const rewardsBlock = `
         <div class="glass border border-[#e6e9ee] rounded-2xl p-5 mb-6">
           <div class="flex items-center justify-between mb-3"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Rewards</div><span class="text-xs text-[#9aa0ab]">${g.earned}/${g.badges.length} badges${g.ptsToday?` · +${g.ptsToday} today`:''}</span></div>
@@ -1112,7 +1119,7 @@
         ${rewardsBlock}
         <div class="glass border border-[#e6e9ee] rounded-2xl p-5 mb-6">
           <div class="flex items-center justify-between mb-3"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">My Personal Transformation Plan</div>${plan?`<button onclick="openVbisHandbook('${p.id}')" class="text-xs text-[#0a6cf5] font-semibold hover:underline">Open full plan →</button>`:''}</div>
-          ${plan? `<div class="text-sm text-[#16201d]">${esc((plan.handbook&&plan.handbook.summary)|| (plan.summary) ||'Your personalized plan is ready. Tap to open the full transformation plan.')}</div>`
+          ${plan? `<div class="text-sm text-[#16201d]">${esc(planSummary)}</div>`
                 : '<div class="text-sm text-[#9aa0ab]">No plan published yet. Your care team will generate one after your first scan.</div>'}
         </div>
         <div class="glass border border-[#e6e9ee] rounded-2xl p-5">
