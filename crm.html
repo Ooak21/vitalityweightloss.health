@@ -153,6 +153,21 @@
   </div>
 </div>
 
+<!-- Send branded email to a referral partner (standard template or custom) -->
+<div id="partnerEmailModal" class="hidden fixed inset-0 bg-black/40 z-40 items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-1"><h3 class="font-display text-lg font-semibold">Send email</h3><button onclick="closePartnerEmail()" class="text-[#9aa0ab] hover:text-[#16201d] text-lg leading-none">✕</button></div>
+    <p class="text-xs text-[#6b7280] mb-4">Sends as a branded Vitality email from <b>care@vitalityweightloss.health</b> and logs to this practice's activity.</p>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="text-xs font-semibold text-[#6b7280]">To (doctor)</label><select id="peRecipient" class="field w-full mt-1"></select></div>
+      <div><label class="text-xs font-semibold text-[#6b7280]">Template</label><select id="peTemplate" onchange="partnerEmailTemplate()" class="field w-full mt-1"><option value="standard">Standard · Partnership intro</option><option value="custom">Custom message</option></select></div>
+    </div>
+    <div class="mb-3"><label class="text-xs font-semibold text-[#6b7280]">Subject</label><input id="peSubject" class="field w-full mt-1"></div>
+    <div><label class="text-xs font-semibold text-[#6b7280]">Message</label><textarea id="peBody" rows="9" class="field w-full mt-1"></textarea></div>
+    <div class="flex justify-end gap-2 mt-5"><button onclick="closePartnerEmail()" class="px-4 py-2 rounded-xl border border-[#e6e9ee] text-sm font-semibold hover:bg-[#f1f3f7]">Cancel</button><button id="peSend" onclick="sendPartnerEmail()" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Send email</button></div>
+  </div>
+</div>
+
 <!-- HubSpot list importer (CSV → referral partners) -->
 <div id="importModal" class="hidden fixed inset-0 bg-black/40 z-40 items-center justify-center p-4">
   <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
@@ -422,6 +437,17 @@
     }catch(e){ alert('Error: '+e.message); }
     finally{ if(btn){ btn.disabled=false; btn.textContent=o; } }
   };
+
+  // ---- lightweight split-button dropdown (used by the Plans cluster) ----
+  window.menuToggle=function(btn){
+    const wrap=btn.closest('.menu-wrap'); if(!wrap) return;
+    const pop=wrap.querySelector('.menu-pop'); if(!pop) return;
+    const willOpen=pop.classList.contains('hidden');
+    document.querySelectorAll('.menu-pop').forEach(m=>m.classList.add('hidden'));
+    if(willOpen) pop.classList.remove('hidden');
+  };
+  window.menuClose=function(el){ const p=el.closest('.menu-pop'); if(p) p.classList.add('hidden'); };
+  document.addEventListener('click',e=>{ if(!e.target.closest('.menu-wrap')) document.querySelectorAll('.menu-pop').forEach(m=>m.classList.add('hidden')); });
 
   // ---- Vitality Bloom — provider review queue (PHI shown to providers; admins see redacted stubs) ----
   const besc=(s)=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -807,19 +833,51 @@
 
         ${isProvider() ? '<div id="clinicalReviewPanel" class="mb-6"></div>' : ''}
 
-        <div class="flex gap-2 mb-2 flex-wrap">
-          <button onclick="openEmail()" class="px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8]">✉ Send branded email</button>
-          <button onclick="bookAppt('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">+ Book appointment</button>
-          <button onclick="generatePlan('${p.id}', false, this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ ${p.plan? 'Regenerate plan':'Generate plan'}</button>
-          <button onclick="openPlan('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">📋 View plan</button>
-          <button onclick="openVbisHandbook('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">📋 View Personal Transformation Plan</button>
-          <label id="hbGlp1Wrap" class="px-3 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm flex items-center gap-2 cursor-pointer hover:bg-[#f1f3f7]" title="Checked: the handbook includes GLP-1 medication guidance. Unchecked: lifestyle-only handbook (no GLP-1/semaglutide/tirzepatide mentions). Defaults from the patient's program.">
-            <input type="checkbox" id="hbGlp1Toggle" ${/glp1|sema|tirz|oral|medicare_glp1/i.test(p.program||'')?'checked':''} class="accent-[#0a6cf5] w-4 h-4"> Include GLP-1
-          </label>
-          <button onclick="genVbisHandbook('${p.id}', this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ Generate Personal Transformation Plan</button>
-          <button onclick="portalLogin('${p.id}',${!!p.has_login})" ${p.email?'':'title="Add an email first"'} class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7]">🔑 ${p.has_login?'Reset portal password':'Create portal login'}</button>
-          <button id="veeBtn" onclick="veeToggle('${p.id}','provider')" class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10 flex items-center gap-2"><span id="veeDot" class="w-2 h-2 rounded-full bg-[#0a6cf5]"></span>🎙 Discuss with Vee</button>
-          <button onclick="veeToggle('${p.id}','patient')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7] flex items-center gap-2">👤 Patient review</button>
+        <div class="space-y-3 mb-2">
+          <!-- Communicate -->
+          <div>
+            <div class="text-[10px] font-semibold tracking-[.14em] text-[#9aa0ab] uppercase mb-1.5">Communicate</div>
+            <div class="flex gap-2 flex-wrap">
+              <button onclick="openEmail()" class="px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8]">✉ Send branded email</button>
+              <button onclick="bookAppt('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">+ Book appointment</button>
+              <button onclick="portalLogin('${p.id}',${!!p.has_login})" ${p.email?'':'title="Add an email first"'} class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7]">🔑 ${p.has_login?'Reset portal password':'Create portal login'}</button>
+            </div>
+          </div>
+          <!-- Plans -->
+          <div>
+            <div class="text-[10px] font-semibold tracking-[.14em] text-[#9aa0ab] uppercase mb-1.5">Plans</div>
+            <div class="flex gap-2 flex-wrap items-center">
+              <div class="relative inline-block menu-wrap">
+                <span class="inline-flex rounded-xl border border-[#0a6cf5]/40 overflow-hidden">
+                  <button onclick="generatePlan('${p.id}', false, this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ ${p.plan?'Regenerate plan':'Generate plan'}</button>
+                  <button onclick="menuToggle(this)" aria-label="More plan actions" class="px-2.5 py-2.5 text-[#0a6cf5] text-xs hover:bg-[#0a6cf5]/10 border-l border-[#0a6cf5]/40">▾</button>
+                </span>
+                <div class="menu-pop hidden absolute left-0 z-30 mt-1 w-48 bg-white rounded-xl border border-[#e6e9ee] shadow-lg p-1">
+                  <button onclick="menuClose(this);openPlan('${p.id}')" class="w-full text-left px-3 py-2 rounded-lg text-sm text-[#16201d] hover:bg-[#f1f3f7]">📋 View plan</button>
+                </div>
+              </div>
+              <div class="relative inline-block menu-wrap">
+                <span class="inline-flex rounded-xl border border-[#0a6cf5]/40 overflow-hidden">
+                  <button onclick="genVbisHandbook('${p.id}', this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ Generate Transformation Plan</button>
+                  <button onclick="menuToggle(this)" aria-label="More transformation plan actions" class="px-2.5 py-2.5 text-[#0a6cf5] text-xs hover:bg-[#0a6cf5]/10 border-l border-[#0a6cf5]/40">▾</button>
+                </span>
+                <div class="menu-pop hidden absolute left-0 z-30 mt-1 w-60 bg-white rounded-xl border border-[#e6e9ee] shadow-lg p-1">
+                  <button onclick="menuClose(this);openVbisHandbook('${p.id}')" class="w-full text-left px-3 py-2 rounded-lg text-sm text-[#16201d] hover:bg-[#f1f3f7]">📋 View Transformation Plan</button>
+                </div>
+              </div>
+              <label id="hbGlp1Wrap" class="px-3 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm flex items-center gap-2 cursor-pointer hover:bg-[#f1f3f7]" title="Checked: the handbook includes GLP-1 medication guidance. Unchecked: lifestyle-only handbook (no GLP-1/semaglutide/tirzepatide mentions). Defaults from the patient's program.">
+                <input type="checkbox" id="hbGlp1Toggle" ${/glp1|sema|tirz|oral|medicare_glp1/i.test(p.program||'')?'checked':''} class="accent-[#0a6cf5] w-4 h-4"> Include GLP-1
+              </label>
+            </div>
+          </div>
+          <!-- Voice -->
+          <div>
+            <div class="text-[10px] font-semibold tracking-[.14em] text-[#9aa0ab] uppercase mb-1.5">Voice</div>
+            <div class="inline-flex items-center rounded-xl border border-[#0a6cf5]/40 overflow-hidden">
+              <button id="veeBtn" onclick="veeToggle('${p.id}','provider')" class="px-4 py-2.5 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10 flex items-center gap-2 border-r border-[#0a6cf5]/40"><span id="veeDot" class="w-2 h-2 rounded-full bg-[#0a6cf5]"></span>🎙 Discuss with Vee</button>
+              <button onclick="veeToggle('${p.id}','patient')" class="px-4 py-2.5 text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7] flex items-center gap-2">👤 Patient review</button>
+            </div>
+          </div>
         </div>
         <div id="veeStatus" class="text-xs text-[#6b7280] mb-6"></div>
 
@@ -1253,6 +1311,7 @@
           </select>
         </div>
         <div class="flex gap-2 mb-6 flex-wrap">
+          <button onclick="openPartnerEmail('${p.id}')" class="px-3 py-2.5 rounded-xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8]">✉ Send email</button>
           ${touchBtn('call','📞','Log call')}${touchBtn('visit','🤝','Log visit')}${touchBtn('email','✉','Log email')}
           <button onclick="addPracticeTask('${p.id}')" class="px-3 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">＋ Task</button>
         </div>
@@ -1505,6 +1564,44 @@
   window.toggleNurture=async function(pid,on){
     try{ await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:on?'enroll_nurture':'pause_nurture',practice_id:pid})}); renderPracticeView(pid); }
     catch(e){ console.warn('toggleNurture',e); }
+  };
+
+  // ---- Send a branded email to a partner (standard template or custom) ----
+  let _peTarget=null, _pePracticeName='';
+  function stdPartnerEmail(name){
+    return {
+      subject:'Partnering with Vitality Weight Loss',
+      body:`Hi ${name||'there'} team,\n\nI'm reaching out from Vitality Weight Loss, a physician-led metabolic and weight-management clinic here in Las Vegas. We'd love to be a resource for any of your patients who could benefit from medical weight management — GLP-1 therapy, InBody body-composition analysis, and structured coaching.\n\nReferring is simple and we keep you in the loop on the patients we share. If it's helpful, I'm glad to send over how our referral process works or set up a quick call.\n\nThank you for considering us as a partner.`
+    };
+  }
+  window.openPartnerEmail=function(pid){
+    _peTarget=pid;
+    const pr=(practices||[]).find(x=>x.id===pid); _pePracticeName=pr?pr.name:'';
+    const docs=(window._curProviders||[]).filter(d=>d.email);
+    const sel=document.getElementById('peRecipient');
+    sel.innerHTML = docs.length ? docs.map(d=>`<option value="${d.id}">${esc(d.name)} · ${esc(d.email)}</option>`).join('') : '<option value="">(no doctor with an email on file)</option>';
+    document.getElementById('peTemplate').value='standard';
+    const t=stdPartnerEmail(_pePracticeName); document.getElementById('peSubject').value=t.subject; document.getElementById('peBody').value=t.body;
+    const m=document.getElementById('partnerEmailModal'); m.classList.remove('hidden'); m.classList.add('flex');
+  };
+  window.partnerEmailTemplate=function(){
+    if(document.getElementById('peTemplate').value==='standard'){ const t=stdPartnerEmail(_pePracticeName); document.getElementById('peSubject').value=t.subject; document.getElementById('peBody').value=t.body; }
+    else { document.getElementById('peSubject').value=''; document.getElementById('peBody').value=''; document.getElementById('peSubject').focus(); }
+  };
+  window.closePartnerEmail=function(){ const m=document.getElementById('partnerEmailModal'); m.classList.add('hidden'); m.classList.remove('flex'); };
+  window.sendPartnerEmail=async function(){
+    const pid=_peTarget; if(!pid)return;
+    const provider_id=document.getElementById('peRecipient').value||undefined;
+    const subject=(document.getElementById('peSubject').value||'').trim();
+    const body=(document.getElementById('peBody').value||'').trim();
+    if(!subject||!body){ alert('Add a subject and a message.'); return; }
+    const btn=document.getElementById('peSend'); btn.disabled=true; btn.textContent='Sending…';
+    try{
+      const r=await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'send_email',practice_id:pid,provider_id,subject,body})});
+      const j=await r.json();
+      if(!j.ok){ alert(j.error||'Could not send'); btn.disabled=false; btn.textContent='Send email'; return; }
+      closePartnerEmail(); await loadReferrals(); renderPracticeView(pid);
+    }catch(e){ console.warn('sendPartnerEmail',e); alert('Could not send'); btn.disabled=false; btn.textContent='Send email'; }
   };
   window.addPracticeTask=function(pid){
     openFormModal({ title:'New follow-up task',
