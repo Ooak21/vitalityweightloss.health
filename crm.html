@@ -763,6 +763,7 @@
     viewMode = m;
     document.querySelectorAll('.vm-btn').forEach(b=>{ const on = b.dataset.mode===m; b.classList.toggle('bg-[#0a6cf5]', on); b.classList.toggle('text-white', on); b.classList.toggle('text-[#4b5563]', !on); });
     renderDetail();
+    syncBodyDock();
   };
   function detailHeader(p, age){
     return `
@@ -922,7 +923,7 @@
 
         <div class="glass border border-[#e6e9ee] rounded-2xl p-5">
           <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-4">Chart timeline</div>
-          ${timeline(p)}
+          <div class="overflow-y-auto scroll -mr-2 pr-2" style="max-height:420px">${timeline(p)}</div>
           <div class="flex gap-2 mt-2 pt-3 border-t border-[#e6e9ee]">
             <input id="noteInput" class="field" placeholder="Add a note to the chart…" onkeydown="if(event.key==='Enter')addNote('${p.id}')">
             <button onclick="addNote('${p.id}')" class="px-4 py-2 rounded-lg bg-[#f1f3f7] border border-[#e6e9ee] text-sm font-medium hover:border-[#0a6cf5]/40">Add</button>
@@ -955,7 +956,6 @@
           <button onclick="bookAppt('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">+ Book appointment</button>
           <button onclick="addTask('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">＋ Add task</button>
           <button onclick="portalLogin('${p.id}',${!!p.has_login})" ${p.email?'':'title="Add an email first"'} class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7]">🔑 ${p.has_login?'Reset portal password':'Create portal login'}</button>
-          <button onclick="setViewMode('provider')" class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">🩺 Clinical view</button>
         </div>
 
         <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-2">Contact &amp; lifecycle</div>
@@ -980,7 +980,7 @@
 
         <div class="glass border border-[#e6e9ee] rounded-2xl p-5">
           <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-4">Notes &amp; communications</div>
-          ${timeline(p)}
+          <div class="overflow-y-auto scroll -mr-2 pr-2" style="max-height:420px">${timeline(p)}</div>
           <div class="flex gap-2 mt-2 pt-3 border-t border-[#e6e9ee]">
             <input id="noteInput" class="field" placeholder="Add a note…" onkeydown="if(event.key==='Enter')addNote('${p.id}')">
             <button onclick="addNote('${p.id}')" class="px-4 py-2 rounded-lg bg-[#f1f3f7] border border-[#e6e9ee] text-sm font-medium hover:border-[#0a6cf5]/40">Add</button>
@@ -2025,7 +2025,7 @@ HARD RULES:
   function syncBodyDock(){
     const dock=document.getElementById('bodyDock'); if(!dock) return;
     const p=patients.find(x=>x.id===selId);
-    const room = !listOpen && window.innerWidth>=1180 && !!p;
+    const room = !listOpen && window.innerWidth>=1180 && !!p && viewMode!=='crm';
     if(room){ dock.classList.add('show'); if(window.VBODY){ VBODY.mount(document.getElementById('bdStage')); VBODY.bind(p); } }
     else { dock.classList.remove('show'); }
   }
