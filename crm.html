@@ -554,7 +554,13 @@
     const contra=(x.contraindications||[]);
     const contraHtml=contra.length?'<div class="space-y-2">'+contra.map(c=>'<div class="rounded-xl bg-[#fff7ed] border border-[#ffd9a8] p-3 text-sm text-[#9a5a00] font-semibold">⚑ '+besc(c)+'</div>').join('')+'</div>':'';
     const att=x.attestation||{};
-    const attHtml=(att.signedAt||att.signature)?'<div class="text-xs text-[#6b7280]">Consent signed '+(att.signedAt?besc(new Date(att.signedAt).toLocaleString()):'')+(att.signature?' · e-signature on file':'')+'</div>':'<div class="text-xs text-[#9aa0ab]">No attestation detail on file.</div>';
+    const _atts=Array.isArray(att.attestations)?att.attestations:[]; const _acks=Array.isArray(att.acknowledgments)?att.acknowledgments:[]; const _aw=att.capturedAtUTC||x.created_at;
+    const _arow=(a)=>'<div class="text-xs flex gap-1.5 '+(a.agreed?'text-[#16201d]':'text-rose-600 font-semibold')+'"><span>'+(a.agreed?'✓':'✗')+'</span><span>'+besc(a.text||a.id||a.doc||'')+'</span></div>';
+    const attHtml=(att.signatureName||_atts.length||_acks.length)
+      ? '<div class="text-xs text-[#6b7280]">'+(att.signatureName?'Signed by <b class="text-[#16201d]">'+besc(att.signatureName)+'</b> · typed e-signature':'e-signature on file')+(att.version?' · consent v'+besc(att.version):'')+(_aw?' · '+besc(new Date(_aw).toLocaleString()):'')+'</div>'
+        +(_atts.length?'<div class="mt-2 space-y-1">'+_atts.map(_arow).join('')+'</div>':'')
+        +(_acks.length?'<div class="mt-3"><div class="text-[10px] uppercase tracking-wide text-[#9aa0ab] mb-1">Documents acknowledged</div><div class="space-y-1">'+_acks.map(_arow).join('')+'</div></div>':'')
+      : '<div class="text-sm text-[#9aa0ab]">No attestation detail on file.</div>';
     const labs=x.labs?'<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 text-sm text-[#16201d]">'+besc(typeof x.labs==='string'?x.labs:JSON.stringify(x.labs))+'</div>':'';
     const idHtml=x.id_image_url?'<a href="'+besc(x.id_image_url)+'" target="_blank"><img src="'+besc(x.id_image_url)+'" class="h-28 w-auto rounded-xl border border-[#e6e9ee]"></a>':'<div class="text-sm text-[#9aa0ab]">No ID uploaded.</div>';
     const decided=x.bucket!=='pending';
@@ -1748,8 +1754,16 @@
       const contraHtml = contra.length
         ? `<div class="mt-3 space-y-2">${contra.map(c => `<div class="rounded-xl bg-[#fff7ed] border border-[#ffd9a8] p-3 text-sm text-[#9a5a00] font-semibold">${esc(c)}</div>`).join('')}</div>`
         : '';
-      const attHtml = att.signedAt || att.signature
-        ? `<div class="text-xs text-[#6b7280] mt-2">Consent signed ${att.signedAt ? esc(new Date(att.signedAt).toLocaleString()) : ''}${att.signature ? ' · e-signature on file' : ''}</div>`
+      // Attestation record fields: signatureName (typed e-sig), capturedAtUTC, version, and the
+      // attestations[]/acknowledgments[] the patient agreed to (each {agreed, text, id/doc}).
+      const attestations = Array.isArray(att.attestations) ? att.attestations : [];
+      const acks = Array.isArray(att.acknowledgments) ? att.acknowledgments : [];
+      const attWhen = att.capturedAtUTC || rv.created_at;
+      const attRow = (a) => `<div class="text-xs flex gap-1.5 ${a.agreed ? 'text-[#16201d]' : 'text-rose-600 font-semibold'}"><span>${a.agreed ? '✓' : '✗'}</span><span>${esc(a.text || a.id || a.doc || '')}</span></div>`;
+      const attHtml = (att.signatureName || attestations.length || acks.length)
+        ? `<div class="text-xs text-[#6b7280] mt-1">${att.signatureName ? `Signed by <b class="text-[#16201d]">${esc(att.signatureName)}</b> · typed e-signature` : 'e-signature on file'}${att.version ? ` · consent v${esc(att.version)}` : ''}${attWhen ? ` · ${esc(new Date(attWhen).toLocaleString())}` : ''}</div>
+           ${attestations.length ? `<div class="mt-2 space-y-1">${attestations.map(attRow).join('')}</div>` : ''}
+           ${acks.length ? `<div class="mt-3"><div class="text-[10px] uppercase tracking-wide text-[#9aa0ab] mb-1">Documents acknowledged</div><div class="space-y-1">${acks.map(attRow).join('')}</div></div>` : ''}`
         : '';
       const labsHtml = labs
         ? `<div class="rounded-xl bg-white border border-[#e6e9ee] p-3 text-sm"><span class="text-xs font-semibold text-[#6b7280] uppercase tracking-wide">Labs</span><div class="mt-1 text-[#16201d]">${esc(typeof labs === 'string' ? labs : JSON.stringify(labs))}</div></div>`
@@ -1764,20 +1778,28 @@
           <button onclick="recordRxDecision('${pid}','declined')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">Decline / needs info</button>
         </div>
         <textarea id="rxDecisionNote" class="field w-full mt-3 text-sm" rows="2" placeholder="Optional provider note for the chart…"></textarea>`;
+      // Long packet (intake screening + consent + ID) collapses behind a click. Safety flags and
+      // the Approve/Decline controls (incl. #rxDecisionNote) stay OUTSIDE the toggle — always in the
+      // DOM — so the data binding, async flow, and approve→email path are unchanged.
       el.innerHTML = `
         <div class="rounded-2xl border border-[#d6e6ff] bg-[#f7fbff] p-5">
           <div class="flex items-center justify-between gap-3 mb-1">
             <div class="font-display text-base font-semibold text-[#0a6cf5]">Clinical review</div>
             <span class="badge b-active text-[10px]">Provider only</span>
           </div>
-          <div class="text-xs text-[#6b7280] mb-4">${esc(rv.drug_label)} · captured ${rv.created_at ? new Date(rv.created_at).toLocaleString() : ''}</div>
-          <div class="text-xs font-semibold tracking-wide text-[#6b7280] uppercase mb-2">Intake screening</div>
-          <div class="space-y-2">${qaHtml}</div>
-          ${contraHtml}
-          ${labsHtml}
-          <div class="mt-4 text-xs font-semibold tracking-wide text-[#6b7280] uppercase mb-2">Attestation &amp; consent</div>
-          ${attHtml || '<div class="text-xs text-[#9aa0ab]">No attestation detail on file.</div>'}
-          ${idHtml}
+          <div class="text-xs text-[#6b7280] mb-3">${esc(rv.drug_label)} · captured ${rv.created_at ? new Date(rv.created_at).toLocaleString() : ''}</div>
+          ${contra.length ? `<div class="text-xs font-semibold tracking-wide text-rose-600 uppercase mb-1">Contraindication flags</div>${contraHtml}` : ''}
+          <details class="mt-3 border-t border-[#e6e9ee] pt-3">
+            <summary class="cursor-pointer text-sm font-semibold text-[#0a6cf5] hover:underline py-1">View intake screening${items.length ? ` (${items.length} answer${items.length === 1 ? '' : 's'})` : ''}, consent &amp; ID</summary>
+            <div class="mt-3">
+              <div class="text-xs font-semibold tracking-wide text-[#6b7280] uppercase mb-2">Intake screening</div>
+              <div class="space-y-2">${qaHtml}</div>
+              ${labsHtml}
+              <div class="mt-4 text-xs font-semibold tracking-wide text-[#6b7280] uppercase mb-2">Attestation &amp; consent</div>
+              ${attHtml || '<div class="text-xs text-[#9aa0ab]">No attestation detail on file.</div>'}
+              ${idHtml}
+            </div>
+          </details>
           ${actions}
         </div>`;
     } catch (e) {
