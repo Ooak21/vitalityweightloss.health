@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
 <!-- Clover SDK is loaded on demand at the checkout step (loadCloverSdk) -->
 <!-- heic2any: convert iPhone HEIC/HEIF photos to JPEG so they preview + display everywhere -->
 <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
@@ -414,6 +414,125 @@
     background: var(--white);
   }
   .consent-row.checked { border-color: var(--green); background: linear-gradient(180deg, #f4faec 0%, var(--white) 100%); }
+
+  /* READ-GATED CONSENT (ported from glp1 to match the attorney-vetted flow) */
+  .ack-card {
+    display: flex; flex-direction: column; gap: 0;
+    background: var(--white);
+    border: 1.5px solid var(--line);
+    border-radius: 16px;
+    margin-bottom: 14px;
+    transition: all .22s cubic-bezier(.2,.7,.3,1);
+    overflow: hidden;
+  }
+  .ack-card:hover { border-color: var(--navy); box-shadow: 0 1px 0 rgba(16,24,40,.04), 0 6px 18px rgba(16,24,40,.06); }
+  .ack-card.checked {
+    border-color: var(--green);
+    background: linear-gradient(180deg, #f4faec 0%, var(--white) 100%);
+    box-shadow: 0 0 0 3px rgba(10,108,245,.12), 0 1px 0 rgba(16,24,40,.04);
+  }
+  .ack-banner {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 18px;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: -.005em;
+    line-height: 1.4;
+    border-bottom: 1px solid transparent;
+    transition: all .25s ease;
+  }
+  .ack-banner svg { width:16px; height:16px; flex-shrink:0; }
+  .ack-banner.todo {
+    background: linear-gradient(180deg, #fff8e8 0%, #fef6e4 100%);
+    border-bottom-color: #f0d896;
+    color: #92510a;
+  }
+  .ack-banner.done {
+    background: linear-gradient(180deg, #ecfdf5 0%, #f0fdf4 100%);
+    border-bottom-color: #a7f3d0;
+    color: #065f46;
+  }
+  .ack-body { display: flex; gap: 14px; padding: 16px 20px; cursor: pointer; }
+  .ack-card input[type="checkbox"] {
+    margin-top: 3px; width: 20px; height: 20px;
+    accent-color: var(--green); cursor: pointer; flex-shrink: 0;
+  }
+  .ack-card.locked input[type="checkbox"] { cursor: not-allowed; opacity: .3; }
+  .ack-text { font-size: 14.5px; color: var(--ink); line-height: 1.55; flex: 1; }
+  .ack-text strong { color: var(--navy); }
+  .ack-card.locked details.doc summary {
+    background: linear-gradient(135deg, var(--accent) 0%, #b07f49 100%);
+    color: #fff;
+    padding: 11px 14px;
+    border-radius: 10px;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(10,108,245,.3);
+    border: 0;
+  }
+  .ack-card.locked details.doc { border: 0; padding: 0; background: transparent; }
+  .ack-card.locked details.doc summary::after { color: #fff; font-size: 18px; }
+  .ack-card.locked details.doc summary:hover { background: linear-gradient(135deg, #b07f49 0%, #9b6f3f 100%); }
+  details.doc {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
+    background: var(--cream-2);
+    margin-top: 10px;
+  }
+  details.doc summary {
+    cursor: pointer; outline: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--navy);
+    list-style: none;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  details.doc summary::-webkit-details-marker { display: none; }
+  details.doc summary::after {
+    content: '+'; font-size: 18px; color: var(--muted); transition: transform .2s;
+  }
+  details.doc[open] summary::after { transform: rotate(45deg); }
+  details.doc[open] { background: var(--white); }
+  details.doc h4 {
+    font-family: 'Montserrat','Inter',sans-serif; font-weight: 500;
+    font-size: 14px; color: var(--navy); margin: 14px 0 4px;
+  }
+  details.doc p {
+    font-size: 13px; color: var(--ink); margin: 0 0 8px; line-height: 1.55;
+  }
+  .sig-wrap {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 28px;
+    margin: 28px 0 16px;
+    box-shadow: var(--shadow-lift);
+  }
+  .sig-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    font-weight: 600;
+  }
+  .sig-preview {
+    font-family: 'Caveat', 'Brush Script MT', cursive;
+    font-size: 44px;
+    color: var(--navy);
+    padding: 12px 0 6px;
+    border-bottom: 1.5px dashed var(--line);
+    min-height: 64px;
+    line-height: 1;
+    margin-bottom: 18px;
+  }
+  .sig-preview.empty { color: #c8cdd5; font-style: italic; font-size: 16px; font-family: 'Inter', sans-serif; }
+  .sig-meta {
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 12px;
+    line-height: 1.55;
+  }
   .checkout-panel {
     background: var(--white);
     border: 1.5px solid var(--line);
@@ -549,6 +668,42 @@ function bloomSafetyHTML(keys) {
   return '<div class="isi-title">Important Safety Information</div>' + isi +
          '<div class="isi-disclaimers">' + disc + '</div>';
 }
+
+// READ-GATED CONSENT DOCUMENTS — non-clinical legal language is verbatim from the
+// attorney-vetted glp1 flow (compounded/503A, assumption-of-risk + HIPAA NPP,
+// communications, Telehealth NRS 629.515). Only the clinical risk content is
+// rewritten for hair-loss medications. Final clinical wording pending DeBry/counsel sign-off.
+const DOCS = {
+  consent: `
+    <h4>Informed consent summary</h4>
+    <p>You're consenting to compounded topical and/or oral hair-loss treatment, prescribed individually for you by Peter DeBry, MD (Nevada-licensed, NPI 1831137991) after asynchronous telehealth review of your intake and scalp photos.</p>
+    <h4>What you can expect</h4>
+    <p>Dr. DeBry reviews your intake on his own schedule. If approved, Dr. DeBry writes your prescription, which is filled at a USA-licensed compounding pharmacy. You use the medication as directed. Results vary and typically take three to six months of consistent use.</p>
+    <h4>Common side effects</h4>
+    <p>Scalp irritation, dryness, itching, or redness; temporary increased shedding when starting minoxidil. Finasteride may cause decreased libido and erectile or ejaculatory changes. Spironolactone may cause increased urination, breast tenderness, menstrual changes, and lightheadedness.</p>
+    <h4>Serious risks</h4>
+    <p>Finasteride: rare persistent sexual side effects and mood changes including depression; it can affect PSA testing and must not be handled by or used during pregnancy due to risk to a male fetus. Spironolactone: elevated potassium and low blood pressure; not for use in pregnancy. Minoxidil: rare rapid heartbeat, chest discomfort, swelling, or unwanted facial-hair growth. Seek immediate care for any severe allergic reaction.</p>
+  `,
+  compounded: `
+    <h4>Compounded medication disclosure</h4>
+    <p>Your medication is prepared specifically for you by a <strong>USA-licensed compounding pharmacy</strong>.</p>
+    <p>Each prescription is compounded individually under Dr. DeBry's individual order for you. <strong>Compounded medications are not FDA-approved</strong> as finished combination drug products, although the active ingredients are FDA-approved in brand-name form.</p>
+    <p>You may decline the compounded version and request an FDA-approved brand product through your own physician. Vitality is happy to coordinate.</p>
+  `,
+  risk: `
+    <h4>Assumption of risk</h4>
+    <p>I voluntarily assume the risks of this program, including scalp irritation, allergic reactions, the hormonal and other side effects of finasteride, spironolactone, and minoxidil described in my consent, and risks specific to a compounded (non-FDA-approved) medication.</p>
+    <p>To the fullest extent permitted by Nevada law, I release Vitality Weight Loss, LLC and Peter DeBry, MD from claims arising from my voluntary participation, except those arising from gross negligence or willful misconduct. Governing law: Nevada. Disputes resolved in Clark County, Nevada.</p>
+    <h4>HIPAA Notice of Privacy Practices summary</h4>
+    <p>Vitality is a HIPAA covered entity. PHI is used for treatment, payment, and operations. Your rights include access, amendment, restriction, accounting of disclosures, and filing a complaint with Vitality's Privacy Officer or HHS Office for Civil Rights without retaliation.</p>
+  `,
+  comms: `
+    <h4>Communications consent</h4>
+    <p>Vitality may send appointment reminders, follow-up check-ins, educational content, and billing receipts via text and email. Message frequency varies; data rates may apply. Reply STOP to opt out of non-clinical SMS, or unsubscribe in emails. Clinical messages from Dr. DeBry may continue as needed for your safe care.</p>
+    <h4>Telehealth (Nevada NRS 629.515)</h4>
+    <p>Your care includes asynchronous (store-and-forward) telehealth with Dr. DeBry. This is not for emergencies call 911 for emergencies, or 988 for mental-health crisis. Information shared via telehealth is treated as protected health information under HIPAA and Nevada law.</p>
+  `
+};
 
 // TODO confirm final list with Dr. DeBry
 const RED_FLAG_IDS = ['sudden_patchy', 'scalp_scarring', 'autoimmune'];
@@ -1221,49 +1376,153 @@ const flow = [
     !!s.idPhotoPreview
   },
 
-  // 6. TELEHEALTH CONSENT ----------------------------------------------------
-  { id: 'consent', section: 'Telehealth consent', view: (p) => {
-    p.appendChild(h('h1', {}, ['Telehealth consent']));
-    p.appendChild(h('p', { class: 'lede' }, ['Please read and agree before continuing to checkout.']));
+  // 6. CONSENT & E-SIGNATURE (read-gated disclosures — matches the glp1 flow) -
+  { id: 'consent', section: 'Consent & e-signature', view: (p) => {
+    p.appendChild(h('h1', {}, ['Last step your consents.']));
+    p.appendChild(h('p', { class: 'lede' }, ['You must open and fully read each document before its checkbox unlocks.']));
 
-    const box = h('div', { class: 'consent-box' });
-    box.innerHTML = `
-      <p><strong>Informed telehealth consent — final language pending counsel</strong></p>
-      <p>You are consenting to asynchronous (store-and-forward) telehealth with Dr. Peter DeBry, MD for evaluation of hair loss. This is not for medical emergencies — call 911 for emergencies.</p>
-      <p>Your health information is protected under HIPAA and Nevada telehealth law (NRS 629.515). Completing this intake does not guarantee a prescription. Dr. DeBry may determine that treatment is not appropriate or that a live visit is required.</p>
-      <p>By checking the box below, you consent to telehealth evaluation of your submitted information and photos.</p>
-    `;
-    p.appendChild(box);
+    state.acks = state.acks || {};
+    state.acksRead = state.acksRead || {};
 
+    const ACKS = [
+      { id:1, html:'I am submitting this intake for <strong>asynchronous telehealth review</strong> by Dr. Peter DeBry, MD. I have read the risks and benefits of my selected hair-loss treatment and consent to treatment <strong>if and when Dr. DeBry approves my prescription</strong> based on my history.', doc:'consent' },
+      { id:2, html:'I understand my medication is <strong>compounded</strong> by a <strong>USA-licensed pharmacy</strong> and is <strong>not FDA-approved</strong> as a combination product, although the active ingredients are FDA-approved in brand-name form.', doc:'compounded' },
+      { id:3, html:'I voluntarily assume the risks, release Vitality from liability except for gross negligence, and acknowledge receipt of the HIPAA Notice of Privacy Practices.', doc:'risk' },
+      { id:5, html:'I consent to clinical, appointment, and program text + email reminders. I can opt out of non-clinical SMS by replying STOP.', doc:'comms' }
+    ];
+
+    const _todoIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+    const _doneIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    const _bannerTodoText = 'Open the full document below before checking.';
+    const _bannerDoneText = 'Document read. You can now check the box.';
+
+    ACKS.forEach(a => {
+      const alreadyRead = !!state.acksRead[a.id];
+      const card = h('div', { class:'ack-card' + (state.acks[a.id] ? ' checked' : '') + (alreadyRead ? '' : ' locked') });
+
+      const banner = h('div', { class: 'ack-banner ' + (alreadyRead ? 'done' : 'todo') });
+      banner.innerHTML = (alreadyRead ? _doneIcon : _todoIcon) + '<span>' + (alreadyRead ? _bannerDoneText : _bannerTodoText) + '</span>';
+      card.appendChild(banner);
+
+      const body = h('div', { class: 'ack-body' });
+      const cb = h('input', { type:'checkbox' });
+      cb.checked = !!state.acks[a.id];
+      if (!alreadyRead) cb.disabled = true;
+      cb.onchange = e => {
+        if (cb.disabled) { e.target.checked = false; return; }
+        state.acks[a.id] = e.target.checked;
+        card.classList.toggle('checked', e.target.checked);
+        save(); validateCta();
+      };
+      body.appendChild(cb);
+
+      const txt = h('div', { class:'ack-text' });
+      const para = h('div', {}); para.innerHTML = a.html; txt.appendChild(para);
+      const det = h('details', { class:'doc' });
+      const sum = h('summary');
+      sum.textContent = alreadyRead ? 'Read the full document again' : '📖 Open & read the full document (required)';
+      det.appendChild(sum);
+      const docBody = h('div', {});
+      docBody.innerHTML = DOCS[a.doc];
+      det.appendChild(docBody);
+      // Unlock the checkbox the first time the user opens this document.
+      det.addEventListener('toggle', () => {
+        if (det.open && !state.acksRead[a.id]) {
+          state.acksRead[a.id] = true;
+          card.classList.remove('locked');
+          cb.disabled = false;
+          banner.className = 'ack-banner done';
+          banner.innerHTML = _doneIcon + '<span>' + _bannerDoneText + '</span>';
+          sum.textContent = 'Read the full document again';
+          save();
+        }
+      });
+      txt.appendChild(det);
+      body.appendChild(txt);
+      card.appendChild(body);
+
+      body.onclick = e => {
+        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'SUMMARY' && !e.target.closest('details')) {
+          if (cb.disabled) { if (!det.open) det.open = true; return; }
+          cb.checked = !cb.checked; cb.dispatchEvent(new Event('change'));
+        }
+      };
+      p.appendChild(card);
+    });
+
+    // STRENGTHENED ATTESTATIONS (each required, no read-gate) — verbatim from glp1.
+    state.attest = state.attest || {};
+    const ATTEST = [
+      { id:'identity', text:'I confirm that I am the person completing this intake, that the name and date of birth I have provided are my own, and that I am not completing this on behalf of, or impersonating, anyone else.' },
+      { id:'age18', text:'I certify that I am at least 18 years of age.' },
+      { id:'accuracy', text:'I certify that the health and personal information I have provided is true, accurate, and complete to the best of my knowledge. I understand that providing false information may result in denial of care and could endanger my health.' },
+      { id:'verifyid', text:'I understand that Vitality Weight Loss and the prescribing physician may request a valid government-issued photo ID or other verification of my identity at any time, and may decline, delay, or discontinue treatment if my identity or eligibility cannot be reasonably confirmed.' },
+      { id:'noguarantee', text:'I understand that completing this intake does not guarantee a prescription, and that the physician may determine that asynchronous treatment is not appropriate for me.' }
+    ];
+    const attWrap = h('div', { style:'margin:12px 0 4px;' });
+    attWrap.appendChild(h('div', { class:'sig-label' }, ['Please confirm each statement']));
+    ATTEST.forEach(a => {
+      const row = h('label', { style:'display:flex;gap:11px;align-items:flex-start;padding:11px 13px;margin:8px 0;border:1px solid var(--line);border-radius:12px;cursor:pointer;background:var(--white);' });
+      const cb = h('input', { type:'checkbox' });
+      cb.checked = !!state.attest[a.id];
+      cb.onchange = e => { state.attest[a.id] = e.target.checked; save(); validateCta(); };
+      row.appendChild(cb);
+      row.appendChild(h('div', { style:'font-size:13px;line-height:1.5;color:var(--ink);' }, [a.text]));
+      attWrap.appendChild(row);
+    });
+    p.appendChild(attWrap);
+
+    // Important Safety Information (kept visible).
     const isiConsent = h('div', { class: 'isi-block' });
     isiConsent.innerHTML = bloomSafetyHTML();
     p.appendChild(isiConsent);
 
-    state.telehealthConsent = !!state.telehealthConsent;
-    const row = h('label', { class: 'consent-row' + (state.telehealthConsent ? ' checked' : '') });
-    const cb = h('input', { type: 'checkbox' });
-    cb.checked = state.telehealthConsent;
-    cb.onchange = e => {
-      state.telehealthConsent = e.target.checked;
-      row.classList.toggle('checked', e.target.checked);
-      save();
+    // TYPED E-SIGNATURE
+    const sig = h('div', { class:'sig-wrap' });
+    sig.appendChild(h('div', { class:'sig-label' }, ['Type your full legal name to sign']));
+    const sigPrev = h('div', { class:'sig-preview' + (state.sigName ? '' : ' empty') });
+    sigPrev.textContent = state.sigName || 'Your signature appears here';
+    sig.appendChild(sigPrev);
+    const sigIn = h('input', { type:'text', placeholder:'First Last', value: state.sigName||'' });
+    sigIn.oninput = e => {
+      state.sigName = e.target.value; save();
+      sigPrev.textContent = e.target.value || 'Your signature appears here';
+      sigPrev.classList.toggle('empty', !e.target.value);
       validateCta();
     };
-    row.appendChild(cb);
-    row.appendChild(h('div', { style: 'font-size:14px;line-height:1.5;' }, [
-      'I have read the telehealth consent and agree to asynchronous care with Dr. Peter DeBry, MD.'
-    ]));
-    p.appendChild(row);
+    sig.appendChild(sigIn);
+    sig.appendChild(h('div', { class:'sig-meta' }, ['By typing your name you sign under E-SIGN, UETA, and Nevada law. Your typed name has the same legal effect as a handwritten signature. A signed copy will be emailed to you.']));
+    p.appendChild(sig);
 
     ctaBtn(p, {
       disabled: true,
       onClick: () => {
+        // Immutable evidence snapshot: the verbatim text the patient agreed to, plus
+        // which boxes, signature, timestamp, UA. Mirrors the glp1 attestationRecord.
+        const stripTags = (s) => String(s).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+        state.attestationRecord = {
+          version: 'bloom-attest-2026-06-26',
+          capturedAtUTC: new Date().toISOString(),
+          language: 'en',
+          plan: state.plan || '',
+          signatureName: state.sigName || '',
+          userAgent: navigator.userAgent,
+          pageUrl: window.location.href,
+          attestations: ATTEST.map(a => ({ id: a.id, agreed: !!state.attest[a.id], text: a.text })),
+          acknowledgments: ACKS.map(a => ({ id: a.id, doc: a.doc, agreed: !!state.acks[a.id], text: stripTags(a.html) })),
+        };
+        state.telehealthConsent = true;
         state.telehealthConsentAt = new Date().toISOString();
         save();
         next();
       }
     });
-  }, canContinue: (s) => !!s.telehealthConsent },
+  }, canContinue: (s) => {
+    const allAcks = [1,2,3,5].every(id => s.acks && s.acks[id]);
+    const allAttest = ['identity','age18','accuracy','verifyid','noguarantee'].every(id => s.attest && s.attest[id]);
+    const sigOk = (s.sigName||'').trim().split(' ').filter(Boolean).length >= 2;
+    return allAcks && allAttest && sigOk;
+  } },
 
   // 7. PRODUCT SELECT + CHECKOUT ---------------------------------------------
   { id: 'checkout', section: 'Plan & payment', view: (p) => {
