@@ -441,6 +441,23 @@
   }
   .compliance-block p { margin: 0 0 12px; }
   .compliance-block p:last-child { margin-bottom: 0; }
+  .drug-card .meds { font-size: 13px; color: var(--green-deep); font-weight: 600; margin: 2px 0 6px; }
+  .isi-block {
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--ink);
+    margin: 18px 0;
+    padding: 14px 16px;
+    background: var(--cream-2);
+    border-radius: 12px;
+    border: 1px solid var(--line-2);
+    max-height: 280px;
+    overflow-y: auto;
+  }
+  .isi-block .isi-title { font-size: 14px; font-weight: 700; margin: 0 0 8px; color: var(--navy); }
+  .isi-block p { margin: 0 0 10px; }
+  .isi-block .isi-disclaimers { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-2); }
+  .isi-block .isi-disclaimers p:last-child { margin-bottom: 0; }
   #payment-element { margin: 16px 0 4px; min-height: 42px; }
   .pay-err { display: none; color: #c0392b; font-size: 13px; margin-top: 12px; }
   .footer-note { text-align: center; margin-top: 24px; font-size: 11.5px; color: var(--muted); }
@@ -500,6 +517,38 @@ const PLANS = {
   women:    { id: 'women',    name: "Women's Hair Loss Plan",    price: BLOOM_TEST_DOLLAR ? 1 : 69,  label: BLOOM_TEST_DOLLAR ? '$1/month (test)' : '$69/month', meds: 'Spironolactone · Minoxidil · Biotin' },
   premium:  { id: 'premium',  name: 'Premium Topical Plan',      price: BLOOM_TEST_DOLLAR ? 1 : 99,  label: BLOOM_TEST_DOLLAR ? '$1/month (test)' : '$99/month', meds: 'Minoxidil · Finasteride · Azelaic Acid · Ketoconazole' }
 };
+
+// ── Important Safety Information + disclaimers ──────────────────────────────
+// EDITABLE COPY. Dr. DeBry and counsel approve final wording; edit the text here only.
+const BLOOM_ISI = {
+  finasteride:    { name: 'Finasteride', text: 'For men only. Not for use by women or children. Women who are or may become pregnant should not handle the capsules if broken or crushed, because finasteride can cause birth defects in a male fetus. Possible side effects include decreased sex drive, erectile dysfunction, and ejaculation problems, which in some men have continued after stopping the medication. Mood changes, including depression and suicidal thoughts, have been reported. Tell your provider if you have breast tenderness or lumps. Finasteride can lower PSA levels, so tell any provider doing prostate cancer screening that you take it.' },
+  minoxidil:      { name: 'Minoxidil', text: 'Common effects include scalp irritation, itching, flaking, unwanted facial or body hair, and temporary increased shedding when first starting. Using minoxidil by mouth for hair is off label. Oral minoxidil can affect the heart and blood pressure and may cause fluid retention or a rapid heartbeat, so tell your provider about any heart or blood pressure conditions. Not intended for sudden or patchy hair loss.' },
+  spironolactone: { name: 'Spironolactone', text: 'Used off label to treat female hair loss by blocking androgens. Do not use if you are pregnant or trying to become pregnant, as it can affect the development of a male fetus. Use reliable birth control while taking it. Spironolactone can raise potassium levels, especially in people with kidney problems or those taking certain blood pressure medications or potassium supplements, and may require blood pressure and potassium monitoring. Common effects include increased urination, breast tenderness, and menstrual changes.' },
+  azelaic_keto:   { name: 'Azelaic Acid and Ketoconazole', text: 'For external use on the scalp only. May cause skin irritation, redness, dryness, or itching.' },
+  biotin:         { name: 'Biotin', text: 'Generally well tolerated, but biotin can interfere with certain lab tests, including thyroid and heart tests, so patients should tell their provider and lab that they take it.' },
+};
+// The ISI sections that apply to each plan (the actives in that product).
+const PLAN_ISI = {
+  men:     ['finasteride', 'minoxidil', 'biotin'],
+  women:   ['spironolactone', 'minoxidil', 'biotin'],
+  premium: ['minoxidil', 'finasteride', 'azelaic_keto'],
+};
+const BLOOM_DISCLAIMERS = [
+  'These are compounded medications prepared by a licensed pharmacy and are not FDA approved as a combination product.',
+  'Available by prescription only, after review by a licensed physician.',
+  'Results vary. This is not a substitute for in person medical care. Use only as directed.',
+  'Medications are cash pay and not billed to insurance.',
+];
+// Build the Important Safety Information + disclaimers HTML for a set of ISI keys
+// (omit keys for the full set). Plain HTML, drops into any innerHTML container.
+function bloomSafetyHTML(keys) {
+  const list = (keys && keys.length) ? keys : Object.keys(BLOOM_ISI);
+  const isi = list.map(k => BLOOM_ISI[k]).filter(Boolean)
+    .map(s => '<p><strong>' + s.name + ':</strong> ' + s.text + '</p>').join('');
+  const disc = BLOOM_DISCLAIMERS.map(d => '<p>' + d + '</p>').join('');
+  return '<div class="isi-title">Important Safety Information</div>' + isi +
+         '<div class="isi-disclaimers">' + disc + '</div>';
+}
 
 // TODO confirm final list with Dr. DeBry
 const RED_FLAG_IDS = ['sudden_patchy', 'scalp_scarring', 'autoimmune'];
@@ -1186,6 +1235,10 @@ const flow = [
     `;
     p.appendChild(box);
 
+    const isiConsent = h('div', { class: 'isi-block' });
+    isiConsent.innerHTML = bloomSafetyHTML();
+    p.appendChild(isiConsent);
+
     state.telehealthConsent = !!state.telehealthConsent;
     const row = h('label', { class: 'consent-row' + (state.telehealthConsent ? ' checked' : '') });
     const cb = h('input', { type: 'checkbox' });
@@ -1254,6 +1307,9 @@ const flow = [
     `;
     p.appendChild(compliance);
 
+    const isi = h('div', { class: 'isi-block', id: 'isiBlock' });
+    p.appendChild(isi);
+
     const cardWrap = h('div', {});
     cardWrap.innerHTML =
       '<div class="field"><span class="lab">Card details (authorize only · not charged now)</span></div>' +
@@ -1308,6 +1364,8 @@ function syncCheckoutCopy() {
   if (renewal) {
     renewal.textContent = 'Your selected plan is $' + plan.price + '/month. It bills automatically every month until you cancel. To cancel, email support@vitalityweightloss.health or use the patient portal.';
   }
+  const isiBlock = document.getElementById('isiBlock');
+  if (isiBlock) isiBlock.innerHTML = bloomSafetyHTML(PLAN_ISI[plan.id]);
 }
 
 function syncAuthCheckbox() {
