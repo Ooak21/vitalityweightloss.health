@@ -130,6 +130,7 @@
     <button id="boardToggle" onclick="toggleBoard()" title="Pipeline board (drag patients between stages)" class="relative px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7]">🗂 Board<span id="inqBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#be123c] text-white text-[10px] font-bold flex items-center justify-center" title="New inquiries waiting"></span></button>
     <button id="importBtn" onclick="importScan()" class="pt-only px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">⬆ Import InBody scan</button>
     <button onclick="openRx()" title="GLP-1 medication reference (FDA)" class="pt-only px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7]">℞ Med reference</button>
+    <button onclick="openGlp1Queue()" title="Async GLP-1 Rx review queue" class="pt-only px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">💊 GLP-1 queue</button>
     <button onclick="openBloomQueue()" title="Vitality Bloom hair-loss review queue" class="pt-only px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">🌱 Bloom queue</button>
     <a href="admin.html" class="text-xs text-[#6b7280] hover:text-[#16201d]" title="Admin & Operations (admins only)">⚙ Admin</a>
     <button onclick="(window.__vca?window.__vca.signOut():(window.__vitSb?window.__vitSb.auth.signOut():Promise.resolve())).then(()=>location.replace('login.html'))" class="text-xs text-[#6b7280] hover:text-[#16201d]">Sign out</button>
@@ -507,6 +508,80 @@
       const j=await r.json();
       if(!j.ok){ alert('Failed: '+(j.error||'unknown')); return; }
       await loadBloomQueue();
+    }catch(e){ alert('Error: '+besc(e.message)); }
+  };
+
+  // ---- Async GLP-1 Rx review queue (mirrors the Bloom queue; decisions reuse /record-rx-decision) ----
+  window.openGlp1Queue = async function(){
+    let ov=document.getElementById('glp1Overlay');
+    if(!ov){ ov=document.createElement('div'); ov.id='glp1Overlay'; ov.className='fixed inset-0 z-[70] bg-black/40 overflow-y-auto'; ov.onclick=e=>{ if(e.target===ov) ov.remove(); }; document.body.appendChild(ov); }
+    ov.innerHTML='<div class="max-w-3xl mx-auto my-8 px-3"><div class="flex justify-between items-center mb-3"><div class="font-display font-semibold text-lg text-white">💊 Async GLP-1 — Rx review queue</div><button onclick="document.getElementById(\'glp1Overlay\').remove()" class="w-9 h-9 rounded-full bg-white text-2xl leading-none text-[#16201d]">×</button></div><div id="glp1Body"><div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Loading…</div></div></div>';
+    await loadGlp1Queue();
+  };
+  async function loadGlp1Queue(){
+    const body=document.getElementById('glp1Body'); if(!body) return;
+    try{
+      const r=await fetch(CONVEX_URL+'/glp1-queue',{method:'POST',headers:await convexHeaders(),body:'{}'});
+      const j=await r.json();
+      if(!j.ok){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">'+besc(j.error||'Could not load')+'</div>'; return; }
+      window.__glp1Subs=j.submissions||[];
+      if(!window.__glp1Subs.length){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">No async GLP-1 reviews yet.</div>'; return; }
+      const badge=(b)=>({pending:'bg-amber-100 text-amber-800',approved:'bg-emerald-100 text-emerald-800',declined:'bg-rose-100 text-rose-700'}[b]||'bg-gray-100 text-gray-700');
+      const lbl=(b)=>({pending:'Pending review',approved:'Approved',declined:'Declined'}[b]||b);
+      const card=(x)=>{
+        const who=x.locked?('Patient #'+besc(x.ref)):besc((((x.first_name||'')+' '+(x.last_name||'')).trim()||'(no name)')+' · '+(x.email||''));
+        const n=(x.contraindications||[]).length;
+        const flags=n?'<span class="ml-1 text-[11px] font-semibold text-rose-600">⚑ '+n+' flag'+(n>1?'s':'')+'</span>':'';
+        return '<div class="bg-white rounded-2xl border border-[#e6e9ee] p-4 flex items-center justify-between gap-3 '+(x.locked?'':'cursor-pointer hover:border-[#0a6cf5]')+'"'+(x.locked?'':' onclick="openGlp1Detail(\''+x.id+'\')"')+'>'+
+          '<div><div class="font-semibold text-[#16201d]">'+who+' '+flags+'</div><div class="text-xs text-[#6b7280] mt-0.5">'+besc(x.drug_label||'GLP-1')+(x.created_at?' · '+new Date(x.created_at).toLocaleDateString():'')+(x.locked?' · provider-only':'')+'</div></div>'+
+          '<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full '+badge(x.bucket)+'">'+lbl(x.bucket)+'</span>'+
+        '</div>';
+      };
+      const pend=window.__glp1Subs.filter(x=>x.bucket==='pending');
+      const done=window.__glp1Subs.filter(x=>x.bucket!=='pending');
+      body.innerHTML='<div class="space-y-2">'+
+        (pend.length?pend.map(card).join(''):'<div class="bg-white rounded-2xl p-6 text-center text-[#6b7280]">No pending reviews. 🎉</div>')+
+        (done.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-[#9aa0ab] pt-3 pb-1 px-1">Recently decided</div>'+done.map(card).join(''):'')+
+      '</div>';
+    }catch(e){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">Error: '+besc(e.message)+'</div>'; }
+  }
+  window.openGlp1Detail=function(id){
+    const x=(window.__glp1Subs||[]).find(s=>s.id===id); if(!x||x.locked){ loadGlp1Queue(); return; }
+    const body=document.getElementById('glp1Body'); if(!body) return;
+    const row=(l,v)=>v?'<div class="flex gap-2 text-sm"><span class="text-[#6b7280] w-32 shrink-0">'+l+'</span><span class="text-[#16201d]">'+besc(v)+'</span></div>':'';
+    const items=(x.clinical&&x.clinical.items)||[];
+    const qa=items.length?items.map(it=>'<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3"><div class="text-xs font-semibold text-[#6b7280]">'+besc(it.q)+'</div><div class="text-sm text-[#16201d] mt-0.5">'+besc(it.a)+'</div></div>').join(''):'<div class="text-sm text-[#9aa0ab]">No screening answers on file.</div>';
+    const contra=(x.contraindications||[]);
+    const contraHtml=contra.length?'<div class="space-y-2">'+contra.map(c=>'<div class="rounded-xl bg-[#fff7ed] border border-[#ffd9a8] p-3 text-sm text-[#9a5a00] font-semibold">⚑ '+besc(c)+'</div>').join('')+'</div>':'';
+    const att=x.attestation||{};
+    const attHtml=(att.signedAt||att.signature)?'<div class="text-xs text-[#6b7280]">Consent signed '+(att.signedAt?besc(new Date(att.signedAt).toLocaleString()):'')+(att.signature?' · e-signature on file':'')+'</div>':'<div class="text-xs text-[#9aa0ab]">No attestation detail on file.</div>';
+    const labs=x.labs?'<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 text-sm text-[#16201d]">'+besc(typeof x.labs==='string'?x.labs:JSON.stringify(x.labs))+'</div>':'';
+    const idHtml=x.id_image_url?'<a href="'+besc(x.id_image_url)+'" target="_blank"><img src="'+besc(x.id_image_url)+'" class="h-28 w-auto rounded-xl border border-[#e6e9ee]"></a>':'<div class="text-sm text-[#9aa0ab]">No ID uploaded.</div>';
+    const decided=x.bucket!=='pending';
+    body.innerHTML='<div class="bg-white rounded-2xl p-6 space-y-4">'+
+      '<button onclick="loadGlp1Queue()" class="text-xs text-[#0a6cf5] font-semibold">&larr; Back to queue</button>'+
+      '<div class="font-display text-xl font-semibold">'+besc(((x.first_name||'')+' '+(x.last_name||'')).trim()||'Patient')+'</div>'+
+      '<div class="space-y-1">'+row('Email',x.email)+row('Phone',x.phone)+row('DOB',x.dob)+row('Medication',x.drug_label)+'</div>'+
+      (contraHtml?'<div><div class="text-xs font-semibold uppercase tracking-wide text-rose-600 mb-1">Contraindication flags</div>'+contraHtml+'</div>':'')+
+      '<div><div class="text-xs font-semibold uppercase tracking-wide text-[#0a6cf5] mb-1">Intake screening</div><div class="space-y-2">'+qa+'</div></div>'+
+      (labs?'<div><div class="text-xs font-semibold uppercase tracking-wide text-[#0a6cf5] mb-1">Labs</div>'+labs+'</div>':'')+
+      '<div><div class="text-xs font-semibold uppercase tracking-wide text-[#0a6cf5] mb-1">Attestation &amp; consent</div>'+attHtml+'</div>'+
+      '<div><div class="text-xs font-semibold uppercase tracking-wide text-[#0a6cf5] mb-1">Government ID</div>'+idHtml+'</div>'+
+      (decided?'<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 text-sm">Decision: <b>'+besc(x.status==='rx_written'?'Approved / Rx written':x.status==='rx_declined'?'Declined':x.status)+'</b></div>':
+        '<div class="pt-2 border-t border-[#e6e9ee]"><textarea id="glp1Note" class="field w-full text-sm mb-2 mt-3" rows="2" placeholder="Optional provider note for the chart…"></textarea>'+
+        '<div class="flex gap-2"><button onclick="glp1Decide(\''+x.id+'\',\'approved\')" class="px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700">✓ Approve &amp; prescribe</button><button onclick="glp1Decide(\''+x.id+'\',\'declined\')" class="px-5 py-2.5 rounded-xl border border-rose-300 text-rose-700 font-semibold text-sm hover:bg-rose-50">Decline / needs info</button></div></div>')+
+    '</div>';
+  };
+  window.glp1Decide=async function(pid,decision){
+    const noteEl=document.getElementById('glp1Note'); const note=noteEl?noteEl.value.trim():'';
+    if(decision==='approved'&&!confirm('Approve and write the Rx? This unlocks billing for this patient (no charge happens here).')) return;
+    if(decision==='declined'&&!confirm('Decline this submission? The patient will not be billed.')) return;
+    try{
+      const r=await fetch(CONVEX_URL+'/record-rx-decision',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({patient_id:pid,decision,note:note||undefined})});
+      const j=await r.json();
+      if(!j.ok){ alert('Failed: '+(j.error||'unknown')); return; }
+      await loadData();
+      await loadGlp1Queue();
     }catch(e){ alert('Error: '+besc(e.message)); }
   };
 
