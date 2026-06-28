@@ -747,7 +747,8 @@
         </div>
         <div class="flex items-center gap-0.5 bg-[#f1f3f7] rounded-lg p-0.5">${viewBtns}</div>
       </div>
-      <div class="text-sm font-bold tracking-wide text-[#16201d] text-center mb-2">${label}</div>`;
+      <div class="text-sm font-bold tracking-wide text-[#16201d] text-center mb-2">${label}</div>
+      <button onclick="openClinicSchedule()" class="w-full mb-2 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-[#dbe7ff] bg-[#f5f9ff] text-[#0a6cf5] text-[11px] font-semibold hover:bg-[#eaf2ff] transition"><span class="text-[13px] leading-none">⊞</span> Clinic schedule</button>`;
     let body='';
     if(calView==='month'){
       const y=calCursor.getFullYear(), m=calCursor.getMonth();
@@ -790,6 +791,115 @@
     }
     el.innerHTML=head+body;
   }
+
+  // ===== Outlook-style clinic schedule: a full-screen time grid so staff can see each other's
+  // day side by side (provider columns) or the whole week (day columns). Built on Miguel's
+  // calAllAppts / provColor; opens as an overlay because the sidebar is too narrow for a grid.
+  let schedView='day';                               // 'day' | 'week'
+  let schedCursor=new Date();
+  const SCHED_START=7, SCHED_END=19, SCHED_PXH=54;   // 7a to 7p, 54px per hour
+  const schedH=(SCHED_END-SCHED_START)*SCHED_PXH;
+  const schedFmtHour=h=>(((h+11)%12)+1)+(h<12?'a':'p');
+  function schedBtnCls(v){ return `px-3 py-1 rounded-md text-[11px] font-bold uppercase ${schedView===v?'bg-white text-[#0a6cf5] shadow-sm':'text-[#6b7280]'}`; }
+  // greedy lane layout so overlapping appointments sit side by side instead of stacking
+  function schedLanes(items){
+    const ev=items.map(a=>{ const s=a.dt.getHours()*60+a.dt.getMinutes(); return {a,s,e:s+(a.durMin||30)}; }).sort((x,y)=>x.s-y.s||x.e-y.e);
+    let groups=[], cur=[], maxE=-1;
+    ev.forEach(o=>{ if(cur.length && o.s>=maxE){ groups.push(cur); cur=[]; maxE=-1; } cur.push(o); maxE=Math.max(maxE,o.e); });
+    if(cur.length) groups.push(cur);
+    groups.forEach(g=>{ const ends=[]; g.forEach(o=>{ let L=0; while(ends[L]!=null && ends[L]>o.s) L++; o.lane=L; ends[L]=o.e; }); g.forEach(o=>o.lanes=ends.length); });
+    return ev;
+  }
+  function schedBlockHtml(o,withProv){
+    const a=o.a, col=provColor(a.provider);
+    const h=Math.max(22,((o.e-o.s)/60)*SCHED_PXH-2);
+    const top=Math.max(0,Math.min(schedH-h,((a.dt.getHours()-SCHED_START)+a.dt.getMinutes()/60)*SCHED_PXH));
+    const w=100/o.lanes, left=o.lane*w;
+    const time=a.dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    return `<div onclick="schedOpen('${a.pid}')" title="${time} · ${esc(a.name)}${a.provider?' · '+esc(a.provider):''}${a.type?' · '+esc(a.type):''}"
+      style="position:absolute;top:${top}px;height:${h}px;left:calc(${left}% + 1px);width:calc(${w}% - 2px);background:${col}1f;border-left:3px solid ${col};border-radius:6px;padding:3px 6px;overflow:hidden;cursor:pointer">
+      <div class="text-[10px] font-semibold text-[#16201d] truncate leading-tight">${time} ${esc(a.name)}</div>
+      <div class="text-[9px] text-[#6b7280] truncate leading-tight">${esc(a.type||'')}${withProv&&a.provider?' · '+esc(a.provider):''}</div></div>`;
+  }
+  function schedColumnHtml(items,withProv,extra){
+    const blocks=schedLanes(items).map(o=>schedBlockHtml(o,withProv)).join('');
+    return `<div class="relative shrink-0 border-r border-[#f1f3f7]" style="width:182px;height:${schedH}px;background:repeating-linear-gradient(to bottom,transparent,transparent ${SCHED_PXH-1}px,#eef1f6 ${SCHED_PXH-1}px,#eef1f6 ${SCHED_PXH}px)">${extra||''}${blocks}</div>`;
+  }
+  function schedNowLine(dayDate){
+    const now=new Date(); if(!calSameDay(dayDate,now)||now.getHours()<SCHED_START||now.getHours()>=SCHED_END) return '';
+    const top=((now.getHours()-SCHED_START)+now.getMinutes()/60)*SCHED_PXH;
+    return `<div style="position:absolute;top:${top}px;left:0;right:0;height:2px;background:#0a6cf5;z-index:6"><span style="position:absolute;left:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:#0a6cf5"></span></div>`;
+  }
+  function renderSchedule(){
+    const ov=document.getElementById('schedOverlay'); if(!ov) return;
+    const all=calAllAppts().map(a=>({...a,durMin:30}));
+    const provs=[...new Set(all.map(a=>a.provider).filter(Boolean))].sort();
+    let label, colHead='', cols='';
+    if(schedView==='day'){
+      label=schedCursor.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+      const dayAppts=all.filter(a=>calSameDay(a.dt,schedCursor));
+      const show=provs.length?provs:['Unassigned'];
+      colHead=show.map(p=>`<div class="shrink-0 border-r border-[#f1f3f7] text-center py-2" style="width:182px"><span class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#16201d]"><span class="w-2 h-2 rounded-full" style="background:${provColor(p)}"></span>${esc(p)}</span></div>`).join('');
+      cols=show.map(p=>schedColumnHtml(dayAppts.filter(a=>(a.provider||'Unassigned')===p),false,schedNowLine(schedCursor))).join('');
+    } else {
+      const ws=calStartOfWeek(schedCursor), we=new Date(ws); we.setDate(ws.getDate()+6);
+      label=`${ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})} to ${we.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+      const days=[]; for(let i=0;i<7;i++){ const d=new Date(ws); d.setDate(ws.getDate()+i); days.push(d); }
+      colHead=days.map(d=>{ const t=calSameDay(d,new Date()); return `<div class="shrink-0 border-r border-[#f1f3f7] text-center py-2 ${t?'bg-[#eef4ff]':''}" style="width:182px"><div class="text-[12px] font-semibold ${t?'text-[#0a6cf5]':'text-[#16201d]'}">${d.toLocaleDateString('en-US',{weekday:'short'})}</div><div class="text-[11px] text-[#6b7280]">${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div></div>`; }).join('');
+      cols=days.map(d=>schedColumnHtml(all.filter(a=>calSameDay(a.dt,d)),true,schedNowLine(d))).join('');
+    }
+    let gutter=''; for(let h=SCHED_START;h<SCHED_END;h++) gutter+=`<div style="height:${SCHED_PXH}px" class="relative"><span class="absolute -top-2 right-1.5 text-[10px] text-[#9aa0ab]">${schedFmtHour(h)}</span></div>`;
+    const legend=provs.length?`<div class="flex flex-wrap gap-x-3 gap-y-1 px-4 py-2 border-b border-[#eef1f6]">${provs.map(p=>`<span class="inline-flex items-center gap-1.5 text-[11px] text-[#6b7280]"><span class="w-2 h-2 rounded-full" style="background:${provColor(p)}"></span>${esc(p)}</span>`).join('')}</div>`:'';
+    ov.querySelector('#schedTitle').textContent=label;
+    ov.querySelector('#schedDayBtn').className=schedBtnCls('day');
+    ov.querySelector('#schedWeekBtn').className=schedBtnCls('week');
+    ov.querySelector('#schedLegend').innerHTML=legend;
+    ov.querySelector('#schedScroll').innerHTML=`<div class="inline-flex flex-col min-w-full">
+      <div class="flex sticky top-0 z-20 bg-[#fbfcfe] border-b border-[#eef1f6]"><div class="shrink-0 w-12 border-r border-[#eef1f6] sticky left-0 z-10 bg-[#fbfcfe]"></div>${colHead}</div>
+      <div class="flex"><div class="shrink-0 w-12 border-r border-[#eef1f6] sticky left-0 z-10 bg-white pt-1">${gutter}</div>${cols}</div>
+    </div>`;
+  }
+  window.schedSetView=function(v){ schedView=v; renderSchedule(); };
+  window.schedNav=function(d){ const x=new Date(schedCursor); x.setDate(x.getDate()+(schedView==='day'?d:7*d)); schedCursor=x; renderSchedule(); };
+  window.schedToday=function(){ schedCursor=new Date(); renderSchedule(); };
+  window.schedOpen=function(pid){ closeClinicSchedule(); select(pid); };
+  window.closeClinicSchedule=function(){ const ov=document.getElementById('schedOverlay'); if(ov){ ov.classList.add('hidden'); ov.classList.remove('flex'); } };
+  window.openClinicSchedule=function(){
+    let ov=document.getElementById('schedOverlay');
+    if(!ov){
+      ov=document.createElement('div'); ov.id='schedOverlay';
+      ov.className='hidden fixed inset-0 z-50 bg-[#0b1220]/45 items-center justify-center';
+      ov.innerHTML=`<div class="absolute inset-2 md:inset-6 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between gap-2 px-4 py-3 border-b border-[#eef1f6]">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="font-display font-semibold text-[15px] text-[#16201d] shrink-0">Clinic schedule</span>
+            <div class="flex items-center gap-0.5 ml-1 shrink-0">
+              <button onclick="schedNav(-1)" title="Previous" class="w-7 h-7 rounded-md text-[#6b7280] hover:bg-[#f1f3f7] leading-none">‹</button>
+              <button onclick="schedNav(1)" title="Next" class="w-7 h-7 rounded-md text-[#6b7280] hover:bg-[#f1f3f7] leading-none">›</button>
+              <button onclick="schedToday()" class="px-2 py-1 rounded-md text-[11px] font-semibold text-[#0a6cf5] hover:bg-[#eef4ff]">Today</button>
+            </div>
+            <span id="schedTitle" class="text-[13px] text-[#6b7280] ml-1 truncate"></span>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <div class="flex items-center gap-0.5 bg-[#f1f3f7] rounded-lg p-0.5">
+              <button id="schedDayBtn" onclick="schedSetView('day')">Day</button>
+              <button id="schedWeekBtn" onclick="schedSetView('week')">Week</button>
+            </div>
+            <button onclick="closeClinicSchedule()" title="Close" class="w-8 h-8 rounded-lg text-[#9aa0ab] hover:bg-[#f1f3f7] hover:text-[#16201d] text-lg leading-none">✕</button>
+          </div>
+        </div>
+        <div id="schedLegend"></div>
+        <div id="schedScroll" class="flex-1 overflow-auto"></div>
+      </div>`;
+      document.body.appendChild(ov);
+      ov.addEventListener('click',()=>closeClinicSchedule());
+      document.addEventListener('keydown',e=>{ if(e.key==='Escape' && !ov.classList.contains('hidden')) closeClinicSchedule(); });
+    }
+    ov.classList.remove('hidden'); ov.classList.add('flex');
+    schedCursor=new Date(calSel||new Date());
+    schedView='day';
+    renderSchedule();
+  };
   // Search-first list: no roster on screen by default (cleaner + better minimum-necessary PHI
   // posture). Type 2+ chars to find a patient by name, DOB, phone, or ID. The 🗂 Board is where
   // you see everyone. Results show name + DOB so you confirm the right person before opening.
