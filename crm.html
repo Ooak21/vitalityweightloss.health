@@ -1339,15 +1339,20 @@
     rows.sort((a,b)=>(b.last_referral_at||b.last_touch_at||0)-(a.last_referral_at||a.last_touch_at||0));
     listEl.innerHTML = rows.length? rows.map(practiceRow).join('') : '<div class="text-center text-[#9aa0ab] text-sm py-10">No match</div>';
   }
+  // Physician-investor leads (from the /investor-subscribe MSO flow) carry type='investor' — flag
+  // them with a 💼 mark and a friendly label so Fred can tell them apart from referral partners.
+  const isInvestor=p=>p&&p.type==='investor';
+  const invMark=p=> isInvestor(p)?'<span title="Physician investor" class="text-[#5ba53f]">💼 </span>':'';
+  const ptypeLabel=p=> isInvestor(p)?'Physician investor':(p.type||'');
   function practiceRow(p){
     const overdue=p.next_checkin_at && p.next_checkin_at<Date.now();
     return `<div class="row border border-transparent rounded-xl px-3 py-2 mb-0.5 ${p.id===selId?'sel':''}" onclick="select('${p.id}')">
       <div class="flex items-center justify-between gap-2">
-        <div class="font-semibold text-[13px] truncate">${esc(p.name)}</div>
+        <div class="font-semibold text-[13px] truncate">${invMark(p)}${esc(p.name)}</div>
         <span class="badge" style="background:${REF_TINT[p.stage]||'#eef1f4'};color:${REF_ACCENT[p.stage]||'#4b5563'}">${REF_LABEL[p.stage]||p.stage}</span>
       </div>
       <div class="flex items-center justify-between mt-0.5 text-[11px] text-[#6b7280]">
-        <span>${[p.type,p.city].filter(Boolean).join(' · ')||'—'}</span>
+        <span>${[ptypeLabel(p),p.city].filter(Boolean).join(' · ')||'—'}</span>
         <span>${p.referral_count?`${p.referral_count} ref${p.referral_count>1?'s':''}`:''}${overdue?' <span class="text-[#be123c]">● check in</span>':''}</span>
       </div>
     </div>`;
@@ -1368,8 +1373,8 @@
   function refCard(p){
     const overdue=p.next_checkin_at && p.next_checkin_at<Date.now();
     return `<div draggable="true" ondragstart="dragCard(event,'${p.id}')" onclick="openRefFromBoard('${p.id}')" class="bg-white border border-[#e6e9ee] rounded-lg p-2.5 cursor-pointer hover:border-[#0a6cf5]/60 hover:shadow-sm transition">
-      <div class="text-sm font-semibold text-[#16201d] truncate">${esc(p.name)}</div>
-      <div class="text-[11px] text-[#6b7280] mt-0.5 truncate">${[p.type,p.city].filter(Boolean).join(' · ')||'—'}</div>
+      <div class="text-sm font-semibold text-[#16201d] truncate">${invMark(p)}${esc(p.name)}</div>
+      <div class="text-[11px] text-[#6b7280] mt-0.5 truncate">${[ptypeLabel(p),p.city].filter(Boolean).join(' · ')||'—'}</div>
       <div class="flex items-center justify-between mt-1.5 text-[10px] gap-1">${p.referral_count?`<span class="text-[#0a7a3d]">${p.referral_count} referred</span>`:'<span></span>'}${overdue?'<span class="text-[#be123c] flex-shrink-0" title="Overdue for a check-in">● check in</span>':(p.last_touch_at?`<span class="text-[#9aa0ab] flex-shrink-0">${rel(new Date(p.last_touch_at).toISOString())}</span>`:'')}</div>
     </div>`;
   }
@@ -1392,7 +1397,7 @@
         <div class="flex items-start justify-between gap-4 mb-6">
           <div>
             <h2 class="font-display text-2xl font-semibold tracking-[-1px] cursor-text hover:bg-[#f4f6f8] rounded px-1 -ml-1 inline-block" title="Click to edit" data-val="${esc(p.name)}" onclick="prEdit(this,'${p.id}','name')">${esc(p.name)}</h2>
-            <div class="text-sm text-[#6b7280] mt-1">${[REF_LABEL[p.stage],p.type,p.city].filter(Boolean).join(' · ')}${j.referred.length?` · ${j.referred.length} referrals`:''}</div>
+            <div class="text-sm text-[#6b7280] mt-1">${[REF_LABEL[p.stage],ptypeLabel(p),p.city].filter(Boolean).join(' · ')}${j.referred.length?` · ${j.referred.length} referrals`:''}</div>
           </div>
           <select class="field w-auto" onchange="setPracticeStage('${p.id}',this.value)">
             ${REF_STAGES.map(s=>`<option value="${s.k}" ${s.k===p.stage?'selected':''}>${s.label}</option>`).join('')}
