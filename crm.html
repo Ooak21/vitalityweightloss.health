@@ -270,13 +270,18 @@
 </div>
 
 <!-- APPOINTMENT MODAL -->
-<div id="apptModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
+<div id="apptModal" class="fixed inset-0 modal-bg z-[60] hidden items-center justify-center p-4">
   <div class="bg-white border border-[#e6e9ee] rounded-3xl max-w-sm w-full overflow-hidden shadow-[0_18px_44px_-22px_rgba(16,24,40,0.25)]">
     <div class="p-5 border-b border-[#e6e9ee] flex items-center justify-between">
       <div><h3 id="apptModalTitle" class="font-display font-semibold text-lg">Edit appointment</h3><div id="apptPatient" class="text-xs text-[#6b7280] mt-0.5"></div></div>
       <button onclick="closeAppt()" class="text-[#6b7280] hover:text-[#16201d] text-xl">×</button>
     </div>
     <div class="p-5 space-y-3">
+      <div id="apptPickWrap" class="hidden">
+        <label class="text-xs text-[#6b7280] font-semibold">Patient</label>
+        <input id="apptPatientSearch" oninput="apptPickSearch()" autocomplete="off" placeholder="🔍 Search name, DOB, or ID…" class="field mt-1 w-full">
+        <div id="apptPickResults" class="mt-1 max-h-40 overflow-auto rounded-lg border border-[#eef1f6] hidden"></div>
+      </div>
       <div class="grid grid-cols-2 gap-3">
         <div><label class="text-xs text-[#6b7280] font-semibold">Date</label><input id="apptDate" type="date" class="field mt-1"></div>
         <div><label class="text-xs text-[#6b7280] font-semibold">Time</label><input id="apptTime" type="time" class="field mt-1"></div>
@@ -285,7 +290,10 @@
         <div><label class="text-xs text-[#6b7280] font-semibold">Type</label><select id="apptType" class="field mt-1"><option>Consult</option><option>Follow-up</option><option>Coaching</option><option>Lab</option><option>Other</option></select></div>
         <div><label class="text-xs text-[#6b7280] font-semibold">Provider</label><select id="apptProvider" class="field mt-1"><option>DeBry</option><option>DeVera</option><option>Black</option><option>Front Desk</option></select></div>
       </div>
-      <div><label class="text-xs text-[#6b7280] font-semibold">Status</label><select id="apptStatus" class="field mt-1"><option value="scheduled">Scheduled</option><option value="confirmed">Confirmed</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="no_show">No-show</option></select></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-xs text-[#6b7280] font-semibold">Status</label><select id="apptStatus" class="field mt-1"><option value="scheduled">Scheduled</option><option value="confirmed">Confirmed</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="no_show">No-show</option></select></div>
+        <div><label class="text-xs text-[#6b7280] font-semibold">Duration</label><select id="apptDur" class="field mt-1"><option value="15">15 min</option><option value="30" selected>30 min</option><option value="45">45 min</option><option value="60">60 min</option><option value="90">90 min</option></select></div>
+      </div>
     </div>
     <div class="p-5 border-t border-[#e6e9ee] flex justify-between gap-3 items-center">
       <button id="apptCancelBtn" onclick="cancelAppt()" class="px-3 py-2 rounded-xl border border-rose-200 text-rose-600 text-sm font-semibold hover:bg-rose-50">Cancel appt</button>
@@ -703,40 +711,258 @@
     document.querySelectorAll('#tabs .cnt').forEach(el=> el.textContent = c[el.dataset.c] ?? 0);
     renderToday();
   }
-  let calSel = null; // selected day-of-month in the Today panel; null = today
-  window.selectDay = function(d){ calSel = d; renderToday(); };
+  // Calendar widget — Month / Week / Day views, navigation, and per-provider colors,
+  // so staff can see the day/week schedule at a glance.
+  let calView = 'month';       // 'month' | 'week' | 'day'
+  let calCursor = new Date();  // reference date for the visible period
+  let calSel = new Date();     // selected day (month + day views)
+  const CAL_PALETTE = ['#0f766e','#1e5a8a','#a16207','#475569','#0e7490','#92400e','#3f6f5f','#5b6478'];
+  function provColor(name){ if(!name) return '#9aa0ab'; let h=0; for(let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))>>>0; return CAL_PALETTE[h%CAL_PALETTE.length]; }
+  const calSameDay=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
+  function calStartOfWeek(d){ const x=new Date(d.getFullYear(),d.getMonth(),d.getDate()); x.setDate(x.getDate()-x.getDay()); return x; }
+  function calAllAppts(){ const out=[]; patients.forEach(p=>(p.appts||[]).forEach(a=>{ if(!a||!a.when) return; out.push({id:a.id,when:a.when,dt:new Date(a.when),type:a.type,provider:a.provider,duration:a.duration_min,pid:p.id,name:(p.first+' '+p.last).trim()}); })); return out; }
+  window.calSetView = function(v){ calView=v; if(v==='day') calCursor=new Date(calSel); renderToday(); };
+  window.calNav = function(delta){ const d=new Date(calCursor); if(calView==='month') d.setMonth(d.getMonth()+delta); else if(calView==='week') d.setDate(d.getDate()+7*delta); else d.setDate(d.getDate()+delta); calCursor=d; if(calView==='day') calSel=new Date(d); renderToday(); };
+  window.calToday = function(){ calCursor=new Date(); calSel=new Date(); renderToday(); };
+  window.calPick = function(ts){ calSel=new Date(ts); calCursor=new Date(ts); renderToday(); };
+  window.selectDay = function(d){ const t=new Date(); calPick(new Date(t.getFullYear(),t.getMonth(),d).getTime()); }; // back-compat
+  function calApptRow(a){
+    const time=a.dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    return `<div class="flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-[#f4f6f8]">
+      <span onclick="select('${a.pid}')" class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
+        <span class="text-[12px] font-semibold text-[#0a6cf5] w-14 shrink-0 whitespace-nowrap">${time}</span>
+        <span class="w-2 h-2 rounded-full shrink-0" style="background:${provColor(a.provider)}" title="${a.provider||''}"></span>
+        <span class="text-[13px] text-[#16201d] truncate">${a.name}</span></span>
+      <span class="text-[11px] text-[#6b7280] shrink-0">${a.type||''}</span>
+      <button onclick="editAppt('${a.pid}','${a.id}')" title="Edit appointment" class="shrink-0 text-[#9aa0ab] hover:text-[#0a6cf5] px-1 leading-none">✎</button></div>`;
+  }
   function renderToday(){
     const el=document.getElementById('todayPanel'); if(!el) return;
-    const t=new Date(), y=t.getFullYear(), m=t.getMonth();
-    const startDay=new Date(y,m,1).getDay(), dim=new Date(y,m+1,0).getDate();
-    const selDay = (calSel && calSel<=dim) ? calSel : t.getDate();
-    const apptDays=new Set(), byDay={};
-    patients.forEach(p=>(p.appts||[]).forEach(a=>{ const d=new Date(a.when);
-      if(d.getFullYear()===y&&d.getMonth()===m){ const dd=d.getDate(); apptDays.add(dd);
-        (byDay[dd]=byDay[dd]||[]).push({id:a.id,when:a.when,type:a.type,provider:a.provider,pid:p.id,name:p.first+' '+p.last}); } }));
-    const dayAppts=(byDay[selDay]||[]).sort((a,b)=> new Date(a.when)-new Date(b.when));
-    let cells=''; for(let i=0;i<startDay;i++) cells+='<div></div>';
-    for(let d=1;d<=dim;d++){ const isToday=d===t.getDate(), isSel=d===selDay, has=apptDays.has(d);
-      let cls='text-[#3d4a45]';
-      if(isSel) cls='bg-[#0a6cf5] text-white font-semibold';
-      else if(isToday) cls='text-[#0a6cf5] font-semibold ring-1 ring-inset ring-[#0a6cf5]/40';
-      cells+=`<div onclick="selectDay(${d})" class="relative text-center text-[11px] py-1 rounded-md cursor-pointer hover:bg-[#f1f3f7] ${cls}">${d}${has&&!isSel?'<span class="absolute left-1/2 -translate-x-1/2 bottom-0 w-1 h-1 rounded-full bg-[#0a6cf5]"></span>':''}</div>`; }
-    const dow=['S','M','T','W','T','F','S'].map(x=>`<div>${x}</div>`).join('');
-    const selDate=new Date(y,m,selDay);
-    const hdr = selDay===t.getDate() ? 'Appointments today' : `Appointments · ${selDate.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}`;
-    el.innerHTML=`
-      <div class="text-sm font-bold tracking-wide text-[#16201d] uppercase text-center mt-2 mb-2">${t.toLocaleDateString('en-US',{month:'long',year:'numeric'})}</div>
-      <div class="grid grid-cols-7 gap-0.5 text-[10px] text-[#9aa0ab] text-center mb-0.5">${dow}</div>
-      <div class="grid grid-cols-7 gap-0.5 mb-3">${cells}</div>
-      <div class="text-[11px] font-semibold tracking-wide text-[#6b7280] uppercase mb-1">${hdr}</div>
-      ${dayAppts.length? dayAppts.map(a=>`<div class="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-[#f4f6f8]">
-          <span onclick="select('${a.pid}')" class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
-            <span class="text-[11px] font-semibold text-[#0a6cf5] w-12 shrink-0">${new Date(a.when).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>
-            <span class="text-xs text-[#16201d] truncate">${a.name}</span></span>
-          <span class="text-[10px] text-[#6b7280] shrink-0">${a.type}</span>
-          <button onclick="editAppt('${a.pid}','${a.id}')" title="Edit appointment" class="shrink-0 text-[#9aa0ab] hover:text-[#0a6cf5] px-1 leading-none">✎</button></div>`).join('')
-        : '<div class="text-xs text-[#9aa0ab] py-1.5">No appointments this day.</div>'}`;
+    const today=new Date(), appts=calAllAppts();
+    const provs=[...new Set(appts.map(a=>a.provider).filter(Boolean))];
+    const legend = provs.length ? `<div class="flex flex-wrap gap-x-2 gap-y-0.5 px-1 mb-2">${provs.map(p=>`<span class="inline-flex items-center gap-1 text-[9px] text-[#6b7280]"><span class="w-1.5 h-1.5 rounded-full" style="background:${provColor(p)}"></span>${p}</span>`).join('')}</div>` : '';
+    let label;
+    if(calView==='month') label=calCursor.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    else if(calView==='week'){ const ws=calStartOfWeek(calCursor), we=new Date(ws); we.setDate(ws.getDate()+6); label=`${ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})} to ${we.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`; }
+    else label=calCursor.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+    const viewBtns=['month','week','day'].map(v=>`<button onclick="calSetView('${v}')" class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${calView===v?'bg-white text-[#0a6cf5] shadow-sm':'text-[#6b7280]'}">${v[0].toUpperCase()}</button>`).join('');
+    const head=`
+      <div class="flex items-center justify-between gap-1 mt-2 mb-1">
+        <div class="flex items-center gap-0.5">
+          <button onclick="calNav(-1)" title="Previous" class="w-6 h-6 rounded-md text-[#6b7280] hover:bg-[#f1f3f7] leading-none">‹</button>
+          <button onclick="calNav(1)" title="Next" class="w-6 h-6 rounded-md text-[#6b7280] hover:bg-[#f1f3f7] leading-none">›</button>
+          <button onclick="calToday()" class="px-1.5 py-0.5 rounded-md text-[10px] font-semibold text-[#0a6cf5] hover:bg-[#eef4ff]">Today</button>
+        </div>
+        <div class="flex items-center gap-0.5 bg-[#f1f3f7] rounded-lg p-0.5">${viewBtns}</div>
+      </div>
+      <div class="text-sm font-bold tracking-wide text-[#16201d] text-center mb-2">${label}</div>
+      <button onclick="openClinicSchedule()" class="w-full mb-2 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-[#dbe7ff] bg-[#f5f9ff] text-[#0a6cf5] text-[11px] font-semibold hover:bg-[#eaf2ff] transition"><span class="text-[13px] leading-none">⊞</span> Clinic schedule</button>`;
+    let body='';
+    if(calView==='month'){
+      const y=calCursor.getFullYear(), m=calCursor.getMonth();
+      const startDay=new Date(y,m,1).getDay(), dim=new Date(y,m+1,0).getDate();
+      const byDay={}; appts.forEach(a=>{ if(a.dt.getFullYear()===y&&a.dt.getMonth()===m){ (byDay[a.dt.getDate()]=byDay[a.dt.getDate()]||[]).push(a); } });
+      let cells=''; for(let i=0;i<startDay;i++) cells+='<div></div>';
+      for(let d=1;d<=dim;d++){ const cur=new Date(y,m,d), isToday=calSameDay(cur,today), isSel=calSameDay(cur,calSel), n=(byDay[d]||[]).length;
+        let cls='text-[#3d4a45]'; if(isSel) cls='bg-[#0a6cf5] text-white font-semibold'; else if(isToday) cls='text-[#0a6cf5] font-semibold ring-1 ring-inset ring-[#0a6cf5]/40';
+        cells+=`<div onclick="calPick(${cur.getTime()})" title="${n?n+' appointment'+(n===1?'':'s'):''}" class="text-center rounded-md cursor-pointer hover:bg-[#f1f3f7] py-1 ${cls}">
+          <div class="text-[12px] leading-tight">${d}</div>
+          <div class="text-[9px] leading-none h-2.5 ${isSel?'text-white/85':'text-[#9aa0ab]'}">${n||''}</div></div>`; }
+      const dow=['S','M','T','W','T','F','S'].map(x=>`<div>${x}</div>`).join('');
+      const selList=appts.filter(a=>calSameDay(a.dt,calSel)).sort((x,y)=>x.dt-y.dt);
+      const selHdr=calSameDay(calSel,today)?'Appointments today':`Appointments · ${calSel.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}`;
+      body=`<div class="grid grid-cols-7 gap-0.5 text-[10px] text-[#9aa0ab] text-center mb-0.5">${dow}</div>
+        <div class="grid grid-cols-7 gap-0.5 mb-2">${cells}</div>${legend}
+        <div class="text-[12px] font-semibold tracking-wide text-[#6b7280] uppercase mb-1">${selHdr}</div>
+        ${selList.length? selList.map(calApptRow).join('') : '<div class="text-xs text-[#9aa0ab] py-1.5">No appointments this day.</div>'}`;
+    } else if(calView==='week'){
+      const ws=calStartOfWeek(calCursor); let wk='';
+      for(let i=0;i<7;i++){ const day=new Date(ws); day.setDate(ws.getDate()+i); const isToday=calSameDay(day,today);
+        const ds=appts.filter(a=>calSameDay(a.dt,day)).sort((x,y)=>x.dt-y.dt);
+        wk+=`<div class="mb-1.5">
+          <div class="flex items-center justify-between px-1 py-0.5 rounded-md ${isToday?'bg-[#eef4ff]':''}">
+            <span class="text-[12px] font-semibold uppercase tracking-wide ${isToday?'text-[#0a6cf5]':'text-[#16201d]'}">${day.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</span>
+            <span class="text-[10px] ${ds.length?'text-[#6b7280]':'text-[#c4c9d2]'}">${ds.length?ds.length+(ds.length===1?' appt':' appts'):''}</span>
+          </div>
+          ${ds.length? ds.map(a=>`<div class="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-[#f4f6f8]">
+              <span onclick="select('${a.pid}')" class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
+                <span class="text-[11px] font-semibold text-[#0a6cf5] w-14 shrink-0 whitespace-nowrap">${a.dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>
+                <span class="w-2 h-2 rounded-full shrink-0" style="background:${provColor(a.provider)}" title="${a.provider||''}"></span>
+                <span class="text-[12px] text-[#16201d] truncate">${a.name}</span></span>
+              <span class="text-[10px] text-[#6b7280] shrink-0">${a.type||''}</span></div>`).join('')
+            : '<div class="text-[10px] text-[#c4c9d2] px-2 py-0.5">No appointments</div>'}
+        </div>`; }
+      body=`${legend}${wk}`;
+    } else {
+      const ds=appts.filter(a=>calSameDay(a.dt,calCursor)).sort((x,y)=>x.dt-y.dt);
+      body=`${legend}${ds.length? ds.map(calApptRow).join('') : '<div class="text-xs text-[#9aa0ab] py-3 text-center">No appointments this day.</div>'}`;
+    }
+    el.innerHTML=head+body;
   }
+
+  // ===== Outlook-style clinic schedule: a full-screen time grid so staff can see each other's
+  // day side by side (provider columns) or the whole week (day columns). Built on Miguel's
+  // calAllAppts / provColor; opens as an overlay because the sidebar is too narrow for a grid.
+  let schedView='day';                               // 'day' | 'week'
+  let schedCursor=new Date();
+  const SCHED_START=7, SCHED_END=19, SCHED_PXH=54;   // 7a to 7p, 54px per hour
+  const schedH=(SCHED_END-SCHED_START)*SCHED_PXH;
+  const schedFmtHour=h=>(((h+11)%12)+1)+(h<12?'a':'p');
+  function schedBtnCls(v){ return `px-3 py-1 rounded-md text-[11px] font-bold uppercase ${schedView===v?'bg-white text-[#0a6cf5] shadow-sm':'text-[#6b7280]'}`; }
+  // greedy lane layout so overlapping appointments sit side by side instead of stacking
+  function schedLanes(items){
+    const ev=items.map(a=>{ const s=a.dt.getHours()*60+a.dt.getMinutes(); return {a,s,e:s+(a.durMin||30)}; }).sort((x,y)=>x.s-y.s||x.e-y.e);
+    let groups=[], cur=[], maxE=-1;
+    ev.forEach(o=>{ if(cur.length && o.s>=maxE){ groups.push(cur); cur=[]; maxE=-1; } cur.push(o); maxE=Math.max(maxE,o.e); });
+    if(cur.length) groups.push(cur);
+    groups.forEach(g=>{ const ends=[]; g.forEach(o=>{ let L=0; while(ends[L]!=null && ends[L]>o.s) L++; o.lane=L; ends[L]=o.e; }); g.forEach(o=>o.lanes=ends.length); });
+    return ev;
+  }
+  function schedBlockHtml(o,withProv){
+    const a=o.a, col=provColor(a.provider);
+    const h=Math.max(22,((o.e-o.s)/60)*SCHED_PXH-2);
+    const top=Math.max(0,Math.min(schedH-h,((a.dt.getHours()-SCHED_START)+a.dt.getMinutes()/60)*SCHED_PXH));
+    const w=100/o.lanes, left=o.lane*w;
+    const time=a.dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    return `<div onclick="event.stopPropagation();schedOpen('${a.pid}')" title="${time} · ${esc(a.name)}${a.provider?' · '+esc(a.provider):''}${a.type?' · '+esc(a.type):''}"
+      style="position:absolute;top:${top}px;height:${h}px;left:calc(${left}% + 1px);width:calc(${w}% - 2px);background:${col}1f;border-left:3px solid ${col};border-radius:6px;padding:3px 6px;overflow:hidden;cursor:pointer">
+      <div class="text-[10px] font-semibold text-[#16201d] truncate leading-tight">${time} ${esc(a.name)}</div>
+      <div class="text-[9px] text-[#6b7280] truncate leading-tight">${esc(a.type||'')}${withProv&&a.provider?' · '+esc(a.provider):''}</div></div>`;
+  }
+  function schedColumnHtml(items,withProv,extra,dayMs,provider){
+    const blocks=schedLanes(items).map(o=>schedBlockHtml(o,withProv)).join('');
+    return `<div onclick="schedSlotClick(event,${dayMs},'${(provider||'').replace(/'/g,'')}')" title="Click an open slot to book" class="relative shrink-0 border-r border-[#f1f3f7] cursor-pointer" style="width:182px;height:${schedH}px;background:repeating-linear-gradient(to bottom,transparent,transparent ${SCHED_PXH-1}px,#eef1f6 ${SCHED_PXH-1}px,#eef1f6 ${SCHED_PXH}px)">${extra||''}${blocks}</div>`;
+  }
+  function schedNowLine(dayDate){
+    const now=new Date(); if(!calSameDay(dayDate,now)||now.getHours()<SCHED_START||now.getHours()>=SCHED_END) return '';
+    const top=((now.getHours()-SCHED_START)+now.getMinutes()/60)*SCHED_PXH;
+    return `<div style="position:absolute;top:${top}px;left:0;right:0;height:2px;background:#0a6cf5;z-index:6"><span style="position:absolute;left:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:#0a6cf5"></span></div>`;
+  }
+  function renderSchedule(){
+    const ov=document.getElementById('schedOverlay'); if(!ov) return;
+    const all=calAllAppts().map(a=>({...a,durMin:a.duration||30}));
+    const provs=[...new Set(all.map(a=>a.provider).filter(Boolean))].sort();
+    let label, colHead='', cols='';
+    if(schedView==='day'){
+      label=schedCursor.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+      const dayAppts=all.filter(a=>calSameDay(a.dt,schedCursor));
+      const show=provs.length?provs:['Unassigned'];
+      colHead=show.map(p=>`<div class="shrink-0 border-r border-[#f1f3f7] text-center py-2" style="width:182px"><span class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#16201d]"><span class="w-2 h-2 rounded-full" style="background:${provColor(p)}"></span>${esc(p)}</span></div>`).join('');
+      cols=show.map(p=>schedColumnHtml(dayAppts.filter(a=>(a.provider||'Unassigned')===p),false,schedNowLine(schedCursor),new Date(schedCursor.getFullYear(),schedCursor.getMonth(),schedCursor.getDate()).getTime(),p)).join('');
+    } else {
+      const ws=calStartOfWeek(schedCursor), we=new Date(ws); we.setDate(ws.getDate()+6);
+      label=`${ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})} to ${we.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+      const days=[]; for(let i=0;i<7;i++){ const d=new Date(ws); d.setDate(ws.getDate()+i); days.push(d); }
+      colHead=days.map(d=>{ const t=calSameDay(d,new Date()); return `<div class="shrink-0 border-r border-[#f1f3f7] text-center py-2 ${t?'bg-[#eef4ff]':''}" style="width:182px"><div class="text-[12px] font-semibold ${t?'text-[#0a6cf5]':'text-[#16201d]'}">${d.toLocaleDateString('en-US',{weekday:'short'})}</div><div class="text-[11px] text-[#6b7280]">${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div></div>`; }).join('');
+      cols=days.map(d=>schedColumnHtml(all.filter(a=>calSameDay(a.dt,d)),true,schedNowLine(d),new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime(),'')).join('');
+    }
+    let gutter=''; for(let h=SCHED_START;h<SCHED_END;h++) gutter+=`<div style="height:${SCHED_PXH}px" class="relative"><span class="absolute -top-2 right-1.5 text-[10px] text-[#9aa0ab]">${schedFmtHour(h)}</span></div>`;
+    const legend=provs.length?`<div class="flex flex-wrap gap-x-3 gap-y-1 px-4 py-2 border-b border-[#eef1f6]">${provs.map(p=>`<span class="inline-flex items-center gap-1.5 text-[11px] text-[#6b7280]"><span class="w-2 h-2 rounded-full" style="background:${provColor(p)}"></span>${esc(p)}</span>`).join('')}</div>`:'';
+    ov.querySelector('#schedTitle').textContent=label;
+    ov.querySelector('#schedDayBtn').className=schedBtnCls('day');
+    ov.querySelector('#schedWeekBtn').className=schedBtnCls('week');
+    ov.querySelector('#schedLegend').innerHTML=legend;
+    ov.querySelector('#schedScroll').innerHTML=`<div class="inline-flex flex-col min-w-full">
+      <div class="flex sticky top-0 z-20 bg-[#fbfcfe] border-b border-[#eef1f6]"><div class="shrink-0 w-12 border-r border-[#eef1f6] sticky left-0 z-10 bg-[#fbfcfe]"></div>${colHead}</div>
+      <div class="flex"><div class="shrink-0 w-12 border-r border-[#eef1f6] sticky left-0 z-10 bg-white pt-1">${gutter}</div>${cols}</div>
+    </div>`;
+  }
+  window.schedSetView=function(v){ schedView=v; renderSchedule(); };
+  window.schedNav=function(d){ const x=new Date(schedCursor); x.setDate(x.getDate()+(schedView==='day'?d:7*d)); schedCursor=x; renderSchedule(); };
+  window.schedToday=function(){ schedCursor=new Date(); renderSchedule(); };
+  window.schedOpen=function(pid){ closeClinicSchedule(); select(pid); };
+  window.closeClinicSchedule=function(){ const ov=document.getElementById('schedOverlay'); if(ov){ ov.classList.add('hidden'); ov.classList.remove('flex'); } };
+  window.openClinicSchedule=function(){
+    let ov=document.getElementById('schedOverlay');
+    if(!ov){
+      ov=document.createElement('div'); ov.id='schedOverlay';
+      ov.className='hidden fixed inset-0 z-50 bg-[#0b1220]/45 items-center justify-center';
+      ov.innerHTML=`<div class="absolute inset-2 md:inset-6 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between gap-2 px-4 py-3 border-b border-[#eef1f6]">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="font-display font-semibold text-[15px] text-[#16201d] shrink-0">Clinic schedule</span>
+            <div class="flex items-center gap-0.5 ml-1 shrink-0">
+              <button onclick="schedNav(-1)" title="Previous" class="w-7 h-7 rounded-md text-[#6b7280] hover:bg-[#f1f3f7] leading-none">‹</button>
+              <button onclick="schedNav(1)" title="Next" class="w-7 h-7 rounded-md text-[#6b7280] hover:bg-[#f1f3f7] leading-none">›</button>
+              <button onclick="schedToday()" class="px-2 py-1 rounded-md text-[11px] font-semibold text-[#0a6cf5] hover:bg-[#eef4ff]">Today</button>
+            </div>
+            <span id="schedTitle" class="text-[13px] text-[#6b7280] ml-1 truncate"></span>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button onclick="schedBook()" class="px-2.5 py-1.5 rounded-lg bg-[#0a6cf5] text-white text-[11px] font-semibold hover:bg-[#0856c8]">+ Book</button>
+            <div class="flex items-center gap-0.5 bg-[#f1f3f7] rounded-lg p-0.5">
+              <button id="schedDayBtn" onclick="schedSetView('day')">Day</button>
+              <button id="schedWeekBtn" onclick="schedSetView('week')">Week</button>
+            </div>
+            <button onclick="closeClinicSchedule()" title="Close" class="w-8 h-8 rounded-lg text-[#9aa0ab] hover:bg-[#f1f3f7] hover:text-[#16201d] text-lg leading-none">✕</button>
+          </div>
+        </div>
+        <div id="schedLegend"></div>
+        <div id="schedScroll" class="flex-1 overflow-auto"></div>
+      </div>`;
+      document.body.appendChild(ov);
+      ov.addEventListener('click',()=>closeClinicSchedule());
+      document.addEventListener('keydown',e=>{ if(e.key==='Escape' && !ov.classList.contains('hidden')) closeClinicSchedule(); });
+    }
+    ov.classList.remove('hidden'); ov.classList.add('flex');
+    schedCursor=new Date(calSel||new Date());
+    schedView='day';
+    renderSchedule();
+  };
+
+  // Book an appointment straight from the schedule (header "+ Book" or clicking an open slot).
+  // Reuses the standard appt modal + save path; since no patient is selected on the calendar, the
+  // modal shows a patient picker. Date / time / provider are prefilled from the clicked slot.
+  window.schedBook=function(prefill){
+    apptEdit={pid:null, apptId:null, isNew:true};
+    const pad=n=>String(n).padStart(2,'0');
+    const d=prefill&&prefill.date?new Date(prefill.date):new Date(schedCursor);
+    document.getElementById('apptDate').value=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const hh=prefill&&prefill.hour!=null?prefill.hour:9, mm=prefill&&prefill.minute!=null?prefill.minute:0;
+    document.getElementById('apptTime').value=`${pad(hh)}:${pad(mm)}`;
+    document.getElementById('apptType').value='Consult';
+    document.getElementById('apptProvider').value=(prefill&&prefill.provider&&prefill.provider!=='Unassigned')?prefill.provider:'DeBry';
+    document.getElementById('apptStatus').value='scheduled';
+    document.getElementById('apptDur').value='30';
+    document.getElementById('apptModalTitle').textContent='Book appointment';
+    document.getElementById('apptCancelBtn').style.display='none';
+    document.getElementById('apptPatient').textContent='Select a patient';
+    document.getElementById('apptPatientSearch').value='';
+    document.getElementById('apptPickResults').classList.add('hidden');
+    document.getElementById('apptPickWrap').classList.remove('hidden');
+    const mo=document.getElementById('apptModal'); mo.classList.remove('hidden'); mo.classList.add('flex');
+    setTimeout(()=>{ const s=document.getElementById('apptPatientSearch'); if(s) s.focus(); },30);
+  };
+  window.schedSlotClick=function(e,dayMs,provider){
+    const rect=e.currentTarget.getBoundingClientRect();
+    let mins=Math.round((e.clientY-rect.top)/SCHED_PXH*60/15)*15;        // snap to 15-min
+    mins=Math.max(0,Math.min((SCHED_END-SCHED_START)*60-15,mins));
+    schedBook({date:new Date(dayMs),hour:SCHED_START+Math.floor(mins/60),minute:mins%60,provider});
+  };
+  // Patient picker for the schedule book flow — filters the loaded board (same fields as the search box).
+  window.apptPickSearch=function(){
+    const q=(document.getElementById('apptPatientSearch').value||'').trim().toLowerCase();
+    const box=document.getElementById('apptPickResults');
+    if(q.length<2){ box.classList.add('hidden'); box.innerHTML=''; return; }
+    const digits=q.replace(/\D/g,'');
+    const rows=patients.filter(p=>{
+      const name=((p.first||'')+' '+(p.last||'')).toLowerCase();
+      const hay=(name+' '+(p.email||'')+' '+(p.dob||'')+' '+(p.id||'')+' '+(p.display_id||'')).toLowerCase();
+      if(hay.includes(q)) return true;
+      if(digits.length>=3){ const pd=(p.phone||'').replace(/\D/g,''), dd=(p.dob||'').replace(/\D/g,''); if((pd&&pd.includes(digits))||(dd&&dd.includes(digits))) return true; }
+      return false;
+    }).slice(0,8);
+    box.innerHTML=rows.length?rows.map(p=>{ const nm=((p.first||'')+' '+(p.last||'')).trim()||p.display_id||'Patient'; return `<div onclick="apptPickSelect('${p.id}')" class="px-2.5 py-1.5 cursor-pointer hover:bg-[#f4f6f8] text-[13px] border-b border-[#f1f3f7] last:border-0"><span class="font-semibold text-[#16201d]">${esc(nm)}</span> <span class="text-[11px] text-[#6b7280]">DOB ${esc(p.dob||'n/a')}</span></div>`; }).join(''):'<div class="px-2.5 py-2 text-[12px] text-[#9aa0ab]">No patient matches</div>';
+    box.classList.remove('hidden');
+  };
+  window.apptPickSelect=function(pid){
+    const p=patients.find(x=>x.id===pid); if(!p||!apptEdit) return;
+    apptEdit.pid=pid;
+    const nm=((p.first||'')+' '+(p.last||'')).trim()||p.display_id||'Patient';
+    document.getElementById('apptPatient').textContent=nm;
+    document.getElementById('apptPatientSearch').value=nm;
+    document.getElementById('apptPickResults').classList.add('hidden');
+  };
   // Search-first list: no roster on screen by default (cleaner + better minimum-necessary PHI
   // posture). Type 2+ chars to find a patient by name, DOB, phone, or ID. The 🗂 Board is where
   // you see everyone. Results show name + DOB so you confirm the right person before opening.
@@ -1847,6 +2073,7 @@
   let apptEdit=null;
   function openApptModal(p){
     document.getElementById('apptPatient').textContent=`${p.first} ${p.last}`;
+    document.getElementById('apptPickWrap').classList.add('hidden');   // patient is fixed when opened from a record
     const mo=document.getElementById('apptModal'); mo.classList.remove('hidden'); mo.classList.add('flex');
   }
   window.bookAppt=function(id){
@@ -1858,6 +2085,7 @@
     document.getElementById('apptType').value='Consult';
     document.getElementById('apptProvider').value='DeBry';
     document.getElementById('apptStatus').value='scheduled';
+    document.getElementById('apptDur').value='30';
     document.getElementById('apptModalTitle').textContent='Book appointment';
     document.getElementById('apptCancelBtn').style.display='none';
     openApptModal(p);
@@ -1872,6 +2100,7 @@
     document.getElementById('apptType').value=a.type||'Consult';
     document.getElementById('apptProvider').value=a.provider||'DeBry';
     document.getElementById('apptStatus').value=a.status||'scheduled';
+    document.getElementById('apptDur').value=String(a.duration_min||30);
     document.getElementById('apptModalTitle').textContent='Edit appointment';
     document.getElementById('apptCancelBtn').style.display='';
     openApptModal(p);
@@ -1879,22 +2108,25 @@
   window.closeAppt=function(){ const mo=document.getElementById('apptModal'); mo.classList.add('hidden'); mo.classList.remove('flex'); apptEdit=null; };
   window.saveAppt=async function(){
     if(!apptEdit)return;
+    if(apptEdit.isNew && !apptEdit.pid){ alert('Pick a patient for this appointment.'); return; }
     const dt=document.getElementById('apptDate').value, tm=document.getElementById('apptTime').value||'09:00';
     if(!dt){ alert('Pick a date.'); return; }
     const whenMs=new Date(`${dt}T${tm}`).getTime();
     const type=document.getElementById('apptType').value, provider=document.getElementById('apptProvider').value, status=document.getElementById('apptStatus').value;
+    const duration_min=+document.getElementById('apptDur').value||30;
     const sb=document.getElementById('apptSaveBtn'); const o=sb.textContent; sb.disabled=true; sb.textContent='Saving…';
     try{
       const payload = apptEdit.isNew
-        ? {action:'book_appt', patient_id:apptEdit.pid, scheduled_at:whenMs, type, provider, status}
-        : {action:'update_appt', appt_id:apptEdit.apptId, scheduled_at:whenMs, type, provider, status};
+        ? {action:'book_appt', patient_id:apptEdit.pid, scheduled_at:whenMs, duration_min, type, provider, status}
+        : {action:'update_appt', appt_id:apptEdit.apptId, scheduled_at:whenMs, duration_min, type, provider, status};
       const r=await fetch(`${CONVEX_URL}/crm-data`,{method:'POST',headers:await convexHeaders(),body:JSON.stringify(payload)});
       const j=await r.json();
       if(!j.ok){
-        if(j.error==='conflict' && j.conflict){ const c=j.conflict; alert(`${provider} is already booked at ${new Date(c.when).toLocaleString()} (${c.type} · ${c.patient}). Pick a different time or provider — slots are 30 minutes.`); sb.disabled=false; sb.textContent=o; return; }
+        if(j.error==='conflict' && j.conflict){ const c=j.conflict; alert(`${provider} is already booked at ${new Date(c.when).toLocaleString()} (${c.type} · ${c.patient}). Pick a different time or provider. Slots are 30 minutes.`); sb.disabled=false; sb.textContent=o; return; }
         throw new Error(j.error||'save failed');
       }
       closeAppt(); await loadData();
+      const so=document.getElementById('schedOverlay'); if(so && !so.classList.contains('hidden')) renderSchedule();
     }catch(e){ alert('Could not save the appointment: '+e.message); }
     sb.disabled=false; sb.textContent=o;
   };
