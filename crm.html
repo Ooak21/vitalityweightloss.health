@@ -1339,11 +1339,13 @@
     rows.sort((a,b)=>(b.last_referral_at||b.last_touch_at||0)-(a.last_referral_at||a.last_touch_at||0));
     listEl.innerHTML = rows.length? rows.map(practiceRow).join('') : '<div class="text-center text-[#9aa0ab] text-sm py-10">No match</div>';
   }
-  // Physician-investor leads (from the /investor-subscribe MSO flow) carry type='investor' — flag
-  // them with a 💼 mark and a friendly label so Fred can tell them apart from referral partners.
+  // Physician-investor leads (from the /investor-subscribe MSO flow) carry type='investor'. They land
+  // as an 'inquiry' the moment they reach review&sign, and flip to a committed 'investor' on a paid
+  // Clover Initial Fee. Badge: 💼 (green when paid) + label "Investor inquiry" vs "Investor".
   const isInvestor=p=>p&&p.type==='investor';
-  const invMark=p=> isInvestor(p)?'<span title="Physician investor" class="text-[#5ba53f]">💼 </span>':'';
-  const ptypeLabel=p=> isInvestor(p)?'Physician investor':(p.type||'');
+  const invPaid=p=> isInvestor(p)&&p.investor_status==='investor';
+  const invMark=p=> isInvestor(p)?`<span title="${invPaid(p)?'Committed investor · Initial Fee paid':'Investor inquiry'}" class="${invPaid(p)?'text-[#0a7a3d]':'text-[#b08900]'}">💼 </span>`:'';
+  const ptypeLabel=p=> isInvestor(p)?(invPaid(p)?'Investor':'Investor inquiry'):(p.type||'');
   function practiceRow(p){
     const overdue=p.next_checkin_at && p.next_checkin_at<Date.now();
     return `<div class="row border border-transparent rounded-xl px-3 py-2 mb-0.5 ${p.id===selId?'sel':''}" onclick="select('${p.id}')">
