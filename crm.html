@@ -1666,7 +1666,7 @@
   function stdPartnerEmail(name){
     return {
       subject:'Partnering with Vitality Weight Loss',
-      body:`Hi ${name||'there'} team,\n\nI'm reaching out from Vitality Weight Loss, a physician-led metabolic and weight-management clinic here in Las Vegas. We'd love to be a resource for any of your patients who could benefit from medical weight management — GLP-1 therapy, InBody body-composition analysis, and structured coaching.\n\nReferring is simple and we keep you in the loop on the patients we share. If it's helpful, I'm glad to send over how our referral process works or set up a quick call.\n\nThank you for considering us as a partner.`
+      body:`Hi ${name||'there'} team,\n\nI'm reaching out from Vitality Weight Loss, a physician-led metabolic and weight-management clinic here in Las Vegas. We'd love to be a resource for any of your patients who could benefit from medical weight management: GLP-1 therapy, InBody body-composition analysis, and structured coaching.\n\nReferring is simple and we keep you in the loop on the patients we share. If it's helpful, I'm glad to send over how our referral process works or set up a quick call.\n\nThank you for considering us as a partner.`
     };
   }
   window.openPartnerEmail=function(pid){
@@ -1949,7 +1949,6 @@
     $('#emailPreview').innerHTML = `
       <div style="background:#eef1f6;padding:18px;font-family:Inter,sans-serif">
         <div style="max-width:100%;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e6e9ee">
-          <img src="${ASSET}/email-hero.jpg" style="width:100%;height:auto;display:block;border:0" alt="Vitality">
           <div style="padding:18px 24px 2px;text-align:center"><img src="${ASSET}/logo-full.png" style="height:46px;width:auto" alt="Vitality"></div>
           <div style="padding:6px 28px 6px;color:#16201d">
             <h2 style="font-family:'Montserrat',sans-serif;font-size:21px;margin:6px 0 10px;color:#0a3d7a">${c.h}</h2>
