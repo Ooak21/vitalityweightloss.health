@@ -703,39 +703,92 @@
     document.querySelectorAll('#tabs .cnt').forEach(el=> el.textContent = c[el.dataset.c] ?? 0);
     renderToday();
   }
-  let calSel = null; // selected day-of-month in the Today panel; null = today
-  window.selectDay = function(d){ calSel = d; renderToday(); };
+  // Calendar widget — Month / Week / Day views, navigation, and per-provider colors,
+  // so staff can see the day/week schedule at a glance.
+  let calView = 'month';       // 'month' | 'week' | 'day'
+  let calCursor = new Date();  // reference date for the visible period
+  let calSel = new Date();     // selected day (month + day views)
+  const CAL_PALETTE = ['#0f766e','#1e5a8a','#a16207','#475569','#0e7490','#92400e','#3f6f5f','#5b6478'];
+  function provColor(name){ if(!name) return '#9aa0ab'; let h=0; for(let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))>>>0; return CAL_PALETTE[h%CAL_PALETTE.length]; }
+  const calSameDay=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
+  function calStartOfWeek(d){ const x=new Date(d.getFullYear(),d.getMonth(),d.getDate()); x.setDate(x.getDate()-x.getDay()); return x; }
+  function calAllAppts(){ const out=[]; patients.forEach(p=>(p.appts||[]).forEach(a=>{ if(!a||!a.when) return; out.push({id:a.id,when:a.when,dt:new Date(a.when),type:a.type,provider:a.provider,pid:p.id,name:(p.first+' '+p.last).trim()}); })); return out; }
+  window.calSetView = function(v){ calView=v; if(v==='day') calCursor=new Date(calSel); renderToday(); };
+  window.calNav = function(delta){ const d=new Date(calCursor); if(calView==='month') d.setMonth(d.getMonth()+delta); else if(calView==='week') d.setDate(d.getDate()+7*delta); else d.setDate(d.getDate()+delta); calCursor=d; if(calView==='day') calSel=new Date(d); renderToday(); };
+  window.calToday = function(){ calCursor=new Date(); calSel=new Date(); renderToday(); };
+  window.calPick = function(ts){ calSel=new Date(ts); calCursor=new Date(ts); renderToday(); };
+  window.selectDay = function(d){ const t=new Date(); calPick(new Date(t.getFullYear(),t.getMonth(),d).getTime()); }; // back-compat
+  function calApptRow(a){
+    const time=a.dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    return `<div class="flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-[#f4f6f8]">
+      <span onclick="select('${a.pid}')" class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
+        <span class="text-[12px] font-semibold text-[#0a6cf5] w-14 shrink-0 whitespace-nowrap">${time}</span>
+        <span class="w-2 h-2 rounded-full shrink-0" style="background:${provColor(a.provider)}" title="${a.provider||''}"></span>
+        <span class="text-[13px] text-[#16201d] truncate">${a.name}</span></span>
+      <span class="text-[11px] text-[#6b7280] shrink-0">${a.type||''}</span>
+      <button onclick="editAppt('${a.pid}','${a.id}')" title="Edit appointment" class="shrink-0 text-[#9aa0ab] hover:text-[#0a6cf5] px-1 leading-none">✎</button></div>`;
+  }
   function renderToday(){
     const el=document.getElementById('todayPanel'); if(!el) return;
-    const t=new Date(), y=t.getFullYear(), m=t.getMonth();
-    const startDay=new Date(y,m,1).getDay(), dim=new Date(y,m+1,0).getDate();
-    const selDay = (calSel && calSel<=dim) ? calSel : t.getDate();
-    const apptDays=new Set(), byDay={};
-    patients.forEach(p=>(p.appts||[]).forEach(a=>{ const d=new Date(a.when);
-      if(d.getFullYear()===y&&d.getMonth()===m){ const dd=d.getDate(); apptDays.add(dd);
-        (byDay[dd]=byDay[dd]||[]).push({id:a.id,when:a.when,type:a.type,provider:a.provider,pid:p.id,name:p.first+' '+p.last}); } }));
-    const dayAppts=(byDay[selDay]||[]).sort((a,b)=> new Date(a.when)-new Date(b.when));
-    let cells=''; for(let i=0;i<startDay;i++) cells+='<div></div>';
-    for(let d=1;d<=dim;d++){ const isToday=d===t.getDate(), isSel=d===selDay, has=apptDays.has(d);
-      let cls='text-[#3d4a45]';
-      if(isSel) cls='bg-[#0a6cf5] text-white font-semibold';
-      else if(isToday) cls='text-[#0a6cf5] font-semibold ring-1 ring-inset ring-[#0a6cf5]/40';
-      cells+=`<div onclick="selectDay(${d})" class="relative text-center text-[11px] py-1 rounded-md cursor-pointer hover:bg-[#f1f3f7] ${cls}">${d}${has&&!isSel?'<span class="absolute left-1/2 -translate-x-1/2 bottom-0 w-1 h-1 rounded-full bg-[#0a6cf5]"></span>':''}</div>`; }
-    const dow=['S','M','T','W','T','F','S'].map(x=>`<div>${x}</div>`).join('');
-    const selDate=new Date(y,m,selDay);
-    const hdr = selDay===t.getDate() ? 'Appointments today' : `Appointments · ${selDate.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}`;
-    el.innerHTML=`
-      <div class="text-sm font-bold tracking-wide text-[#16201d] uppercase text-center mt-2 mb-2">${t.toLocaleDateString('en-US',{month:'long',year:'numeric'})}</div>
-      <div class="grid grid-cols-7 gap-0.5 text-[10px] text-[#9aa0ab] text-center mb-0.5">${dow}</div>
-      <div class="grid grid-cols-7 gap-0.5 mb-3">${cells}</div>
-      <div class="text-[11px] font-semibold tracking-wide text-[#6b7280] uppercase mb-1">${hdr}</div>
-      ${dayAppts.length? dayAppts.map(a=>`<div class="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-[#f4f6f8]">
-          <span onclick="select('${a.pid}')" class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
-            <span class="text-[11px] font-semibold text-[#0a6cf5] w-12 shrink-0">${new Date(a.when).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>
-            <span class="text-xs text-[#16201d] truncate">${a.name}</span></span>
-          <span class="text-[10px] text-[#6b7280] shrink-0">${a.type}</span>
-          <button onclick="editAppt('${a.pid}','${a.id}')" title="Edit appointment" class="shrink-0 text-[#9aa0ab] hover:text-[#0a6cf5] px-1 leading-none">✎</button></div>`).join('')
-        : '<div class="text-xs text-[#9aa0ab] py-1.5">No appointments this day.</div>'}`;
+    const today=new Date(), appts=calAllAppts();
+    const provs=[...new Set(appts.map(a=>a.provider).filter(Boolean))];
+    const legend = provs.length ? `<div class="flex flex-wrap gap-x-2 gap-y-0.5 px-1 mb-2">${provs.map(p=>`<span class="inline-flex items-center gap-1 text-[9px] text-[#6b7280]"><span class="w-1.5 h-1.5 rounded-full" style="background:${provColor(p)}"></span>${p}</span>`).join('')}</div>` : '';
+    let label;
+    if(calView==='month') label=calCursor.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    else if(calView==='week'){ const ws=calStartOfWeek(calCursor), we=new Date(ws); we.setDate(ws.getDate()+6); label=`${ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${we.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`; }
+    else label=calCursor.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+    const viewBtns=['month','week','day'].map(v=>`<button onclick="calSetView('${v}')" class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${calView===v?'bg-white text-[#0a6cf5] shadow-sm':'text-[#6b7280]'}">${v[0].toUpperCase()}</button>`).join('');
+    const head=`
+      <div class="flex items-center justify-between gap-1 mt-2 mb-1">
+        <div class="flex items-center gap-0.5">
+          <button onclick="calNav(-1)" title="Previous" class="w-6 h-6 rounded-md text-[#6b7280] hover:bg-[#f1f3f7] leading-none">‹</button>
+          <button onclick="calNav(1)" title="Next" class="w-6 h-6 rounded-md text-[#6b7280] hover:bg-[#f1f3f7] leading-none">›</button>
+          <button onclick="calToday()" class="px-1.5 py-0.5 rounded-md text-[10px] font-semibold text-[#0a6cf5] hover:bg-[#eef4ff]">Today</button>
+        </div>
+        <div class="flex items-center gap-0.5 bg-[#f1f3f7] rounded-lg p-0.5">${viewBtns}</div>
+      </div>
+      <div class="text-sm font-bold tracking-wide text-[#16201d] text-center mb-2">${label}</div>`;
+    let body='';
+    if(calView==='month'){
+      const y=calCursor.getFullYear(), m=calCursor.getMonth();
+      const startDay=new Date(y,m,1).getDay(), dim=new Date(y,m+1,0).getDate();
+      const byDay={}; appts.forEach(a=>{ if(a.dt.getFullYear()===y&&a.dt.getMonth()===m){ (byDay[a.dt.getDate()]=byDay[a.dt.getDate()]||[]).push(a); } });
+      let cells=''; for(let i=0;i<startDay;i++) cells+='<div></div>';
+      for(let d=1;d<=dim;d++){ const cur=new Date(y,m,d), isToday=calSameDay(cur,today), isSel=calSameDay(cur,calSel), n=(byDay[d]||[]).length;
+        let cls='text-[#3d4a45]'; if(isSel) cls='bg-[#0a6cf5] text-white font-semibold'; else if(isToday) cls='text-[#0a6cf5] font-semibold ring-1 ring-inset ring-[#0a6cf5]/40';
+        cells+=`<div onclick="calPick(${cur.getTime()})" title="${n?n+' appointment'+(n===1?'':'s'):''}" class="text-center rounded-md cursor-pointer hover:bg-[#f1f3f7] py-1 ${cls}">
+          <div class="text-[12px] leading-tight">${d}</div>
+          <div class="text-[9px] leading-none h-2.5 ${isSel?'text-white/85':'text-[#9aa0ab]'}">${n||''}</div></div>`; }
+      const dow=['S','M','T','W','T','F','S'].map(x=>`<div>${x}</div>`).join('');
+      const selList=appts.filter(a=>calSameDay(a.dt,calSel)).sort((x,y)=>x.dt-y.dt);
+      const selHdr=calSameDay(calSel,today)?'Appointments today':`Appointments · ${calSel.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}`;
+      body=`<div class="grid grid-cols-7 gap-0.5 text-[10px] text-[#9aa0ab] text-center mb-0.5">${dow}</div>
+        <div class="grid grid-cols-7 gap-0.5 mb-2">${cells}</div>${legend}
+        <div class="text-[12px] font-semibold tracking-wide text-[#6b7280] uppercase mb-1">${selHdr}</div>
+        ${selList.length? selList.map(calApptRow).join('') : '<div class="text-xs text-[#9aa0ab] py-1.5">No appointments this day.</div>'}`;
+    } else if(calView==='week'){
+      const ws=calStartOfWeek(calCursor); let wk='';
+      for(let i=0;i<7;i++){ const day=new Date(ws); day.setDate(ws.getDate()+i); const isToday=calSameDay(day,today);
+        const ds=appts.filter(a=>calSameDay(a.dt,day)).sort((x,y)=>x.dt-y.dt);
+        wk+=`<div class="mb-1.5">
+          <div class="flex items-center justify-between px-1 py-0.5 rounded-md ${isToday?'bg-[#eef4ff]':''}">
+            <span class="text-[12px] font-semibold uppercase tracking-wide ${isToday?'text-[#0a6cf5]':'text-[#16201d]'}">${day.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</span>
+            <span class="text-[10px] ${ds.length?'text-[#6b7280]':'text-[#c4c9d2]'}">${ds.length?ds.length+(ds.length===1?' appt':' appts'):''}</span>
+          </div>
+          ${ds.length? ds.map(a=>`<div class="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-[#f4f6f8]">
+              <span onclick="select('${a.pid}')" class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
+                <span class="text-[11px] font-semibold text-[#0a6cf5] w-14 shrink-0 whitespace-nowrap">${a.dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>
+                <span class="w-2 h-2 rounded-full shrink-0" style="background:${provColor(a.provider)}" title="${a.provider||''}"></span>
+                <span class="text-[12px] text-[#16201d] truncate">${a.name}</span></span>
+              <span class="text-[10px] text-[#6b7280] shrink-0">${a.type||''}</span></div>`).join('')
+            : '<div class="text-[10px] text-[#c4c9d2] px-2 py-0.5">—</div>'}
+        </div>`; }
+      body=`${legend}${wk}`;
+    } else {
+      const ds=appts.filter(a=>calSameDay(a.dt,calCursor)).sort((x,y)=>x.dt-y.dt);
+      body=`${legend}${ds.length? ds.map(calApptRow).join('') : '<div class="text-xs text-[#9aa0ab] py-3 text-center">No appointments this day.</div>'}`;
+    }
+    el.innerHTML=head+body;
   }
   // Search-first list: no roster on screen by default (cleaner + better minimum-necessary PHI
   // posture). Type 2+ chars to find a patient by name, DOB, phone, or ID. The 🗂 Board is where
