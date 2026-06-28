@@ -1040,12 +1040,13 @@ function playVwl(){
   async function getVeeConvex(){ if(!_veeConvex){ var m=await import('https://esm.sh/convex@1.41.0/browser'); _veeConvex=new m.ConvexHttpClient(CONVEX_URL); } return _veeConvex; }
   function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
   function bubble(t,who){var m=document.getElementById('veeMsgs');var w=document.createElement('div');w.className=who==='user'?'flex justify-end':'flex justify-start';w.innerHTML='<div class="'+(who==='user'?'bg-[#0a6cf5] text-white':'bg-white text-[#16201d] border border-[#e6e9ee]')+' rounded-2xl px-3.5 py-2 text-sm max-w-[82%] leading-relaxed">'+esc(t)+'</div>';m.appendChild(w);m.scrollTop=m.scrollHeight;return w;}
+  function ctaBubble(c){var m=document.getElementById('veeMsgs');var w=document.createElement('div');w.className='flex justify-start';w.innerHTML='<a href="'+esc(c.url)+'" class="inline-flex items-center gap-1.5 bg-[#0a6cf5] text-white rounded-2xl px-4 py-2 text-sm font-semibold hover:bg-[#0856c8]" style="text-decoration:none">'+esc(c.label)+' <span>&rarr;</span></a>';m.appendChild(w);m.scrollTop=m.scrollHeight;}
   window.veeToggleChat=function(){opened=!opened;var p=document.getElementById('veePanel');p.classList.toggle('hidden',!opened);if(opened){var _first=!document.getElementById('veeMsgs').children.length;if(_first){bubble("Hey there! \uD83D\uDC4B I'm Vee, the Vitality front desk. I can help with programs, pricing, hours, or getting you booked. What can I help you with?",'bot');if(webinarLive())webinarBubble();}hideTeaser();document.getElementById('veeInput').focus();}};
   window.veeSend=async function(){if(busy)return;var inp=document.getElementById('veeInput');var t=inp.value.trim();if(!t)return;inp.value='';bubble(t,'user');convo.push({role:'user',content:t});busy=true;var typing=bubble('…','bot');
     try{var d;
       if(USE_CONVEX_VEE){var c=await getVeeConvex();d=await c.action('vee:chat',{messages:convo,session_id:SID});}
       else{var r=await fetch(SB+'/functions/v1/vit-chat',{method:'POST',headers:{'content-type':'application/json','apikey':ANON,'authorization':'Bearer '+ANON},body:JSON.stringify({messages:convo,session_id:SID})});d=await r.json();}
-      typing.remove();var reply=(d&&d.reply)||"Sorry, I had trouble there. You can reach us at (702) 602-5002.";bubble(reply,'bot');convo.push({role:'assistant',content:reply});}
+      typing.remove();var reply=(d&&d.reply)||"Sorry, I had trouble there. You can reach us at (702) 602-5002.";bubble(reply,'bot');if(d&&d.cta&&d.cta.url)ctaBubble(d.cta);convo.push({role:'assistant',content:reply});}
     catch(e){typing.remove();bubble("Sorry, I had trouble connecting. Please call (702) 602-5002.",'bot');}
     busy=false;inp.focus();
   };
