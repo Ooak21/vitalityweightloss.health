@@ -127,11 +127,6 @@
       <button onclick="setViewMode('provider')" data-mode="provider" class="vm-btn px-3 py-2 text-[#4b5563] border-l border-[#e6e9ee]">Provider</button>
       <button onclick="setViewMode('portal')" data-mode="portal" class="vm-btn px-3 py-2 text-[#4b5563] border-l border-[#e6e9ee]">Patient Portal</button>
     </div>
-    <button id="boardToggle" onclick="toggleBoard()" title="Pipeline board (drag patients between stages)" class="relative px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7]">🗂 Board<span id="inqBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#be123c] text-white text-[10px] font-bold flex items-center justify-center" title="New inquiries waiting"></span></button>
-    <button id="importBtn" onclick="importScan()" class="pt-only px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">⬆ Import InBody scan</button>
-    <button onclick="openRx()" title="GLP-1 medication reference (FDA)" class="pt-only px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7]">℞ Med reference</button>
-    <button onclick="openGlp1Queue()" title="Async GLP-1 Rx review queue" class="pt-only px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">💊 GLP-1 queue</button>
-    <button onclick="openBloomQueue()" title="Vitality Bloom hair-loss review queue" class="pt-only px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">🌱 Bloom queue</button>
     <a href="admin.html" class="text-xs text-[#6b7280] hover:text-[#16201d]" title="Admin & Operations (admins only)">⚙ Admin</a>
     <button onclick="(window.__vca?window.__vca.signOut():(window.__vitSb?window.__vitSb.auth.signOut():Promise.resolve())).then(()=>location.replace('login.html'))" class="text-xs text-[#6b7280] hover:text-[#16201d]">Sign out</button>
     <div id="userAvatar" title="Signed in" class="w-8 h-8 rounded-full bg-[#f1f3f7] border border-[#e6e9ee] flex items-center justify-center text-xs font-semibold text-[#4b5563]">··</div>
@@ -140,6 +135,7 @@
 
 <!-- PIPELINE BOARD (overlay; toggled by 🗂 Board) -->
 <div id="boardPane" class="hidden fixed left-0 right-0 top-16 bottom-0 bg-[#fbfcfd] z-30 overflow-hidden"></div>
+<button id="boardClose" onclick="toggleBoard()" title="Close board (Esc)" class="hidden fixed top-[72px] right-4 z-40 items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold shadow-sm hover:bg-[#f1f3f7] hover:text-[#16201d]">✕ Close board</button>
 
 <!-- Referred-by picker (tag which partner practice/doctor sent a patient) -->
 <div id="referModal" class="hidden fixed inset-0 bg-black/40 z-40 items-center justify-center p-4">
@@ -213,6 +209,13 @@
       <button id="listToggle" onclick="toggleList()" title="Collapse patient list" class="w-8 h-8 rounded-lg border border-[#e6e9ee] flex items-center justify-center text-[#6b7280] hover:bg-[#f1f3f7] hover:text-[#16201d] shrink-0 text-lg leading-none">«</button>
       <input id="search" class="field flex-1" placeholder="🔍 Search name, DOB, or patient ID…" autocomplete="off">
       <span id="tabs" class="hidden"></span>
+    </div>
+    <!-- Collapsed-rail quick actions: only visible when the patient list is collapsed -->
+    <div id="railTools" class="hidden flex-col items-center gap-2 py-2 border-b border-[#e6e9ee]">
+      <button onclick="toggleBoard()" title="Pipeline board" class="relative w-10 h-10 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-lg hover:bg-[#f1f3f7] flex items-center justify-center">🗂<span id="inqBadgeRail" class="hidden absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-[#be123c] text-white text-[9px] font-bold flex items-center justify-center"></span></button>
+      <button onclick="openGlp1Queue()" title="GLP-1 review queue" class="w-10 h-10 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-lg hover:bg-[#0a6cf5]/10 flex items-center justify-center">💊</button>
+      <button onclick="openBloomQueue()" title="Bloom review queue" class="w-10 h-10 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-lg hover:bg-[#0a6cf5]/10 flex items-center justify-center">🌱</button>
+      <button onclick="openClinicSchedule()" title="Clinic schedule" class="w-10 h-10 rounded-xl border border-[#dbe7ff] bg-[#f5f9ff] text-[#0a6cf5] text-lg hover:bg-[#eaf2ff] flex items-center justify-center">⊞</button>
     </div>
     <div id="todayPanel" class="px-3 pb-3 flex-shrink-0 border-b border-[#e6e9ee]"></div>
     <div class="flex-1 overflow-y-auto scroll px-3 pb-4 pt-3" id="list"></div>
@@ -1155,6 +1158,7 @@
           <div>
             <div class="text-[10px] font-semibold tracking-[.14em] text-[#9aa0ab] uppercase mb-1.5">Plans</div>
             <div class="flex gap-2 flex-wrap items-center">
+              <button onclick="importScan()" title="Upload an InBody scan for this patient, then generate the plan" class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">⬆ Import InBody scan</button>
               <div class="relative inline-block menu-wrap">
                 <span class="inline-flex rounded-xl border border-[#0a6cf5]/40 overflow-hidden">
                   <button onclick="generatePlan('${p.id}', false, this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ ${p.plan?'Regenerate plan':'Generate plan'}</button>
@@ -1176,6 +1180,13 @@
               <label id="hbGlp1Wrap" class="px-3 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm flex items-center gap-2 cursor-pointer hover:bg-[#f1f3f7]" title="Checked: the handbook includes GLP-1 medication guidance. Unchecked: lifestyle-only handbook (no GLP-1/semaglutide/tirzepatide mentions). Defaults from the patient's program.">
                 <input type="checkbox" id="hbGlp1Toggle" ${/glp1|sema|tirz|oral|medicare_glp1/i.test(p.program||'')?'checked':''} class="accent-[#0a6cf5] w-4 h-4"> Include GLP-1
               </label>
+            </div>
+          </div>
+          <!-- Reference -->
+          <div>
+            <div class="text-[10px] font-semibold tracking-[.14em] text-[#9aa0ab] uppercase mb-1.5">Reference</div>
+            <div class="flex gap-2 flex-wrap">
+              <button onclick="openRx()" title="GLP-1 medication reference (FDA) for patient questions" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">℞ Med reference</button>
             </div>
           </div>
           <!-- Voice -->
@@ -1460,12 +1471,13 @@
   function stageOf(p){ return p.pipeline_stage || 'new_inquiry'; }
   window.toggleBoard = function(){
     boardOpen = !boardOpen;
-    const pane=document.getElementById('boardPane'), btn=document.getElementById('boardToggle');
+    const pane=document.getElementById('boardPane'), btn=document.getElementById('boardToggle'), close=document.getElementById('boardClose');
     pane.classList.toggle('hidden', !boardOpen);
-    btn.classList.toggle('bg-[#0a6cf5]', boardOpen); btn.classList.toggle('text-white', boardOpen);
-    btn.childNodes[0].nodeValue = boardOpen ? '☰ List ' : '🗂 Board';
+    if(close){ close.classList.toggle('hidden', !boardOpen); close.classList.toggle('flex', boardOpen); }
+    if(btn){ btn.classList.toggle('bg-[#0a6cf5]', boardOpen); btn.classList.toggle('text-white', boardOpen); btn.childNodes[0].nodeValue = boardOpen ? '☰ List ' : '🗂 Board'; }
     if(boardOpen) renderBoard();
   };
+  addEventListener('keydown', e=>{ if(e.key==='Escape' && boardOpen) toggleBoard(); });
   function boardCard(p){
     const ch = {phone:'📞',web:'🌐',chat:'💬'}[p.channel]||'';
     const cold = p.last_activity && (Date.now()-p.last_activity > 7*864e5) && stageOf(p)!=='churned';
@@ -1517,8 +1529,11 @@
     setViewMode('crm'); select(id);
   };
   function updateInquiryBadge(){
-    const n=patients.filter(p=>stageOf(p)==='new_inquiry').length, b=document.getElementById('inqBadge'); if(!b)return;
-    if(n>0){ b.textContent=n; b.classList.remove('hidden'); } else b.classList.add('hidden');
+    const n=patients.filter(p=>stageOf(p)==='new_inquiry').length;
+    [document.getElementById('inqBadge'), document.getElementById('inqBadgeRail')].forEach(b=>{
+      if(!b) return;
+      if(n>0){ b.textContent=n; b.classList.remove('hidden'); } else b.classList.add('hidden');
+    });
   }
 
   // ============ Referral Partners (B2B: clinics + doctors that refer patients) ============
@@ -2358,9 +2373,10 @@ HARD RULES:
   window.toggleList = function(){
     listOpen = !listOpen;
     const grid=document.getElementById('mainGrid'), btn=document.getElementById('listToggle'),
-          tabs=document.getElementById('tabs'), list=document.getElementById('list'), today=document.getElementById('todayPanel');
-    if(listOpen){ grid.style.gridTemplateColumns=''; tabs.style.display=''; list.style.display=''; today.style.display=''; btn.textContent='«'; btn.title='Collapse patient list'; }
-    else { grid.style.gridTemplateColumns='56px 1fr'; tabs.style.display='none'; list.style.display='none'; today.style.display='none'; btn.textContent='»'; btn.title='Show patient list'; }
+          tabs=document.getElementById('tabs'), list=document.getElementById('list'), today=document.getElementById('todayPanel'),
+          rail=document.getElementById('railTools'), search=document.getElementById('search');
+    if(listOpen){ grid.style.gridTemplateColumns=''; tabs.style.display=''; list.style.display=''; today.style.display=''; search.style.display=''; rail.classList.add('hidden'); rail.classList.remove('flex'); btn.textContent='«'; btn.title='Collapse patient list'; }
+    else { grid.style.gridTemplateColumns='56px 1fr'; tabs.style.display='none'; list.style.display='none'; today.style.display='none'; search.style.display='none'; rail.classList.remove('hidden'); rail.classList.add('flex'); updateInquiryBadge(); btn.textContent='»'; btn.title='Show patient list'; }
     syncBodyDock();
   };
   // Show the 3D body dock only when the list is collapsed AND there is room (wide screens).
