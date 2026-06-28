@@ -735,7 +735,7 @@
     const legend = provs.length ? `<div class="flex flex-wrap gap-x-2 gap-y-0.5 px-1 mb-2">${provs.map(p=>`<span class="inline-flex items-center gap-1 text-[9px] text-[#6b7280]"><span class="w-1.5 h-1.5 rounded-full" style="background:${provColor(p)}"></span>${p}</span>`).join('')}</div>` : '';
     let label;
     if(calView==='month') label=calCursor.toLocaleDateString('en-US',{month:'long',year:'numeric'});
-    else if(calView==='week'){ const ws=calStartOfWeek(calCursor), we=new Date(ws); we.setDate(ws.getDate()+6); label=`${ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${we.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`; }
+    else if(calView==='week'){ const ws=calStartOfWeek(calCursor), we=new Date(ws); we.setDate(ws.getDate()+6); label=`${ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})} to ${we.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`; }
     else label=calCursor.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
     const viewBtns=['month','week','day'].map(v=>`<button onclick="calSetView('${v}')" class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${calView===v?'bg-white text-[#0a6cf5] shadow-sm':'text-[#6b7280]'}">${v[0].toUpperCase()}</button>`).join('');
     const head=`
@@ -781,7 +781,7 @@
                 <span class="w-2 h-2 rounded-full shrink-0" style="background:${provColor(a.provider)}" title="${a.provider||''}"></span>
                 <span class="text-[12px] text-[#16201d] truncate">${a.name}</span></span>
               <span class="text-[10px] text-[#6b7280] shrink-0">${a.type||''}</span></div>`).join('')
-            : '<div class="text-[10px] text-[#c4c9d2] px-2 py-0.5">—</div>'}
+            : '<div class="text-[10px] text-[#c4c9d2] px-2 py-0.5">No appointments</div>'}
         </div>`; }
       body=`${legend}${wk}`;
     } else {
