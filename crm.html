@@ -210,6 +210,12 @@
       <input id="search" class="field flex-1" placeholder="🔍 Search name, DOB, or patient ID…" autocomplete="off">
       <span id="tabs" class="hidden"></span>
     </div>
+    <!-- Expanded-sidebar quick actions: a compact row shown when the patient list is open -->
+    <div id="expandTools" class="flex items-stretch gap-2 px-3 pt-1 pb-2">
+      <button onclick="toggleBoard()" title="Pipeline board" class="relative flex-1 px-2 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7] flex items-center justify-center gap-1">🗂 Board<span id="inqBadgeExpand" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#be123c] text-white text-[10px] font-bold flex items-center justify-center"></span></button>
+      <button onclick="openGlp1Queue()" title="GLP-1 review queue" class="flex-1 px-2 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10 flex items-center justify-center gap-1">💊 GLP-1</button>
+      <button onclick="openBloomQueue()" title="Bloom review queue" class="flex-1 px-2 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10 flex items-center justify-center gap-1">🌱 Bloom</button>
+    </div>
     <!-- Collapsed-rail quick actions: only visible when the patient list is collapsed -->
     <div id="railTools" class="hidden flex-col items-center gap-2 py-2 border-b border-[#e6e9ee]">
       <button onclick="toggleBoard()" title="Pipeline board" class="relative w-10 h-10 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-lg hover:bg-[#f1f3f7] flex items-center justify-center">🗂<span id="inqBadgeRail" class="hidden absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-[#be123c] text-white text-[9px] font-bold flex items-center justify-center"></span></button>
@@ -1530,7 +1536,7 @@
   };
   function updateInquiryBadge(){
     const n=patients.filter(p=>stageOf(p)==='new_inquiry').length;
-    [document.getElementById('inqBadge'), document.getElementById('inqBadgeRail')].forEach(b=>{
+    [document.getElementById('inqBadge'), document.getElementById('inqBadgeRail'), document.getElementById('inqBadgeExpand')].forEach(b=>{
       if(!b) return;
       if(n>0){ b.textContent=n; b.classList.remove('hidden'); } else b.classList.add('hidden');
     });
@@ -2374,9 +2380,9 @@ HARD RULES:
     listOpen = !listOpen;
     const grid=document.getElementById('mainGrid'), btn=document.getElementById('listToggle'),
           tabs=document.getElementById('tabs'), list=document.getElementById('list'), today=document.getElementById('todayPanel'),
-          rail=document.getElementById('railTools'), search=document.getElementById('search');
-    if(listOpen){ grid.style.gridTemplateColumns=''; tabs.style.display=''; list.style.display=''; today.style.display=''; search.style.display=''; rail.classList.add('hidden'); rail.classList.remove('flex'); btn.textContent='«'; btn.title='Collapse patient list'; }
-    else { grid.style.gridTemplateColumns='56px 1fr'; tabs.style.display='none'; list.style.display='none'; today.style.display='none'; search.style.display='none'; rail.classList.remove('hidden'); rail.classList.add('flex'); updateInquiryBadge(); btn.textContent='»'; btn.title='Show patient list'; }
+          rail=document.getElementById('railTools'), exp=document.getElementById('expandTools'), search=document.getElementById('search');
+    if(listOpen){ grid.style.gridTemplateColumns=''; tabs.style.display=''; list.style.display=''; today.style.display=''; search.style.display=''; exp.style.display=''; rail.classList.add('hidden'); rail.classList.remove('flex'); updateInquiryBadge(); btn.textContent='«'; btn.title='Collapse patient list'; }
+    else { grid.style.gridTemplateColumns='56px 1fr'; tabs.style.display='none'; list.style.display='none'; today.style.display='none'; search.style.display='none'; exp.style.display='none'; rail.classList.remove('hidden'); rail.classList.add('flex'); updateInquiryBadge(); btn.textContent='»'; btn.title='Show patient list'; }
     syncBodyDock();
   };
   // Show the 3D body dock only when the list is collapsed AND there is room (wide screens).
