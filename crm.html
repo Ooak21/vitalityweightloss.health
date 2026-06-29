@@ -998,13 +998,15 @@
       if(digits.length>=3){ const pd=(p.phone||'').replace(/\D/g,''), dd=(p.dob||'').replace(/\D/g,''); if((pd&&pd.includes(digits))||(dd&&dd.includes(digits))) return true; }
       return false;
     }).sort((a,b)=> new Date(lastActivity(b)).getTime()-new Date(lastActivity(a)).getTime()).slice(0,40);
+    const __todayStart=(()=>{const d=new Date();d.setHours(0,0,0,0);return d.getTime();})();
     listEl.innerHTML = rows.length ? rows.map(p=>{
       const nm=((p.first||'')+' '+(p.last||'')).trim()||p.display_id||'Patient';
       const clin=p.notes&&p.notes.some(n=>n.type==='clinical_ref');
+      const arrived=p.checked_in_at&&p.checked_in_at>=__todayStart;
       return `<div class="row border border-transparent rounded-xl px-3 py-2 mb-0.5 ${p.id===selId?'sel':''}" onclick="select('${p.id}')">
         <div class="flex items-center justify-between gap-2">
           <div class="font-semibold text-[13px] truncate">${esc(nm)} ${clin?'<span class="text-rose-600" title="Open clinical message">⚑</span>':''}${p.review&&p.review.length?'<span class="text-[#9a5a00]" title="Needs clinical review">⚠</span>':''}</div>
-          <span class="badge b-${p.status}">${STAT[p.status]||p.status}</span>
+          <div class="flex items-center gap-1 shrink-0">${arrived?`<span class="badge" style="background:#10b981;color:#fff" title="Checked in ${new Date(p.checked_in_at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}">✓ Arrived</span>`:''}<span class="badge b-${p.status}">${STAT[p.status]||p.status}</span></div>
         </div>
         <div class="flex items-center justify-between mt-0.5 text-[11px] text-[#6b7280]">
           <span>DOB ${p.dob||'—'}</span><span>${PROG[p.program]||'-'}</span>

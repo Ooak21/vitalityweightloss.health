@@ -298,6 +298,12 @@
   async function complete(){
     const btn = document.getElementById('checkinBtn');
     btn.disabled = true; btn.textContent = 'Checking you in…';
+    const arrivalLabel = new Date().toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+    let apptLabel = '';
+    if (patient.appt){
+      const t = new Date(patient.appt.scheduled_at).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+      apptLabel = t + ' ' + (patient.appt.type || 'appointment') + (patient.appt.provider ? ' with ' + patient.appt.provider : '');
+    }
     try {
       const r = await fetch(CONVEX + '/checkin-complete', {
         method:'POST', headers: hdrs(),
@@ -305,6 +311,8 @@
           patient_id: patient.patient_id,
           appt_id: patient.appt ? patient.appt.id : undefined,
           disclosures: DISCLOSURES.map(d => ({ key:d.key, version:d.version })),
+          arrival_label: arrivalLabel,
+          appt_label: apptLabel || undefined,
         }),
       });
       if (r.status === 401){ unauthorized(); return; }
