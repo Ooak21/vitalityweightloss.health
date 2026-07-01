@@ -77,13 +77,14 @@
 </header>
 
 <main>
-  <!-- 0. STAFF LOCK (passcode gate) -->
+  <!-- 0. STAFF LOCK (individual staff sign-in) -->
   <section id="s-lock" class="screen active">
     <h1>Staff sign-in</h1>
-    <p class="sub">Enter the front-desk passcode to start check-in.</p>
-    <input id="passInput" class="lock-input" type="password" inputmode="text" autocomplete="off" autocapitalize="none" placeholder="Passcode" />
+    <p class="sub">Sign in with your Vitality staff account to start check-in.</p>
+    <input id="emailInput" class="lock-input" type="email" inputmode="email" autocomplete="username" autocapitalize="none" placeholder="Email" />
+    <input id="passInput" class="lock-input" type="password" autocomplete="current-password" placeholder="Password" />
     <p class="err" id="lockErr"></p>
-    <button class="btn" onclick="unlock()">Unlock</button>
+    <button class="btn" onclick="unlock()">Sign in</button>
   </section>
 
   <!-- 1. WELCOME -->
@@ -156,11 +157,10 @@
 
 <div class="muted-foot">Vitality Weight Loss · Front Desk Check-In · <span class="lock-link" onclick="lock()">Lock</span></div>
 
-<script>
-  // --- config ---
+<script type="module">
+  // --- config + auth (individual staff sign-in via Convex Auth; same accounts as the CRM) ---
+  import { signIn, getToken as authToken, staffRole, signOut, STORE_STAFF } from './auth-convex.js';
   const CONVEX = 'https://quixotic-cat-492.convex.site';
-  const TOKEN_KEY = 'vit_kiosk_token'; // front-desk passcode, entered once per device, kept in localStorage (never in page source)
-  const getToken = () => localStorage.getItem(TOKEN_KEY) || '';
 
   // --- disclosures (PLACEHOLDER copy — swap with the clinic's real legal text before live patients) ---
   const DISCLOSURES = [
@@ -193,19 +193,31 @@
     go('welcome');
   }
 
-  // --- staff passcode gate ---
+  // --- staff sign-in gate (each staff unlocks with their own Vitality account) ---
   async function unlock(){
-    const pass = document.getElementById('passInput').value.trim();
+    const email = document.getElementById('emailInput').value.trim();
+    const pass = document.getElementById('passInput').value;
     const err = document.getElementById('lockErr'); err.textContent = '';
-    if (!pass){ err.textContent = 'Enter the passcode.'; return; }
+    if (!email || !pass){ err.textContent = 'Enter your email and password.'; return; }
+    const btn = document.querySelector('#s-lock .btn'); btn.disabled = true; const label = btn.textContent; btn.textContent = 'Signing in…';
     try {
-      const r = await fetch(CONVEX + '/checkin-auth', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + pass } });
-      if (r.ok){ localStorage.setItem(TOKEN_KEY, pass); document.getElementById('passInput').value = ''; reset(); }
-      else { err.textContent = 'Incorrect passcode.'; }
-    } catch(e){ err.textContent = 'Network error. Try again.'; }
+      await signIn(email, pass, STORE_STAFF);
+      const role = await staffRole(STORE_STAFF);
+      if (!role){ await signOut(STORE_STAFF); err.textContent = 'That account is not authorized for check-in.'; return; }
+      document.getElementById('emailInput').value = ''; document.getElementById('passInput').value = '';
+      armIdleLock(); reset();
+    } catch(e){ err.textContent = 'Sign-in failed. Check your email and password.'; }
+    finally { btn.disabled = false; btn.textContent = label; }
   }
-  function lock(){ localStorage.removeItem(TOKEN_KEY); digits = ''; patient = null; agreed = {}; renderPhone(); go('lock'); }
-  function unauthorized(){ lock(); document.getElementById('lockErr').textContent = 'Session expired — please sign in again.'; }
+  async function lock(){ try { await signOut(STORE_STAFF); } catch(_){} clearTimeout(idleTimer); digits = ''; patient = null; agreed = {}; renderPhone(); go('lock'); }
+  function unauthorized(){ lock(); document.getElementById('lockErr').textContent = 'Session ended — please sign in again.'; }
+
+  // Auto-lock a walked-away iPad: after inactivity, sign the staff member out so the next
+  // person must sign in with their own account (keeps per-user accountability on a shared device).
+  let idleTimer = null;
+  const IDLE_MS = 20 * 60 * 1000;
+  function armIdleLock(){ resetIdle(); ['click','touchstart','keydown'].forEach(ev => document.addEventListener(ev, resetIdle, { passive:true })); }
+  function resetIdle(){ clearTimeout(idleTimer); idleTimer = setTimeout(() => { lock(); document.getElementById('lockErr').textContent = 'Locked after inactivity — please sign in again.'; }, IDLE_MS); }
 
   // --- phone keypad ---
   function renderPhone(){
@@ -239,7 +251,7 @@
     const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     try {
       const r = await fetch(CONVEX + '/checkin-lookup', {
-        method:'POST', headers: hdrs(),
+        method:'POST', headers: await hdrs(),
         body: JSON.stringify({ phone: digits, day_start: dayStart, day_end: dayStart + 86400000 }),
       });
       if (r.status === 401){ unauthorized(); return; }
@@ -306,7 +318,7 @@
     }
     try {
       const r = await fetch(CONVEX + '/checkin-complete', {
-        method:'POST', headers: hdrs(),
+        method:'POST', headers: await hdrs(),
         body: JSON.stringify({
           patient_id: patient.patient_id,
           appt_id: patient.appt ? patient.appt.id : undefined,
@@ -326,17 +338,22 @@
     }
   }
 
-  function hdrs(){
+  async function hdrs(){
     const h = { 'Content-Type':'application/json' };
-    const t = getToken();
+    const t = await authToken(STORE_STAFF);
     if (t) h['Authorization'] = 'Bearer ' + t;
     return h;
   }
 
-  // --- boot: signed-in devices skip the lock; everyone else hits the passcode ---
+  // --- boot: a valid staff session skips the lock; everyone else signs in ---
+  document.getElementById('emailInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('passInput').focus(); });
   document.getElementById('passInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(); });
   renderPhone();
-  if (getToken()) reset(); else go('lock');
+  (async () => { const role = await staffRole(STORE_STAFF); if (role){ armIdleLock(); reset(); } else { go('lock'); } })();
+
+  // Expose handlers for the inline onclick attributes (module scope is not global).
+  window.go = go; window.tap = tap; window.del = del; window.lookup = lookup;
+  window.reset = reset; window.complete = complete; window.unlock = unlock; window.lock = lock;
 </script>
 </body>
 </html>
