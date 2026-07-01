@@ -1166,7 +1166,7 @@
           <div>
             <div class="text-[10px] font-semibold tracking-[.14em] text-[#9aa0ab] uppercase mb-1.5">Plans</div>
             <div class="flex gap-2 flex-wrap items-center">
-              <button onclick="importScan()" title="Upload an InBody scan for this patient, then generate the plan" class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">⬆ Import InBody scan</button>
+              <button id="importBtn" onclick="importScan()" title="Upload an InBody scan for this patient, then generate the plan" class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">⬆ Import InBody scan</button>
               <div class="relative inline-block menu-wrap">
                 <span class="inline-flex rounded-xl border border-[#0a6cf5]/40 overflow-hidden">
                   <button onclick="generatePlan('${p.id}', false, this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ ${p.plan?'Regenerate plan':'Generate plan'}</button>
@@ -1533,7 +1533,7 @@
   };
   window.openFromBoard=function(id){
     boardOpen=false; document.getElementById('boardPane').classList.add('hidden');
-    const btn=document.getElementById('boardToggle'); btn.classList.remove('bg-[#0a6cf5]','text-white'); btn.childNodes[0].nodeValue='🗂 Board';
+    const btn=document.getElementById('boardToggle'); if(btn){ btn.classList.remove('bg-[#0a6cf5]','text-white'); btn.childNodes[0].nodeValue='🗂 Board'; }
     setViewMode('crm'); select(id);
   };
   function updateInquiryBadge(){
@@ -1561,7 +1561,7 @@
     document.querySelectorAll('.sec-btn').forEach(b=>{const on=b.dataset.sec===sec;b.classList.toggle('bg-[#16201d]',on);b.classList.toggle('text-white',on);b.classList.toggle('text-[#4b5563]',!on);});
     document.querySelectorAll('.pt-only').forEach(e=>e.classList.toggle('hidden',sec!=='patients'));
     document.querySelectorAll('.rf-only').forEach(e=>e.classList.toggle('hidden',sec!=='referrals'));
-    if(boardOpen){ boardOpen=false; document.getElementById('boardPane').classList.add('hidden'); const bt=document.getElementById('boardToggle'); bt.classList.remove('bg-[#0a6cf5]','text-white'); bt.childNodes[0].nodeValue='🗂 Board'; }
+    if(boardOpen){ boardOpen=false; document.getElementById('boardPane').classList.add('hidden'); const bt=document.getElementById('boardToggle'); if(bt){ bt.classList.remove('bg-[#0a6cf5]','text-white'); bt.childNodes[0].nodeValue='🗂 Board'; } }
     const s=$('#search'); s.value=''; s.placeholder = sec==='referrals' ? '🔍 Search practice, doctor, or city…' : '🔍 Search name, DOB, or patient ID…';
     if(sec==='referrals') loadReferrals();
     renderList(); renderDetail();
@@ -1629,7 +1629,7 @@
       <div class="flex items-center justify-between mt-1.5 text-[10px] gap-1">${p.referral_count?`<span class="text-[#0a7a3d]">${p.referral_count} referred</span>`:'<span></span>'}${overdue?'<span class="text-[#be123c] flex-shrink-0" title="Overdue for a check-in">● check in</span>':(p.last_touch_at?`<span class="text-[#9aa0ab] flex-shrink-0">${rel(new Date(p.last_touch_at).toISOString())}</span>`:'')}</div>
     </div>`;
   }
-  window.openRefFromBoard=function(id){ boardOpen=false; document.getElementById('boardPane').classList.add('hidden'); const bt=document.getElementById('boardToggle'); bt.classList.remove('bg-[#0a6cf5]','text-white'); bt.childNodes[0].nodeValue='🗂 Board'; select(id); };
+  window.openRefFromBoard=function(id){ boardOpen=false; document.getElementById('boardPane').classList.add('hidden'); const bt=document.getElementById('boardToggle'); if(bt){ bt.classList.remove('bg-[#0a6cf5]','text-white'); bt.childNodes[0].nodeValue='🗂 Board'; } select(id); };
 
   function prRow(p,field,label){ const v=p[field]; const disp=v?esc(String(v)):'<span class="text-[#9aa0ab] italic">add…</span>'; return `<div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">${label}</span><span class="text-sm text-[#16201d] cursor-text hover:bg-[#f4f6f8] rounded px-1.5 py-0.5 -mr-1" title="Click to edit" data-val="${esc(v?String(v):'')}" onclick="prEdit(this,'${p.id}','${field}')">${disp}</span></div>`; }
   function refNoteRow(n){ return `<div class="flex gap-3 pb-4"><div class="flex flex-col items-center"><div class="w-2 h-2 rounded-full bg-[#0a6cf5] mt-1.5"></div><div class="w-px flex-1 bg-[#e6e9ee] mt-1"></div></div><div class="flex-1 -mt-0.5"><div class="flex items-center gap-2 text-xs text-[#6b7280]"><span>${REF_KIND[n.kind]||'📝'}</span><span class="font-semibold text-[#3d4a45] capitalize">${n.kind}</span>${n.author?`<span>· ${esc(n.author)}</span>`:''}<span>· ${rel(new Date(n.ts).toISOString())}</span></div><div class="text-sm text-[#16201d] mt-1 leading-relaxed">${esc(n.body)}</div></div></div>`; }
