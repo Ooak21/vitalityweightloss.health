@@ -140,11 +140,15 @@
       <button onclick="setViewMode('provider')" data-mode="provider" class="vm-btn px-3 py-2 text-[#4b5563] border-l border-[#e6e9ee]">Provider</button>
       <button onclick="setViewMode('portal')" data-mode="portal" class="vm-btn px-3 py-2 text-[#4b5563] border-l border-[#e6e9ee]">Patient Portal</button>
     </div>
-    <a href="templates.html" class="text-xs text-[#6b7280] hover:text-[#16201d]" title="Email Template Library">✉ Templates</a>
-    <a href="sequences.html" class="text-xs text-[#6b7280] hover:text-[#16201d]" title="Sequences">⇢ Sequences</a>
-    <a href="admin.html" class="text-xs text-[#6b7280] hover:text-[#16201d]" title="Admin & Operations (admins only)">⚙ Admin</a>
-    <button onclick="(window.__vca?window.__vca.signOut():(window.__vitSb?window.__vitSb.auth.signOut():Promise.resolve())).then(()=>location.replace('login.html'))" class="text-xs text-[#6b7280] hover:text-[#16201d]">Sign out</button>
-    <div id="userAvatar" title="Signed in" class="w-8 h-8 rounded-full bg-[#f1f3f7] border border-[#e6e9ee] flex items-center justify-center text-xs font-semibold text-[#4b5563]">··</div>
+    <div class="flex items-center gap-4 pl-4 ml-1 border-l border-[#e6e9ee]">
+      <a href="templates.html" class="text-xs font-medium text-[#6b7280] hover:text-[#0a6cf5] transition-colors" title="Email Template Library">Templates</a>
+      <a href="sequences.html" class="text-xs font-medium text-[#6b7280] hover:text-[#0a6cf5] transition-colors" title="Sequences">Sequences</a>
+      <a href="admin.html" class="text-xs font-medium text-[#6b7280] hover:text-[#0a6cf5] transition-colors" title="Admin & Operations (admins only)">Admin</a>
+    </div>
+    <div class="flex items-center gap-3 pl-4 ml-1 border-l border-[#e6e9ee]">
+      <button onclick="(window.__vca?window.__vca.signOut():(window.__vitSb?window.__vitSb.auth.signOut():Promise.resolve())).then(()=>location.replace('login.html'))" class="text-xs font-medium text-[#6b7280] hover:text-[#0a6cf5] transition-colors">Sign out</button>
+      <div id="userAvatar" title="Signed in" class="w-8 h-8 rounded-full bg-[#f1f3f7] border border-[#e6e9ee] flex items-center justify-center text-xs font-semibold text-[#4b5563]">··</div>
+    </div>
   </div>
 </div>
 
