@@ -15,6 +15,8 @@
 - Stripe checkout: `POST {convex.site}/pay-stripe`
 - Lead capture: `POST {convex.site}/lead`
 - Athena middleware: proxied through Convex site URL (see `glp1.html`)
+- Google Calendar sync: Convex `gcal.ts` (not in this repo — lives on the
+  Convex deployment). See "Calendar integration" below.
 
 ## Third-party vendors (see `admin.html` vendor tracker for full detail)
 - **Stripe** — payments, via Convex HTTP action
@@ -40,6 +42,28 @@
   (HubSpot-style), Telnyx call reporting/CSV export
 - Importer supports HubSpot/Apollo CSV exports (underscore/space header
   normalization, segment column)
+
+## Calendar integration (GitHub issue #3, open, assigned to Miguel)
+Google Calendar two-way sync between CRM appointments and each provider's
+Google Calendar. Backend lives in Convex (`gcal.ts`), not in this repo.
+Frontend consumer is `crm.html`'s schedule (`renderSchedule`).
+
+- **Code-shielded by design**: CRM-origin events on Google carry only
+  `"Consult · Patient #ref"` — never a patient name (no PHI on Google).
+- External/personal events on a provider's Google calendar surface in the CRM
+  only as opaque grey "Busy" blocks (free/busy), never pulled into Vitality's
+  data model.
+- **Phase 2a (enablement) — DONE, confirmed live by Luis (2026-07-01)**:
+  service-account JWT-bearer auth w/ domain-wide delegation, secrets set on
+  Convex, outbound `syncAppointment` (create/patch/delete on book/update/
+  cancel) verified working end to end.
+- **Phase 2b (inbound + busy overlay, not yet done)**: frontend "Busy" overlay
+  in `crm.html` `renderSchedule` fed by a `/gcal-freebusy` route; backend
+  Google push-notification watch channels per provider calendar →
+  `/gcal-webhook` route; incremental sync via syncToken; loop-prevention; cron
+  channel renewal.
+- Per-provider calendars, mapped via `GCAL_PROVIDER_MAP` (no shared clinic
+  calendar, unless that changes later).
 
 ## Open compliance items
 - Resend: non-PHI only; move clinical email to a BAA provider before sending

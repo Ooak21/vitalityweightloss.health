@@ -10,6 +10,9 @@ Convex deployment for auth, data, and server-side integrations.
 - Auth: `@convex-dev/auth` Password provider (see `auth-convex.js`) — replaced a
   prior Supabase JWT bridge; identity now lives entirely on Convex
 - Payments: Stripe, proxied through a Convex HTTP action (`/pay-stripe`)
+- Calendar: Google Calendar sync lives on Convex (`gcal.ts`), not in this repo.
+  Outbound sync (CRM → Google) is live. Inbound + busy overlay (phase 2b) is
+  not yet built. See GitHub issue #3 and `docs/REFERENCE.md`.
 - Voice: Telnyx AI receptionist (admin-only booking/hours/location line)
 - Email: Resend (non-PHI patient/provider email only)
 - Hosting: GitHub Pages (see `CNAME`), repo `Ooak21/vitalityweightloss.health`
