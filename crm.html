@@ -730,6 +730,55 @@
   const calSameDay=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
   function calStartOfWeek(d){ const x=new Date(d.getFullYear(),d.getMonth(),d.getDate()); x.setDate(x.getDate()-x.getDay()); return x; }
   function calAllAppts(){ const out=[]; patients.forEach(p=>(p.appts||[]).forEach(a=>{ if(!a||!a.when) return; out.push({id:a.id,when:a.when,dt:new Date(a.when),type:a.type,provider:a.provider,duration:a.duration_min,pid:p.id,name:(p.first+' '+p.last).trim()}); })); return out; }
+
+  // Google Calendar "Busy" overlay (phase 2b) — external busy time for each provider, fetched
+  // on-demand from the existing /gcal-freebusy route whenever the visible range changes. No
+  // event details ever come back, just opaque busy intervals keyed by provider display name.
+  let gcalBusy = {};      // { providerName: [{start,end}, ...] }
+  let gcalBusyKey = '';   // dedupe key (view+cursor+providers) to avoid refetch loops on repaint
+  function calRange(){
+    if(calView==='month'){
+      const y=calCursor.getFullYear(), m=calCursor.getMonth();
+      return { timeMin: new Date(y,m,1).toISOString(), timeMax: new Date(y,m+1,1).toISOString() };
+    } else if(calView==='week'){
+      const ws=calStartOfWeek(calCursor), we=new Date(ws); we.setDate(ws.getDate()+7);
+      return { timeMin: ws.toISOString(), timeMax: we.toISOString() };
+    } else {
+      const ds=new Date(calCursor.getFullYear(),calCursor.getMonth(),calCursor.getDate());
+      const de=new Date(ds); de.setDate(ds.getDate()+1);
+      return { timeMin: ds.toISOString(), timeMax: de.toISOString() };
+    }
+  }
+  async function calFetchBusy(provs){
+    if(!provs.length){ gcalBusy={}; return; }
+    const { timeMin, timeMax } = calRange();
+    const key = `${calView}|${calCursor.getTime()}|${provs.slice().sort().join(',')}`;
+    if(key===gcalBusyKey) return;
+    gcalBusyKey = key;
+    try{
+      const r = await fetch(`${CONVEX_URL}/gcal-freebusy`, { method:'POST', headers: await convexHeaders(), body: JSON.stringify({ providers: provs, timeMin, timeMax }) });
+      const j = await r.json();
+      gcalBusy = (j.ok && j.configured) ? (j.busy||{}) : {};
+    } catch(e){ gcalBusy = {}; }
+    renderToday();
+  }
+  function calBusyOn(day){
+    const out=[];
+    for(const [provider, ranges] of Object.entries(gcalBusy)){
+      for(const b of (ranges||[])){
+        const s=new Date(b.start), e=new Date(b.end);
+        if(calSameDay(s,day) || (s<day && e>day)) out.push({provider, s, e});
+      }
+    }
+    return out.sort((a,b)=>a.s-b.s);
+  }
+  function calBusyRow(b){
+    const time=b.s.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    return `<div class="flex items-center gap-2 py-1.5 px-2 rounded-lg opacity-70">
+      <span class="text-[11px] font-semibold text-[#9aa0ab] w-14 shrink-0 whitespace-nowrap">${time}</span>
+      <span class="w-2 h-2 rounded-full shrink-0" style="background:${provColor(b.provider)}" title="${b.provider}"></span>
+      <span class="text-[12px] text-[#9aa0ab] truncate">Busy · ${b.provider}</span></div>`;
+  }
   window.calSetView = function(v){ calView=v; if(v==='day') calCursor=new Date(calSel); renderToday(); };
   window.calNav = function(delta){ const d=new Date(calCursor); if(calView==='month') d.setMonth(d.getMonth()+delta); else if(calView==='week') d.setDate(d.getDate()+7*delta); else d.setDate(d.getDate()+delta); calCursor=d; if(calView==='day') calSel=new Date(d); renderToday(); };
   window.calToday = function(){ calCursor=new Date(); calSel=new Date(); renderToday(); };
@@ -749,6 +798,7 @@
     const el=document.getElementById('todayPanel'); if(!el) return;
     const today=new Date(), appts=calAllAppts();
     const provs=[...new Set(appts.map(a=>a.provider).filter(Boolean))];
+    calFetchBusy(provs);
     const legend = provs.length ? `<div class="flex flex-wrap gap-x-2 gap-y-0.5 px-1 mb-2">${provs.map(p=>`<span class="inline-flex items-center gap-1 text-[9px] text-[#6b7280]"><span class="w-1.5 h-1.5 rounded-full" style="background:${provColor(p)}"></span>${p}</span>`).join('')}</div>` : '';
     let label;
     if(calView==='month') label=calCursor.toLocaleDateString('en-US',{month:'long',year:'numeric'});
@@ -772,22 +822,26 @@
       const startDay=new Date(y,m,1).getDay(), dim=new Date(y,m+1,0).getDate();
       const byDay={}; appts.forEach(a=>{ if(a.dt.getFullYear()===y&&a.dt.getMonth()===m){ (byDay[a.dt.getDate()]=byDay[a.dt.getDate()]||[]).push(a); } });
       let cells=''; for(let i=0;i<startDay;i++) cells+='<div></div>';
-      for(let d=1;d<=dim;d++){ const cur=new Date(y,m,d), isToday=calSameDay(cur,today), isSel=calSameDay(cur,calSel), n=(byDay[d]||[]).length;
+      for(let d=1;d<=dim;d++){ const cur=new Date(y,m,d), isToday=calSameDay(cur,today), isSel=calSameDay(cur,calSel), n=(byDay[d]||[]).length, isBusy=calBusyOn(cur).length>0;
         let cls='text-[#3d4a45]'; if(isSel) cls='bg-[#0a6cf5] text-white font-semibold'; else if(isToday) cls='text-[#0a6cf5] font-semibold ring-1 ring-inset ring-[#0a6cf5]/40';
-        cells+=`<div onclick="calPick(${cur.getTime()})" title="${n?n+' appointment'+(n===1?'':'s'):''}" class="text-center rounded-md cursor-pointer hover:bg-[#f1f3f7] py-1 ${cls}">
+        cells+=`<div onclick="calPick(${cur.getTime()})" title="${n?n+' appointment'+(n===1?'':'s'):''}${isBusy?' · provider busy':''}" class="text-center rounded-md cursor-pointer hover:bg-[#f1f3f7] py-1 ${cls}">
           <div class="text-[12px] leading-tight">${d}</div>
-          <div class="text-[9px] leading-none h-2.5 ${isSel?'text-white/85':'text-[#9aa0ab]'}">${n||''}</div></div>`; }
+          <div class="text-[9px] leading-none h-2.5 ${isSel?'text-white/85':'text-[#9aa0ab]'}">${n||''}</div>
+          <div class="h-0.5 mx-2 rounded-full ${isBusy?(isSel?'bg-white/60':'bg-[#c4c9d2]'):''}"></div></div>`; }
       const dow=['S','M','T','W','T','F','S'].map(x=>`<div>${x}</div>`).join('');
       const selList=appts.filter(a=>calSameDay(a.dt,calSel)).sort((x,y)=>x.dt-y.dt);
+      const selBusy=calBusyOn(calSel);
       const selHdr=calSameDay(calSel,today)?'Appointments today':`Appointments · ${calSel.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}`;
       body=`<div class="grid grid-cols-7 gap-0.5 text-[10px] text-[#9aa0ab] text-center mb-0.5">${dow}</div>
         <div class="grid grid-cols-7 gap-0.5 mb-2">${cells}</div>${legend}
         <div class="text-[12px] font-semibold tracking-wide text-[#6b7280] uppercase mb-1">${selHdr}</div>
-        ${selList.length? selList.map(calApptRow).join('') : '<div class="text-xs text-[#9aa0ab] py-1.5">No appointments this day.</div>'}`;
+        ${selList.length? selList.map(calApptRow).join('') : '<div class="text-xs text-[#9aa0ab] py-1.5">No appointments this day.</div>'}
+        ${selBusy.map(calBusyRow).join('')}`;
     } else if(calView==='week'){
       const ws=calStartOfWeek(calCursor); let wk='';
       for(let i=0;i<7;i++){ const day=new Date(ws); day.setDate(ws.getDate()+i); const isToday=calSameDay(day,today);
         const ds=appts.filter(a=>calSameDay(a.dt,day)).sort((x,y)=>x.dt-y.dt);
+        const db=calBusyOn(day);
         wk+=`<div class="mb-1.5">
           <div class="flex items-center justify-between px-1 py-0.5 rounded-md ${isToday?'bg-[#eef4ff]':''}">
             <span class="text-[12px] font-semibold uppercase tracking-wide ${isToday?'text-[#0a6cf5]':'text-[#16201d]'}">${day.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</span>
@@ -799,12 +853,14 @@
                 <span class="w-2 h-2 rounded-full shrink-0" style="background:${provColor(a.provider)}" title="${a.provider||''}"></span>
                 <span class="text-[12px] text-[#16201d] truncate">${a.name}</span></span>
               <span class="text-[10px] text-[#6b7280] shrink-0">${a.type||''}</span></div>`).join('')
-            : '<div class="text-[10px] text-[#c4c9d2] px-2 py-0.5">No appointments</div>'}
+            : (db.length? '' : '<div class="text-[10px] text-[#c4c9d2] px-2 py-0.5">No appointments</div>')}
+          ${db.map(calBusyRow).join('')}
         </div>`; }
       body=`${legend}${wk}`;
     } else {
       const ds=appts.filter(a=>calSameDay(a.dt,calCursor)).sort((x,y)=>x.dt-y.dt);
-      body=`${legend}${ds.length? ds.map(calApptRow).join('') : '<div class="text-xs text-[#9aa0ab] py-3 text-center">No appointments this day.</div>'}`;
+      const db=calBusyOn(calCursor);
+      body=`${legend}${ds.length? ds.map(calApptRow).join('') : (db.length? '' : '<div class="text-xs text-[#9aa0ab] py-3 text-center">No appointments this day.</div>')}${db.map(calBusyRow).join('')}`;
     }
     el.innerHTML=head+body;
   }
