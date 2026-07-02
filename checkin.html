@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Vitality · Check In</title>
+<!-- PWA / iPad home-screen (tap the icon -> fullscreen, no Safari chrome) -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Check In" />
+<meta name="theme-color" content="#0a6cf5" />
+<link rel="apple-touch-icon" href="assets/logo-icon.png" />
+<link rel="icon" href="assets/favicon.png" />
+<style>
+  :root{
+    --blue:#0a6cf5; --blue-dark:#0852c4; --ink:#16201d; --muted:#6b7280;
+    --line:#e6e9ee; --surface:#f7f8fa; --ok:#10b981; --bg:#ffffff;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; height:100%; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-user-select:none; user-select:none; overflow:hidden;}
+  body{display:flex; flex-direction:column; min-height:100vh;}
+  header{display:flex; align-items:center; justify-content:center; gap:12px; padding:24px;}
+  header img{height:42px; width:auto;}
+  header b{font-size:22px; letter-spacing:.3px;}
+  main{flex:1; display:flex; align-items:center; justify-content:center; padding:0 28px 40px;}
+  .screen{display:none; width:100%; max-width:680px; text-align:center; animation:fade .25s ease;}
+  .screen.active{display:block;}
+  @keyframes fade{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
+  h1{font-size:40px; line-height:1.1; margin:0 0 12px; font-weight:800;}
+  .sub{font-size:20px; color:var(--muted); margin:0 0 36px;}
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:10px;
+    border:none; border-radius:18px; font-size:24px; font-weight:700; padding:24px 40px;
+    background:var(--blue); color:#fff; cursor:pointer; transition:transform .08s, background .15s; width:100%;}
+  .btn:active{transform:scale(.98); background:var(--blue-dark);}
+  .btn[disabled]{background:#c7d2e2; cursor:default;}
+  .btn.ghost{background:var(--surface); color:var(--ink); font-weight:600; font-size:20px; padding:18px;}
+  .btn.ghost:active{background:#e9edf3;}
+  .row{display:flex; gap:14px; margin-top:16px;}
+  /* staff passcode lock */
+  .lock-input{font-size:28px; padding:18px 20px; border:2px solid var(--line); border-radius:14px;
+    width:100%; max-width:420px; text-align:center; letter-spacing:1px; margin:0 auto 14px; display:block;}
+  .lock-input:focus{outline:none; border-color:var(--blue);}
+  .err{color:#e11d48; font-size:16px; margin:0 0 14px; min-height:22px;}
+  /* phone keypad */
+  .phone-display{font-size:44px; font-weight:700; letter-spacing:2px; height:60px; margin:0 0 8px; min-height:60px;}
+  .phone-display .ph{color:#c7d2e2;}
+  .keypad{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; max-width:420px; margin:24px auto 0;}
+  .key{font-size:32px; font-weight:600; padding:22px 0; border-radius:16px; background:var(--surface);
+    border:1px solid var(--line); cursor:pointer; transition:transform .06s, background .12s;}
+  .key:active{transform:scale(.95); background:#e9edf3;}
+  /* disclosures */
+  .disc{text-align:left; border:1px solid var(--line); border-radius:18px; padding:0; margin:0 0 16px; overflow:hidden;}
+  .disc-head{display:flex; align-items:center; justify-content:space-between; padding:18px 22px; background:var(--surface);}
+  .disc-head h3{margin:0; font-size:20px;}
+  .disc-body{max-height:170px; overflow-y:auto; padding:16px 22px; font-size:15px; line-height:1.5; color:#374151; -webkit-user-select:text; user-select:text; border-top:1px solid var(--line);}
+  .agree{display:flex; align-items:center; gap:14px; padding:18px 22px; border-top:1px solid var(--line); cursor:pointer; font-size:18px; font-weight:600;}
+  .check{width:34px; height:34px; border-radius:9px; border:2px solid #c7d2e2; flex:0 0 auto; display:flex; align-items:center; justify-content:center; transition:.15s;}
+  .agree.on .check{background:var(--ok); border-color:var(--ok);}
+  .check svg{width:20px; height:20px; opacity:0; transition:.15s;}
+  .agree.on .check svg{opacity:1;}
+  .progress{font-size:15px; color:var(--muted); margin:0 0 18px;}
+  .disc-scroll{max-height:58vh; overflow-y:auto; padding:2px; margin-bottom:20px; -webkit-overflow-scrolling:touch;}
+  .badge{width:110px; height:110px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 28px;}
+  .badge.ok{background:rgba(16,185,129,.12);}
+  .badge.warn{background:rgba(245,158,11,.14);}
+  .badge svg{width:60px; height:60px;}
+  .muted-foot{position:fixed; bottom:14px; left:0; right:0; text-align:center; font-size:12px; color:#c7d2e2;}
+  .muted-foot .lock-link{cursor:pointer; text-decoration:underline;}
+</style>
+</head>
+<body>
+<header>
+  <img src="assets/logo-icon.png" alt="Vitality" />
+  <b>Vitality</b>
+</header>
+
+<main>
+  <!-- 0. STAFF LOCK (individual staff sign-in) -->
+  <section id="s-lock" class="screen active">
+    <h1>Staff sign-in</h1>
+    <p class="sub">Sign in with your Vitality staff account to start check-in.</p>
+    <input id="emailInput" class="lock-input" type="email" inputmode="email" autocomplete="username" autocapitalize="none" placeholder="Email" />
+    <input id="passInput" class="lock-input" type="password" autocomplete="current-password" placeholder="Password" />
+    <p class="err" id="lockErr"></p>
+    <button class="btn" onclick="unlock()">Sign in</button>
+  </section>
+
+  <!-- 1. WELCOME -->
+  <section id="s-welcome" class="screen">
+    <h1>Welcome to Vitality</h1>
+    <p class="sub">Let's get you checked in for your visit.</p>
+    <button class="btn" onclick="go('phone')">Tap to check in</button>
+  </section>
+
+  <!-- 2. PHONE -->
+  <section id="s-phone" class="screen">
+    <h1>Enter your phone number</h1>
+    <p class="sub">We'll use it to find your appointment.</p>
+    <div class="phone-display" id="phoneDisplay"></div>
+    <div class="keypad">
+      <div class="key" onclick="tap('1')">1</div>
+      <div class="key" onclick="tap('2')">2</div>
+      <div class="key" onclick="tap('3')">3</div>
+      <div class="key" onclick="tap('4')">4</div>
+      <div class="key" onclick="tap('5')">5</div>
+      <div class="key" onclick="tap('6')">6</div>
+      <div class="key" onclick="tap('7')">7</div>
+      <div class="key" onclick="tap('8')">8</div>
+      <div class="key" onclick="tap('9')">9</div>
+      <div class="key" onclick="del()">⌫</div>
+      <div class="key" onclick="tap('0')">0</div>
+      <div class="key" onclick="go('welcome')">✕</div>
+    </div>
+    <div class="row">
+      <button class="btn" id="findBtn" disabled onclick="lookup()">Find me</button>
+    </div>
+  </section>
+
+  <!-- 3. CONFIRM -->
+  <section id="s-confirm" class="screen">
+    <h1 id="confirmName">Welcome back!</h1>
+    <p class="sub" id="confirmAppt"></p>
+    <button class="btn" onclick="go('disclosures')">Yes, that's me</button>
+    <button class="btn ghost" style="margin-top:14px" onclick="reset()">Not me / start over</button>
+  </section>
+
+  <!-- 4. DISCLOSURES -->
+  <section id="s-disclosures" class="screen">
+    <h1>A few quick disclosures</h1>
+    <p class="progress" id="discProgress">Please review and agree to each.</p>
+    <div class="disc-scroll" id="discList"></div>
+    <button class="btn" id="checkinBtn" disabled onclick="complete()">Check in</button>
+  </section>
+
+  <!-- 5. DONE -->
+  <section id="s-done" class="screen">
+    <div class="badge ok">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+    </div>
+    <h1>You're checked in</h1>
+    <p class="sub">Please have a seat. We'll call you shortly.</p>
+    <button class="btn ghost" onclick="reset()">Done</button>
+  </section>
+
+  <!-- NOT FOUND -->
+  <section id="s-notfound" class="screen">
+    <div class="badge warn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <h1>We couldn't find you</h1>
+    <p class="sub">No worries. Please see the front desk and we'll get you taken care of.</p>
+    <button class="btn ghost" onclick="reset()">Start over</button>
+  </section>
+</main>
+
+<div class="muted-foot">Vitality Weight Loss · Front Desk Check-In · <span class="lock-link" onclick="lock()">Lock</span></div>
+
+<script type="module">
+  // --- config + auth (individual staff sign-in via Convex Auth; same accounts as the CRM) ---
+  import { signIn, getToken as authToken, staffRole, signOut, STORE_STAFF } from './auth-convex.js';
+  const CONVEX = 'https://quixotic-cat-492.convex.site';
+
+  // --- disclosures (PLACEHOLDER copy — swap with the clinic's real legal text before live patients) ---
+  const DISCLOSURES = [
+    { key:'npp', version:'v1', title:'HIPAA Notice of Privacy Practices',
+      body:'PLACEHOLDER. This acknowledges that you have been offered Vitality Weight Loss’s Notice of Privacy Practices, which describes how your protected health information may be used and disclosed and how you can access that information. Replace this text with the clinic’s official Notice acknowledgment.' },
+    { key:'treat', version:'v1', title:'Consent to Treat',
+      body:'PLACEHOLDER. You voluntarily consent to evaluation and treatment by the providers and staff of Vitality Weight Loss as part of your care. Replace this text with the clinic’s official consent-to-treat language.' },
+    { key:'financial', version:'v1', title:'Financial / No-show Policy',
+      body:'PLACEHOLDER. You understand you are financially responsible for services rendered, and that missed or late-cancelled appointments may be subject to a fee per clinic policy. Replace this text with the clinic’s official financial and no-show policy.' },
+    { key:'telehealth', version:'v1', title:'Telehealth Consent',
+      body:'PLACEHOLDER. You consent to receive care via telehealth where appropriate, understanding its benefits and limitations. Replace this text with the clinic’s official telehealth consent language.' },
+  ];
+
+  // --- state ---
+  let digits = '';
+  let patient = null;
+  let agreed = {};
+  let resetTimer = null;
+
+  function go(name){
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('s-' + name).classList.add('active');
+    clearTimeout(resetTimer);
+    if (name === 'done') resetTimer = setTimeout(reset, 12000);
+    if (name === 'disclosures') renderDisclosures();
+  }
+  function reset(){ // back to a fresh patient — does NOT sign the device out
+    digits = ''; patient = null; agreed = {};
+    renderPhone();
+    go('welcome');
+  }
+
+  // --- staff sign-in gate (each staff unlocks with their own Vitality account) ---
+  async function unlock(){
+    const email = document.getElementById('emailInput').value.trim();
+    const pass = document.getElementById('passInput').value;
+    const err = document.getElementById('lockErr'); err.textContent = '';
+    if (!email || !pass){ err.textContent = 'Enter your email and password.'; return; }
+    const btn = document.querySelector('#s-lock .btn'); btn.disabled = true; const label = btn.textContent; btn.textContent = 'Signing in…';
+    try {
+      await signIn(email, pass, STORE_STAFF);
+      const role = await staffRole(STORE_STAFF);
+      if (!role){ await signOut(STORE_STAFF); err.textContent = 'That account is not authorized for check-in.'; return; }
+      document.getElementById('emailInput').value = ''; document.getElementById('passInput').value = '';
+      armIdleLock(); reset();
+    } catch(e){ err.textContent = 'Sign-in failed. Check your email and password.'; }
+    finally { btn.disabled = false; btn.textContent = label; }
+  }
+  async function lock(){ try { await signOut(STORE_STAFF); } catch(_){} clearTimeout(idleTimer); digits = ''; patient = null; agreed = {}; renderPhone(); go('lock'); }
+  function unauthorized(){ lock(); document.getElementById('lockErr').textContent = 'Session ended — please sign in again.'; }
+
+  // Auto-lock a walked-away iPad: after inactivity, sign the staff member out so the next
+  // person must sign in with their own account (keeps per-user accountability on a shared device).
+  let idleTimer = null;
+  const IDLE_MS = 20 * 60 * 1000;
+  function armIdleLock(){ resetIdle(); ['click','touchstart','keydown'].forEach(ev => document.addEventListener(ev, resetIdle, { passive:true })); }
+  function resetIdle(){ clearTimeout(idleTimer); idleTimer = setTimeout(() => { lock(); document.getElementById('lockErr').textContent = 'Locked after inactivity — please sign in again.'; }, IDLE_MS); }
+
+  // --- phone keypad ---
+  function renderPhone(){
+    const d = document.getElementById('phoneDisplay');
+    const f = fmt(digits);
+    d.innerHTML = f.shown + '<span class="ph">' + f.ph + '</span>';
+    document.getElementById('findBtn').disabled = digits.length !== 10;
+  }
+  function fmt(s){
+    const t = '(___) ___-____';
+    let shown = '', ph = '', di = 0, ranOut = false;
+    for (const ch of t){
+      if (ch === '_'){
+        if (di < s.length && !ranOut){ shown += s[di++]; }
+        else { ranOut = true; ph += '_'; }
+      } else {
+        if (ranOut) ph += ch; else shown += ch;
+      }
+    }
+    return { shown, ph };
+  }
+  function tap(n){ if (digits.length < 10){ digits += n; renderPhone(); } }
+  function del(){ digits = digits.slice(0, -1); renderPhone(); }
+
+  // --- lookup ---
+  async function lookup(){
+    if (digits.length !== 10) return;
+    const btn = document.getElementById('findBtn');
+    btn.disabled = true; btn.textContent = 'Looking you up…';
+    const now = new Date();
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    try {
+      const r = await fetch(CONVEX + '/checkin-lookup', {
+        method:'POST', headers: await hdrs(),
+        body: JSON.stringify({ phone: digits, day_start: dayStart, day_end: dayStart + 86400000 }),
+      });
+      if (r.status === 401){ unauthorized(); return; }
+      const data = await r.json();
+      if (!data || !data.found){ go('notfound'); return; }
+      patient = data;
+      document.getElementById('confirmName').textContent =
+        'Welcome' + (data.first_name ? ', ' + data.first_name : '') + '!';
+      document.getElementById('confirmAppt').textContent = apptLine(data.appt);
+      go('confirm');
+    } catch (e){
+      go('notfound');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Find me';
+    }
+  }
+  function apptLine(appt){
+    if (!appt) return 'We don’t see an appointment today, but we can still check you in.';
+    const t = new Date(appt.scheduled_at).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+    const who = appt.provider ? ' with ' + appt.provider : '';
+    return 'Checking you in for your ' + t + ' ' + appt.type + who + '.';
+  }
+
+  // --- disclosures ---
+  function renderDisclosures(){
+    const list = document.getElementById('discList');
+    list.innerHTML = '';
+    DISCLOSURES.forEach(d => {
+      const wrap = document.createElement('div');
+      wrap.className = 'disc';
+      wrap.innerHTML =
+        '<div class="disc-head"><h3>' + d.title + '</h3></div>' +
+        '<div class="disc-body">' + d.body + '</div>' +
+        '<div class="agree" id="agree-' + d.key + '">' +
+          '<div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>' +
+          '<span>I have read and agree</span>' +
+        '</div>';
+      wrap.querySelector('.agree').addEventListener('click', () => toggleAgree(d.key));
+      list.appendChild(wrap);
+    });
+    updateDiscState();
+  }
+  function toggleAgree(key){
+    agreed[key] = !agreed[key];
+    document.getElementById('agree-' + key).classList.toggle('on', !!agreed[key]);
+    updateDiscState();
+  }
+  function updateDiscState(){
+    const done = DISCLOSURES.filter(d => agreed[d.key]).length;
+    document.getElementById('discProgress').textContent =
+      done === DISCLOSURES.length ? 'All set — tap Check in below.' : 'Agreed to ' + done + ' of ' + DISCLOSURES.length + '.';
+    document.getElementById('checkinBtn').disabled = done !== DISCLOSURES.length;
+  }
+
+  // --- complete ---
+  async function complete(){
+    const btn = document.getElementById('checkinBtn');
+    btn.disabled = true; btn.textContent = 'Checking you in…';
+    const arrivalLabel = new Date().toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+    let apptLabel = '';
+    if (patient.appt){
+      const t = new Date(patient.appt.scheduled_at).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+      apptLabel = t + ' ' + (patient.appt.type || 'appointment') + (patient.appt.provider ? ' with ' + patient.appt.provider : '');
+    }
+    try {
+      const r = await fetch(CONVEX + '/checkin-complete', {
+        method:'POST', headers: await hdrs(),
+        body: JSON.stringify({
+          patient_id: patient.patient_id,
+          appt_id: patient.appt ? patient.appt.id : undefined,
+          disclosures: DISCLOSURES.map(d => ({ key:d.key, version:d.version })),
+          arrival_label: arrivalLabel,
+          appt_label: apptLabel || undefined,
+        }),
+      });
+      if (r.status === 401){ unauthorized(); return; }
+      const data = await r.json();
+      if (data && data.ok){ go('done'); }
+      else { go('notfound'); }
+    } catch (e){
+      go('notfound');
+    } finally {
+      btn.textContent = 'Check in'; updateDiscState();
+    }
+  }
+
+  async function hdrs(){
+    const h = { 'Content-Type':'application/json' };
+    const t = await authToken(STORE_STAFF);
+    if (t) h['Authorization'] = 'Bearer ' + t;
+    return h;
+  }
+
+  // --- boot: a valid staff session skips the lock; everyone else signs in ---
+  document.getElementById('emailInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('passInput').focus(); });
+  document.getElementById('passInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(); });
+  renderPhone();
+  (async () => { const role = await staffRole(STORE_STAFF); if (role){ armIdleLock(); reset(); } else { go('lock'); } })();
+
+  // Expose handlers for the inline onclick attributes (module scope is not global).
+  window.go = go; window.tap = tap; window.del = del; window.lookup = lookup;
+  window.reset = reset; window.complete = complete; window.unlock = unlock; window.lock = lock;
+</script>
+</body>
+</html>
