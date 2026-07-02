@@ -1738,11 +1738,12 @@
       fields:[
         {key:'name',label:'Practice / clinic name',required:true},
         {key:'type',label:'Type / specialty',placeholder:'e.g. Primary care'},
+        {key:'doctor',label:'Referring doctor',placeholder:'e.g. Dr. Jane Smith'},
         {key:'city',label:'City'},
         {key:'phone',label:'Phone',type:'tel'},
         {key:'stage',label:'Stage',type:'select',value:'prospect',options:REF_STAGES.map(s=>({v:s.k,t:s.label}))},
       ], submitLabel:'Add partner',
-      onSubmit: async (v)=>{ const r=await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'add_practice',name:v.name,type:v.type,city:v.city,phone:v.phone,stage:v.stage})}); const j=await r.json(); if(!j.ok)throw new Error(); await loadReferrals(); if(j.id) select(j.id); }
+      onSubmit: async (v)=>{ const r=await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'add_practice',name:v.name,type:v.type,city:v.city,phone:v.phone,stage:v.stage})}); const j=await r.json(); if(!j.ok)throw new Error(); if(v.doctor){ try{ await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'add_provider',practice_id:j.id,name:v.doctor,is_primary:true})}); }catch(e){console.warn('addPractice: doctor add failed',e);} } await loadReferrals(); if(j.id) select(j.id); }
     });
   };
   window.setPracticeStage=async function(pid,stage){
