@@ -94,10 +94,14 @@
 <!-- ENROLL -->
 <div class="ov" id="enrollOv" onclick="if(event.target===this)this.classList.remove('on')">
   <div class="glass rounded-2xl w-full max-w-md p-5">
-    <div class="flex items-center justify-between mb-1"><div class="font-display font-semibold text-lg">Enroll patients</div><button onclick="document.getElementById('enrollOv').classList.remove('on')" class="text-[#9aa0ab] text-xl">✕</button></div>
-    <div class="text-sm text-[#6b7280] mb-3">They auto-unenroll on opt-out or when they book.</div>
+    <div class="flex items-center justify-between mb-2"><div class="font-display font-semibold text-lg">Enroll contacts</div><button onclick="document.getElementById('enrollOv').classList.remove('on')" class="text-[#9aa0ab] text-xl">✕</button></div>
+    <div class="flex gap-1 mb-3 p-1 rounded-xl bg-[#f1f3f7] text-sm font-semibold">
+      <button id="em-patients" class="flex-1 py-1.5 rounded-lg bg-white shadow-sm" onclick="switchEnrollMode('patients')">Patients</button>
+      <button id="em-partners" class="flex-1 py-1.5 rounded-lg text-[#6b7280]" onclick="switchEnrollMode('partners')">Partners</button>
+    </div>
+    <div class="text-xs text-[#6b7280] mb-2" id="enrollHint">Grouped by pipeline stage. Auto-unenrolls on opt-out or booking.</div>
     <input id="enrollSearch" class="fld mb-2" placeholder="Search patients…" oninput="renderEnroll()">
-    <div id="enrollList" class="space-y-1 max-h-72 overflow-auto text-sm"></div>
+    <div id="enrollList" class="space-y-2 max-h-80 overflow-auto text-sm"></div>
     <button class="btn btn-p w-full mt-3" id="enrollGo" onclick="doEnroll()">Enroll selected</button>
   </div>
 </div>
@@ -105,7 +109,9 @@
 <script type="module">
   import { staffInfo, signOut, getToken, STORE_STAFF } from './auth-convex.js';
   const CONVEX_URL = "https://quixotic-cat-492.convex.site";
-  let TG=null, cur=null, TPLS=[], SEQS=[], PATIENTS=[], enrollSel=new Set();
+  let TG=null, cur=null, TPLS=[], SEQS=[], PATIENTS=[], PARTNERS=[], enrollSel=new Set(), enrollMode='patients';
+  const PIPE=[{k:'new_inquiry',label:'New Inquiry'},{k:'lead',label:'Lead'},{k:'consult_booked',label:'Consult Booked'},{k:'intake',label:'Intake / Labs'},{k:'provider_review',label:'Provider Review'},{k:'rx_written',label:'Rx Written'},{k:'active',label:'Active'},{k:'refill_due',label:'Refill Due'},{k:'at_risk',label:'At Risk'},{k:'churned',label:'Churned'}];
+  const REFS=[{k:'prospect',label:'Prospect'},{k:'contacted',label:'Contacted'},{k:'meeting_set',label:'Meeting Set'},{k:'active_referrer',label:'Active Referrer'},{k:'dormant',label:'Dormant'}];
   const ICON={email:'<rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4.5 7 7.5 5.5L19.5 7"/>',wait:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',task:'<rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><path d="m7.8 12 2.8 2.8 5.6-6"/>'};
   const ic=(n,s)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="${s||18}" height="${s||18}" style="vertical-align:middle">${ICON[n]||''}</svg>`;
 
@@ -173,11 +179,36 @@
 
   function renderSeqList(){ document.getElementById('seqList').innerHTML = SEQS.length?SEQS.map(s=>`<tr class="border-b border-[#f6f7f9] hover:bg-[#fafbfc]"><td class="py-3 px-4 font-medium text-[#0a6cf5] cursor-pointer" data-id="${s._id}">${esc(s.name)}</td><td class="py-3 px-3">${(s.steps||[]).length}</td><td class="py-3 px-3">${s.enrolled||0}</td><td class="py-3 px-3"><span class="badge b-${s.status}">${s.status[0].toUpperCase()+s.status.slice(1)}</span></td></tr>`).join(''):'<tr><td colspan="4" class="py-6 text-center text-[#9aa0ab] text-sm">No sequences yet.</td></tr>'; document.getElementById('seqList').querySelectorAll('td[data-id]').forEach(td=>td.addEventListener('click',async()=>{ const j=await api('get',{id:td.dataset.id}); if(j&&j.ok){ cur={...j.sequence, enrolled:(j.enrollments||[]).filter(e=>e.status==='active').length}; fill(); showView('build'); } })); }
 
-  // enroll
-  async function openEnroll(){ if(!cur._id){ flash('Save the sequence first.',false); return; } enrollSel.clear(); if(!PATIENTS.length){ const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await H(),body:'{}'}); const j=await r.json().catch(()=>({})); PATIENTS=(j&&j.patients)?j.patients:[]; } renderEnroll(); document.getElementById('enrollOv').classList.add('on'); }
-  window.renderEnroll=()=>{ const q=(document.getElementById('enrollSearch').value||'').toLowerCase(); const list=PATIENTS.filter(p=>!q||((p.first+' '+p.last).toLowerCase().includes(q))).slice(0,40); document.getElementById('enrollList').innerHTML=list.map(p=>`<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-[#f1f3f7]"><input type="checkbox" ${enrollSel.has(p.id)?'checked':''} onchange="togEnroll('${p.id}',this.checked)" style="accent-color:#0a6cf5"> ${esc((p.first||'')+' '+(p.last||''))}</label>`).join('')||'<div class="text-[#9aa0ab] p-3 text-center">No matches.</div>'; };
+  // enroll — patients OR partners, grouped by board stage, all statuses shown
+  async function loadPatients(){ if(PATIENTS.length) return; const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await H(),body:'{}'}); const j=await r.json().catch(()=>({})); PATIENTS=(j&&j.patients)?j.patients:[]; }
+  async function loadPartners(){ if(PARTNERS.length) return; const r=await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await H(),body:JSON.stringify({action:'board'})}); const j=await r.json().catch(()=>({})); PARTNERS=(j&&j.practices)?j.practices:[]; }
+  async function openEnroll(){ if(!cur._id){ flash('Save the sequence first.',false); return; } enrollSel.clear(); await switchEnrollMode(enrollMode,true); document.getElementById('enrollOv').classList.add('on'); }
+  window.switchEnrollMode=async(mode,force)=>{
+    if(!force && mode===enrollMode) return; enrollMode=mode; enrollSel.clear();
+    document.getElementById('em-patients').className='flex-1 py-1.5 rounded-lg '+(mode==='patients'?'bg-white shadow-sm':'text-[#6b7280]');
+    document.getElementById('em-partners').className='flex-1 py-1.5 rounded-lg '+(mode==='partners'?'bg-white shadow-sm':'text-[#6b7280]');
+    document.getElementById('enrollHint').textContent = mode==='patients'?'Grouped by pipeline stage. Auto-unenrolls on opt-out or booking.':'All partners, grouped by referral stage. Emails go to each practice’s primary provider.';
+    document.getElementById('enrollSearch').placeholder = mode==='patients'?'Search patients…':'Search partners…';
+    if(mode==='patients') await loadPatients(); else await loadPartners();
+    renderEnroll();
+  };
+  window.renderEnroll=()=>{
+    const q=(document.getElementById('enrollSearch').value||'').toLowerCase();
+    const stages = enrollMode==='patients'?PIPE:REFS;
+    const rows = enrollMode==='patients'?PATIENTS:PARTNERS;
+    const nameOf = enrollMode==='patients'?(p=>((p.first||'')+' '+(p.last||'')).trim()||'(no name)'):(p=>(p.name||p.practice_name||'Partner'));
+    const stageOf = enrollMode==='patients'?(p=>p.pipeline_stage||'new_inquiry'):(p=>p.stage||'prospect');
+    const filtered = rows.filter(p=>!q||nameOf(p).toLowerCase().includes(q));
+    const item = p=>`<label class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-[#f1f3f7]"><input type="checkbox" ${enrollSel.has(p.id)?'checked':''} onchange="togEnroll('${p.id}',this.checked)" style="accent-color:#0a6cf5"> ${esc(nameOf(p))}</label>`;
+    let html='';
+    for(const st of stages){ const grp=filtered.filter(p=>stageOf(p)===st.k); if(!grp.length) continue;
+      html+=`<div><div class="text-[11px] font-semibold uppercase tracking-wide text-[#9aa0ab] mb-1 mt-1">${st.label} · ${grp.length}</div>${grp.map(item).join('')}</div>`; }
+    const known=new Set(stages.map(s=>s.k)); const other=filtered.filter(p=>!known.has(stageOf(p)));
+    if(other.length) html+=`<div><div class="text-[11px] font-semibold uppercase tracking-wide text-[#9aa0ab] mb-1 mt-1">Other · ${other.length}</div>${other.map(item).join('')}</div>`;
+    document.getElementById('enrollList').innerHTML=html||'<div class="text-[#9aa0ab] p-3 text-center">No matches.</div>';
+  };
   window.togEnroll=(id,on)=>{ on?enrollSel.add(id):enrollSel.delete(id); };
-  async function doEnroll(){ if(!enrollSel.size){ return; } const j=await api('enroll',{id:cur._id,patient_ids:[...enrollSel]}); document.getElementById('enrollOv').classList.remove('on'); if(j&&j.ok){ flash(`Enrolled ${j.added} (${j.already} already in).`); const g=await api('get',{id:cur._id}); if(g&&g.ok){ cur.enrolled=(g.enrollments||[]).filter(e=>e.status==='active').length; document.getElementById('statEnrolled').textContent=cur.enrolled; } } else flash('Enroll failed',false); }
+  async function doEnroll(){ if(!enrollSel.size) return; const body={id:cur._id}; if(enrollMode==='patients') body.patient_ids=[...enrollSel]; else body.practice_ids=[...enrollSel]; const j=await api('enroll',body); document.getElementById('enrollOv').classList.remove('on'); if(j&&j.ok){ flash(`Enrolled ${j.added} (${j.already} already in).`); const g=await api('get',{id:cur._id}); if(g&&g.ok){ cur.enrolled=(g.enrollments||[]).filter(e=>e.status==='active').length; document.getElementById('statEnrolled').textContent=cur.enrolled; } } else flash('Enroll failed',false); }
 
   window.showView=v=>{ document.getElementById('view-build').style.display=v==='build'?'block':'none'; document.getElementById('view-manage').style.display=v==='manage'?'block':'none'; document.getElementById('tab-build').classList.toggle('on',v==='build'); document.getElementById('tab-manage').classList.toggle('on',v==='manage'); if(v==='manage') loadSeqs(); };
   window.newSeq=newSeq; window.save=save; window.toggleActive=toggleActive; window.openEnroll=openEnroll; window.doEnroll=doEnroll;
