@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Email Template Library · Vitality</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--border:#e6e9ee;--blue:#0a6cf5}
+  *{box-sizing:border-box}
+  body{margin:0;background:#f4f6f8;color:#16201d;font-family:'Inter',system-ui,sans-serif}
+  .font-display{font-family:'Montserrat','Inter',sans-serif}
+  .glass{background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04),0 12px 30px -18px rgba(16,24,40,.10)}
+  .badge{font-size:.62rem;font-weight:600;letter-spacing:.03em;padding:2px 8px;border-radius:9999px}
+  .b-ready{background:rgba(16,185,129,.14);color:#047857}.b-draft{background:rgba(217,119,6,.12);color:#b45309}
+  .tpl{padding:.7rem .8rem;border-radius:12px;cursor:pointer;border:1px solid transparent}
+  .tpl:hover{background:#f1f3f7}.tpl.on{background:rgba(10,108,245,.08);border-color:rgba(10,108,245,.25)}
+  .btn{border:none;border-radius:10px;font-weight:600;font-size:.85rem;padding:.55rem .9rem;cursor:pointer}
+  .btn-p{background:var(--blue);color:#fff}.btn-p:hover{background:#0856c8}.btn-o{background:#fff;border:1px solid var(--border)}.btn-o:hover{background:#f1f3f7}
+  .fld{width:100%;border:1px solid var(--border);border-radius:9px;padding:.5rem .7rem;font-size:.85rem;margin-top:4px;font-family:inherit}
+  .fld:focus{outline:none;border-color:var(--blue)}
+  .lbl{font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#9aa0ab}
+</style>
+</head>
+<body>
+<div id="gate" style="position:fixed;inset:0;background:#f4f6f8;display:flex;align-items:center;justify-content:center;z-index:99;color:#9aa0ab;font-size:.9rem">Loading…</div>
+
+<div style="background:#fff;border-bottom:1px solid #e6e9ee;padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
+  <span class="font-display flex flex-col leading-none"><span class="font-semibold text-lg uppercase tracking-[.15em]">Vitality</span><span class="text-[.46rem] font-medium tracking-[.3em] uppercase mt-0.5">Weight Loss</span></span>
+  <div class="flex items-center gap-3"><a href="crm.html" class="text-xs text-[#0a6cf5] font-semibold">← CRM</a><span class="text-xs text-[#9aa0ab]">Email Template Library</span></div>
+</div>
+
+<div style="max-width:1180px;margin:0 auto;padding:18px" class="grid gap-4" id="pane">
+<style>#pane{grid-template-columns:270px 1fr}@media(max-width:900px){#pane{grid-template-columns:1fr}}</style>
+  <!-- LEFT: library list -->
+  <div class="glass rounded-2xl p-3 h-max">
+    <div class="flex items-center justify-between px-1 mb-2"><span class="lbl">Templates</span><button class="btn btn-p" style="padding:.3rem .6rem;font-size:.75rem" id="newBtn">+ New</button></div>
+    <div id="list"><div class="text-sm text-[#9aa0ab] px-2 py-4 text-center">Loading…</div></div>
+    <div class="text-[11px] text-[#9aa0ab] px-2 pt-3 leading-relaxed border-t border-[#eef1f4] mt-2">Every template renders through the same branded shell — you write the copy, the look stays consistent. Sequences pick templates from here.</div>
+  </div>
+  <!-- RIGHT: editor + live preview -->
+  <div class="grid gap-4" id="rightcol" style="grid-template-columns:300px 1fr">
+    <div class="glass rounded-2xl p-4 h-max">
+      <div class="flex items-center justify-between mb-2"><span class="lbl">Edit template</span><span class="badge b-draft" id="e-status" style="cursor:pointer" title="Click to toggle Draft/Ready">Draft</span></div>
+      <div><span class="lbl">Template name</span><input class="fld" id="f-name"></div>
+      <div class="mt-3"><span class="lbl">Subject line</span><input class="fld" id="f-subject"></div>
+      <div class="mt-3"><span class="lbl">Eyebrow (hero)</span><input class="fld" id="f-eyebrow"></div>
+      <div class="mt-3"><span class="lbl">Headline (hero)</span><input class="fld" id="f-headline"></div>
+      <div class="mt-3"><span class="lbl">Subhead (optional)</span><input class="fld" id="f-subhead"></div>
+      <div class="mt-3"><span class="lbl">Body · use {first name}, blank line = new paragraph</span><textarea class="fld" id="f-body" rows="5"></textarea></div>
+      <div class="mt-3 grid grid-cols-2 gap-2"><div><span class="lbl">Button text</span><input class="fld" id="f-cta_text"></div><div><span class="lbl">Button link</span><input class="fld" id="f-cta_url"></div></div>
+      <div class="flex gap-2 mt-4"><button class="btn btn-p flex-1" id="saveBtn">Save</button><button class="btn btn-o" id="testBtn">Send test</button><button class="btn btn-o" id="delBtn" title="Delete" style="color:#be123c">✕</button></div>
+      <div id="msg" class="text-xs mt-2"></div>
+    </div>
+    <div class="glass rounded-2xl p-4">
+      <div class="lbl mb-3">Live preview · exactly what the patient receives</div>
+      <div style="background:#eef2f7;border-radius:14px;padding:22px 12px">
+        <div style="max-width:460px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px -14px rgba(16,24,40,.25)">
+          <div style="text-align:center;padding:24px 24px 12px"><img src="assets/logo-full.png" width="130" alt="Vitality Weight Loss" style="display:inline-block;height:auto" onerror="this.style.display='none'"></div>
+          <div style="background:#0b1220;padding:28px 30px">
+            <div id="p-eyebrow" style="font-family:Arial;font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#0a6cf5;margin-bottom:8px"></div>
+            <div id="p-headline" style="font-family:Arial;font-size:22px;font-weight:700;color:#fff;line-height:1.25"></div>
+            <div id="p-subhead" style="font-family:Arial;font-size:14px;color:#93a0b4;margin-top:8px"></div>
+          </div>
+          <div id="p-body" style="padding:24px 30px 6px;font-family:Arial;font-size:14px;color:#374151;line-height:1.65"></div>
+          <div id="p-ctawrap" style="text-align:center;padding:6px 30px 26px"><a id="p-cta" href="#" style="display:inline-block;background:#0a6cf5;color:#fff;text-decoration:none;font-family:Arial;font-weight:700;font-size:15px;padding:13px 34px;border-radius:11px"></a></div>
+          <div style="background:#0b1220;padding:22px 30px;text-align:center"><div style="font-family:Arial;font-size:11px;color:#8a93a3;line-height:1.6">Vitality Weight Loss · Las Vegas, NV<br>care@mail.vitalityweightloss.health · Unsubscribe</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { staffInfo, signOut, getToken, STORE_STAFF } from './auth-convex.js';
+  const CONVEX_URL = "https://quixotic-cat-492.convex.site";
+  let TOKEN_GET = null, TPLS = [], cur = null; // cur = template object (with _id) or null (new)
+
+  (async () => {
+    const info = await staffInfo(STORE_STAFF);
+    if (!info || !info.role) { try{ await signOut(STORE_STAFF); }catch(_){} location.replace('login.html'); return; }
+    TOKEN_GET = () => getToken(STORE_STAFF);
+    document.getElementById('gate').style.display='none';
+    wire(); await load();
+  })();
+
+  const headers = async () => ({ 'content-type':'application/json', 'authorization':'Bearer '+(await TOKEN_GET()) });
+  async function api(action, extra){ const r = await fetch(CONVEX_URL+'/templates-data',{method:'POST',headers:await headers(),body:JSON.stringify({action,...(extra||{})})}); return r.json(); }
+
+  const F = id => document.getElementById('f-'+id);
+  const FIELDS = ['name','subject','eyebrow','headline','subhead','body','cta_text','cta_url'];
+
+  function blank(){ return {name:'',subject:'',eyebrow:'',headline:'',subhead:'',body:'',cta_text:'',cta_url:'',status:'draft'}; }
+  function fillEditor(t){
+    cur = t;
+    FIELDS.forEach(k => F(k).value = t[k]||'');
+    setStatus(t.status||'draft');
+    sync();
+  }
+  function setStatus(s){ const el=document.getElementById('e-status'); el.textContent = s==='ready'?'Ready':'Draft'; el.className='badge b-'+(s==='ready'?'ready':'draft'); el.dataset.s=s; }
+  function sync(){
+    document.getElementById('p-eyebrow').textContent = F('eyebrow').value || 'Vitality Weight Loss';
+    document.getElementById('p-headline').textContent = F('headline').value;
+    const sh=F('subhead').value; document.getElementById('p-subhead').textContent = sh; document.getElementById('p-subhead').style.display = sh?'block':'none';
+    const name='Alex';
+    document.getElementById('p-body').innerHTML = (F('body').value||'').replace(/\{first ?name\}/gi,name).split(/\n\s*\n/).map(p=>`<p style="margin:0 0 14px">${p.trim().replace(/\n/g,'<br>')}</p>`).join('');
+    const cta=F('cta_text').value; document.getElementById('p-ctawrap').style.display = cta?'block':'none'; document.getElementById('p-cta').textContent = cta; document.getElementById('p-cta').href = F('cta_url').value||'#';
+  }
+  function renderList(){
+    const el=document.getElementById('list');
+    if(!TPLS.length){ el.innerHTML='<div class="text-sm text-[#9aa0ab] px-2 py-4 text-center">No templates yet. Click + New.</div>'; return; }
+    el.innerHTML = TPLS.map((t,i)=>`<div class="tpl ${cur&&cur._id===t._id?'on':''}" data-i="${i}">
+      <div class="flex items-center justify-between gap-2"><span class="text-sm font-medium truncate">${esc(t.name)||'(untitled)'}</span><span class="badge b-${t.status==='ready'?'ready':'draft'}">${t.status==='ready'?'Ready':'Draft'}</span></div>
+      <div class="text-[11px] text-[#9aa0ab] truncate mt-0.5">${esc(t.subject)||''}</div></div>`).join('');
+    el.querySelectorAll('.tpl').forEach(d=>d.addEventListener('click',()=>{ fillEditor(TPLS[+d.dataset.i]); renderList(); }));
+  }
+  function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function flash(m,ok){ const el=document.getElementById('msg'); el.textContent=m; el.style.color= ok===false?'#be123c':'#047857'; setTimeout(()=>{el.textContent='';},3000); }
+
+  async function load(){
+    const j = await api('list');
+    TPLS = (j&&j.ok&&j.templates)?j.templates:[];
+    if(TPLS.length){ fillEditor(TPLS[0]); } else { fillEditor(blank()); }
+    renderList();
+  }
+  function collect(){ const o={}; FIELDS.forEach(k=>o[k]=F(k).value.trim()); o.status=document.getElementById('e-status').dataset.s||'draft'; return o; }
+
+  function wire(){
+    FIELDS.forEach(k=>F(k).addEventListener('input',sync));
+    document.getElementById('e-status').addEventListener('click',()=>setStatus((document.getElementById('e-status').dataset.s==='ready')?'draft':'ready'));
+    document.getElementById('newBtn').addEventListener('click',()=>{ fillEditor(blank()); renderList(); F('name').focus(); });
+    document.getElementById('saveBtn').addEventListener('click',async()=>{
+      const fields=collect();
+      if(!fields.name||!fields.subject||!fields.headline){ flash('Name, subject and headline are required.',false); return; }
+      let j;
+      if(cur&&cur._id){ j=await api('update',{id:cur._id,fields}); } else { j=await api('create',{fields}); }
+      if(j&&j.ok){ flash('Saved.'); await load(); } else { flash('Save failed: '+((j&&j.error)||'unknown'),false); }
+    });
+    document.getElementById('delBtn').addEventListener('click',async()=>{
+      if(!cur||!cur._id){ fillEditor(blank()); renderList(); return; }
+      if(!confirm('Delete "'+(cur.name||'this template')+'"?')) return;
+      const j=await api('delete',{id:cur._id}); if(j&&j.ok){ flash('Deleted.'); await load(); } else flash('Delete failed',false);
+    });
+    document.getElementById('testBtn').addEventListener('click',async()=>{
+      if(!cur||!cur._id){ flash('Save the template first, then send a test.',false); return; }
+      const to=prompt('Send a test of "'+cur.name+'" to which email?'); if(!to) return;
+      flash('Sending…'); const j=await api('send_test',{id:cur._id,to:to.trim()});
+      flash(j&&j.ok?('Test sent to '+to):('Test failed: '+((j&&j.error)||'')), j&&j.ok);
+    });
+  }
+</script>
+</body>
+</html>
