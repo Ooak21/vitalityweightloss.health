@@ -147,7 +147,7 @@
         {"@type":"Question","name":"Where can I get GLP-1 weight loss in Las Vegas?","acceptedAnswer":{"@type":"Answer","text":"Vitality Weight Loss is a physician-led clinic at 6140 Brent Thurman Way, Suite 100 in Las Vegas, offering semaglutide, tirzepatide, and oral GLP-1, all medically reviewed by Peter DeBry, MD."}},
         {"@type":"Question","name":"Is a GLP-1 covered by Medicare in Nevada?","acceptedAnswer":{"@type":"Answer","text":"Vitality's GLP-1 Bridge helps eligible Medicare members access brand-name Wegovy or Zepbound for about $50 per month. Eligibility is confirmed by the clinic."}},
         {"@type":"Question","name":"How much does semaglutide cost in Las Vegas?","acceptedAnswer":{"@type":"Answer","text":"Compounded semaglutide at Vitality starts at $149 the first month, then $199 per month, with no increase as the dose increases."}},
-        {"@type":"Question","name":"Is there a GLP-1 weight-loss option without injections?","acceptedAnswer":{"@type":"Answer","text":"Yes. Vitality offers a daily oral, sublingual semaglutide, a true no-needle option you take as drops under the tongue, in addition to weekly injections."}},
+        {"@type":"Question","name":"Is there a GLP-1 weight-loss option without injections?","acceptedAnswer":{"@type":"Answer","text":"Yes. Vitality offers a daily oral semaglutide pill, a true no-needle option you take by mouth, in addition to weekly injections."}},
         {"@type":"Question","name":"Who is the doctor at Vitality Weight Loss?","acceptedAnswer":{"@type":"Answer","text":"Peter DeBry, MD, a Nevada-licensed physician (NPI 1831137991), medically reviews every patient before any prescription."}}
       ]
     }
@@ -881,13 +881,13 @@
         <!-- 4 Without injections -->
         <div class="faq-panel" data-panel="4">
           <div class="rounded-3xl border border-[#e6e9ee] bg-[#f7f8fa] p-8 flex flex-col md:flex-row items-center gap-7">
-            <img src="assets/semaglutide-dropper.png" alt="Vitality sublingual semaglutide drops" class="h-60 md:h-72 w-auto shrink-0 select-none pointer-events-none">
+            <img src="assets/semaglutide-pills.jpg" alt="Vitality oral semaglutide pills" class="h-60 md:h-72 w-auto shrink-0 select-none pointer-events-none">
             <div>
               <div class="text-[11px] font-semibold tracking-[.14em] uppercase text-[#0a6cf5] mb-2">No needles</div>
-              <h3 class="font-display text-2xl md:text-3xl font-semibold tracking-[-.5px] mb-3">Prefer drops? Skip the needle.</h3>
-              <p class="text-[#4b5563] leading-relaxed mb-5">Vitality offers a daily oral, sublingual semaglutide, a true no-needle option you take as drops under the tongue, in addition to weekly injections.</p>
+              <h3 class="font-display text-2xl md:text-3xl font-semibold tracking-[-.5px] mb-3">Prefer pills? Skip the needle.</h3>
+              <p class="text-[#4b5563] leading-relaxed mb-5">Vitality offers a daily oral semaglutide pill, a true no-needle option you take by mouth, in addition to weekly injections.</p>
               <div class="grid grid-cols-2 gap-3 mb-6">
-                <div class="rounded-xl bg-white border border-[#e6e9ee] px-3.5 py-2.5"><div class="font-display font-semibold text-[#16201d]">Daily drops</div><div class="text-xs text-[#6b7280]">under the tongue</div></div>
+                <div class="rounded-xl bg-white border border-[#e6e9ee] px-3.5 py-2.5"><div class="font-display font-semibold text-[#16201d]">Daily pill</div><div class="text-xs text-[#6b7280]">taken by mouth</div></div>
                 <div class="rounded-xl bg-white border border-[#e6e9ee] px-3.5 py-2.5"><div class="font-display font-semibold text-[#16201d]">No needles</div><div class="text-xs text-[#6b7280]">same active, semaglutide</div></div>
               </div>
               <a href="glp1.html" class="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8] transition-all active:scale-[0.985]">See if you qualify &rarr;</a>
@@ -1188,14 +1188,15 @@ function playVwl(){
 </script>
 <script src="/prelaunch.js" defer></script>
 <script>
-/* Top-nav slot-machine announcement reel: Medicare Bridge ⇄ Free Webinar.
+/* Top-nav slot-machine announcement reel: Medicare Bridge ⇄ Vitality Bloom ⇄ Vitality Total Male.
    Spins through several rows with motion blur + deceleration, lands on the next message. */
 (function(){
   var slot=document.getElementById('navSlot'); if(!slot) return;
   var ROWH=24, COPIES=30, STEP=5;
   var msgs=[
     {html:'<span class="font-semibold text-[#16201d]">Medicare $50/mo GLP-1 Bridge</span> <span class="text-[#16201d]/55">&middot; coming July 1</span>', href:'guides/semaglutide-medicare-nevada.html'},
-    {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Vitality Bloom</span> <span class="text-[#16201d]/55">&middot; new online hair-loss treatment &rarr;</span>', href:'bloom.html'}
+    {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Vitality Bloom</span> <span class="text-[#16201d]/55">&middot; new online hair-loss treatment &rarr;</span>', href:'bloom.html'},
+    {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Vitality Total Male</span> <span class="text-[#16201d]/55">&middot; TRT + GLP-1 for men &rarr;</span>', href:'total-male.html'}
   ];
   var reel=document.createElement('div'); reel.id='navSlotReel'; reel.style.willChange='transform';
   for(var i=0;i<COPIES;i++){ var m=msgs[i%msgs.length]; var a=document.createElement('a'); a.href=m.href;
