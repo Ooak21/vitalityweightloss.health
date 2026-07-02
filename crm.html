@@ -1078,7 +1078,8 @@
   window.saveInfo = async function(id,field,v){
     const p=patients.find(x=>x.id===id); if(!p)return; p[field]=v;
     const col={first:'first_name',last:'last_name'}[field]||field;
-    if(USE_SUPABASE && window.__vitSb){ try{ await window.__vitSb.from('vit_patients').update({[col]:v}).eq('id',id); }catch(e){ console.warn('saveInfo',e); } }
+    if(USE_CONVEX){ try{ await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'update_patient',patient_id:id,fields:{[col]:v}})}); }catch(e){ console.warn('saveInfo',e); } }
+    else if(USE_SUPABASE && window.__vitSb){ try{ await window.__vitSb.from('vit_patients').update({[col]:v}).eq('id',id); }catch(e){ console.warn('saveInfo',e); } }
     renderList();
   };
   window.editName = function(id){
@@ -1088,7 +1089,8 @@
     let done=false;
     const finish=async(save)=>{ if(done)return; done=true;
       if(save){ const parts=inp.value.trim().split(/\s+/); p.first=parts[0]||''; p.last=parts.slice(1).join(' ');
-        if(USE_SUPABASE&&window.__vitSb){ try{ await window.__vitSb.from('vit_patients').update({first_name:p.first,last_name:p.last}).eq('id',id);}catch(e){console.warn(e);} } }
+        if(USE_CONVEX){ try{ await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'update_patient',patient_id:id,fields:{first_name:p.first,last_name:p.last}})});}catch(e){console.warn('editName',e);} }
+        else if(USE_SUPABASE&&window.__vitSb){ try{ await window.__vitSb.from('vit_patients').update({first_name:p.first,last_name:p.last}).eq('id',id);}catch(e){console.warn(e);} } }
       renderDetail(); renderList(); };
     inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();finish(true);} else if(e.key==='Escape')finish(false); });
     inp.addEventListener('blur',()=>finish(true));
