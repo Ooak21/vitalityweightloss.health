@@ -46,7 +46,8 @@
 ## Calendar integration (GitHub issue #3, open, assigned to Miguel)
 Google Calendar two-way sync between CRM appointments and each provider's
 Google Calendar. Backend lives in Convex (`gcal.ts`), not in this repo.
-Frontend consumer is `crm.html`'s schedule (`renderSchedule`).
+Frontend consumer is `crm.html`'s schedule (`renderToday`, in the "Calendar
+widget" block).
 
 - **Code-shielded by design**: CRM-origin events on Google carry only
   `"Consult · Patient #ref"` — never a patient name (no PHI on Google).
@@ -57,11 +58,23 @@ Frontend consumer is `crm.html`'s schedule (`renderSchedule`).
   service-account JWT-bearer auth w/ domain-wide delegation, secrets set on
   Convex, outbound `syncAppointment` (create/patch/delete on book/update/
   cancel) verified working end to end.
-- **Phase 2b (inbound + busy overlay, not yet done)**: frontend "Busy" overlay
-  in `crm.html` `renderSchedule` fed by a `/gcal-freebusy` route; backend
-  Google push-notification watch channels per provider calendar →
-  `/gcal-webhook` route; incremental sync via syncToken; loop-prevention; cron
-  channel renewal.
+- **Phase 2b (busy overlay) — DONE (2026-07-02)**: `crm.html`'s `renderToday()`
+  calls `calFetchBusy()` whenever the visible month/week/day range changes,
+  POSTing provider display names to `/gcal-freebusy`
+  (`internal.gcal.freeBusyFor` in `vitality-convex/convex/gcal.ts`, which
+  resolves names to calendar emails via `GCAL_PROVIDER_MAP` and echoes busy
+  data back keyed by name). Busy intervals render as grey blocks/indicators
+  alongside appointments in all three calendar views.
+  - **Deferred by design, not forgotten**: the original scope called for
+    Google push-notification watch channels, a `/gcal-webhook` route,
+    syncToken incremental sync, loop-prevention, and a cron for channel
+    renewal. That infra exists to avoid polling by pushing change
+    notifications — but `/gcal-freebusy` already computes fresh from Google on
+    every call, so there's nothing for a webhook to invalidate, and this is an
+    internal staff tool where on-demand polling (one fetch per calendar-range
+    change) is imperceptibly different from push. Revisit only if polling
+    proves insufficient (e.g. Google API quota pressure, or a future need to
+    pull actual inbound event details rather than just busy/free).
 - Per-provider calendars, mapped via `GCAL_PROVIDER_MAP` (no shared clinic
   calendar, unless that changes later).
 
