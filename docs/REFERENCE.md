@@ -54,27 +54,53 @@ widget" block).
 - External/personal events on a provider's Google calendar surface in the CRM
   only as opaque grey "Busy" blocks (free/busy), never pulled into Vitality's
   data model.
-- **Phase 2a (enablement) — DONE, confirmed live by Luis (2026-07-01)**:
-  service-account JWT-bearer auth w/ domain-wide delegation, secrets set on
-  Convex, outbound `syncAppointment` (create/patch/delete on book/update/
-  cancel) verified working end to end.
-- **Phase 2b (busy overlay) — DONE (2026-07-02)**: `crm.html`'s `renderToday()`
+- **Phase 2a (enablement) — status disputed (2026-07-02)**: previously noted
+  as confirmed live by Luis on 2026-07-01, but Luis's later message on issue
+  #3 states `GOOGLE_SA_EMAIL` / `GOOGLE_SA_KEY` / `GCAL_PROVIDER_MAP` are all
+  unset on the deployment, meaning `syncAppointment` is currently a no-op.
+  Unresolved as of this writing, tracked as item 1 in the issue #3 discussion.
+  Nothing below this line can be verified end-to-end until it's sorted out.
+- **Phase 2b, busy overlay — DONE (2026-07-02)**: `crm.html`'s `renderToday()`
   calls `calFetchBusy()` whenever the visible month/week/day range changes,
   POSTing provider display names to `/gcal-freebusy`
   (`internal.gcal.freeBusyFor` in `vitality-convex/convex/gcal.ts`, which
   resolves names to calendar emails via `GCAL_PROVIDER_MAP` and echoes busy
   data back keyed by name). Busy intervals render as grey blocks/indicators
-  alongside appointments in all three calendar views.
-  - **Deferred by design, not forgotten**: the original scope called for
-    Google push-notification watch channels, a `/gcal-webhook` route,
-    syncToken incremental sync, loop-prevention, and a cron for channel
-    renewal. That infra exists to avoid polling by pushing change
-    notifications — but `/gcal-freebusy` already computes fresh from Google on
-    every call, so there's nothing for a webhook to invalidate, and this is an
-    internal staff tool where on-demand polling (one fetch per calendar-range
-    change) is imperceptibly different from push. Revisit only if polling
-    proves insufficient (e.g. Google API quota pressure, or a future need to
-    pull actual inbound event details rather than just busy/free).
+  alongside appointments in all three calendar views. This only ever shows
+  external/personal events as opaque busy blocks, never pulled into
+  Vitality's data model.
+  - Chose on-demand polling over the originally-scoped push-notification
+    watch channels for this piece specifically: `/gcal-freebusy` already
+    computes fresh from Google on every call, so there's nothing for a
+    webhook to invalidate, and this is an internal staff tool where polling
+    per calendar-range change is imperceptibly different from push.
+- **Phase 2b, two-way write-back — DONE (2026-07-02)**: CRM-origin
+  appointments (created by `syncAppointment`) now sync back from Google.
+  `syncAppointment` tags every event it writes with
+  `extendedProperties.private.vit_appt_id` (`vitality-convex/convex/gcal.ts`),
+  and a new `internal.gcal.runInboundSync` action, on a 10-minute
+  `crons.interval` (`vitality-convex/convex/crons.ts`), polls each mapped
+  provider's calendar for changes since the last Google `syncToken`
+  (persisted per-provider in the new `vit_gcal_sync_state` table). Only
+  events carrying our own `vit_appt_id` tag are ever eligible for write-back
+  — a provider's personal/external events are never touched, matching the
+  locked busy-only design. `internal.patients.applyInboundGcalChange` applies
+  a reschedule or cancellation back onto `vit_appointments`, with
+  loop-prevention (skips changes within 90s of our own last outbound write,
+  via the new `gcal_last_synced_at` field) and idempotency (skips if the
+  incoming state already matches what's stored) so polling doesn't create a
+  write-back ↔ outbound-sync ping-pong or duplicate audit/note spam.
+  - **Polling instead of push, and why**: Google's push-notification
+    `watch()` API requires the receiving webhook's domain to be verified in
+    Google Search Console under the same GCP project as the service account.
+    Convex's `*.convex.site` host isn't a domain anyone here owns, so
+    registering a watch channel is blocked until that's solved with separate
+    infra (e.g. a small proxy on a domain IBS controls that forwards Google's
+    notification POSTs to the real Convex endpoint) — outside this codebase,
+    not something to build silently. Revisit push notifications only if
+    10-minute polling lag proves genuinely insufficient; the diff/apply logic
+    (tagging, loop-prevention, idempotency) is unchanged either way, only how
+    "something changed" is learned would differ.
 - Per-provider calendars, mapped via `GCAL_PROVIDER_MAP` (no shared clinic
   calendar, unless that changes later).
 
