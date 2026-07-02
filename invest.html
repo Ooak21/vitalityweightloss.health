@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Vitality Academies MSO — Physician Investment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;600;700;800;900&family=Red+Hat+Text:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0a1d38; --navy-2:#0c2547; --ink:#16201d; --blue:#0a6cf5; --blue-deep:#0856c8;
+    --green:#5ba53f; --green-2:#3f9d6b; --emerald:#10b981; --gold:#d9a441;
+    --paper:#f4f7f4; --paper-2:#eaf1f4; --muted:#5d6b75; --line:#e2e8ea;
+    --mist:rgba(255,255,255,.72);
+    --disp:'Red Hat Display',system-ui,sans-serif; --body:'Red Hat Text',system-ui,sans-serif;
+    --pad:clamp(28px,5.2vw,108px);
+    --maxw:1180px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--body); color:var(--ink); background:#05101f; overflow:hidden;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+  /* grain overlay */
+  body::after{
+    content:""; position:fixed; inset:0; z-index:60; pointer-events:none; opacity:.04;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ---------- deck shell ---------- */
+  .deck{position:fixed; inset:0}
+  .slide{
+    position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center;
+    padding:var(--pad); opacity:0; visibility:hidden; transform:scale(1.015);
+    transition:opacity .6s ease, transform .6s ease, visibility .6s; overflow:hidden;
+  }
+  .slide.active{opacity:1; visibility:visible; transform:none}
+  .slide .inner{width:100%; max-width:var(--maxw); margin:0 auto; position:relative; z-index:2}
+
+  /* themes */
+  .slide[data-theme="dark"]{color:#eaf2ff; background:
+      radial-gradient(120% 90% at 82% 12%, rgba(91,165,63,.16), transparent 55%),
+      radial-gradient(120% 100% at 12% 88%, rgba(10,108,245,.22), transparent 55%),
+      linear-gradient(160deg,var(--navy) 0%, #07182e 100%);}
+  .slide[data-theme="light"]{color:var(--ink); background:
+      radial-gradient(110% 80% at 88% 0%, rgba(91,165,63,.22), transparent 52%),
+      radial-gradient(120% 90% at 0% 100%, rgba(10,108,245,.16), transparent 52%),
+      linear-gradient(155deg,#eef6ee 0%, #e7f0f5 60%, #eaf2f4 100%);}
+
+  /* ---------- type ---------- */
+  .eyebrow{font-family:var(--disp); font-weight:700; font-size:clamp(11px,1.05vw,13px);
+    letter-spacing:.32em; text-transform:uppercase; color:var(--blue); margin-bottom:18px}
+  .slide[data-theme="dark"] .eyebrow{color:#8fd0ff}
+  h1{font-family:var(--disp); font-weight:800; line-height:.98; letter-spacing:-.025em;
+    font-size:clamp(40px,8.2vw,118px)}
+  h2{font-family:var(--disp); font-weight:800; line-height:1.0; letter-spacing:-.02em;
+    font-size:clamp(30px,5.4vw,72px)}
+  h3{font-family:var(--disp); font-weight:700; font-size:clamp(18px,1.7vw,23px); letter-spacing:-.01em}
+  .lead{font-size:clamp(16px,1.55vw,21px); line-height:1.5; color:var(--muted); max-width:62ch; font-weight:400}
+  .slide[data-theme="dark"] .lead{color:#b9cbe4}
+  .accent{color:var(--blue)}
+  .accent-g{color:var(--green)}
+  .slide[data-theme="dark"] .accent{color:#5aa2ff}
+  .slide[data-theme="dark"] .accent-g{color:#8bd86a}
+  .thin{font-weight:300}
+
+  /* reveal on activate */
+  .slide.active .r{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+  .r{opacity:0}
+  @keyframes rise{from{opacity:0; transform:translateY(26px)} to{opacity:1; transform:none}}
+  .slide.active .r:nth-child(1){animation-delay:.06s}
+  .d1{animation-delay:.12s!important}.d2{animation-delay:.2s!important}.d3{animation-delay:.3s!important}
+  .d4{animation-delay:.4s!important}.d5{animation-delay:.5s!important}.d6{animation-delay:.6s!important}
+
+  /* ---------- layout helpers ---------- */
+  .split{display:grid; grid-template-columns:1.05fr .95fr; gap:clamp(28px,4vw,72px); align-items:center}
+  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(16px,2vw,34px)}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:clamp(16px,2.4vw,40px)}
+  @media(max-width:880px){ .split,.grid3,.grid2{grid-template-columns:1fr; gap:22px} h1{font-size:clamp(40px,13vw,70px)} }
+
+  .pill{display:inline-flex; align-items:center; gap:9px; font-family:var(--disp); font-weight:600;
+    font-size:13px; letter-spacing:.02em; padding:8px 16px; border-radius:999px;
+    background:rgba(10,108,245,.1); color:var(--blue); border:1px solid rgba(10,108,245,.22)}
+  .slide[data-theme="dark"] .pill{background:rgba(143,208,255,.12); color:#bfe2ff; border-color:rgba(143,208,255,.25)}
+
+  .card{background:var(--mist); border:1px solid var(--line); border-radius:20px; padding:clamp(18px,1.8vw,28px);
+    backdrop-filter:blur(8px); box-shadow:0 18px 44px -30px rgba(10,29,56,.45)}
+  .slide[data-theme="dark"] .card{background:rgba(255,255,255,.045); border-color:rgba(255,255,255,.1); box-shadow:none}
+  .card h3{margin-bottom:8px} .card p{font-size:14.5px; line-height:1.5; color:var(--muted)}
+  .slide[data-theme="dark"] .card p{color:#a9bcd6}
+  /* Swappable icon set: each .ic pulls --ic:url(assets/deck-icons/<slug>.svg), recolored via CSS mask.
+     No bubble: bare line icon, brand green->blue gradient on light cards, white on dark cards. */
+  .card .ic{margin-bottom:14px; display:block}
+  .card .ic::before{content:""; display:block; width:34px; height:34px;
+    background:linear-gradient(135deg,var(--green),var(--blue));
+    -webkit-mask:var(--ic) center/contain no-repeat; mask:var(--ic) center/contain no-repeat}
+  .slide[data-theme="dark"] .card .ic::before{background:#fff}
+
+  .stat{font-family:var(--disp); font-weight:900; line-height:.9; letter-spacing:-.03em}
+  .figframe{position:relative; border-radius:24px; overflow:hidden; box-shadow:0 40px 90px -40px rgba(8,20,40,.6)}
+  .figframe img{display:block; width:100%; height:100%; object-fit:cover}
+  .leaf{position:absolute; inset:0; z-index:0; opacity:.5; pointer-events:none}
+
+  ul.ticks{list-style:none; display:flex; flex-direction:column; gap:14px; margin-top:8px}
+  ul.ticks li{display:flex; gap:13px; align-items:flex-start; font-size:clamp(15px,1.4vw,17.5px); line-height:1.4}
+  ul.ticks li b{font-weight:600}
+  ul.ticks .dot{flex:0 0 auto; width:22px; height:22px; border-radius:999px; margin-top:1px;
+    background:linear-gradient(135deg,var(--green),var(--blue)); display:grid; place-items:center; color:#fff; font-size:12px; font-weight:800}
+
+  /* ---------- nav / chrome ---------- */
+  .progress{position:fixed; top:0; left:0; height:3px; width:0; z-index:70;
+    background:linear-gradient(90deg,var(--green),var(--blue)); transition:width .5s ease}
+  .chrome{position:fixed; z-index:65; left:var(--pad); right:var(--pad); bottom:clamp(16px,2.6vh,30px);
+    display:flex; align-items:center; justify-content:space-between; pointer-events:none}
+  .chrome .brandmark{display:flex; align-items:center; gap:10px; font-family:var(--disp); font-weight:700;
+    letter-spacing:.04em; font-size:13px; opacity:.85}
+  .chrome .brandmark img{height:22px; width:auto}
+  .counter{font-family:var(--disp); font-weight:700; font-size:13px; letter-spacing:.1em; opacity:.7}
+  .navbtns{display:flex; gap:10px; pointer-events:auto}
+  .navbtns button{width:42px; height:42px; border-radius:999px; border:1px solid currentColor; background:transparent;
+    color:inherit; cursor:pointer; font-size:17px; display:grid; place-items:center; opacity:.55; transition:.2s}
+  .navbtns button:hover{opacity:1; background:currentColor}
+  .navbtns button:hover svg{stroke:#0a1d38}
+  .slide[data-theme="dark"]~.chrome{}
+  .chrome,.counter{color:inherit}
+  .dots{position:fixed; right:clamp(14px,1.5vw,22px); top:50%; transform:translateY(-50%); z-index:65;
+    display:flex; flex-direction:column; gap:10px; pointer-events:auto}
+  .dots button{width:9px; height:9px; border-radius:999px; border:none; cursor:pointer; padding:0;
+    background:currentColor; opacity:.28; transition:.25s}
+  .dots button.on{opacity:1; transform:scale(1.5)}
+  .navstack{display:flex; flex-direction:column; align-items:center; gap:9px; pointer-events:auto}
+  .hint{font-size:11px; letter-spacing:.18em; text-transform:uppercase; opacity:.42;
+    font-family:var(--disp); font-weight:600; white-space:nowrap}
+  @media(max-width:880px){ .dots,.hint{display:none} }
+
+  .footnote{font-size:11.5px; line-height:1.5; color:var(--muted); opacity:.85}
+  .slide[data-theme="dark"] .footnote{color:#8ea4c2}
+  .kicker-num{font-family:var(--disp); font-weight:800; font-size:clamp(13px,1.1vw,15px); opacity:.4; letter-spacing:.05em}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<main class="deck" id="deck">
+
+  <!-- 1 · COVER -->
+  <section class="slide active" data-theme="dark">
+    <svg class="leaf" viewBox="0 0 600 600" preserveAspectRatio="xMidYMid slice" style="opacity:.16">
+      <g fill="none" stroke="#5ba53f" stroke-width="2">
+        <circle cx="470" cy="120" r="220"/><circle cx="470" cy="120" r="150"/><circle cx="470" cy="120" r="80"/>
+      </g></svg>
+    <div class="inner">
+      <div class="r d1 pill" style="margin-bottom:26px">Confidential · Physician Investment Opportunity</div>
+      <h1 class="r d2">Vitality<br>Academies <span class="accent-g thin">MSO</span></h1>
+      <p class="r d3 lead" style="margin-top:26px; max-width:54ch">A turnkey Management Service Organization powering physician-led medical weight loss in the high-growth Las Vegas market. An exclusive ownership opportunity for Nevada-licensed physicians.</p>
+      <div class="r d4" style="margin-top:40px; display:flex; gap:34px; flex-wrap:wrap; align-items:center">
+        <div><div style="font-family:var(--disp);font-weight:800;font-size:18px">Peter DeBry, MD</div><div style="opacity:.6;font-size:13px;letter-spacing:.04em">Board-certified obesity medicine · Founder</div></div>
+        <div style="width:1px;height:34px;background:rgba(255,255,255,.2)"></div>
+        <div style="opacity:.6;font-size:13px;letter-spacing:.18em;font-family:var(--disp);font-weight:700">MARCH 2026</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 · OPPORTUNITY -->
+  <section class="slide" data-theme="dark">
+    <div class="inner split">
+      <div>
+        <div class="r d1 eyebrow">The Boom</div>
+        <h2 class="r d2">A <span class="accent-g">$135 billion</span><br>opportunity.</h2>
+        <p class="r d3 lead" style="margin-top:22px">The U.S. weight-loss market reached a record <b style="color:inherit">$135 billion in 2025</b>, moving from niche to mainstream healthcare. 2026 is the year of acceleration.</p>
+        <ul class="ticks r d4" style="margin-top:26px">
+          <li><span class="dot">↑</span><span>Booming <b>medical</b> weight-loss market</span></li>
+          <li><span class="dot">↑</span><span>Decisive shift to <b>prescription-based</b> programs over fad diets</span></li>
+          <li><span class="dot">↑</span><span>Skyrocketing demand for <b>GLP-1 therapies</b> (semaglutide, tirzepatide)</span></li>
+          <li><span class="dot">↑</span><span>Expansion in the premium <b>Las Vegas wellness</b> market</span></li>
+        </ul>
+      </div>
+      <div class="r d3" style="display:flex;flex-direction:column;align-items:center;justify-content:center">
+        <img src="assets/glp1-vial-hero.png?v=2" alt="Vitality GLP-1 semaglutide vial" style="max-width:100%;max-height:70vh;object-fit:contain;filter:drop-shadow(0 40px 70px rgba(0,0,0,.5))">
+        <div style="opacity:.7;font-size:13px;letter-spacing:.04em;margin-top:10px;text-align:center">U.S. weight-loss market · 2025 record · recession-resistant</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · WELL-ROUNDED PLATFORM -->
+  <section class="slide" data-theme="light">
+    <div class="inner">
+      <div class="r d1 eyebrow">One platform, the whole patient</div>
+      <h2 class="r d2">Not a single pill.<br>A <span class="accent">complete</span> practice.</h2>
+      <p class="r d3 lead" style="margin-top:18px">Vitality wraps medication, hormones, body composition, coaching, education and technology into one physician-led program, so patients stay, and so does the revenue.</p>
+      <div class="grid3" style="margin-top:34px">
+        <div class="r d3 card"><span class="ic" style="--ic:url('assets/deck-icons/glp1.svg')"></span><h3>GLP-1 therapy</h3><p>Semaglutide and tirzepatide, plus a no-needle oral sublingual option. Every prescription physician-reviewed within 24 hours.</p></div>
+        <div class="r d3 card"><span class="ic" style="--ic:url('assets/deck-icons/total-male.svg')"></span><h3>Total Male</h3><p>TRT + GLP-1 + coaching in one program, treating low testosterone and belly fat as the connected loop they are.</p></div>
+        <div class="r d4 card"><span class="ic" style="--ic:url('assets/deck-icons/bloom.svg')"></span><h3>Vitality Bloom</h3><p>Physician-reviewed hair regrowth, fully online and async. From $59/mo, opening a second recurring revenue line.</p></div>
+        <div class="r d4 card"><span class="ic" style="--ic:url('assets/deck-icons/inbody.svg')"></span><h3>InBody composition</h3><p>Medical-grade body-composition scan in under a minute, muscle, fat and water segment by segment. Free for new patients.</p></div>
+        <div class="r d5 card"><span class="ic" style="--ic:url('assets/deck-icons/phd.svg')"></span><h3>PhD rewards program</h3><p>Personal Health Education, six interactive modules with points, streaks and badges that drive adherence and retention.</p></div>
+        <div class="r d5 card"><span class="ic" style="--ic:url('assets/deck-icons/pocket.svg')"></span><h3>Plan in your pocket</h3><p>Meals, shopping list and a barcode scanner that checks if a product fits the plan, carried on the patient's phone.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · THE CARE / CLINICAL DEPTH -->
+  <section class="slide" data-theme="light">
+    <div class="inner split">
+      <div>
+        <div class="r d1 eyebrow">Physician-led, start to finish</div>
+        <h2 class="r d2">Real clinicians.<br>Not a portal.</h2>
+        <p class="r d3 lead" style="margin-top:20px">A board-certified obesity-medicine physician, an experienced nurse practitioner, and a metabolic-health PhD, all behind every plan.</p>
+        <ul class="ticks r d4" style="margin-top:24px">
+          <li><span class="dot">✓</span><span>GLP-1 prescription <b>reviewed by Dr. DeBry, MD within 24 hours</b></span></li>
+          <li><span class="dot">✓</span><span>Compounded semaglutide from <b>$149 first month</b>, then $199/mo</span></li>
+          <li><span class="dot">✓</span><span>Medicare bridge: eligible members access brand-name Wegovy or Zepbound for <b>about $50/mo</b></span></li>
+          <li><span class="dot">✓</span><span>Free <b>insurance verification</b>, benefits checked and a call back within 24 hours</span></li>
+          <li><span class="dot">✓</span><span><b>Someone always answers.</b> Check-ins, coaching and dose adjustments as you go</span></li>
+        </ul>
+      </div>
+      <div class="r d3" style="display:flex;align-items:center;justify-content:center">
+        <img src="assets/inbody-970s.png" alt="InBody medical-grade body composition scanner" style="max-width:100%;max-height:76vh;object-fit:contain;filter:drop-shadow(0 32px 54px rgba(10,29,56,.22))">
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · TOTAL MALE -->
+  <section class="slide" data-theme="dark">
+    <div class="inner split">
+      <div class="r d2" style="display:flex;align-items:center;justify-content:center; order:2">
+        <img src="assets/total-male-hero.png" alt="Vitality Total Male program" style="max-width:100%;max-height:84vh;object-fit:contain;filter:drop-shadow(0 30px 60px rgba(0,0,0,.45))">
+      </div>
+      <div style="order:1">
+        <div class="r d1 eyebrow">Total Male · a second core line</div>
+        <h2 class="r d2">It's not just willpower.<br>It's your <span class="accent-g">hormones.</span></h2>
+        <p class="r d3 lead" style="margin-top:20px">Low testosterone makes it harder to build muscle and easier to store fat. More belly fat drives testosterone lower. Most clinics treat one side of that loop. Vitality treats both at once, with TRT, GLP-1 and coaching under one accountable physician.</p>
+        <div class="grid3 r d4" style="margin-top:26px">
+          <div><div class="stat accent-g" style="font-size:clamp(26px,3vw,40px)">$99</div><div style="opacity:.7;font-size:13px;margin-top:4px">Assessment: hormone &amp; metabolic panel, provider consult, personalized game plan</div></div>
+          <div><div class="stat accent-g" style="font-size:clamp(26px,3vw,40px)">3-in-1</div><div style="opacity:.7;font-size:13px;margin-top:4px">TRT + GLP-1 + behavioral coaching, integrated</div></div>
+          <div><div class="stat accent-g" style="font-size:clamp(26px,3vw,40px)">24h</div><div style="opacity:.7;font-size:13px;margin-top:4px">Physician-led with ongoing lab monitoring at every step</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · PATIENT EXPERIENCE / TAKE MY PLAN -->
+  <section class="slide" data-theme="light">
+    <div class="inner split">
+      <div>
+        <div class="r d1 eyebrow">Why patients stay</div>
+        <h2 class="r d2">Your plan,<br>in your <span class="accent">pocket.</span></h2>
+        <p class="r d3 lead" style="margin-top:20px">Scan the QR in the patient profile and carry the learning plan and meal plans on the phone, at the store and the gym. A built-in barcode scanner checks whether a product fits the plan, before it hits the cart.</p>
+        <ul class="ticks r d4" style="margin-top:22px">
+          <li><span class="dot">★</span><span><b>Free InBody scan</b> on the way in, a reason to walk through the door</span></li>
+          <li><span class="dot">★</span><span><b>1:1 nutrition coaching</b> and the PhD education modules build the habit</span></li>
+          <li><span class="dot">★</span><span><b>Points, streaks and badges</b> turn adherence into a game patients win</span></li>
+          <li><span class="dot">★</span><span>Async-friendly: app-based oversight, prescriptions and tracking</span></li>
+        </ul>
+      </div>
+      <div class="r d3" style="display:flex;align-items:center;justify-content:center">
+        <img src="assets/learning-phone.png" alt="The Vitality companion app on a phone" style="max-width:100%;max-height:80vh;object-fit:contain;filter:drop-shadow(0 38px 64px rgba(10,29,56,.30))">
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · MSO ADVANTAGE -->
+  <section class="slide" data-theme="dark">
+    <div class="inner">
+      <div class="r d1 eyebrow">Professional management</div>
+      <h2 class="r d2">The MSO advantage.</h2>
+      <p class="r d3 lead" style="margin-top:18px">Vitality Academies Nevada MSO LLC operates the management layer that powers DeBry Vitality Weight Loss. We handle the headaches, so the medical practice focuses purely on patient volume and care.</p>
+      <div class="grid2" style="margin-top:32px; grid-template-columns:repeat(4,1fr)">
+        <div class="r d3 card"><span class="ic" style="--ic:url('assets/deck-icons/billing.svg')"></span><h3>Billing &amp; admin</h3><p>Streamlined insurance processing and back-office efficiency.</p></div>
+        <div class="r d3 card"><span class="ic" style="--ic:url('assets/deck-icons/marketing.svg')"></span><h3>Marketing</h3><p>Aggressive patient acquisition and brand positioning.</p></div>
+        <div class="r d4 card"><span class="ic" style="--ic:url('assets/deck-icons/staffing.svg')"></span><h3>Staffing</h3><p>Recruiting and retaining top-tier clinic personnel.</p></div>
+        <div class="r d4 card"><span class="ic" style="--ic:url('assets/deck-icons/facilities.svg')"></span><h3>Facilities</h3><p>Premium leasing and clinic-environment management.</p></div>
+      </div>
+      <div class="r d5 pill" style="margin-top:30px">Turnkey operations · led by Peter DeBry, MD</div>
+    </div>
+  </section>
+
+  <!-- 8 · WHY PHYSICIANS + DeBry leadership -->
+  <section class="slide" data-theme="light">
+    <div class="inner split" style="grid-template-columns:.82fr 1.18fr; gap:clamp(28px,4vw,64px); align-items:center">
+      <!-- LEFT: Dr. DeBry -->
+      <div class="r d1">
+        <img src="assets/dr-debry.jpg" alt="Dr. Peter DeBry, MD" style="width:100%; max-width:300px; aspect-ratio:1/1; object-fit:cover; border-radius:22px; box-shadow:0 30px 60px -28px rgba(10,29,56,.5)">
+        <div style="margin-top:18px">
+          <div style="font-family:var(--disp); font-weight:800; font-size:clamp(20px,2vw,26px)">Peter DeBry, MD</div>
+          <div style="color:var(--muted); font-size:14px; margin-top:3px">Founder · University of Utah MD · Alpha Omega Alpha</div>
+        </div>
+        <ul class="ticks" style="margin-top:20px; gap:11px">
+          <li><span class="dot">✓</span><span><b>20+ years</b> in Las Vegas, <b>15,000+ surgeries</b> performed</span></li>
+          <li><span class="dot">✓</span><span>Fellowship-trained at <b>Bascom Palmer Eye Institute</b>, the #1-ranked eye program (1 of 4 selected nationally)</span></li>
+          <li><span class="dot">✓</span><span><b>Dual board-certified</b>: Ophthalmology + Obesity Medicine</span></li>
+          <li><span class="dot">✓</span><span>Founder of <b>NV Eye Surgery</b> (2014) and <b>Vitality Weight Loss</b></span></li>
+        </ul>
+      </div>
+      <!-- RIGHT: why physicians -->
+      <div>
+        <div class="r d1 eyebrow">A strategic, exclusive group</div>
+        <h2 class="r d2" style="font-size:clamp(28px,4.2vw,54px)">Why physicians matter.</h2>
+        <div style="margin-top:24px; display:flex; flex-direction:column; gap:18px">
+          <div class="r d3"><h3 class="accent">Exclusive group</h3><p style="color:var(--muted); font-size:15px; margin-top:4px">Open only to <b>Nevada-licensed physicians</b>, a selective network committed to advancing medical weight loss.</p></div>
+          <div class="r d4"><h3 class="accent">Professional synergy</h3><p style="color:var(--muted); font-size:15px; margin-top:4px">You understand the clinical efficacy of GLP-1 therapies. Now participate in the <b>business scalability</b>.</p></div>
+          <div class="r d5"><h3 class="accent">Compliance first</h3><p style="color:var(--muted); font-size:15px; margin-top:4px">Structured to respect the <b>Anti-Kickback Statute</b>. Distributions are based on ownership and capital contribution, <b>never on patient referrals</b>.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 · INVESTMENT STRUCTURE -->
+  <section class="slide" data-theme="dark">
+    <div class="inner split">
+      <div>
+        <div class="r d1 eyebrow">The offering</div>
+        <h2 class="r d2">Investment<br>structure.</h2>
+        <p class="r d3 lead" style="margin-top:18px">A low barrier with high-scale upside. Allocations and distributions are based on capital contribution, aligning every investor with the practice's growth.</p>
+        <div class="r d4" style="margin-top:26px; display:flex; gap:14px; flex-wrap:wrap">
+          <div class="card" style="padding:16px 22px"><div style="opacity:.6;font-size:12px;letter-spacing:.05em">STEP 1 · AT SIGNING</div><div class="stat" style="font-size:30px;color:#fff">$1,000<span style="font-size:14px;opacity:.6;font-weight:600"> /unit</span></div></div>
+          <div class="card" style="padding:16px 22px"><div style="opacity:.6;font-size:12px;letter-spacing:.05em">STEP 2 · WITHIN 30 DAYS</div><div class="stat" style="font-size:30px;color:#fff">$9,000<span style="font-size:14px;opacity:.6;font-weight:600"> /unit</span></div></div>
+        </div>
+      </div>
+      <div class="r d3">
+        <div class="card" style="padding:30px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid rgba(255,255,255,.12);padding-bottom:16px;margin-bottom:16px">
+            <div><div style="opacity:.6;font-size:13px">Per membership unit</div><div class="stat" style="font-size:46px;color:#8bd86a">$10,000</div></div>
+            <div style="text-align:right"><div class="stat" style="font-size:46px;color:#fff">25</div><div style="opacity:.6;font-size:13px">units available, total</div></div>
+          </div>
+          <ul class="ticks" style="gap:12px">
+            <li><span class="dot">●</span><span>Flexible entry: purchase <b>1 to 5 units</b></span></li>
+            <li><span class="dot">●</span><span><b>75% retained by the founder</b>, full alignment of interest</span></li>
+            <li><span class="dot">●</span><span>Distributions <b>based on capital contribution</b></span></li>
+            <li><span class="dot">●</span><span>Proceeds fund staffing, billing systems and high-ROI marketing to drive rapid patient acquisition</span></li>
+          </ul>
+          <div style="margin-top:18px;font-size:13px;opacity:.6">Positions secured on a first-to-execute basis.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 · CONTACT -->
+  <section class="slide" data-theme="dark">
+    <div class="inner split">
+      <div>
+        <div class="r d1 eyebrow">Secure your units</div>
+        <h2 class="r d2">Join the medical<br>weight-loss<br><span class="accent-g">revolution.</span></h2>
+        <p class="r d3 lead" style="margin-top:20px">Only 25 units are available in this initial offering. Positions are secured on a first-to-execute basis.</p>
+        <div class="r d4" style="margin-top:30px; display:grid; gap:16px; max-width:420px">
+          <div><div style="opacity:.55;font-size:12px;letter-spacing:.18em;font-family:var(--disp);font-weight:700">PHONE</div><div style="font-size:19px;font-weight:600">702-219-8770 · Dr. Peter DeBry</div></div>
+          <div><div style="opacity:.55;font-size:12px;letter-spacing:.18em;font-family:var(--disp);font-weight:700">EMAIL</div><div style="font-size:19px;font-weight:600">drdebry@vitalityweightloss.health</div></div>
+          <div><div style="opacity:.55;font-size:12px;letter-spacing:.18em;font-family:var(--disp);font-weight:700">WEB</div><div style="font-size:19px;font-weight:600">vitalityweightloss.health</div></div>
+          <div><div style="opacity:.55;font-size:12px;letter-spacing:.18em;font-family:var(--disp);font-weight:700">CLINIC</div><div style="font-size:16px;font-weight:500;opacity:.85">6140 Brent Thurman Way, Suite 100, Las Vegas, NV 89148</div></div>
+        </div>
+      </div>
+      <div class="r d3" style="display:flex;align-items:center;justify-content:center">
+        <img src="assets/glp1-vial-hero-2.png?v=2" alt="Vitality GLP-1 + GIP tirzepatide vial" style="max-width:100%;max-height:82vh;object-fit:contain;filter:drop-shadow(0 44px 72px rgba(0,0,0,.5))">
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 · DISCLAIMER -->
+  <section class="slide" data-theme="light">
+    <div class="inner" style="max-width:880px">
+      <div class="r d1 eyebrow">Important disclosure</div>
+      <h3 class="r d2" style="font-size:clamp(20px,2.4vw,30px);line-height:1.2;font-weight:700">This presentation is for informational purposes only.</h3>
+      <p class="r d3 footnote" style="font-size:14px;line-height:1.7;margin-top:18px;max-width:78ch">
+        This presentation does not constitute an offer to sell or a solicitation of an offer to buy any securities. The offering is made only by the Subscription Agreement and related offering documents. Investment involves high risk, including the possible loss of principal. Past performance is not indicative of future results. This opportunity is available only to qualified, licensed physicians in the State of Nevada. The structure is designed to comply with the federal Anti-Kickback Statute; distributions are based strictly on ownership percentage and capital contribution and never on patient referrals.
+      </p>
+      <div class="r d4" style="margin-top:26px;display:flex;align-items:center;gap:12px;opacity:.8">
+        <img src="assets/logo-icon.png" alt="" style="height:26px" onerror="this.style.display='none'">
+        <span style="font-family:var(--disp);font-weight:700;letter-spacing:.04em;font-size:13px">Vitality Academies Nevada MSO LLC · © 2026</span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- chrome -->
+<div class="chrome">
+  <div class="brandmark"><img src="assets/logo-icon.png" alt="" onerror="this.style.display='none'"><span>VITALITY ACADEMIES</span></div>
+  <div class="navstack">
+    <div class="navbtns">
+      <button id="prev" aria-label="Previous"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <button id="next" aria-label="Next"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>
+    </div>
+    <div class="hint">← → or swipe</div>
+  </div>
+  <div class="counter"><span id="cur">01</span> <span style="opacity:.4">/ <span id="tot">11</span></span></div>
+</div>
+<div class="dots" id="dots"></div>
+
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  const dotsWrap = document.getElementById('dots');
+  const progress = document.getElementById('progress');
+  const curEl = document.getElementById('cur'), totEl = document.getElementById('tot');
+  let i = 0;
+  totEl.textContent = String(slides.length).padStart(2,'0');
+
+  slides.forEach((_, n) => {
+    const b = document.createElement('button');
+    b.addEventListener('click', () => go(n));
+    dotsWrap.appendChild(b);
+  });
+  const dots = [...dotsWrap.children];
+
+  function go(n){
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, k) => s.classList.toggle('active', k === i));
+    dots.forEach((d, k) => d.classList.toggle('on', k === i));
+    curEl.textContent = String(i + 1).padStart(2,'0');
+    progress.style.width = ((i) / (slides.length - 1) * 100) + '%';
+    // re-trigger reveal animations
+    const act = slides[i];
+    act.querySelectorAll('.r').forEach(el => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
+  }
+  const next = () => go(i + 1), prev = () => go(i - 1);
+  document.getElementById('next').addEventListener('click', next);
+  document.getElementById('prev').addEventListener('click', prev);
+  addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); next(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+    else if (e.key === 'Home') go(0); else if (e.key === 'End') go(slides.length - 1);
+  });
+  // touch
+  let x0 = null;
+  addEventListener('touchstart', e => x0 = e.touches[0].clientX, {passive:true});
+  addEventListener('touchend', e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    if (Math.abs(dx) > 50) (dx < 0 ? next : prev)();
+    x0 = null;
+  }, {passive:true});
+  // wheel (debounced) for trackpad presenters
+  let wlock = false;
+  addEventListener('wheel', e => {
+    if (Math.abs(e.deltaY) < 24 && Math.abs(e.deltaX) < 24) return;
+    if (wlock) return; wlock = true; setTimeout(() => wlock = false, 650);
+    ((e.deltaY > 0 || e.deltaX > 0) ? next : prev)();
+  }, {passive:true});
+
+  go(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Secure Your Units — Subscription Agreement · Vitality Academies MSO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;600;700;800;900&family=Red+Hat+Text:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0a1d38; --ink:#16201d; --blue:#0a6cf5; --blue-deep:#0856c8; --green:#5ba53f;
+    --muted:#5d6b75; --line:#e2e8ea; --bg:#f4f7f8; --err:#d6453d;
+    --disp:'Red Hat Display',system-ui,sans-serif; --body:'Red Hat Text',system-ui,sans-serif;
+    --serif:'Times New Roman',Times,Georgia,serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--body); color:var(--ink); background:var(--bg); -webkit-font-smoothing:antialiased; line-height:1.5}
+  h1,h2,h3,.disp{font-family:var(--disp); letter-spacing:-.01em}
+  a{color:var(--blue)}
+  .shell{max-width:880px; margin:0 auto; padding:clamp(18px,4vw,40px)}
+
+  /* top bar */
+  .top{display:flex; align-items:center; justify-content:space-between; margin-bottom:26px}
+  .top .brand{display:flex; align-items:center; gap:10px; font-family:var(--disp); font-weight:800; font-size:15px}
+  .top .brand img{height:24px}
+  .top a.back{font-size:14px; text-decoration:none; color:var(--muted)}
+
+  /* stepper */
+  .steps{display:flex; gap:10px; margin-bottom:28px}
+  .steps .s{flex:1; display:flex; align-items:center; gap:9px; font-size:13px; color:var(--muted); font-weight:600;
+    padding:11px 14px; background:#fff; border:1px solid var(--line); border-radius:12px}
+  .steps .s .num{width:22px; height:22px; border-radius:999px; background:#e7edf0; color:var(--muted);
+    display:grid; place-items:center; font-family:var(--disp); font-weight:800; font-size:12px; flex:0 0 auto}
+  .steps .s.active{color:var(--ink); border-color:var(--blue)}
+  .steps .s.active .num{background:var(--blue); color:#fff}
+  .steps .s.done .num{background:var(--green); color:#fff}
+  @media(max-width:620px){ .steps .s .lbl{display:none} .steps .s{justify-content:center} }
+
+  .panel{background:#fff; border:1px solid var(--line); border-radius:20px; padding:clamp(22px,3.5vw,40px); box-shadow:0 24px 60px -44px rgba(10,29,56,.55)}
+  .panel h2{font-size:clamp(22px,3vw,30px); font-weight:800}
+  .panel .lede{color:var(--muted); margin:8px 0 26px; font-size:15.5px}
+
+  .field{margin-bottom:18px}
+  .field label{display:block; font-family:var(--disp); font-weight:700; font-size:13px; margin-bottom:7px}
+  .field .hint{font-weight:500; color:var(--muted); font-size:12px}
+  input[type=text],input[type=email],input[type=tel],select{
+    width:100%; font-family:var(--body); font-size:15px; padding:12px 14px; border:1.5px solid var(--line);
+    border-radius:11px; background:#fcfdfd; color:var(--ink); transition:.15s}
+  input:focus,select:focus{outline:none; border-color:var(--blue); background:#fff}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  .row3{display:grid; grid-template-columns:2fr 1fr 1fr; gap:14px}
+  @media(max-width:560px){ .row2,.row3{grid-template-columns:1fr} }
+
+  /* units selector */
+  .units{display:flex; gap:10px; flex-wrap:wrap}
+  .units button{font-family:var(--disp); font-weight:800; font-size:18px; width:58px; height:58px; border-radius:14px;
+    border:1.5px solid var(--line); background:#fcfdfd; cursor:pointer; transition:.15s}
+  .units button.sel{background:var(--blue); color:#fff; border-color:var(--blue); transform:translateY(-2px)}
+  .calc{margin-top:18px; background:linear-gradient(160deg,#0a1d38,#07182e); color:#eaf2ff; border-radius:16px; padding:20px 22px}
+  .calc .r{display:flex; justify-content:space-between; align-items:baseline; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.12)}
+  .calc .r:last-child{border:0}
+  .calc .r .k{color:#b9cbe4; font-size:14px} .calc .r .v{font-family:var(--disp); font-weight:800; font-size:20px}
+  .calc .r.big .v{font-size:28px; color:#8bd86a}
+
+  /* attestations */
+  .attests{margin-top:8px}
+  .att{display:flex; gap:12px; align-items:flex-start; padding:14px; border:1.5px solid var(--line); border-radius:13px; margin-bottom:11px; cursor:pointer; transition:.15s}
+  .att:hover{border-color:#c7d2d6}
+  .att.checked{border-color:var(--green); background:#f3faf0}
+  .att input{margin-top:3px; width:18px; height:18px; flex:0 0 auto; accent-color:var(--green)}
+  .att span{font-size:13.5px; line-height:1.55} .att b{font-weight:700}
+  .att .ref{color:var(--muted); font-size:11.5px}
+
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:9px; font-family:var(--disp); font-weight:700; font-size:15px;
+    padding:14px 28px; border-radius:999px; text-decoration:none; cursor:pointer; border:1.5px solid transparent; transition:.18s}
+  .btn-primary{background:var(--blue); color:#fff} .btn-primary:hover{background:var(--blue-deep)}
+  .btn-primary:disabled{background:#c2d4ee; cursor:not-allowed}
+  .btn-ghost{background:#fff; border-color:var(--line); color:var(--ink)} .btn-ghost:hover{border-color:#c7d2d6}
+  .btn-green{background:var(--green); color:#fff} .btn-green:hover{filter:brightness(1.06)}
+  .actions{display:flex; gap:12px; justify-content:space-between; margin-top:28px; flex-wrap:wrap}
+
+  .errmsg{color:var(--err); font-size:13px; margin-top:8px; display:none}
+  .errmsg.show{display:block}
+
+  /* agreement doc */
+  .docwrap{border:1px solid var(--line); border-radius:14px; max-height:460px; overflow:auto; background:#fff; padding:6px}
+  #agreement-doc{font-family:var(--serif); color:#111; font-size:13px; line-height:1.5; padding:34px 40px}
+  #agreement-doc .pghdr{text-align:right; font-size:11px; margin-bottom:18px; letter-spacing:.04em}
+  #agreement-doc h3.docttl{font-family:var(--serif); text-align:center; font-weight:700; text-decoration:underline; font-size:14px; margin:0 0 18px; letter-spacing:.02em}
+  #agreement-doc .ctr{text-align:center; font-weight:700; margin:16px 0 8px}
+  #agreement-doc p{margin:0 0 11px; text-align:justify}
+  #agreement-doc .ind{margin-left:34px}
+  #agreement-doc .legend{font-weight:700; margin:14px 40px; text-align:left}
+  #agreement-doc .speculative{font-weight:700; margin:14px 0}
+  #agreement-doc .sigline{border-bottom:1px solid #111; min-width:230px; display:inline-block}
+  #agreement-doc .fillin{font-weight:700; border-bottom:1px solid #111; padding:0 6px}
+  #agreement-doc .sigimg{max-height:48px; display:block}
+  #agreement-doc .footnote{font-size:10px; color:#333; border-top:1px solid #999; margin-top:14px; padding-top:6px}
+
+  /* signature pad */
+  .sigpad-wrap{margin-top:8px}
+  #sigpad{width:100%; height:150px; border:1.5px dashed #c2cdd2; border-radius:12px; background:#fcfdfd; touch-action:none; cursor:crosshair}
+  .sigpad-tools{display:flex; gap:10px; align-items:center; margin-top:8px}
+  .sigpad-tools button{font-family:var(--body); font-size:13px; color:var(--muted); background:none; border:0; cursor:pointer; text-decoration:underline}
+
+  .notice{background:#fff7e8; border:1px solid #f0d68a; border-radius:12px; padding:14px 16px; font-size:13px; color:#7a5a12; margin-bottom:20px}
+  .hide{display:none}
+
+  /* payment summary */
+  .paysum{background:linear-gradient(160deg,#0a1d38,#07182e); color:#eaf2ff; border-radius:18px; padding:26px}
+  .paysum .r{display:flex; justify-content:space-between; align-items:baseline; padding:10px 0; border-bottom:1px solid rgba(255,255,255,.12)}
+  .paysum .r:last-child{border:0}
+  .paysum .r .k{color:#b9cbe4} .paysum .r .v{font-family:var(--disp); font-weight:800; font-size:18px}
+  .paysum .r.due .v{font-size:30px; color:#8bd86a}
+
+  /* print: only the agreement. #agreement-doc lives INSIDE .docwrap, so we keep .docwrap visible
+     and hide #step-sign's other direct children (heading, sig pad, fields, actions). */
+  @media print{
+    body{background:#fff}
+    .shell > *:not(#step-sign){display:none !important}
+    #step-sign{display:block !important}
+    #step-sign > *:not(.docwrap){display:none !important}
+    .docwrap{max-height:none !important; overflow:visible !important; border:0 !important; padding:0 !important}
+    #agreement-doc{padding:0; font-size:12px}
+    #step-sign{display:block !important}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="top">
+    <a class="brand" href="investors.html"><img src="assets/logo-icon.png" alt="" onerror="this.style.display='none'">Vitality Academies</a>
+    <a class="back" href="investors.html">← Back to overview</a>
+  </div>
+
+  <div class="steps">
+    <div class="s active" id="dot1"><span class="num">1</span><span class="lbl">Subscription details</span></div>
+    <div class="s" id="dot2"><span class="num">2</span><span class="lbl">Review &amp; sign</span></div>
+    <div class="s" id="dot3"><span class="num">3</span><span class="lbl">Secure your units</span></div>
+  </div>
+
+  <!-- STEP 1 -->
+  <section class="panel" id="step-details">
+    <h2>Secure your units</h2>
+    <p class="lede">Complete your subscription details. This information populates your Subscription Agreement on the next step. The offering is open only to accredited, Nevada-licensed physicians.</p>
+
+    <div class="field">
+      <label>Number of membership units <span class="hint">· 1 to 5 · $10,000 each</span></label>
+      <div class="units" id="units">
+        <button type="button" data-u="1">1</button>
+        <button type="button" data-u="2">2</button>
+        <button type="button" data-u="3">3</button>
+        <button type="button" data-u="4">4</button>
+        <button type="button" data-u="5">5</button>
+      </div>
+      <div class="calc">
+        <div class="r"><span class="k">Total subscription (<span id="c-units">1</span> × $10,000)</span><span class="v" id="c-total">$10,000</span></div>
+        <div class="r big"><span class="k">Initial Fee due today (<span id="c-units2">1</span> × $1,000)</span><span class="v" id="c-initial">$1,000</span></div>
+        <div class="r"><span class="k">Second Payment within 30 days (<span id="c-units3">1</span> × $9,000)</span><span class="v" id="c-second">$9,000</span></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Full legal name (as it should appear on the agreement)</label>
+      <input type="text" id="f-name" autocomplete="name" placeholder="Jane A. Physician, MD">
+    </div>
+    <div class="row2">
+      <div class="field"><label>Email</label><input type="email" id="f-email" autocomplete="email" placeholder="you@practice.com"></div>
+      <div class="field"><label>Phone</label><input type="tel" id="f-phone" autocomplete="tel" placeholder="(702) 555-0100"></div>
+    </div>
+    <div class="field"><label>Street address</label><input type="text" id="f-addr1" autocomplete="address-line1" placeholder="123 Medical Plaza, Suite 200"></div>
+    <div class="row3">
+      <div class="field"><label>City</label><input type="text" id="f-city" autocomplete="address-level2" placeholder="Las Vegas"></div>
+      <div class="field"><label>State</label><input type="text" id="f-state" autocomplete="address-level1" value="NV"></div>
+      <div class="field"><label>ZIP</label><input type="text" id="f-zip" autocomplete="postal-code" placeholder="89134"></div>
+    </div>
+
+    <div style="margin:24px 0 10px; font-family:var(--disp); font-weight:800; font-size:15px">Required representations</div>
+    <div class="attests">
+      <label class="att"><input type="checkbox" class="att-cb" id="att1"><span><b>Licensed physician in good standing.</b> I am a physician licensed to practice medicine in the State of Nevada. I have never had a medical license, DEA registration, or other required certification suspended, revoked, or limited, and have never been convicted of a felony or a misdemeanor related to fraud or abuse. <span class="ref">(Section 3.1.1)</span></span></label>
+      <label class="att"><input type="checkbox" class="att-cb" id="att2"><span><b>Accredited investor.</b> I am an "accredited investor" within the meaning of Rule 501(a) of Regulation D under the Securities Act of 1933. I understand these units are offered only to accredited investors and the Company is relying on this representation. <span class="ref">(Section 3.1.5)</span></span></label>
+      <label class="att"><input type="checkbox" class="att-cb" id="att3"><span><b>Risk acknowledged.</b> I have reviewed the Risk Factors in Section 4.1. I understand these securities are highly speculative and illiquid, there is no public market, and I am able to bear the loss of my entire investment. <span class="ref">(Section 4.1)</span></span></label>
+      <label class="att"><input type="checkbox" class="att-cb" id="att4"><span><b>Initial Fee is non-refundable.</b> I understand the $1,000-per-unit Initial Fee is payable upon execution and is non-refundable. <span class="ref">(Section 1.1.1)</span></span></label>
+    </div>
+
+    <div class="errmsg" id="err1">Please complete every field, select your units, and confirm all four representations.</div>
+    <div class="actions">
+      <a class="btn btn-ghost" href="investors.html">Cancel</a>
+      <button class="btn btn-primary" id="to-sign" disabled>Review &amp; sign agreement →</button>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="panel hide" id="step-sign">
+    <h2>Review &amp; sign your Subscription Agreement</h2>
+    <p class="lede">Read the full agreement below. Your details are merged in. Sign in the box, then download or print your signed copy and continue.</p>
+
+    <div class="docwrap"><div id="agreement-doc"><!-- built by JS --></div></div>
+    <div id="print-anchor"></div>
+
+    <div class="field" style="margin-top:24px">
+      <label>Draw your signature</label>
+      <div class="sigpad-wrap">
+        <canvas id="sigpad"></canvas>
+        <div class="sigpad-tools">
+          <span style="font-size:12px;color:var(--muted)">Sign with mouse or finger</span>
+          <button type="button" id="sig-clear">Clear</button>
+        </div>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Type your full legal name to confirm</label><input type="text" id="f-typed" placeholder="Jane A. Physician, MD"></div>
+      <div class="field"><label>Date</label><input type="text" id="f-date" readonly></div>
+    </div>
+
+    <div class="errmsg" id="err2">Please draw your signature and type your full legal name to confirm.</div>
+    <div class="actions">
+      <button class="btn btn-ghost" id="back-1">← Back</button>
+      <div style="display:flex; gap:12px; flex-wrap:wrap">
+        <button class="btn btn-ghost" id="print-doc">⬇ Download / print signed copy</button>
+        <button class="btn btn-primary" id="to-pay" disabled>Continue to secure units →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section class="panel hide" id="step-pay">
+    <h2>Secure your units</h2>
+    <p class="lede">Your signed Subscription Agreement is complete. Pay the non-refundable Initial Fee to reserve your units. The Second Payment is due within 30 days.</p>
+
+    <div class="notice">After payment you will return here with confirmation. Your reserved units are held on a first-to-execute basis. Funds are processed securely by Clover.</div>
+
+    <div class="paysum">
+      <div class="r"><span class="k">Membership units</span><span class="v" id="p-units">1</span></div>
+      <div class="r"><span class="k">Total subscription</span><span class="v" id="p-total">$10,000</span></div>
+      <div class="r due"><span class="k">Initial Fee due now</span><span class="v" id="p-initial">$1,000</span></div>
+      <div class="r"><span class="k">Second Payment (within 30 days)</span><span class="v" id="p-second">$9,000</span></div>
+    </div>
+
+    <div class="errmsg" id="err3">We could not start the payment. Please try again or contact us.</div>
+    <div class="actions">
+      <button class="btn btn-ghost" id="back-2">← Back</button>
+      <button class="btn btn-green" id="pay-btn">Pay <span id="pay-amt">$1,000</span> with Clover →</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ============ config ============ */
+// Convex HTTP endpoint that records the lead (CRM), emails Fred, and creates the Clover checkout.
+// Built in Phase 3. Until deployed, the Pay button surfaces a friendly error.
+const SUBSCRIBE_ENDPOINT = 'https://quixotic-cat-492.convex.site/investor-subscribe';
+
+/* ============ state ============ */
+const state = { units: 1, signed: false };
+const fmt = n => '$' + n.toLocaleString('en-US');
+const PRICE = 10000, INITIAL = 1000, SECOND = 9000;
+
+/* ============ units + calc ============ */
+const unitBtns = document.querySelectorAll('#units button');
+function setUnits(u){
+  state.units = u;
+  unitBtns.forEach(b => b.classList.toggle('sel', +b.dataset.u === u));
+  const t = u*PRICE, i = u*INITIAL, s = u*SECOND;
+  document.getElementById('c-units').textContent = u;
+  document.getElementById('c-units2').textContent = u;
+  document.getElementById('c-units3').textContent = u;
+  document.getElementById('c-total').textContent = fmt(t);
+  document.getElementById('c-initial').textContent = fmt(i);
+  document.getElementById('c-second').textContent = fmt(s);
+  validate1();
+}
+unitBtns.forEach(b => b.addEventListener('click', () => setUnits(+b.dataset.u)));
+
+/* ============ attestation visual ============ */
+document.querySelectorAll('.att-cb').forEach(cb => {
+  cb.addEventListener('change', () => { cb.closest('.att').classList.toggle('checked', cb.checked); validate1(); });
+});
+
+/* ============ step 1 validation ============ */
+const reqFields = ['f-name','f-email','f-phone','f-addr1','f-city','f-state','f-zip'];
+reqFields.forEach(id => document.getElementById(id).addEventListener('input', validate1));
+function allAtt(){ return [...document.querySelectorAll('.att-cb')].every(c => c.checked); }
+function fieldsFilled(){ return reqFields.every(id => document.getElementById(id).value.trim().length > 0); }
+function validEmail(){ return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(document.getElementById('f-email').value.trim()); }
+function validate1(){
+  const ok = state.units >= 1 && fieldsFilled() && validEmail() && allAtt();
+  document.getElementById('to-sign').disabled = !ok;
+  return ok;
+}
+
+// Initial render of the units calc + button state. MUST run after reqFields/validate1 are defined
+// above — calling it earlier hit the `const reqFields` temporal dead zone and aborted the script.
+setUnits(1);
+
+/* ============ collect data ============ */
+function gather(){
+  return {
+    units: state.units,
+    name: document.getElementById('f-name').value.trim(),
+    email: document.getElementById('f-email').value.trim(),
+    phone: document.getElementById('f-phone').value.trim(),
+    addr1: document.getElementById('f-addr1').value.trim(),
+    city: document.getElementById('f-city').value.trim(),
+    state: document.getElementById('f-state').value.trim(),
+    zip: document.getElementById('f-zip').value.trim(),
+  };
+}
+
+/* ============ today (no Date hardcode; runtime is fine in the browser) ============ */
+function todayStr(){
+  const d = new Date();
+  return d.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+}
+function dayOrdinal(){
+  const d = new Date(); const day = d.getDate();
+  const month = d.toLocaleDateString('en-US',{month:'long'});
+  return { day, month, year: d.getFullYear() };
+}
+
+/* ============ build the verbatim agreement with merged data ============ */
+function buildAgreement(){
+  const d = gather();
+  const o = dayOrdinal();
+  const addrFull = `${d.addr1}, ${d.city}, ${d.state} ${d.zip}`;
+  const HDR = '<div class="pghdr">PHYSICIAN INVESTOR</div>';
+  const doc = `
+${HDR}
+<h3 class="docttl">SUBSCRIPTION AGREEMENT</h3>
+<p>THIS SUBSCRIPTION AGREEMENT (the &ldquo;Agreement&rdquo;) is made this <span class="fillin">${o.day}</span> day of <span class="fillin">${o.month}</span>, ${o.year} by and between Vitality Academies Nevada MSO  LLC a Nevada limited liability company (the &ldquo;Company&rdquo;), and the investor executing the signature page hereof (&ldquo;Investor&rdquo;).</p>
+<p class="ctr">BACKGROUND</p>
+<p class="ind">A.&nbsp;&nbsp;&nbsp;&nbsp;The Company desires to sell a portion of it limited liability company membership units (the &ldquo;Physician Membership Unit(s)&rdquo;, to a select group of Investors upon the terms and conditions hereinafter set forth.</p>
+<p class="ind">B.&nbsp;&nbsp;&nbsp;&nbsp;The Company desires to use the proceeds of the sale of the Membership Units hereunder to operate a management service organization for a weight loss practice (&ldquo;MSO&rdquo;) in the metropolitan Las Vegas Nevada market.</p>
+<p class="ind">C.&nbsp;&nbsp;&nbsp;&nbsp;In connection with the transactions contemplated by this Agreement, the Investor will execute the Company&rsquo;s Operating Agreement, providing for participation, management and other rights relating to its ownership of the Company&rsquo;s Membership Units.</p>
+<p class="ind">D.&nbsp;&nbsp;&nbsp;&nbsp;By this Agreement, the Investor is subscribing to purchase the  Membership Units of the Company.</p>
+<p>NOW THEREFORE, in consideration of the promises and the mutual covenants contained herein, the parties agree as follows:</p>
+<p class="ctr">ARTICLE 1<br>SUBSCRIPTION</p>
+<p><b>1.1&nbsp;&nbsp;Subscription Price</b>. The Investor hereby irrevocably subscribes to purchase the membership units (the &ldquo;Physician Units&rdquo;) of the Company. Investor agrees to purchase a minimum of one (1 Membership Unit and no more than five (5) Membership Units of the Company. The Membership shall be held by physician investors. The purchase price shall be Ten Thousand Dollars ($10,000.00) per Membership Unit.  The purchase price of the Membership Units shall be payable as follows:</p>
+<p class="ind"><b>1.1.1&nbsp;&nbsp;Initial Fee</b>. Each Physician Investor shall pay an initial fee (&ldquo;Initial Fee&rdquo;) of One Thousand Dollars ($1,000.00) per Membership Unit, which shall be payable in full upon execution of this Agreement. The Initial Fee is non-refundable and will be used to pay for the costs associated with this offering. In the event the offering is terminated in accordance with Section 1.2, the Manager (as defined below) will retain the Initial Fee to pay for such expenses.</p>
+<p class="ind"><b>1.1.2&nbsp;&nbsp;Second Payment</b>. A second payment (&ldquo;Second Payment&rdquo;) shall be paid by each Physician Investor in the amount of Nine Thousand Dollars ($9,000.00) per  Membership Unit and will be due and payable to Company no later than thirty (30) days after execution of this Subscription Agreement.</p>
+<p><b>1.2&nbsp;&nbsp;Description of the Securities</b>. The Company is comprised of 100 Membership Units. Seventy-Five (75) of the Membership Units shall be retained by Vitality Academies of Nevada LLC as the founder of the Company (&ldquo;Founder&rdquo;). Twenty-Five (25) Membership Units are being offered to Investors at a cash purchase price of Ten Thousand Dollars ($10,000.00) per  Membership Unit.. You will not be permitted to buy more than five (5) Membership Units, however the Manager (as defined below) shall have the discretion to allow for any one Investor to purchase more Membership Units if it is deemed to be in the best interest of the Company. Holders of the Membership Units will have the right to certain allocations and distributions. Such allocation and distribution are based, in part, upon the relative contribution of each Member  to total contributions to capital. Physician Units are subject to dilution.</p>
+<p><b>1.3&nbsp;&nbsp;Use of Proceeds</b>. The Company&rsquo;s intends to use the proceeds from this offering to pay for its initial start up expenses, including but not limited to, formation business licensing fees, legal costs, administrative expenses, staffing needs, billing services, and lease payments, for real and personal property.  Exhibit B attached hereto sets forth the anticipated use of the proceeds, however, the actual use of proceeds, and allocation thereof in the event maximum funding is not achieved, will lie wholly within the discretion of management.</p>
+<p class="ctr">ARTICLE 2<br>THE COMPANY</p>
+<p><b>2.1&nbsp;&nbsp;Company</b>. The Company was organized on June 22, 2025 under the name of Vitality Academies Nevada MSO LLC,  a Nevada  limited liability company. The Company intends to operate at  1725 Village Center Circle, Las Vegas.  The Company shall provide certain management, administrative and marketing services to DeBry Vitality Weight Loss PLLC, a Nevada professional limited liability company doing business as Vitality Weight Loss (&ldquo;Operating Company&rdquo;)  providing a range of weight loss and support services for overall health and wellness.</p>
+<p><b>2.2&nbsp;&nbsp;Management</b>. The Company&rsquo;s management will be vested exclusively Peter DeBry, M.D. who will be responsible for the daily operations of the MSO (&ldquo;Initial Manager&rdquo;).  Other Members will not participate directly in the management of the Company except as set forth in the Operating Agreement. The Manager is accountable to the Company as a fiduciary and consequently must exercise good faith and integrity in handling the Company&rsquo;s affairs; provided, however, the Manager may delegate day to day responsibilities to third parties.</p>
+<p class="ctr">ARTICLE 3<br>REPRESENTATIONS AND WARRANTIES OF THE INVESTOR</p>
+<p><b>3.1</b>&nbsp;&nbsp;The Investor represents and warrants to the Company as follows:</p>
+<p class="ind"><b>3.1.1&nbsp;&nbsp;Ownership Restrictions.</b> The undersigned, if an individual physician, or if a professional entity (&ldquo;Group&rdquo;), each physician provider of Group, has never had his or  her license to practice medicine in any state suspended, revoked or otherwise limited; has never had any license, certification, registration, permit or approval required for the lawful and reasonable provision of medical services suspended, revoked or otherwise limited, including his or her United States Drug Enforcement Agency narcotics number; has never been convicted of a felony or any misdemeanor related to fraud or abuse; and is a physician licensed to practice medicine in the State of Nevada.</p>
+<p class="ind"><b>3.1.2&nbsp;&nbsp;Enforceability</b>. There is no action, proceeding, investigation pending or, to the best of the Investor&rsquo;s knowledge, threatened (nor any basis therefor) against the Investor or its affiliates, which questions or which would question, directly or indirectly, the validity or enforceability of this Agreement or any other agreement contemplated hereunder.</p>
+<p class="ind"><b>3.1.3&nbsp;&nbsp;Purchase for Own Account</b>. The Investor is acquiring its interest in the Company for its own account, for investment, and not with a view to, or for the resale, distribution, subdivision or fractionalization thereof.</p>
+<p class="ind"><b>3.1.4&nbsp;&nbsp;Restricted Securities; Legend.</b> The Investor is purchasing the  Physician Membership Units for his or her own account, for investment purposes only, and not with a view to immediate resale or distribution, either in whole or in part. Investor understands and agrees that:  (i) the Physician Membership Units offered hereby will not be registered under federal or state securities laws, are being offered and sold in reliance on exemptions from the registration requirements of these laws, and cannot be resold in whole or in part unless they are so registered or sold pursuant to an exemption from registration; and (ii) a legend will be placed on any documents or instruments representing the Physician Membership Units in substantially the following form:</p>
+<p class="legend">THE SECURITY REPRESENTED BY THIS DOCUMENT WAS ISSUED PURSUANT TO AN EXEMPTION FROM REGISTRATION UNDER THE SECURITIES ACT OF 1933, AS AMENDED (THE &ldquo;1933 ACT&rdquo;) AND UNDER APPLICABLE STATE SECURITIES LAWS.  THIS SECURITY CANNOT BE RESOLD OR OTHERWISE TRANSFERRED OR DISPOSED OF IN ANY MANNER UNLESS IT IS REGISTERED PURSUANT TO THE 1933 ACT AND APPLICABLE STATE LAW OR AN EXEMPTION FROM SUCH REGISTRATION REQUIREMENTS IS THEN AVAILABLE AND THE HOLDER HEREOF OBTAINS AN OPINION OF COUNSEL SATISFACTORY TO THE COMPANY THAT SUCH REGISTRATION IS NOT REQUIRED.</p>
+<p class="ind"><b>3.1.5&nbsp;&nbsp;Accredited Investor Status</b>. The Investor acknowledges and represents that it is an accredited investor (&ldquo;Accredited Investor&rdquo;) within the meaning of Rule 501(a) of Regulation D, promulgated under the Securities Act of 1933 (the &ldquo;Act&rdquo;). The Investor understands that the Physician Membership Unit is being offered and sold only to &ldquo;accredited investors&rdquo; (as that term is defined under Rule 501(a) of Regulation D, promulgated under the Act), and the Investor represents that the Investor is an Accredited Investor. The Investor understands that the Company is relying on the Investor with respect to the accuracy of this representation and understands the significance if the Investor&rsquo;s representation to the Company that the Investor is an Accredited Investor.</p>
+<p class="ind"><b>3.1.6&nbsp;&nbsp;Transfer of Units</b>. The Investor has no contract, undertaking, understanding, agreement or arrangement, formal or informal, with any person to sell, transfer or pledge all or any portion of its interest in the Company and has no current plans to enter into any such contract, undertaking, understanding, agreement or arrangement.</p>
+<p class="ind"><b>3.1.7&nbsp;&nbsp;Risk of Loss</b>. The Investor has sufficient financial strength to hold the interest in the Company as an investment and bear the economic risks of that investment (including possible complete loss of such investment) for an indefinite period of time.</p>
+<p class="ind"><b>3.1.8&nbsp;&nbsp;Inspection of Plans and Records</b>. The Investor has been afforded access to the plans, records, contracts, documents and other information concerning the Company and the prospective business of the Company and has been afforded an opportunity to ask such questions as the Investor deemed necessary or desirable in order to evaluate the merits and risks of the investment contemplated herein and all such questions have been answered to the Investor&rsquo;s full satisfaction.</p>
+<p class="ind"><b>3.1.9&nbsp;&nbsp;Independent Investigation</b>. The Investor acknowledges that it has performed its own due diligence with respect to its interest in the Company and that the Investor is relying on that due diligence in making this investment and is not relying on the Company or its members with respect to tax, suitability or other economic considerations.</p>
+<p class="ind"><b>3.1.10&nbsp;&nbsp;Authorization</b>.  This Agreement constitutes a legal, valid and binding obligation enforceable against the Investor in accordance with its terms.</p>
+<p class="ind"><b>3.1.11&nbsp;&nbsp;Consent to Terms of Operating Agreement</b>. The Investor understands that execution of this Agreement constitutes consent to the terms of the Company&rsquo;s Operating Agreement, as amended from time to time in accordance with the terms thereof.</p>
+<p class="ind"><b>3.1.12&nbsp;&nbsp;No Other Conflicts</b>. The execution, delivery and performance of this Agreement by the Investor does not and will not violate, conflict with or contravene any judgment, order, decree, writ or injunction or any law, rule, regulation, contract or agreement to which the Investor is subject.</p>
+<p class="ind"><b>3.1.13&nbsp;&nbsp;Tax Consequences</b>. The Investor represents that it has consulted or has had the opportunity to consult with a qualified attorney, tax advisor, or accountant, and understands the income tax aspects of its investment in the Physician Membership Units. The Investor acknowledges that neither the Company nor any representative of the Company has made any representations to the Investor regarding the tax consequences of an investment in the Units, which consequences may be material.</p>
+<p class="ind"><b>3.1.14&nbsp;&nbsp;Independent Legal Advice</b>. The Investor understands that this Agreement and the Operating Agreement have been prepared by legal counsel for the Company and not for any individual Investor, and that the Investor has had the opportunity to review this Agreement and the transactions contemplated by this Agreement with independent legal counsel of its own choosing. The Investor is relying solely on such counsel, if any, and not on any statements or representations of the Company or any of its agents for legal advice with respect to the transactions contemplated by this Agreement.</p>
+<p class="ctr">ARTICLE 4<br>RISK FACTORS</p>
+<p><b>4.1</b>&nbsp;&nbsp;Potential Investors face a variety of risk factors to be evaluated before deciding to participate in the Company. The following risks factors, among others, could cause a loss of all capital invested in the Company:</p>
+<p class="ind"><b>4.1.1&nbsp;&nbsp;No Operating History</b>. The Company is a newly created company with no prior operating history. Further, the Company will need to develop a marketing plan for the Operating Company to attract clients.. The Company anticipates that it will incur substantial start-up costs before generating significant revenues. There can be no assurance that the Company&rsquo;s business plan will be successful or that it will be profitable. Further, the Company&rsquo;s operations are subject to other risks inherent in the establishment of a new business, including, without limitation, expenses, complications and delays, which cannot be anticipated when a new business is started.</p>
+<p class="ind"><b>4.1.2&nbsp;&nbsp;Risks of Operations</b>. The Company will be subject to the risks generally incident to the operation of an MSO. There can be no assurance the Operating Company will be successful and the success of the Company will be dependent on the success of the Operating Company.</p>
+<p class="ind"><b>4.1.3&nbsp;&nbsp;Anti-kickback Statute (&ldquo;AKS&rdquo;).</b> The Anti-Kickback Statute (&ldquo;AKS&rdquo;) makes it a criminal offense to knowingly and willfully offer, pay, solicit, or receive any remuneration to induce referrals of items or services reimbursable by Federal health care programs. The primary purpose for AKS is to prevent overutilization of publicly-funded healthcare services. Where remuneration is paid purposefully to induce referrals of items or services paid for by a Federal health care program, the AKS is violated. By its terms, the statute ascribes liability to parties on both sides of an impermissible &ldquo;kickback&rdquo; transaction. For purposes of the AKS, &ldquo;remuneration&rdquo; includes the transfer of anything of value, in cash or in-kind, directly or indirectly, covertly or overtly. The AKS has been interpreted to cover any arrangement where <u>one</u> purpose of the remuneration is to obtain money for referral of services or to induce further referrals.</p>
+<p class="ind">So-called &ldquo;safe harbors&rdquo; exclude certain payment practices from criminal prosecution. Both the investment interest safe harbor and the personal services and management contracts are of interest here. Safe harbors are voluntary, and arrangements that do not fit squarely into a safe harbor are not necessarily subject to prosecution if there is no intent to defraud and the risk of harm to government funded healthcare programs is minimal.</p>
+<p class="ind">&ldquo;Remuneration&rdquo; under AKS does not include payments made as a return on an investment interest. Under the personal service/management agreement safe harbor of the AKS provides that the exchange of compensation and services between the investing physicians and the MSO must comply with the fair market value compensation exception, which requires that the compensation and services to be provided be specified in a written, signed agreement with a term of at least one (1) year, with compensation methodology set in advance consistent with fair market value, on commercially reasonable terms which do not take into account the value or volume of any referrals or other business generated by a referring physician.</p>
+<p class="ind">The MSO expects to receive not more than fair market value for its services, however, a third party appraisal is not being obtained for the management fee, therefore there can be no assurance that the management fee is fair market value.  Further, any distributions by the MSO shall be based upon an investor&rsquo;s percentage interest and not based on the volume or value of physician referrals.</p>
+<p class="ind"><b>4.1.4&nbsp;&nbsp;Disclosure of Investors to CMS</b>. Section 6204 of the Omnibus Budget Reconciliation Act of 1989 provides that &ldquo;each entity providing covered items or services for which payment may be made under this title shall provide the Secretary with . . . the names and all of the Medicare provider numbers of the physicians who are interested investors or who are immediate relatives of interested investors,&rdquo; and entities must include the name and provider number on &ldquo;each request for payment, or bill submitted. . . .&rdquo;  The purpose of this information is for the General Accounting Office to evaluate ownership of health care providers by &ldquo;referring physicians.&rdquo;</p>
+<p class="ind"><b>4.1.5&nbsp;&nbsp;Future Laws and Regulations</b>. There can be no assurance that future legislation or regulations prohibiting physician referrals to businesses in which the physician has an ownership interest will not be enacted. Any such law, regulations, or interpretation could have a material adverse effect on the Company.</p>
+<p class="ind"><b>4.1.6&nbsp;&nbsp;Management</b>. The Company will be managed by the Manager.  Management and control of the business and affairs of the Company are vested exclusively in the hands of the Manager, who will have control over  daily operations; provided, however, certain rights are reserved to the Members as set forth in the Operating Agreement.  The Managers may make decisions regarding the operations of the Company with which you disagree. The Manager will have no say in the professional judgment exercised by the Operating Company or its providers.</p>
+<p class="ind"><b>4.1.7&nbsp;&nbsp;Forward-looking information</b>. The Company has enlisted the guidance of its accountants to complete pro formas, copies of which you acknowledge receipt of, and these pro formas and all other accompanying documents contain forward-looking statements, including financial and operating projections. Additional written or oral forward-looking statements may be made by us from time to time. The words &ldquo;believe&rdquo;, &ldquo;may&rdquo;, &ldquo;expect&rdquo;, &ldquo;anticipate&rdquo;, and &ldquo;intend&rdquo;, and similar expressions identify forward-looking statements, which speak only as of the date of the statement was made. Such forward-looking statements are within the meaning of Section 27A of the Securities Act of 1933, as amended, and Section 21E of the Securities Exchange Act of 1934, as amended, regarding events, conditions and trends that may affect our future plan of operations, business strategy, operating results and financial position. Prospective investors are forewarned and cautioned that any forward-looking statements are not guarantees of future performance and are subject to risks and uncertainties and that actual results may differ materially from those included within such forward-looking statements.</p>
+<p class="ind"><b>4.189&nbsp;&nbsp;Tax Risks</b>.  For a listing of the tax risks associated with this investment please see Exhibit C, attached hereto.</p>
+<p class="ctr">ARTICLE 5<br>MISCELLANEOUS PROVISIONS</p>
+<p class="ind"><b>5.1&nbsp;&nbsp;Notices</b>. Any notices required or permitted hereunder shall be in writing and shall be personally delivered or sent by registered or certified mail (return receipt requested) or by telecopy to the principal address set forth next to the signature of Investor with respect to the Investor and to the following address with respect to the Company:</p>
+<p class="ctr">Vitality Academies Nevada MSO LLC<br>________________________________<br>________________________________</p>
+<p class="ind">Any notice sent by mail shall be deemed to have been received three (3) days after it is deposited in the U.S. Mail as provided by this Section. Delivery by courier shall be deemed personal delivery. Delivery by telecopy shall be deemed received upon oral or written confirmation of receipt. Any party may change its address for notice purposes by delivery of written notice to the other parties in accordance herewith.</p>
+<p class="ind"><b>5.2&nbsp;&nbsp;Applicable Law</b>.  This Agreement shall be governed by, and construed and enforced in accordance with, the laws of the State of Nevada, without reference to conflict of law principles.</p>
+<p class="ind"><b>5.3&nbsp;&nbsp;Benefit</b>. This Agreement shall be binding upon and shall operate for the benefit of the parties hereto and their respective heirs, legal representatives, successors and assigns.</p>
+<p class="ind"><b>5.4&nbsp;&nbsp;Further Acts</b>. The parties hereto shall use their best efforts to take or direct any and all actions, and to execute and deliver any and all documents, necessary or appropriate to carry out the purposes and intent of the provisions of this Agreement.</p>
+<p class="ind"><b>5.5&nbsp;&nbsp;Severability</b>. In the event any term or provision of this Agreement is declared to be invalid or illegal for any reason, this Agreement shall remain in full force and effect and the same shall be interpreted as though such invalid and illegal provision were not a part hereof.</p>
+<p class="ind"><b>5.6&nbsp;&nbsp;Attorneys&rsquo; Fees</b>. In the event any party hereto institutes an action or other proceeding to enforce any rights arising under this Agreement, the party prevailing in such action or other proceeding shall be paid all reasonable costs and attorneys&rsquo; fees by the other party or parties, such fees and costs to be set by the court and not by a jury and to be included in any judgment entered in such proceeding.</p>
+<p class="ind"><b>5.7&nbsp;&nbsp;Counterparts/Electronic Signature</b>. This Agreement may be executed by electronic signature or in any number of counterparts, each of which shall be deemed a duplicate original.</p>
+<p class="ind"><b>5.8&nbsp;&nbsp;Waiver</b>. Any waiver by any party of a breach of any provision of this Agreement shall not operate as or be construed to be a waiver of any other breach of any other provision of this Agreement.  The failure of a party to insist upon strict adherence to any term of this Agreement on one or more occasions shall not be considered a waiver or deprive that party of the right thereafter to insist upon strict adherence to that term or any other term of this Agreement. Any waiver shall be effective only if in writing and executed by the party sought to be charged with such waiver.</p>
+<p class="ind"><b>5.9&nbsp;&nbsp;Entire Agreement</b>. This Agreement constitutes and embodies the full and complete understanding and agreement of the parties hereto with respect to the subject matter hereof and supersedes all prior understandings or agreements whether oral or in writing.  This Agreement may not be amended except by an instrument in writing signed by the party to be charged.  In the event the offering is terminated and any funds received are returned to the Investor, this Agreement and other subscription documents will be of no further force or effect and the parties hereto will have no further obligation to one another.</p>
+<p class="ind"><b>5.10&nbsp;&nbsp;Headings; Interpretation</b>. The headings used herein are for convenience and reference only and are not intended to define, limit or describe the scope or intent of any provision of this Agreement.  When used in this Agreement, masculine, feminine and neuter genders shall be deemed to include the others where appropriate.</p>
+<p class="ind"><b>5.11&nbsp;&nbsp;Survival</b>. The representations, warranties, agreements and covenants made in this Agreement shall survive the sale of the Units.  Any representation, warranty or other information made by the Company in this Agreement which is inconsistent with any statement included in any materials provided by the Company in connection with the transactions contemplated hereby shall be deemed to supersede such materials.</p>
+<p class="ind"><b>5.12&nbsp;&nbsp;Indemnification</b>. Each party agrees to indemnify and hold harmless the other party and their respective affiliates against any losses, damages, or expenses (including reasonable attorneys&rsquo; fees and costs) arising out of the breach by the indemnifying party of any representation, warranty, agreement, or covenant made by him, her, or it in this Agreement or any document furnished hereunder.</p>
+<p class="ind"><b>5.13&nbsp;&nbsp;Acceptance of Subscription</b>.  This Agreement shall not be binding on the Company until it is accepted by the Company, such acceptance to be evidenced by the execution of this Agreement by a duly authorized representative of the Company at the place provided on the signature page. The Investor understands and agrees that this subscription is made subject to the condition that the Company shall have the right to accept or reject it.</p>
+<p class="ctr">[SIGNATURE PAGE TO FOLLOW]</p>
+<p>IN WITNESS WHEREOF, this Agreement shall be deemed to be effective as of the date first written above when executed by the parties.</p>
+<p class="speculative">THE SECURITIES DESCRIBED HEREIN ARE HIGHLY SPECULATIVE, INVOLVE A HIGH DEGREE OF RISK AND REPRESENT AN ILLIQUID INVESTMENT.  THERE IS NO PUBLIC MARKET FOR THE UNITS AND THERE CAN BE NO ASSURANCE THAT A PUBLIC MARKET WILL EVER DEVELOP.  SEE THE RISK FACTORS SET FORTH IN SECTION 4.1 OF THIS SUBSCRIPTION AGREEMENT.  EACH INVESTOR SHOULD BE ABLE TO BEAR THE LOSS OF ITS ENTIRE INVESTMENT AND SHOULD NOT EXPECT THIS INVESTMENT TO PROVIDE ANY CURRENT INCOME.</p>
+<p><b>INVESTOR:</b><br><b>NUMBER OF MEMBERSHIP UNITS</b> <span class="fillin">${d.units}</span></p>
+<table style="width:100%; margin-top:18px; border-collapse:collapse">
+  <tr>
+    <td style="width:55%; vertical-align:bottom; padding-bottom:4px"><img class="sigimg" id="doc-sig" alt=""></td>
+    <td style="vertical-align:bottom; padding-left:10px">(Signature)</td>
+  </tr>
+  <tr><td colspan="2" style="border-top:1px solid #111; padding-top:2px; height:4px"></td></tr>
+  <tr>
+    <td style="vertical-align:bottom; padding-top:14px"><span class="fillin">${d.name}</span></td>
+    <td style="vertical-align:bottom; padding-left:10px">(Print Name)</td>
+  </tr>
+</table>
+<p style="margin-top:16px">Address: <span class="fillin">${d.addr1}</span><br>
+<span class="fillin">${d.city}, ${d.state} ${d.zip}</span><br>
+Phone: <span class="fillin">${d.phone}</span><br>
+Fax: (&nbsp;&nbsp;&nbsp;) ____________________</p>
+<p style="margin-top:24px"><b>COMPANY:</b></p>
+<p>ACCEPTED: ____________________, ${o.year}</p>
+<p>Vitality Academies Nevada MSO LLC<br>a Nevada limited liability company</p>
+<p style="margin-top:20px">By:&nbsp;&nbsp;________________________________<br>Its:&nbsp;&nbsp;&nbsp;&nbsp;Manager</p>
+`;
+  document.getElementById('agreement-doc').innerHTML = doc;
+  // re-apply signature image if already drawn
+  if (sigDataUrl) { const img = document.getElementById('doc-sig'); if (img) img.src = sigDataUrl; }
+}
+
+/* ============ navigation ============ */
+function show(stepId){
+  ['step-details','step-sign','step-pay'].forEach(s => document.getElementById(s).classList.toggle('hide', s !== stepId));
+  const map = { 'step-details':1, 'step-sign':2, 'step-pay':3 };
+  const n = map[stepId];
+  [1,2,3].forEach(i => {
+    const dot = document.getElementById('dot'+i);
+    dot.classList.toggle('active', i === n);
+    dot.classList.toggle('done', i < n);
+  });
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+document.getElementById('to-sign').addEventListener('click', () => {
+  if (!validate1()){ document.getElementById('err1').classList.add('show'); return; }
+  document.getElementById('err1').classList.remove('show');
+  document.getElementById('f-typed').value = '';
+  document.getElementById('f-date').value = todayStr();
+  buildAgreement();
+  show('step-sign');
+  setTimeout(sizeCanvas, 60);
+});
+document.getElementById('back-1').addEventListener('click', () => show('step-details'));
+document.getElementById('back-2').addEventListener('click', () => show('step-sign'));
+
+/* ============ signature pad ============ */
+const canvas = document.getElementById('sigpad');
+const ctx = canvas.getContext('2d');
+let drawing = false, hasInk = false, sigDataUrl = '';
+function sizeCanvas(){
+  const r = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = r.width * dpr; canvas.height = r.height * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0a1d38';
+}
+function pos(e){
+  const r = canvas.getBoundingClientRect();
+  const t = e.touches ? e.touches[0] : e;
+  return { x: t.clientX - r.left, y: t.clientY - r.top };
+}
+function start(e){ drawing = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); e.preventDefault(); }
+function move(e){ if(!drawing) return; const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); hasInk = true; e.preventDefault(); }
+function end(){ if(!drawing) return; drawing = false; if (hasInk){ sigDataUrl = canvas.toDataURL('image/png'); const img = document.getElementById('doc-sig'); if (img) img.src = sigDataUrl; } validate2(); }
+canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
+canvas.addEventListener('touchstart', start, {passive:false}); canvas.addEventListener('touchmove', move, {passive:false}); canvas.addEventListener('touchend', end);
+document.getElementById('sig-clear').addEventListener('click', () => {
+  ctx.clearRect(0,0,canvas.width,canvas.height); hasInk = false; sigDataUrl = '';
+  const img = document.getElementById('doc-sig'); if (img) img.src = ''; validate2();
+});
+window.addEventListener('resize', () => { if (!document.getElementById('step-sign').classList.contains('hide')) { const d = sigDataUrl; sizeCanvas(); } });
+
+document.getElementById('f-typed').addEventListener('input', validate2);
+function validate2(){
+  const typed = document.getElementById('f-typed').value.trim();
+  const ok = hasInk && typed.length > 1;
+  document.getElementById('to-pay').disabled = !ok;
+  return ok;
+}
+
+document.getElementById('print-doc').addEventListener('click', () => { buildAgreement(); setTimeout(() => window.print(), 120); });
+
+document.getElementById('to-pay').addEventListener('click', () => {
+  if (!validate2()){ document.getElementById('err2').classList.add('show'); return; }
+  document.getElementById('err2').classList.remove('show');
+  state.signed = true;
+  const u = state.units;
+  document.getElementById('p-units').textContent = u;
+  document.getElementById('p-total').textContent = fmt(u*PRICE);
+  document.getElementById('p-initial').textContent = fmt(u*INITIAL);
+  document.getElementById('p-second').textContent = fmt(u*SECOND);
+  document.getElementById('pay-amt').textContent = fmt(u*INITIAL);
+  show('step-pay');
+});
+
+/* ============ payment (Phase 3 backend) ============ */
+document.getElementById('pay-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('pay-btn');
+  const err = document.getElementById('err3');
+  err.classList.remove('show');
+  btn.disabled = true; const label = btn.innerHTML; btn.textContent = 'Starting secure checkout…';
+  const d = gather();
+  try {
+    const res = await fetch(SUBSCRIBE_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: 'signup',
+        units: d.units,
+        // ?test=1 → server charges the $1 test amount for THIS investor only (does not touch the
+        // shared CLOVER_TEST_AMOUNT_CENTS env, so live GLP-1 pricing is unaffected). Verify receipt
+        // in Clover, then drop the ?test=1 to collect the real $1,000/unit Initial Fee.
+        testMode: new URLSearchParams(location.search).get('test') === '1',
+        name: d.name, email: d.email, phone: d.phone,
+        address: `${d.addr1}, ${d.city}, ${d.state} ${d.zip}`,
+        signedName: document.getElementById('f-typed').value.trim(),
+        signedDate: document.getElementById('f-date').value,
+      }),
+    });
+    if (!res.ok) throw new Error('endpoint ' + res.status);
+    const data = await res.json();
+    if (data && data.href) { window.location.href = data.href; return; }
+    throw new Error('no checkout url');
+  } catch (e) {
+    console.error(e);
+    err.textContent = 'Secure checkout is not available yet. Please contact us to complete your subscription.';
+    err.classList.add('show');
+    btn.disabled = false; btn.innerHTML = label;
+  }
+});
+</script>
+</body>
+</html>
