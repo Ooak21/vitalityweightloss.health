@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sequences · Vitality</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--border:#e6e9ee;--blue:#0a6cf5}
+  *{box-sizing:border-box}
+  body{margin:0;background:#f4f6f8;color:#16201d;font-family:'Inter',system-ui,sans-serif}
+  .font-display{font-family:'Montserrat','Inter',sans-serif}
+  .glass{background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04),0 12px 30px -18px rgba(16,24,40,.10)}
+  .badge{font-size:.62rem;font-weight:600;letter-spacing:.03em;padding:2px 8px;border-radius:9999px}
+  .b-active{background:rgba(16,185,129,.14);color:#047857}.b-paused{background:rgba(217,119,6,.12);color:#b45309}.b-draft{background:rgba(100,116,139,.12);color:#475569}
+  .btn{border:none;border-radius:10px;font-weight:600;font-size:.85rem;padding:.55rem .9rem;cursor:pointer}
+  .btn-p{background:var(--blue);color:#fff}.btn-p:hover{background:#0856c8}.btn-o{background:#fff;border:1px solid var(--border)}.btn-o:hover{background:#f1f3f7}
+  .tab{padding:.4rem .8rem;font-size:.85rem;font-weight:600;color:#6b7280;cursor:pointer;border-bottom:2px solid transparent}
+  .tab.on{color:var(--blue);border-bottom-color:var(--blue)}
+  .sect-h{font-size:.7rem;font-weight:600;letter-spacing:.12em;color:var(--blue);text-transform:uppercase}
+  .stepcard{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:center}
+  .stepicon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .wait{display:flex;align-items:center;gap:8px;color:#6b7280;font-size:.8rem;padding:5px 0 5px 18px}
+  .conn{width:2px;background:#e6e9ee;height:12px;margin-left:18px}
+  .ov{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:80;display:none;align-items:flex-start;justify-content:center;padding:56px 16px;overflow:auto}
+  .ov.on{display:flex}
+  .menu{position:absolute;top:100%;left:0;margin-top:6px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 30px -10px rgba(16,24,40,.25);padding:6px;z-index:60;width:220px}
+  .menu button{display:flex;gap:10px;align-items:center;width:100%;padding:9px 10px;border-radius:9px;font-size:.85rem;color:#16201d;background:none;border:none;cursor:pointer;font-weight:500;text-align:left}
+  .menu button:hover{background:#f1f3f7}
+  .fld{width:100%;border:1px solid var(--border);border-radius:9px;padding:.5rem .7rem;font-size:.85rem;font-family:inherit}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.55rem .2rem;border-bottom:1px solid #f1f3f7}
+</style>
+</head>
+<body>
+<div id="gate" style="position:fixed;inset:0;background:#f4f6f8;display:flex;align-items:center;justify-content:center;z-index:99;color:#9aa0ab;font-size:.9rem">Loading…</div>
+<div style="background:#fff;border-bottom:1px solid #e6e9ee;padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
+  <span class="font-display flex flex-col leading-none"><span class="font-semibold text-lg uppercase tracking-[.15em]">Vitality</span><span class="text-[.46rem] font-medium tracking-[.3em] uppercase mt-0.5">Weight Loss</span></span>
+  <div class="flex items-center gap-3"><a href="crm.html" class="text-xs text-[#0a6cf5] font-semibold">← CRM</a><a href="templates.html" class="text-xs text-[#0a6cf5] font-semibold">✉ Templates</a><span class="text-xs text-[#9aa0ab]">Sequences</span></div>
+</div>
+
+<div style="max-width:1000px;margin:0 auto;padding:18px">
+  <div class="flex gap-1 border-b border-[#e6e9ee] mb-4">
+    <div class="tab on" id="tab-build" onclick="showView('build')">Builder</div>
+    <div class="tab" id="tab-manage" onclick="showView('manage')">Manage</div>
+  </div>
+
+  <!-- BUILDER -->
+  <div id="view-build">
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+      <div><input id="seqName" class="font-display text-2xl font-semibold tracking-[-.5px]" style="border:none;outline:none;background:none;width:100%;max-width:420px" placeholder="Untitled sequence"><div class="text-sm text-[#6b7280]">Multi-touch branded cadence · auto-stops on opt-out or booking</div></div>
+      <div class="flex items-center gap-2">
+        <span class="badge b-draft" id="seqStatus">Draft</span>
+        <button class="btn btn-o" id="enrollBtn" onclick="openEnroll()">Enroll</button>
+        <button class="btn btn-o" id="saveBtn" onclick="save()">Save</button>
+        <button class="btn btn-p" id="actBtn" onclick="toggleActive()">Activate</button>
+      </div>
+    </div>
+    <div class="glass rounded-2xl p-4 mb-4 grid grid-cols-4 text-center">
+      <div><div class="sect-h">Steps</div><div class="font-display text-xl font-semibold mt-1" id="statSteps">0</div></div>
+      <div><div class="sect-h">Days to complete</div><div class="font-display text-xl font-semibold mt-1" id="statDays">0</div></div>
+      <div><div class="sect-h">Enrolled</div><div class="font-display text-xl font-semibold mt-1" id="statEnrolled">0</div></div>
+      <div><div class="sect-h">Auto-unenroll</div><div class="text-xs text-[#6b7280] mt-2">Opted&nbsp;out · Booked</div></div>
+    </div>
+    <div id="steps"></div>
+    <div class="conn"></div>
+    <div style="position:relative;display:inline-block">
+      <button class="btn btn-o" onclick="toggleAddMenu(event)">+ Add step</button>
+      <div class="menu" id="addMenu" style="display:none" onclick="event.stopPropagation()">
+        <button onclick="addStep('email')"><span class="ai-email"></span><span>Automated email</span></button>
+        <button onclick="addStep('wait')"><span class="ai-wait"></span><span>Wait</span></button>
+        <button onclick="addStep('task')"><span class="ai-task"></span><span>Task</span></button>
+      </div>
+    </div>
+    <div id="msg" class="text-xs mt-3"></div>
+  </div>
+
+  <!-- MANAGE -->
+  <div id="view-manage" style="display:none">
+    <div class="flex items-center justify-between mb-4"><div class="font-display text-2xl font-semibold">Sequences</div><button class="btn btn-p" onclick="newSeq()">+ Create sequence</button></div>
+    <div class="glass rounded-2xl overflow-hidden"><table class="w-full text-sm"><thead><tr class="text-left text-[11px] uppercase tracking-wide text-[#9aa0ab] border-b border-[#eef1f4]"><th class="py-3 px-4">Name</th><th class="py-3 px-3">Steps</th><th class="py-3 px-3">Enrolled</th><th class="py-3 px-3">Status</th></tr></thead><tbody id="seqList"></tbody></table></div>
+  </div>
+</div>
+
+<!-- TEMPLATE PICKER -->
+<div class="ov" id="tplOv" onclick="if(event.target===this)this.classList.remove('on')">
+  <div class="glass rounded-2xl w-full max-w-lg p-5">
+    <div class="flex items-center justify-between mb-3"><div class="font-display font-semibold text-lg">Pick a template</div><a href="templates.html" class="text-xs text-[#0a6cf5]">+ Manage library</a></div>
+    <div id="tplList" class="space-y-1 max-h-96 overflow-auto"></div>
+  </div>
+</div>
+
+<!-- ENROLL -->
+<div class="ov" id="enrollOv" onclick="if(event.target===this)this.classList.remove('on')">
+  <div class="glass rounded-2xl w-full max-w-md p-5">
+    <div class="flex items-center justify-between mb-1"><div class="font-display font-semibold text-lg">Enroll patients</div><button onclick="document.getElementById('enrollOv').classList.remove('on')" class="text-[#9aa0ab] text-xl">✕</button></div>
+    <div class="text-sm text-[#6b7280] mb-3">They auto-unenroll on opt-out or when they book.</div>
+    <input id="enrollSearch" class="fld mb-2" placeholder="Search patients…" oninput="renderEnroll()">
+    <div id="enrollList" class="space-y-1 max-h-72 overflow-auto text-sm"></div>
+    <button class="btn btn-p w-full mt-3" id="enrollGo" onclick="doEnroll()">Enroll selected</button>
+  </div>
+</div>
+
+<script type="module">
+  import { staffInfo, signOut, getToken, STORE_STAFF } from './auth-convex.js';
+  const CONVEX_URL = "https://quixotic-cat-492.convex.site";
+  let TG=null, cur=null, TPLS=[], SEQS=[], PATIENTS=[], enrollSel=new Set();
+  const ICON={email:'<rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4.5 7 7.5 5.5L19.5 7"/>',wait:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',task:'<rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><path d="m7.8 12 2.8 2.8 5.6-6"/>'};
+  const ic=(n,s)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="${s||18}" height="${s||18}" style="vertical-align:middle">${ICON[n]||''}</svg>`;
+
+  (async()=>{
+    const info=await staffInfo(STORE_STAFF);
+    if(!info||!info.role){ try{await signOut(STORE_STAFF)}catch(_){}; location.replace('login.html'); return; }
+    TG=()=>getToken(STORE_STAFF);
+    document.getElementById('gate').style.display='none';
+    // add-menu icons
+    ({'ai-email':'email','ai-wait':'wait','ai-task':'task'})&&['ai-email','ai-wait','ai-task'].forEach(c=>{const e=document.querySelector('.'+c);if(e)e.innerHTML=ic(c.split('-')[1],16);});
+    await Promise.all([loadTpls(), loadSeqs()]);
+    newSeq();
+  })();
+  const H=async()=>({'content-type':'application/json','authorization':'Bearer '+(await TG())});
+  const api=async(a,x)=>{const r=await fetch(CONVEX_URL+'/sequences-data',{method:'POST',headers:await H(),body:JSON.stringify({action:a,...(x||{})})});return r.json();};
+  const tapi=async(a,x)=>{const r=await fetch(CONVEX_URL+'/templates-data',{method:'POST',headers:await H(),body:JSON.stringify({action:a,...(x||{})})});return r.json();};
+  const capi=async(a,x)=>{const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await H(),body:JSON.stringify({action:a,...(x||{})})});return r.json();};
+  const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const flash=(m,ok)=>{const e=document.getElementById('msg');e.textContent=m;e.style.color=ok===false?'#be123c':'#047857';setTimeout(()=>e.textContent='',3000);};
+  const tplName=id=>{const t=TPLS.find(x=>x._id===id);return t?t.name:'(pick a template)';};
+
+  async function loadTpls(){ const j=await tapi('list'); TPLS=(j&&j.ok&&j.templates)?j.templates:[]; }
+  async function loadSeqs(){ const j=await api('list'); SEQS=(j&&j.ok&&j.sequences)?j.sequences:[]; renderSeqList(); }
+
+  function newSeq(){ cur={name:'',status:'draft',steps:[],unenroll_on:['opted_out','booked'],enrolled:0}; fill(); showView('build'); }
+  function fill(){
+    document.getElementById('seqName').value=cur.name||'';
+    setStatus(cur.status||'draft');
+    document.getElementById('statEnrolled').textContent=cur.enrolled||0;
+    document.getElementById('enrollBtn').style.display = cur._id?'inline-block':'none';
+    renderSteps();
+  }
+  function setStatus(s){ const el=document.getElementById('seqStatus'); el.textContent=s[0].toUpperCase()+s.slice(1); el.className='badge b-'+s; cur.status=s; document.getElementById('actBtn').textContent = s==='active'?'Pause':'Activate'; }
+  function renderSteps(){
+    let html='', days=0, n=0;
+    cur.steps.forEach((s,i)=>{
+      if(i>0) html+='<div class="conn"></div>';
+      if(s.type==='wait'){ days+=Number(s.days)||0; html+=`<div class="wait">${ic('wait',15)} Wait <input type="number" min="1" value="${s.days||1}" onchange="setDays(${i},this.value)" style="width:52px;border:1px solid #e6e9ee;border-radius:6px;padding:2px 6px"> days <button onclick="delStep(${i})" style="color:#be123c;margin-left:6px">✕</button></div>`; return; }
+      n++;
+      if(s.type==='email'){ html+=`<div class="stepcard"><div class="stepicon" style="background:rgba(139,92,246,.12);color:#8b5cf6">${ic('email',18)}</div><div class="flex-1 min-w-0"><div class="text-[11px] text-[#9aa0ab] uppercase tracking-wide">Automated email</div><div class="font-medium truncate ${s.template_id?'':'text-[#9aa0ab]'}">${esc(tplName(s.template_id))}</div></div><button class="btn btn-o" onclick="pickTpl(${i})">${s.template_id?'Change':'Pick'}</button><button onclick="delStep(${i})" style="color:#be123c;margin-left:8px">✕</button></div>`; }
+      else if(s.type==='task'){ html+=`<div class="stepcard"><div class="stepicon" style="background:rgba(10,122,61,.12);color:#0a7a3d">${ic('task',18)}</div><div class="flex-1 min-w-0"><div class="text-[11px] text-[#9aa0ab] uppercase tracking-wide">Task</div><input class="fld" style="margin-top:2px" value="${esc(s.title||'')}" placeholder="Task title (e.g. Call to check in)" onchange="setTask(${i},'title',this.value)"></div><input class="fld" style="max-width:120px" value="${esc(s.assignee||'')}" placeholder="Assignee" onchange="setTask(${i},'assignee',this.value)"><button onclick="delStep(${i})" style="color:#be123c;margin-left:8px">✕</button></div>`; }
+    });
+    document.getElementById('steps').innerHTML=html||'<div class="text-sm text-[#9aa0ab] py-6 text-center">No steps yet. Add an email, wait, or task below.</div>';
+    document.getElementById('statSteps').textContent=n; document.getElementById('statDays').textContent=days;
+  }
+  window.setDays=(i,v)=>{cur.steps[i].days=Math.max(1,+v||1);renderSteps();};
+  window.setTask=(i,k,v)=>{cur.steps[i][k]=v;};
+  window.delStep=i=>{cur.steps.splice(i,1);renderSteps();};
+  window.addStep=t=>{document.getElementById('addMenu').style.display='none'; if(t==='email')cur.steps.push({type:'email',template_id:null}); else if(t==='wait')cur.steps.push({type:'wait',days:2}); else cur.steps.push({type:'task',title:'',assignee:''}); renderSteps();};
+  window.toggleAddMenu=e=>{e.stopPropagation();const m=document.getElementById('addMenu');m.style.display=m.style.display==='none'?'block':'none';};
+  document.addEventListener('click',()=>{const m=document.getElementById('addMenu');if(m)m.style.display='none';});
+
+  // template picker
+  let pickIdx=null;
+  window.pickTpl=i=>{ pickIdx=i; document.getElementById('tplList').innerHTML = TPLS.length?TPLS.map(t=>`<div class="row" style="cursor:pointer" data-id="${t._id}"><div><div class="font-medium">${esc(t.name)}</div><div class="text-[11px] text-[#9aa0ab]">${esc(t.subject)}</div></div><span class="badge b-${t.status==='ready'?'active':'draft'}">${t.status==='ready'?'Ready':'Draft'}</span></div>`).join(''):'<div class="text-sm text-[#9aa0ab] p-4 text-center">No templates yet. Create some in the Library.</div>'; document.getElementById('tplList').querySelectorAll('.row').forEach(r=>r.addEventListener('click',()=>{cur.steps[pickIdx].template_id=r.dataset.id;document.getElementById('tplOv').classList.remove('on');renderSteps();})); document.getElementById('tplOv').classList.add('on'); };
+
+  async function save(){
+    cur.name=document.getElementById('seqName').value.trim();
+    if(!cur.name){ flash('Name the sequence first.',false); return; }
+    const fields={name:cur.name,steps:cur.steps,status:cur.status,unenroll_on:cur.unenroll_on};
+    let j; if(cur._id){ j=await api('update',{id:cur._id,fields}); } else { j=await api('create',{fields}); if(j&&j.ok&&j.id) cur._id=j.id; }
+    if(j&&j.ok){ flash('Saved.'); await loadSeqs(); fill(); } else flash('Save failed: '+((j&&j.error)||''),false);
+  }
+  async function toggleActive(){ if(!cur._id) await save(); if(!cur._id) return; setStatus(cur.status==='active'?'paused':'active'); await save(); }
+
+  function renderSeqList(){ document.getElementById('seqList').innerHTML = SEQS.length?SEQS.map(s=>`<tr class="border-b border-[#f6f7f9] hover:bg-[#fafbfc]"><td class="py-3 px-4 font-medium text-[#0a6cf5] cursor-pointer" data-id="${s._id}">${esc(s.name)}</td><td class="py-3 px-3">${(s.steps||[]).length}</td><td class="py-3 px-3">${s.enrolled||0}</td><td class="py-3 px-3"><span class="badge b-${s.status}">${s.status[0].toUpperCase()+s.status.slice(1)}</span></td></tr>`).join(''):'<tr><td colspan="4" class="py-6 text-center text-[#9aa0ab] text-sm">No sequences yet.</td></tr>'; document.getElementById('seqList').querySelectorAll('td[data-id]').forEach(td=>td.addEventListener('click',async()=>{ const j=await api('get',{id:td.dataset.id}); if(j&&j.ok){ cur={...j.sequence, enrolled:(j.enrollments||[]).filter(e=>e.status==='active').length}; fill(); showView('build'); } })); }
+
+  // enroll
+  async function openEnroll(){ if(!cur._id){ flash('Save the sequence first.',false); return; } enrollSel.clear(); if(!PATIENTS.length){ const j=await capi('load'); PATIENTS=(j&&j.patients)?j.patients:[]; } renderEnroll(); document.getElementById('enrollOv').classList.add('on'); }
+  window.renderEnroll=()=>{ const q=(document.getElementById('enrollSearch').value||'').toLowerCase(); const list=PATIENTS.filter(p=>!q||((p.first+' '+p.last).toLowerCase().includes(q))).slice(0,40); document.getElementById('enrollList').innerHTML=list.map(p=>`<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-[#f1f3f7]"><input type="checkbox" ${enrollSel.has(p.id)?'checked':''} onchange="togEnroll('${p.id}',this.checked)" style="accent-color:#0a6cf5"> ${esc((p.first||'')+' '+(p.last||''))}</label>`).join('')||'<div class="text-[#9aa0ab] p-3 text-center">No matches.</div>'; };
+  window.togEnroll=(id,on)=>{ on?enrollSel.add(id):enrollSel.delete(id); };
+  async function doEnroll(){ if(!enrollSel.size){ return; } const j=await api('enroll',{id:cur._id,patient_ids:[...enrollSel]}); document.getElementById('enrollOv').classList.remove('on'); if(j&&j.ok){ flash(`Enrolled ${j.added} (${j.already} already in).`); const g=await api('get',{id:cur._id}); if(g&&g.ok){ cur.enrolled=(g.enrollments||[]).filter(e=>e.status==='active').length; document.getElementById('statEnrolled').textContent=cur.enrolled; } } else flash('Enroll failed',false); }
+
+  window.showView=v=>{ document.getElementById('view-build').style.display=v==='build'?'block':'none'; document.getElementById('view-manage').style.display=v==='manage'?'block':'none'; document.getElementById('tab-build').classList.toggle('on',v==='build'); document.getElementById('tab-manage').classList.toggle('on',v==='manage'); if(v==='manage') loadSeqs(); };
+  window.newSeq=newSeq; window.save=save; window.toggleActive=toggleActive; window.openEnroll=openEnroll; window.doEnroll=doEnroll;
+</script>
+</body>
+</html>
