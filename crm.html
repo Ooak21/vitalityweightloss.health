@@ -39,6 +39,19 @@
   .tab.on .cnt{background:#0a6cf5;color:#fff}
   .field{background:#ffffff;border:1px solid var(--border);border-radius:10px;padding:.5rem .75rem;color:#16201d;font-size:.9rem;width:100%}
   .field:focus{outline:none;border-color:var(--emerald)}
+  /* ---- condensed 3-pane record (HubSpot-style) ---- */
+  .crm3{display:grid;grid-template-columns:300px minmax(0,1fr) 270px;gap:16px;max-width:1200px;margin:0 auto}
+  @media (max-width:1180px){.crm3{grid-template-columns:280px minmax(0,1fr)}}
+  @media (max-width:860px){.crm3{grid-template-columns:1fr}}
+  .crm-avatar{width:46px;height:46px;border-radius:9999px;background:rgba(10,108,245,.12);color:#0a6cf5;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-weight:600;font-size:1.05rem;flex:0 0 auto}
+  .qa{position:relative;display:flex;flex-direction:column;align-items:center;gap:.25rem;flex:1;padding:.5rem .15rem;border-radius:12px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:.68rem;font-weight:600;color:#3d4a45}
+  .qa:hover{background:#f1f3f7;border-color:rgba(10,108,245,.3);color:#0a6cf5}
+  .qa .ic{font-size:1.05rem}
+  .sect-h{font-size:.7rem;font-weight:600;letter-spacing:.12em;color:#0a6cf5;text-transform:uppercase;margin-bottom:.6rem}
+  .menu{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:6px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 30px -10px rgba(16,24,40,.25);padding:6px;z-index:60;width:220px;text-align:left}
+  .menuitem{display:block;width:100%;padding:9px 10px;border-radius:9px;font-size:.82rem;color:#16201d;background:none;border:none;cursor:pointer;font-weight:500;text-align:left;text-decoration:none}
+  .menuitem:hover{background:#f1f3f7}
+  .menuitem span{display:block;font-size:11px;color:#9aa0ab;font-weight:400}
   .scroll::-webkit-scrollbar{width:8px}.scroll::-webkit-scrollbar-thumb{background:#d8dce3;border-radius:8px}
   ::selection{background:rgba(10,108,245,.25)}
   .modal-bg{background:rgba(16,24,40,.45);backdrop-filter:blur(4px)}
@@ -127,6 +140,7 @@
       <button onclick="setViewMode('provider')" data-mode="provider" class="vm-btn px-3 py-2 text-[#4b5563] border-l border-[#e6e9ee]">Provider</button>
       <button onclick="setViewMode('portal')" data-mode="portal" class="vm-btn px-3 py-2 text-[#4b5563] border-l border-[#e6e9ee]">Patient Portal</button>
     </div>
+    <a href="templates.html" class="text-xs text-[#6b7280] hover:text-[#16201d]" title="Email Template Library">✉ Templates</a>
     <a href="admin.html" class="text-xs text-[#6b7280] hover:text-[#16201d]" title="Admin & Operations (admins only)">⚙ Admin</a>
     <button onclick="(window.__vca?window.__vca.signOut():(window.__vitSb?window.__vitSb.auth.signOut():Promise.resolve())).then(()=>location.replace('login.html'))" class="text-xs text-[#6b7280] hover:text-[#16201d]">Sign out</button>
     <div id="userAvatar" title="Signed in" class="w-8 h-8 rounded-full bg-[#f1f3f7] border border-[#e6e9ee] flex items-center justify-center text-xs font-semibold text-[#4b5563]">··</div>
@@ -1270,51 +1284,190 @@
       <div class="flex items-center gap-3"><span class="text-xs font-semibold" style="color:${stColor}">${a.status||'scheduled'}</span><button onclick="editAppt('${a.pid||''}','${a.id||''}')" class="text-[#0a6cf5] text-xs font-semibold hover:underline">edit</button></div>
     </div>`;
   }
+  // Inline line-icons matching the deck-icon style (currentColor so they inherit button color).
+  const ICON_PATH = {
+    note:    '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7.5 18.5 3.5 20l1.5-4Z"/>',
+    email:   '<rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4.5 7 7.5 5.5L19.5 7"/>',
+    call:    '<path d="M6.4 3.6c.5 0 .95.3 1.15.77l1.1 2.6a1.25 1.25 0 0 1-.28 1.4L7.1 9.65a12.5 12.5 0 0 0 5.6 5.6l1.28-1.27a1.25 1.25 0 0 1 1.4-.28l2.6 1.1c.47.2.77.65.77 1.15v2.3a1.5 1.5 0 0 1-1.62 1.5A15.5 15.5 0 0 1 3.62 5.2 1.5 1.5 0 0 1 5.1 3.6Z"/>',
+    task:    '<rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><path d="m7.8 12 2.8 2.8 5.6-6"/>',
+    meet:    '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>',
+    mobile:  '<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>',
+    headset: '<path d="M4 13.5v-1.5a8 8 0 0 1 16 0v1.5"/><rect x="3" y="13" width="4" height="6.5" rx="1.8"/><rect x="17" y="13" width="4" height="6.5" rx="1.8"/>',
+    cal:     '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>',
+  };
+  function ic(name, size){ size=size||20; return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="${size}" height="${size}" style="display:inline-block;vertical-align:middle;flex:0 0 auto">${ICON_PATH[name]||''}</svg>`; }
+
   function renderCrmView(p){
     const age = p.dob ? (new Date().getFullYear()-new Date(p.dob).getFullYear()) : '-';
-    const appts = (p.appts||[]).map(a=>({...a,pid:p.id})).sort((a,b)=> new Date(b.when).getTime() - new Date(a.when).getTime());
+    const initials = (((p.first||'')[0]||'?')+((p.last||'')[0]||'')).toUpperCase();
+    const telHref = p.phone ? 'tel:'+String(p.phone).replace(/[^0-9+]/g,'') : '';
+    window.__crmP = p; window.__actFilter = 'all'; window.__crmTasks = null; window.__crmEmails = null;
+    const c = actCounts(p);
     $('#detailMain').innerHTML = `
-      <div class="p-6 max-w-3xl mx-auto">
-        ${detailHeader(p, age)}
-
-        <div class="flex gap-2 mb-6 flex-wrap">
-          <button onclick="openEmail()" class="px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8]">✉ Send branded email</button>
-          <button onclick="bookAppt('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">+ Book appointment</button>
-          <button onclick="addTask('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">＋ Add task</button>
-          <button onclick="portalLogin('${p.id}',${!!p.has_login})" ${p.email?'':'title="Add an email first"'} class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7]">🔑 ${p.has_login?'Reset portal password':'Create portal login'}</button>
-        </div>
-
-        <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-2">Contact &amp; lifecycle</div>
-        <div class="border border-[#e6e9ee] rounded-2xl mb-6 divide-y divide-[#eef1f4]">
-          ${infoRow(p,'email','Email')}
-          ${infoRow(p,'phone','Phone')}
-          ${infoRow(p,'dob','Date of birth')}
-          ${infoRow(p,'program','Program')}
-          <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Referred by</span><span class="text-sm cursor-pointer hover:bg-[#f4f6f8] rounded px-1.5 py-0.5 -mr-1 ${p.referred_by?'text-[#0a6cf5] font-medium':'text-[#9aa0ab] italic'}" title="Click to set the referral source" onclick="openReferPicker('${p.id}')">${p.referred_by?esc(p.referred_by.practice_name+(p.referred_by.provider_name?' · '+p.referred_by.provider_name:'')):'set referral source…'}</span></div>
-          <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Portal login</span><span class="text-sm ${p.has_login?'text-[#0a7a3d]':'text-[#9aa0ab]'}">${p.has_login?'Active':'Not set up'}</span></div>
-          <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Patient since</span><span class="text-sm text-[#16201d]">${fmtDate(p.created)}</span></div>
-          ${p.tags&&p.tags.length?`<div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Tags</span><span class="text-sm text-[#16201d] flex flex-wrap gap-1 justify-end">${p.tags.map(t=>`<span class="badge b-active">${t}</span>`).join('')}</span></div>`:''}
-        </div>
-
-        <div class="flex items-center justify-between mb-2"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Appointments</div><button onclick="bookAppt('${p.id}')" class="text-xs text-[#0a6cf5] font-semibold hover:underline">+ Book</button></div>
-        <div class="border border-[#e6e9ee] rounded-2xl mb-6">
-          ${appts.length? appts.map(apptRow).join('') : '<div class="px-4 py-5 text-sm text-[#9aa0ab] text-center">No appointments yet.</div>'}
-        </div>
-
-        <div class="flex items-center justify-between mb-2"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Tasks</div><button onclick="addTask('${p.id}')" class="text-xs text-[#0a6cf5] font-semibold hover:underline">+ Add task</button></div>
-        <div id="crmTasks" class="border border-[#e6e9ee] rounded-2xl mb-6"><div class="px-4 py-5 text-sm text-[#9aa0ab] text-center">Loading tasks…</div></div>
-
-        <div class="glass border border-[#e6e9ee] rounded-2xl p-5">
-          <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-4">Notes &amp; communications</div>
-          <div class="overflow-y-auto scroll -mr-2 pr-2" style="max-height:420px">${timeline(p)}</div>
-          <div class="flex gap-2 mt-2 pt-3 border-t border-[#e6e9ee]">
-            <input id="noteInput" class="field" placeholder="Add a note…" onkeydown="if(event.key==='Enter')addNote('${p.id}')">
-            <button onclick="addNote('${p.id}')" class="px-4 py-2 rounded-lg bg-[#f1f3f7] border border-[#e6e9ee] text-sm font-medium hover:border-[#0a6cf5]/40">Add</button>
+      <div class="crm3 p-5">
+        <!-- LEFT: identity -->
+        <div class="flex flex-col gap-4">
+          <div class="glass rounded-2xl p-5">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="crm-avatar">${initials||'?'}</div>
+              <div class="min-w-0">
+                <span id="patName" onclick="editName('${p.id}')" title="Click to edit name" class="font-display text-xl font-semibold tracking-[-.5px] leading-tight cursor-text hover:bg-[#f4f6f8] rounded px-1 -ml-1 inline-block">${p.first||''} ${p.last||''}</span>
+                <div class="mt-1"><span class="badge b-${p.status}">${STAT[p.status]||p.status}</span></div>
+              </div>
+            </div>
+            <div class="text-xs text-[#6b7280] mb-4">${PROG[p.program]||'-'} program · age ${age} · since ${fmtDate(p.created)}</div>
+            <div class="flex gap-2">
+              <button onclick="focusNoteTab()" class="qa"><span class="ic">${ic('note')}</span>Note</button>
+              <button onclick="openEmail()" class="qa"><span class="ic">${ic('email')}</span>Email</button>
+              ${telHref
+                ? `<a href="${telHref}" class="qa" style="text-decoration:none" title="Call ${p.phone}"><span class="ic">${ic('call')}</span>Call</a>`
+                : `<button onclick="alert('No phone number on file for this patient.')" class="qa"><span class="ic">${ic('call')}</span>Call</button>`}
+              <button onclick="addTask('${p.id}')" class="qa"><span class="ic">${ic('task')}</span>Task</button>
+              <button onclick="bookAppt('${p.id}')" class="qa"><span class="ic">${ic('meet')}</span>Meet</button>
+            </div>
+          </div>
+          <div class="glass rounded-2xl overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 cursor-pointer" onclick="this.nextElementSibling.classList.toggle('hidden')">
+              <span class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Key information</span><span class="text-[#9aa0ab] text-sm">▾</span>
+            </div>
+            <div class="divide-y divide-[#eef1f4]">
+              ${infoRow(p,'email','Email')}
+              ${infoRow(p,'phone','Phone')}
+              ${infoRow(p,'dob','Date of birth')}
+              ${infoRow(p,'program','Program')}
+              <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Referred by</span><span class="text-sm cursor-pointer hover:bg-[#f4f6f8] rounded px-1.5 py-0.5 -mr-1 ${p.referred_by?'text-[#0a6cf5] font-medium':'text-[#9aa0ab] italic'}" title="Click to set the referral source" onclick="openReferPicker('${p.id}')">${p.referred_by?esc(p.referred_by.practice_name+(p.referred_by.provider_name?' · '+p.referred_by.provider_name:'')):'set referral source…'}</span></div>
+              <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Portal login</span><span class="text-sm ${p.has_login?'text-[#0a7a3d]':'text-[#9aa0ab]'}">${p.has_login?'Active':'Not set up'}</span></div>
+              <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Patient since</span><span class="text-sm text-[#16201d]">${fmtDate(p.created)}</span></div>
+              ${p.tags&&p.tags.length?`<div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Tags</span><span class="text-sm text-[#16201d] flex flex-wrap gap-1 justify-end">${p.tags.map(t=>`<span class="badge b-active">${t}</span>`).join('')}</span></div>`:''}
+            </div>
           </div>
         </div>
+
+        <!-- CENTER: activity -->
+        <div class="glass rounded-2xl p-5 flex flex-col" style="min-height:520px">
+          <div class="flex items-center justify-between flex-wrap gap-2 mb-3 pb-3 border-b border-[#eef1f4]">
+            <div class="flex gap-1 flex-wrap">
+              <span class="tab on" data-f="all" onclick="setActTab('all',this)">All</span>
+              <span class="tab" data-f="note" onclick="setActTab('note',this)">Notes <span class="cnt">${c.note}</span></span>
+              <span class="tab" data-f="email" onclick="setActTab('email',this)">Emails</span>
+              <span class="tab" data-f="call" onclick="setActTab('call',this)">Calls <span class="cnt">${c.call}</span></span>
+              <span class="tab" data-f="task" onclick="setActTab('task',this)">Tasks <span class="cnt" id="taskTabCnt">·</span></span>
+              <span class="tab" data-f="appt" onclick="setActTab('appt',this)">Meetings <span class="cnt">${c.appt}</span></span>
+            </div>
+            <button id="createTaskBtn" onclick="addTask('${p.id}')" class="hidden px-3 py-1.5 rounded-lg border border-[#e6e9ee] text-sm font-semibold text-[#16201d] hover:bg-[#f1f3f7] inline-flex items-center gap-1.5">${ic('task',15)} Create task</button>
+          </div>
+          <div id="actFeed" class="flex-1 overflow-y-auto scroll -mr-2 pr-2" style="max-height:440px"></div>
+          <div id="noteComposer" class="flex gap-2 mt-3 pt-3 border-t border-[#e6e9ee]">
+            <input id="noteInput" class="field" placeholder="Add a note…" onkeydown="if(event.key==='Enter')addNote('${p.id}')">
+            <button onclick="addNote('${p.id}')" class="px-4 py-2 rounded-lg bg-[#0a6cf5] text-white text-sm font-medium">Add</button>
+          </div>
+        </div>
+
+        <!-- RIGHT: associations -->
+        <div class="flex flex-col gap-4">
+          <div class="glass rounded-2xl p-4"><div class="sect-h flex items-center gap-1.5"><img src="assets/deck-icons/billing.svg" alt="" style="width:15px;height:15px;opacity:.85">Subscription &amp; billing</div><div class="text-sm ${p.subscription?'':'text-[#9aa0ab]'}">${p.subscription?`<span class="font-display text-lg font-semibold">$${((p.subscription.recurring_cents||0)/100).toFixed(0)}</span><span class="text-[#6b7280]">/mo</span> · <span class="badge b-active">${p.subscription.status||'active'}</span>`:'No subscription on file'}</div></div>
+          <div class="glass rounded-2xl p-4"><div class="sect-h flex items-center gap-1.5"><img src="assets/deck-icons/glp1.svg" alt="" style="width:15px;height:15px;opacity:.85">Program</div><div class="text-sm font-medium">${PROG[p.program]||'Not set'}</div></div>
+          <div class="glass rounded-2xl p-4"><div class="sect-h">Referral source</div>${p.referred_by?`<div class="text-sm font-medium text-[#0a6cf5]">${esc(p.referred_by.practice_name)}</div>${p.referred_by.provider_name?`<div class="text-xs text-[#6b7280] mt-1">${esc(p.referred_by.provider_name)}</div>`:''}`:'<div class="text-sm text-[#9aa0ab]">None set</div>'}</div>
+          <div class="glass rounded-2xl p-4"><div class="flex items-center justify-between mb-2"><span class="sect-h" style="margin:0">Open tasks</span><button onclick="addTask('${p.id}')" class="text-xs text-[#0a6cf5] font-semibold hover:underline">+ Add</button></div><div id="rightTasks" class="space-y-2 text-sm text-[#9aa0ab]">Loading…</div></div>
+        </div>
       </div>`;
+    setActTab('all');
     loadPatientTasks(p.id);
   }
+
+  // ---- condensed record: activity model (filter tabs over the pieces we already have) ----
+  function actItems(p){
+    return [
+      ...(p.notes||[]).map(n=>({fam:'note',ts:n.ts,auto:n.auto,author:n.author,body:n.body,ntype:n.type})),
+      ...(p.calls||[]).map(cc=>({fam:'call',ts:cc.ts,author:'Receptionist',body:`${cc.dir==='inbound'?'Inbound':'Outbound'} call · ${cc.intent} · ${cc.outcome} · ${Math.floor(cc.dur/60)}m${cc.dur%60}s`})),
+      ...(p.appts||[]).map(a=>({fam:'appt',ts:a.when,author:a.provider,body:`${a.type} · ${a.status} · ${fmtDT(a.when)} · ${a.provider}`,pid:p.id,apptId:a.id})),
+    ].sort((x,y)=> new Date(y.ts).getTime() - new Date(x.ts).getTime());
+  }
+  function actCounts(p){ const i=actItems(p); return {note:i.filter(x=>x.fam==='note').length,call:i.filter(x=>x.fam==='call').length,appt:i.filter(x=>x.fam==='appt').length}; }
+  function monthLabel(ts){ const d=new Date(ts); return isNaN(d)?'':d.toLocaleDateString([],{month:'long',year:'numeric'}); }
+  function renderActivity(p, fam){
+    const items = actItems(p).filter(it=> fam==='all' ? true : it.fam===fam);
+    if(!items.length) return '<div class="text-sm text-[#9aa0ab] text-center py-10">Nothing here yet.</div>';
+    const dot={auto:'#60a5fa',note:'#6b7280',call:'#0a6cf5',appt:'#f59e0b'};
+    let html='', lm='';
+    for(const it of items){
+      const ml=monthLabel(it.ts); if(ml!==lm){ html+=`<div class="text-xs font-semibold text-[#9aa0ab] mt-3 mb-2">${ml}</div>`; lm=ml; }
+      const clin = it.ntype==='clinical_ref'; const d = clin?'#f43f5e':(it.auto?dot.auto:dot[it.fam]);
+      html+=`<div class="flex gap-3 pb-4">
+        <div class="flex flex-col items-center"><div style="width:9px;height:9px;border-radius:9999px;background:${d};margin-top:5px"></div><div style="width:1px;flex:1;background:#e6e9ee;margin-top:4px"></div></div>
+        <div class="flex-1 -mt-0.5 ${clin?'border-l-2 border-rose-500/40 pl-3 -ml-1':''}">
+          <div class="flex items-center gap-2 text-xs text-[#6b7280]"><span class="font-semibold text-[#3d4a45]">${it.author||'—'}</span>${clin?'<span class="badge" style="background:rgba(244,63,94,.15);color:#be123c">⚑ Clinical · provider</span>':(it.auto?'<span class="badge b-active">auto</span>':'')}<span>·</span><span>${rel(it.ts)}</span></div>
+          <div class="text-sm ${clin?'text-[#9f1239]':'text-[#16201d]'} mt-1 leading-relaxed">${it.body}${it.fam==='appt'?` <button onclick="editAppt('${it.pid}','${it.apptId}')" class="text-[#0a6cf5] text-xs font-semibold ml-1 hover:underline">edit</button>`:''}</div>
+        </div>
+      </div>`;
+    }
+    return html;
+  }
+  // HubSpot-style task cards (assignee + due on the right, checkbox, strikethrough when done)
+  function taskCard(t){
+    const done=t.status==='done'; const pr={urgent:'#be123c',high:'#9a5a00'}[t.priority];
+    return `<div class="border border-[#e6e9ee] rounded-xl p-3 mb-2">
+      <div class="flex items-center justify-between gap-2">
+        <div class="text-sm text-[#6b7280]"><b class="text-[#16201d]">Task</b>${t.assignee?' assigned to '+esc(t.assignee):''}</div>
+        <div class="text-xs text-[#6b7280] flex items-center gap-1">${ic('cal',13)} ${t.due?esc(t.due):'no due date'}</div>
+      </div>
+      <div class="flex items-center gap-2 mt-2">
+        <input type="checkbox" ${done?'checked':''} ${t.locked?'disabled':''} onchange="toggleTask('${t.id}',this.checked)" class="accent-[#0a6cf5] w-4 h-4 shrink-0">
+        <span class="text-sm ${done?'line-through text-[#9aa0ab]':'text-[#16201d] font-medium'}">${esc(t.title)}${t.clinical?'<span class="badge ml-1" style="background:rgba(244,63,94,.15);color:#be123c">clinical</span>':''}</span>
+        ${!done&&pr?`<span class="text-[11px] font-semibold ml-auto" style="color:${pr}">${t.priority}</span>`:''}
+      </div>
+    </div>`;
+  }
+  window.setActTab = function(fam, el){
+    window.__actFilter = fam;
+    document.querySelectorAll('#detailMain .tab').forEach(t=>t.classList.remove('on'));
+    (el||document.querySelector('#detailMain .tab[data-f="'+fam+'"]'))?.classList.add('on');
+    const btn=document.getElementById('createTaskBtn'); if(btn) btn.classList.toggle('hidden', fam!=='task');
+    const comp=document.getElementById('noteComposer'); if(comp) comp.style.display = (fam==='task'||fam==='email')?'none':'flex';
+    const feed=document.getElementById('actFeed'); if(!feed) return;
+    const p=window.__crmP;
+    if(fam==='task'){
+      feed.innerHTML = window.__crmTasks ? renderTaskFeed(window.__crmTasks) : '<div class="text-sm text-[#9aa0ab] text-center py-10">Loading tasks…</div>';
+    } else if(fam==='email'){
+      if(window.__crmEmails) feed.innerHTML=renderEmailFeed(window.__crmEmails); else { feed.innerHTML='<div class="text-sm text-[#9aa0ab] text-center py-10">Loading emails…</div>'; loadPatientEmails(p); }
+    } else {
+      feed.innerHTML = renderActivity(p, fam);
+    }
+  };
+  function renderTaskFeed(tasks){
+    if(!tasks.length) return '<div class="text-sm text-[#9aa0ab] text-center py-10">No tasks for this patient yet.</div>';
+    const open=tasks.filter(t=>t.status!=='done'), closed=tasks.filter(t=>t.status==='done');
+    return (open.length?'<div class="text-xs font-semibold text-[#9aa0ab] mb-2">Open</div>'+open.map(taskCard).join(''):'')
+         + (closed.length?'<div class="text-xs font-semibold text-[#9aa0ab] mt-3 mb-2">Completed</div>'+closed.map(taskCard).join(''):'');
+  }
+  function renderEmailFeed(emails){
+    if(!emails.length) return '<div class="text-sm text-[#9aa0ab] text-center py-10">No emails sent to this patient yet.</div>';
+    const col={sent:'#6b7280',delivered:'#0a7a3d',opened:'#047857',clicked:'#047857',bounced:'#be123c',complained:'#be123c'};
+    let html='', lm='';
+    for(const e of emails){
+      const ml=monthLabel(e.at); if(ml!==lm){ html+=`<div class="text-xs font-semibold text-[#9aa0ab] mt-3 mb-2">${ml}</div>`; lm=ml; }
+      html+=`<div class="flex gap-3 pb-4">
+        <div class="flex flex-col items-center"><div style="width:9px;height:9px;border-radius:9999px;background:#8b5cf6;margin-top:5px"></div><div style="width:1px;flex:1;background:#e6e9ee;margin-top:4px"></div></div>
+        <div class="flex-1 -mt-0.5">
+          <div class="flex items-center gap-2 text-xs text-[#6b7280]" style="color:#8b5cf6">${ic('email',15)}<span class="font-semibold text-[#3d4a45]">${esc(e.subject)}</span><span class="text-[#6b7280]">·</span><span class="text-[#6b7280]">${e.at?rel(new Date(e.at).toISOString()):''}</span></div>
+          <div class="text-sm mt-1"><span class="font-semibold" style="color:${col[e.status]||'#6b7280'}">${e.status}</span>${e.category?` · <span class="text-[#6b7280]">${esc(e.category)}</span>`:''}</div>
+        </div>
+      </div>`;
+    }
+    return html;
+  }
+  async function loadPatientEmails(p){
+    if(!p||!p.email){ window.__crmEmails=[]; if(window.__actFilter==='email'){ const f=document.getElementById('actFeed'); if(f) f.innerHTML=renderEmailFeed([]); } return; }
+    try{
+      const r=await fetch(CONVEX_URL+'/patient-emails',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({email:p.email})});
+      const j=await r.json(); window.__crmEmails = (j&&j.ok&&j.emails)?j.emails:[];
+    }catch(e){ console.warn('loadPatientEmails',e); window.__crmEmails=[]; }
+    if(window.__actFilter==='email'){ const f=document.getElementById('actFeed'); if(f) f.innerHTML=renderEmailFeed(window.__crmEmails); }
+  }
+  window.focusNoteTab = function(){ setActTab('all'); const i=document.getElementById('noteInput'); if(i) i.focus(); };
+  window.toggleCallMenu = function(e){ e.stopPropagation(); const m=document.getElementById('callMenu'); if(m) m.style.display = m.style.display==='none'?'block':'none'; };
+  window.crmCall = function(pid){ const m=document.getElementById('callMenu'); if(m) m.style.display='none'; alert('Browser calling (Telnyx softphone) is being wired — it will place the call in-browser and log it + the recording to this record. Pending the Telnyx account being re-enabled.'); };
+  document.addEventListener('click', ()=>{ const m=document.getElementById('callMenu'); if(m) m.style.display='none'; });
   function taskRow(t){
     const done = t.status==='done';
     const prColor = {urgent:'#be123c',high:'#9a5a00'}[t.priority]||'#6b7280';
@@ -1329,15 +1482,21 @@
     </div>`;
   }
   async function loadPatientTasks(pid){
-    const el = document.getElementById('crmTasks'); if(!el) return;
+    let tasks=[];
     try{
       const r = await fetch(CONVEX_URL+'/patient-tasks',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({patient_id:pid})});
       const j = await r.json();
-      if(!j.ok){ el.innerHTML = '<div class="px-4 py-5 text-sm text-[#9aa0ab] text-center">Could not load tasks.</div>'; return; }
-      const open = j.tasks.filter(t=>t.status!=='done'), closed = j.tasks.filter(t=>t.status==='done');
-      el.innerHTML = j.tasks.length ? (open.map(taskRow).join('') + closed.map(taskRow).join(''))
-        : '<div class="px-4 py-5 text-sm text-[#9aa0ab] text-center">No tasks for this patient yet.</div>';
-    }catch(e){ console.warn('loadPatientTasks',e); el.innerHTML='<div class="px-4 py-5 text-sm text-[#9aa0ab] text-center">Could not load tasks.</div>'; }
+      tasks = (j&&j.ok&&j.tasks)?j.tasks:[];
+    }catch(e){ console.warn('loadPatientTasks',e); }
+    window.__crmTasks = tasks;
+    const open = tasks.filter(t=>t.status!=='done');
+    // task-tab count
+    const cnt=document.getElementById('taskTabCnt'); if(cnt) cnt.textContent=String(open.length);
+    // right-rail open tasks
+    const rt=document.getElementById('rightTasks');
+    if(rt) rt.innerHTML = open.length ? open.map(t=>`<div class="flex items-start gap-2"><input type="checkbox" ${t.locked?'disabled':''} onchange="toggleTask('${t.id}',this.checked)" class="accent-[#0a6cf5] w-4 h-4 mt-0.5 shrink-0"><div><div class="text-[#16201d]">${esc(t.title)}</div><div class="text-[11px] text-[#9aa0ab]">${t.due?'due '+esc(t.due):'no due date'}${t.assignee?' · '+esc(t.assignee):''}</div></div></div>`).join('') : '<div class="text-[#9aa0ab]">No open tasks.</div>';
+    // feed, if the Tasks tab is the active one
+    if(window.__actFilter==='task'){ const f=document.getElementById('actFeed'); if(f) f.innerHTML=renderTaskFeed(tasks); }
   }
   window.addTask = async function(pid){
     const p = patients.find(x=>x.id===pid); if(!p) return;
