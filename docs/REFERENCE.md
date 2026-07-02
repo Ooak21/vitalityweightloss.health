@@ -38,6 +38,12 @@
 - `crm.html` — staff CRM: leads, referral partners (incl. physician-investor
   badging), GLP-1 Rx async review queue, Communicate/Plans/Voice action
   clusters, calendar (Month/Week/Day views, provider colors)
+  - "Add referral partner" modal (`addPractice`) has an optional "Referring
+    doctor" field. On submit it chains two existing Convex actions instead of
+    requiring a backend change: `add_practice` first, then (if a doctor name
+    was entered) `add_provider` against the returned practice id, marked
+    `is_primary`. Previously a provider could only be added in a second step
+    via the practice detail view's "Add doctor" button.
 - `admin.html` — vendor/HIPAA risk register, Resend email tracking metrics
   (HubSpot-style), Telnyx call reporting/CSV export
 - Importer supports HubSpot/Apollo CSV exports (underscore/space header

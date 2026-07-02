@@ -34,8 +34,13 @@ This is a healthcare site — PHI handling is a first-class concern.
   affects PHI exposure and update `admin.html`'s vendor tracker accordingly.
 
 ## Key files
-- `index.html`, `glp1.html`, `glp1A.html`, `glp1B.html`, `bloom.html` — public
-  marketing/landing pages (GLP-1 and Bloom program variants)
+- `index.html`, `glp1.html`, `glp1A.html`, `glp1B.html`, `bloom.html`,
+  `total-male.html` — public marketing/landing pages (GLP-1, Bloom, and Total
+  Male program variants). `index.html`'s top-nav announcement reel
+  (`navSlot`/`navSlotReel`) cycles all three programs. The "no-needle option"
+  FAQ card on `index.html` describes a daily oral semaglutide pill (asset:
+  `assets/semaglutide-pills.jpg`), not sublingual drops — the dropper product
+  (`assets/semaglutide-dropper.png`) is retired from that card.
 - `intake.html`, `checkout.html`, `eligibility-check/` — patient intake and
   Stripe checkout flow
 - `portal.html`, `portal-login.html` — patient portal
