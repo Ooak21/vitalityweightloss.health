@@ -369,6 +369,41 @@
   </div>
 </div>
 
+<!-- CARE PREFERENCES MODAL (provider capture -> plan/transformation personalization) -->
+<div id="prefsModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
+  <div class="bg-white border border-[#e6e9ee] rounded-3xl max-w-lg w-full overflow-hidden shadow-[0_18px_44px_-22px_rgba(16,24,40,0.25)] max-h-[90vh] flex flex-col">
+    <div class="p-5 border-b border-[#e6e9ee] flex items-center justify-between shrink-0">
+      <div><h3 class="font-display font-semibold text-lg">Care preferences</h3><div id="prefsWho" class="text-xs text-[#6b7280] mt-0.5">Personalizes the plan &amp; transformation plan.</div></div>
+      <button onclick="closePrefs()" class="text-[#6b7280] hover:text-[#16201d] text-xl">×</button>
+    </div>
+    <div class="p-5 space-y-3 overflow-y-auto">
+      <div><label class="text-xs text-[#6b7280] font-semibold">Food allergies <span class="text-[#9aa0ab]">· never appear in the plan</span></label><input id="pfAllergies" class="field mt-1" placeholder="e.g., peanuts, shellfish, dairy"></div>
+      <div><label class="text-xs text-[#6b7280] font-semibold">Foods to avoid / dislikes</label><input id="pfDislikes" class="field mt-1" placeholder="e.g., liver, beets, cilantro"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-xs text-[#6b7280] font-semibold">Eating style</label><select id="pfDiet" class="field mt-1"></select></div>
+        <div><label class="text-xs text-[#6b7280] font-semibold">Activity level</label><select id="pfActivity" class="field mt-1"></select></div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-xs text-[#6b7280] font-semibold">Training location</label><select id="pfWhere" class="field mt-1"></select></div>
+        <div><label class="text-xs text-[#6b7280] font-semibold">Equipment</label><input id="pfEquip" class="field mt-1" placeholder="dumbbells, bands, or none"></div>
+      </div>
+      <div>
+        <div class="flex items-center justify-between mb-1"><label class="text-xs text-[#6b7280] font-semibold">Injuries, aches &amp; pains <span class="text-[#9aa0ab]">· workouts adapt around these</span></label><button type="button" onclick="prefsAddInjury()" class="text-xs font-semibold text-[#0a6cf5] hover:underline">+ Add area</button></div>
+        <div id="pfInjuries" class="space-y-2"></div>
+        <div id="pfInjNone" class="text-xs text-[#9aa0ab] italic">No areas added. Click "Add area" for any prior injuries, aches, or pains.</div>
+      </div>
+      <div id="prefsErr" class="text-sm text-rose-600 hidden"></div>
+    </div>
+    <div class="p-5 border-t border-[#e6e9ee] flex justify-between items-center shrink-0 gap-2">
+      <span class="text-xs text-[#9aa0ab]">Saving updates plan inputs — regenerate to apply.</span>
+      <div class="flex gap-2 shrink-0">
+        <button onclick="closePrefs()" class="px-4 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-sm hover:bg-[#f1f3f7]">Cancel</button>
+        <button id="prefsSave" onclick="savePrefs()" class="px-5 py-2 rounded-xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8]">Save preferences</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- medication reference (OpenFDA, provider-side, no PHI sent) -->
 <div id="rxModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
   <div class="bg-white border border-[#e6e9ee] rounded-3xl max-w-lg w-full overflow-hidden shadow-[0_18px_44px_-22px_rgba(16,24,40,0.25)] max-h-[88vh] flex flex-col">
@@ -1244,6 +1279,7 @@
             <div class="text-[10px] font-semibold tracking-[.14em] text-[#9aa0ab] uppercase mb-1.5">Plans</div>
             <div class="flex gap-2 flex-wrap items-center">
               <button id="importBtn" onclick="importScan()" title="Upload an InBody scan for this patient, then generate the plan" class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">⬆ Import InBody scan</button>
+              <button onclick="openPrefs('${p.id}')" title="Food allergies, food preferences, injuries & aches — the plan personalizes around these" class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">⚙ Care preferences</button>
               <div class="relative inline-block menu-wrap">
                 <span class="inline-flex rounded-xl border border-[#0a6cf5]/40 overflow-hidden">
                   <button onclick="generatePlan('${p.id}', false, this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ ${p.plan?'Regenerate plan':'Generate plan'}</button>
@@ -2701,6 +2737,70 @@ HARD RULES:
     setTimeout(()=>document.getElementById('apFirst').focus(),40);
   };
   window.closeAddPatient = function(){ const m=document.getElementById('addModal'); m.classList.add('hidden'); m.classList.remove('flex'); };
+
+  // ---------------- Care preferences (provider capture -> plan/transformation personalization) ----------------
+  const PF_DIET = ['No specific restriction','Mediterranean','Vegetarian','Vegan','Pescatarian','Lactose-free','Gluten-free','Halal','Kosher'];
+  const PF_ACTIVITY = ['Sedentary','Lightly active','Active','Very active'];
+  const PF_WHERE = ['Home','Gym','Both'];
+  const PF_AREAS = ['Neck','Left shoulder','Right shoulder','Upper back','Lower back','Left elbow','Right elbow','Left wrist','Right wrist','Hip','Left knee','Right knee','Left ankle','Right ankle','Other'];
+  let __prefsPid = null, __prefsLoaded = false;
+  function pfFill(id, opts, val){ const s=document.getElementById(id); if(s) s.innerHTML=opts.map(o=>`<option${o===val?' selected':''}>${o}</option>`).join(''); }
+  window.prefsAddInjury = function(area, kind, note){
+    const wrap=document.getElementById('pfInjuries'); if(!wrap) return;
+    document.getElementById('pfInjNone').style.display='none';
+    const row=document.createElement('div'); row.className='pf-inj flex gap-2 items-center';
+    row.innerHTML =
+      `<select class="pf-area field text-sm flex-1">${PF_AREAS.map(a=>`<option${a===area?' selected':''}>${a}</option>`).join('')}</select>`+
+      `<select class="pf-kind field text-sm" style="width:130px"><option value="injury"${kind==='injury'?' selected':''}>Prior injury</option><option value="ache"${kind==='ache'?' selected':''}>Ache / pain</option></select>`+
+      `<input class="pf-note field text-sm flex-1" placeholder="note (optional)" value="${(note||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}">`+
+      `<button type="button" onclick="this.closest('.pf-inj').remove()" class="text-[#9aa0ab] hover:text-rose-600 px-1.5 text-lg leading-none" title="Remove">×</button>`;
+    wrap.appendChild(row);
+  };
+  window.openPrefs = async function(id){
+    __prefsPid=id; __prefsLoaded=false;
+    const sBtn=document.getElementById('prefsSave'); if(sBtn) sBtn.disabled=true;   // no save until current prefs load, else a blank save wipes intake data
+    const p=patients.find(x=>x.id===id)||{};
+    const nm=`${p.first||''} ${p.last||''}`.trim();
+    document.getElementById('prefsWho').textContent = nm ? `For ${nm} · personalizes the plan & transformation plan.` : 'Personalizes the plan & transformation plan.';
+    ['pfAllergies','pfDislikes','pfEquip'].forEach(i=>{const e=document.getElementById(i); if(e)e.value='';});
+    document.getElementById('pfInjuries').innerHTML=''; document.getElementById('pfInjNone').style.display='';
+    const err=document.getElementById('prefsErr'); err.classList.add('hidden'); err.textContent='';
+    pfFill('pfDiet',PF_DIET,PF_DIET[0]); pfFill('pfActivity',PF_ACTIVITY,'Lightly active'); pfFill('pfWhere',PF_WHERE,'Home');
+    const m=document.getElementById('prefsModal'); m.classList.remove('hidden'); m.classList.add('flex');
+    try{
+      const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'get_prefs',patient_id:id})});
+      const j=await r.json(); if(!j || j.ok===false) throw new Error('load failed');
+      const pf=(j&&j.prefs)||{};
+      const sv=(id2,v)=>{const e=document.getElementById(id2); if(e&&v!=null)e.value=v;};
+      sv('pfAllergies',pf.food_allergies); sv('pfDislikes',pf.dislikes); sv('pfEquip',pf.equipment);
+      if(pf.diet_style) pfFill('pfDiet',PF_DIET,pf.diet_style);
+      if(pf.activity) pfFill('pfActivity',PF_ACTIVITY,pf.activity);
+      if(pf.training_location) pfFill('pfWhere',PF_WHERE,pf.training_location);
+      const inj=pf.injuries;
+      if(Array.isArray(inj)&&inj.length){ inj.forEach(it=> typeof it==='string' ? prefsAddInjury('Other','injury',it) : prefsAddInjury(it.area||'Other', it.kind||'injury', it.note||'')); }
+      else if(typeof inj==='string' && inj.trim()){ prefsAddInjury('Other','injury',inj.trim()); }
+      __prefsLoaded=true; if(sBtn) sBtn.disabled=false;
+    }catch(e){ err.textContent='Could not load current preferences. Close and reopen to try again.'; err.classList.remove('hidden'); }
+  };
+  window.closePrefs = function(){ const m=document.getElementById('prefsModal'); m.classList.add('hidden'); m.classList.remove('flex'); };
+  window.savePrefs = async function(){
+    if(!__prefsPid || !__prefsLoaded) return;
+    const btn=document.getElementById('prefsSave'), err=document.getElementById('prefsErr');
+    const val=id=>(document.getElementById(id).value||'').trim();
+    const injuries=[...document.querySelectorAll('#pfInjuries .pf-inj')].map(r=>({
+      area:r.querySelector('.pf-area').value, kind:r.querySelector('.pf-kind').value, note:(r.querySelector('.pf-note').value||'').trim()
+    })).filter(x=>x.area);
+    const prefs={ food_allergies:val('pfAllergies'), dislikes:val('pfDislikes'), diet_style:val('pfDiet'), activity:val('pfActivity'), training_location:val('pfWhere'), equipment:val('pfEquip'), injuries };
+    err.classList.add('hidden'); const o=btn.textContent; btn.disabled=true; btn.textContent='Saving…';
+    try{
+      const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'set_prefs',patient_id:__prefsPid,prefs})});
+      const j=await r.json(); if(!j.ok) throw new Error(j.error||'save failed');
+      const pl=patients.find(x=>x.id===__prefsPid); if(pl) pl.prefs=j.prefs;
+      closePrefs();
+      alert('Preferences saved. Regenerate the plan to personalize it with these.');
+    }catch(e){ err.textContent='Could not save: '+e.message; err.classList.remove('hidden'); }
+    finally{ btn.disabled=false; btn.textContent=o; }
+  };
   // ---------------- generate starting plan from InBody ----------------
   window.generatePlan = async function(id, force, btn){
     const _orig = btn ? btn.innerHTML : null;
