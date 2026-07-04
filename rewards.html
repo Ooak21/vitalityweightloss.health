@@ -119,6 +119,9 @@ function gamify(){
     B('🎓','PhD scholar','Finish 3 lessons',doneMods>=3),
     B('🏆','Goal reached','Hit your goal weight',goal!=null&&cw!=null&&cw<=goal),
   ];
+  // Prefer the ONE canonical server engine (portal.ts computeGamification) so rewards, portal,
+  // Academies, and CRM show identical points/streak; local values above remain the fallback.
+  const _g=DATA.gamification; if(_g&&typeof _g.points==='number'){ points=_g.points; streak=_g.streak||streak; }
   return {points,streak,week,days14,lost:Math.max(0,Math.round(lost*10)/10),badges,earned:badges.filter(b=>b.earned).length};
 }
 

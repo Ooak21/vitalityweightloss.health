@@ -271,7 +271,7 @@ function tabRoadmap(hb){
 
 // Phase 1 gamification streaks, points, weekly activity, badges (all derived client-side)
 function gamify(){
-  const PTS={food:10,weigh_in:5,journal:5,activity:15,scan:10,module:25};
+  const PTS={food:10,weigh_in:5,journal:5,activity:15,scan:10,module:25,nextstep:20};
   const logs=DATA.logs||[], ib=DATA.inbody||[], plan=DATA.plan, hb=plan&&plan.handbook;
   const dk=(iso)=>new Date(iso).toDateString(), today=new Date().toDateString();
   let points=0, ptsToday=0; const dates=new Set();
@@ -298,6 +298,9 @@ function gamify(){
     B('phd','🎓','PhD scholar',new Set(logs.filter(l=>l.kind==='module').map(l=>(l.body||'').split(':')[0])).size>=3),
     B('goal','🏆','Goal reached',goal!=null&&cw!=null&&cw<=goal),
   ];
+  // Prefer the ONE canonical server engine (portal.ts computeGamification) so portal, Academies,
+  // and CRM show identical points/streak; local values above remain the fallback.
+  const _g=DATA.gamification; if(_g&&typeof _g.points==='number'){ points=_g.points; streak=_g.streak||streak; }
   return {points,ptsToday,streak,week,lost:Math.max(0,Math.round(lost*10)/10),badges,earned:badges.filter(b=>b.earned).length};
 }
 
