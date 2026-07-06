@@ -116,6 +116,66 @@
   <div class="text-xs text-[#9aa0ab] mt-2 max-w-xl mx-auto px-6">Dr. Peter DeBry, MD · Nevada-licensed · This page is informational and does not replace medical advice.</div>
 </footer>
 
+<!-- Total Male request-a-consult lead capture. The 3 "assessment" CTAs open this instead of the GLP-1 intake. -->
+<div id="tmModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/50">
+  <div class="bg-white rounded-3xl max-w-md w-full p-7 shadow-2xl">
+    <div id="tmForm">
+      <h3 class="font-display text-2xl font-semibold tracking-[-0.5px] mb-1">Request your $99 assessment</h3>
+      <p class="text-sm text-[#6b7280] mb-5">Leave your details and our team will call to book your Total Male assessment with Dr. DeBry.</p>
+      <div class="grid grid-cols-2 gap-3">
+        <input id="tmFirst" type="text" placeholder="First name" autocomplete="given-name" class="w-full px-4 py-3 rounded-xl border border-[#e6e9ee] text-[15px] focus:outline-none focus:border-[#0a6cf5]">
+        <input id="tmLast" type="text" placeholder="Last name" autocomplete="family-name" class="w-full px-4 py-3 rounded-xl border border-[#e6e9ee] text-[15px] focus:outline-none focus:border-[#0a6cf5]">
+      </div>
+      <input id="tmPhone" type="tel" placeholder="Phone" autocomplete="tel" class="w-full mt-3 px-4 py-3 rounded-xl border border-[#e6e9ee] text-[15px] focus:outline-none focus:border-[#0a6cf5]">
+      <input id="tmEmail" type="email" placeholder="Email" autocomplete="email" class="w-full mt-3 px-4 py-3 rounded-xl border border-[#e6e9ee] text-[15px] focus:outline-none focus:border-[#0a6cf5]">
+      <p id="tmErr" class="text-[#e11d48] text-sm mt-3 hidden"></p>
+      <button id="tmSubmit" type="button" class="w-full mt-5 px-6 py-3.5 rounded-2xl bg-[#0a6cf5] text-white font-semibold hover:bg-[#0856c8] transition">Request my assessment</button>
+      <button id="tmCancel" type="button" class="w-full mt-2 px-6 py-2.5 text-[#6b7280] font-semibold text-sm hover:text-[#16201d]">Not now</button>
+    </div>
+    <div id="tmDone" class="hidden text-center py-6">
+      <div class="w-14 h-14 rounded-full bg-[#0a6cf5]/10 grid place-items-center mx-auto mb-4"><svg viewBox="0 0 24 24" fill="none" stroke="#0a6cf5" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <h3 class="font-display text-2xl font-semibold mb-1">You're on the list</h3>
+      <p class="text-sm text-[#6b7280]">Our team will reach out shortly to book your Total Male assessment. Thanks for your interest.</p>
+      <button id="tmClose" type="button" class="mt-5 px-6 py-3 rounded-2xl bg-[#16201d] text-white font-semibold hover:bg-[#2b3440] transition">Done</button>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var CONVEX = 'https://quixotic-cat-492.convex.site';
+  var modal = document.getElementById('tmModal');
+  function openLead(e){ if(e){ e.preventDefault(); } modal.classList.remove('hidden'); modal.classList.add('flex'); return false; }
+  function close(){ modal.classList.add('hidden'); modal.classList.remove('flex'); }
+  // Repoint the assessment CTAs (they currently link to the GLP-1 intake) to this lead form.
+  document.querySelectorAll('a[href="intake.html"]').forEach(function(a){ a.setAttribute('href','#'); a.addEventListener('click', openLead); });
+  document.getElementById('tmCancel').onclick = close;
+  document.getElementById('tmClose').onclick = close;
+  modal.addEventListener('click', function(e){ if(e.target === modal) close(); });
+  var err = document.getElementById('tmErr');
+  document.getElementById('tmSubmit').onclick = function(){
+    var first=(document.getElementById('tmFirst').value||'').trim();
+    var last=(document.getElementById('tmLast').value||'').trim();
+    var phone=(document.getElementById('tmPhone').value||'').trim();
+    var email=(document.getElementById('tmEmail').value||'').trim();
+    err.classList.add('hidden');
+    if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)){ err.textContent='Please enter a valid email.'; err.classList.remove('hidden'); return; }
+    if(!first || phone.replace(/\D/g,'').length < 10){ err.textContent='Please enter your name and a valid phone number.'; err.classList.remove('hidden'); return; }
+    var btn=document.getElementById('tmSubmit'); btn.disabled=true; btn.textContent='Sending…';
+    fetch(CONVEX+'/lead',{ method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ first_name:first, last_name:last, email:email, phone:phone, program:'total_male', source:'total_male', lead_status:'new' }) })
+      .then(function(r){ return r.json().catch(function(){ return {}; }); })
+      .then(function(j){
+        if(j && j.ok){
+          document.getElementById('tmForm').classList.add('hidden');
+          document.getElementById('tmDone').classList.remove('hidden');
+          if(window.vitalityTrack) window.vitalityTrack('generate_lead', { form_id:'total_male' });
+        } else { throw new Error((j && j.error) || 'failed'); }
+      })
+      .catch(function(){ err.textContent='Something went wrong. Please call (702) 602-5002.'; err.classList.remove('hidden'); btn.disabled=false; btn.textContent='Request my assessment'; });
+  };
+})();
+</script>
+
 <!-- EN/ES shell: shares localStorage 'vit_lang' with /vitality, so language carries across clicks -->
 <script>
 (function(){
@@ -159,7 +219,14 @@
     "This is run by Dr. Peter DeBry, MD, with ongoing lab monitoring at every step. Three integrated therapies, one accountable physician, not a single-pill shortcut from a website.":"Lo dirige el Dr. Peter DeBry, MD, con monitoreo de laboratorio en cada paso. Tres terapias integradas, un médico responsable, no un atajo de una sola pastilla de un sitio web.",
     "Labs and consultation may be insurance-covered. Medications are cash-pay. Full program pricing is set after your assessment.":"Los laboratorios y la consulta pueden estar cubiertos por el seguro. Los medicamentos son de pago en efectivo. El precio completo del programa se define después de tu evaluación.",
     "Back to Vitality":"Volver a Vitality",
-    "Dr. Peter DeBry, MD · Nevada-licensed · This page is informational and does not replace medical advice.":"Dr. Peter DeBry, MD · Licenciado en Nevada · Esta página es informativa y no reemplaza el consejo médico."
+    "Dr. Peter DeBry, MD · Nevada-licensed · This page is informational and does not replace medical advice.":"Dr. Peter DeBry, MD · Licenciado en Nevada · Esta página es informativa y no reemplaza el consejo médico.",
+    "Request your $99 assessment":"Reclama tu evaluación de $99",
+    "Leave your details and our team will call to book your Total Male assessment with Dr. DeBry.":"Déjanos tus datos y nuestro equipo te llamará para agendar tu evaluación Total Male con el Dr. DeBry.",
+    "Request my assessment":"Reclamar mi evaluación",
+    "Not now":"Ahora no",
+    "You're on the list":"Estás en la lista",
+    "Our team will reach out shortly to book your Total Male assessment. Thanks for your interest.":"Nuestro equipo se comunicará pronto para agendar tu evaluación Total Male. Gracias por tu interés.",
+    "Done":"Listo"
   };
   const ORIG=new Map();
   function walk(node,fn){ for(let i=0;i<node.childNodes.length;i++){ const n=node.childNodes[i]; if(n.nodeType===3) fn(n); else if(n.nodeType===1 && n.tagName!=='SCRIPT' && n.tagName!=='STYLE') walk(n,fn); } }
