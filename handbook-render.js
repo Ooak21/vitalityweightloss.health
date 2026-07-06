@@ -172,6 +172,40 @@
       block("Questions for your provider", 4) +
       block("General questions", 4));
   }
+  // Sources & references: Fred's 15 vetted open resources, with REAL clickable URLs (the Lovable
+  // reference listed names only). Same fixed list on every handbook. DeBry to sign off the list.
+  function references() {
+    var SRC = function (name, url, desc) {
+      return '<li class="py-1.5 border-b border-[#f1f3f7] last:border-0">' +
+        '<a href="' + url + '" target="_blank" rel="noopener noreferrer" class="text-sm font-semibold text-[#0a6cf5] hover:underline">' + esc(name) + '</a>' +
+        '<span class="text-xs text-[#6b7280]"> · ' + esc(desc) + '</span></li>';
+    };
+    var NUTRITION = [
+      SRC("USDA FoodData Central", "https://fdc.nal.usda.gov", "Gold-standard, open-source repository for nutrient data."),
+      SRC("Nutrition.gov", "https://www.nutrition.gov", "USDA-curated, evidence-based nutrition guidance."),
+      SRC("ADA Diabetes Food Hub", "https://diabetesfoodhub.org", "American Diabetes Association recipes and meal-planning tools."),
+      SRC("Mealie", "https://mealie.io", "Open recipe manager for building custom recipe databases."),
+      SRC("Open Food Facts", "https://world.openfoodfacts.org", "Open database for barcode scanning and spotting ultra-processed foods."),
+      SRC("Academy of Nutrition and Dietetics EAL", "https://www.andeal.org", "The Academy's Evidence Analysis Library of dietetics research.")
+    ].join("");
+    var EXERCISE = [
+      SRC("ExRx.net", "https://exrx.net", "Gold-standard database for exercise execution, kinesiology, and muscle maps."),
+      SRC("ACE Exercise Library", "https://www.acefitness.org/resources/everyone/exercise-library/", "American Council on Exercise library by body part and equipment."),
+      SRC("NASM", "https://www.nasm.org", "National Academy of Sports Medicine training resources."),
+      SRC("CrossFit", "https://www.crossfit.com", "Functional-movement standards and exercise demonstrations."),
+      SRC("Science for Sport", "https://www.scienceforsport.com", "Evidence-based strength, conditioning, and training templates."),
+      SRC("Strength and Conditioning Research", "https://sandcresearch.medium.com", "Research reviews on resistance training and body composition."),
+      SRC("Chris Beardsley", "https://sandcresearch.medium.com", "Applied strength-training and hypertrophy science."),
+      SRC("ExRx Strength Standards", "https://exrx.net/Testing/WeightLifting/StrengthStandards", "Data-backed tables for relative strength by body weight and sex."),
+      SRC("1RM Calculator", "https://exrx.net/Calculators/OneRepMax", "One-rep-max estimation for programming load.")
+    ].join("");
+    return card(
+      head("Evidence base", "Sources & references", "activity") +
+      '<p class="text-sm text-[#6b7280] mb-3">Your nutrition and training plan draws on these vetted, open resources. Tap any name to open the source directly.</p>' +
+      sub("Nutrition") + '<ul class="mt-1">' + NUTRITION + "</ul>" +
+      sub("Exercise & training") + '<ul class="mt-1">' + EXERCISE + "</ul>"
+    );
+  }
   function sectionPlaceholder(label) {
     return '<div class="rounded-2xl border border-dashed border-[#d6e6ff] bg-[#f7faff] p-8 text-center"><div class="text-sm text-[#6b7280]"><span class="inline-flex items-center justify-center gap-2"><span class="w-2 h-2 rounded-full bg-[#0a6cf5] animate-pulse"></span>Generating ' + esc(label) + "…</span></div></div>";
   }
@@ -259,7 +293,7 @@
       printCover(hb, p, opts), screenHeader(hb, p),
       execSummary(hb), interpretations(hb), aiAnalysis(hb), whyPlan(hb),
       nutrition(hb), workout(hb), habits(hb), projections(hb), nextScan(hb),
-      staticCounseling(), staticFacility(), staticNotes(),
+      staticCounseling(), staticFacility(), references(), staticNotes(),
     ].filter(Boolean).join("") + "</div>");
   };
 
@@ -290,7 +324,7 @@
         return [workout(h), habits(h), projections(h), nextScan(h)].filter(Boolean).join("");
       }),
     ];
-    if (status === "complete") parts.push(staticCounseling(), staticFacility(), staticNotes());
+    if (status === "complete") parts.push(staticCounseling(), staticFacility(), references(), staticNotes());
     return noDash('<div class="hb-root space-y-5">' + parts.filter(Boolean).join("") + "</div>");
   };
 })();
