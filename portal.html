@@ -122,6 +122,7 @@ async function api(payload){
   if (USE_CONVEX) {
     if (a.action === 'load')       return await convex.query('portal:loadPortal', {});
     if (a.action === 'add_log')    return await convex.mutation('portal:addLog', { kind:a.kind, value_num:a.value_num, unit:a.unit, body:a.body });
+    if (a.action === 'photo_upload_url') return await convex.mutation('portal:photoUploadUrl', {});
     if (a.action === 'mint_token') return await convex.mutation('portal:mintToken', {});
     return { ok:false, error:'unknown action' };
   }
@@ -511,6 +512,21 @@ function render(){
     </div>
   </div></details>`;
 
+  // Progress photos: private before-and-after gallery. Absorbs Thrive's photo tracking.
+  // Photo URLs are Convex storage URLs surfaced ONLY inside the patient's own authed payload (PHI).
+  const photos=(DATA.photos||[]);
+  const photoGrid=photos.length?photos.slice().reverse().map((ph,i)=>{
+    const dt=ph.logged_at?new Date(ph.logged_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+    const badge=i===0?'Latest':(i===photos.length-1?'Start':'');
+    return '<div class="relative rounded-xl overflow-hidden border border-[#eef0f4] bg-[#f7f8fa] aspect-[3/4]"><img src="'+ph.url+'" alt="Progress photo '+esc(dt)+'" class="h-full w-full object-cover"><div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1 flex items-center justify-between"><span class="text-[10px] text-white/90 font-medium">'+esc(dt)+'</span>'+(badge?'<span class="text-[9px] uppercase tracking-wide bg-white/90 text-[#0a6cf5] font-bold px-1.5 py-0.5 rounded-full">'+badge+'</span>':'')+'</div></div>';
+  }).join(''):'';
+  const progressPhotos=`<details class="card overflow-hidden" open><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Progress photos</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
+    ${photoGrid?`<div class="grid grid-cols-3 gap-2 mb-3">${photoGrid}</div>`:`<p class="text-sm text-[#6b7280] mb-3">Your private before-and-after gallery. Add a photo every couple of weeks to see the change the scale can't. Only you and your Vitality care team can ever see these.</p>`}
+    <input id="phFile" type="file" accept="image/*" class="hidden">
+    <button id="phBtn" class="w-full px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Add a progress photo</button>
+    <p id="phMsg" class="text-[11px] text-[#9aa0ab] mt-2 text-center">Stored privately · visible only to you and your care team</p>
+  </div></details>`;
+
   const TEAM=[{n:'Dr. Peter DeBry, MD',r:'Medical Director · Obesity Medicine',img:'assets/debry.jpg'},{n:'Richard DeVera, NP',r:'Nurse Practitioner',img:'assets/devera.jpg',pos:'object-top'},{n:'Ana Trujillo',r:'Fitness Coordinator',img:'assets/ana-trujillo.jpg',pos:'object-[50%_50%]'}];
   const team=`<section class="card p-6"><h2 class="font-display text-lg font-semibold mb-3">Your care team</h2><div class="grid grid-cols-3 gap-4">${TEAM.map(t=>`<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-4 text-center"><img src="${t.img}" alt="${esc(t.n)}" loading="lazy" class="h-16 w-16 rounded-full object-cover ${t.pos||''} mx-auto mb-2 border border-[#e6e9ee]"><div class="text-sm font-semibold leading-tight">${esc(t.n)}</div><div class="text-xs text-[#6b7280] mt-1 leading-tight">${esc(t.r)}</div></div>`).join('')}</div></section>`;
 
@@ -561,7 +577,7 @@ function render(){
     <p class="text-sm text-[#6b7280] mt-1">${PROGRAMS[p.program]||'Your program'} · <span class="capitalize">${esc((p.status||'').replace('_',' '))}</span></p></div>
     <div class="grid lg:grid-cols-3 gap-6 items-start">
       <div class="lg:col-span-2 space-y-6">${approved}${team}${progress}${inbodyReport}${scanHistory}<section class="card p-6 flex items-center justify-between gap-3"><div><h2 class="font-display text-lg font-semibold">Your Personal Transformation Plan</h2><p class="text-sm text-[#6b7280] mt-0.5">Your complete Personal Transformation Plan: InBody breakdown, every metric decoded, nutrition, workouts, and habits.</p></div><button onclick="openMyHandbook()" class="shrink-0 px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">📖 Open</button></section>${planHtml}</div>
-      <div class="space-y-6">${appt}${injection}${sideEffects}${checkin}${measurements}${logging}${rewards}${companion}</div>
+      <div class="space-y-6">${appt}${injection}${sideEffects}${checkin}${measurements}${progressPhotos}${logging}${rewards}${companion}</div>
     </div>`;
   document.querySelectorAll('.reqBtn').forEach(b=>b.onclick=async()=>{
     b.disabled=true; b.textContent='Sending to Dr. DeBry…';
@@ -596,6 +612,25 @@ function render(){
     document.querySelectorAll('.ci-mood').forEach(b=>b.onclick=()=>{ document.querySelectorAll('.ci-mood').forEach(x=>{ x.classList.remove('border-[#0a6cf5]','bg-[#eaf2ff]'); x.classList.add('border-[#e6e9ee]','bg-white'); }); b.classList.remove('border-[#e6e9ee]','bg-white'); b.classList.add('border-[#0a6cf5]','bg-[#eaf2ff]'); mood=b.dataset.v; });
     const _cib=document.getElementById('ciBtn'); if(_cib) _cib.onclick=async()=>{ const sleep=($('ciSleep').value||'').trim(); _cib.disabled=true; _cib.textContent='Saving…'; await api({action:'add_log',kind:'checkin',value_num:water,unit:'glasses',body:'Water '+water+' glasses · Sleep '+(sleep||'?')+'h · Energy '+energy+' · Mood '+mood}); await refresh(); }; }
   { const _mb=document.getElementById('mBtn'); if(_mb) _mb.onclick=async()=>{ const site=$('mSite').value, v=parseFloat($('mVal').value); if(isNaN(v))return; _mb.disabled=true; _mb.textContent='…'; await api({action:'add_log',kind:'measurement',value_num:v,unit:'in',body:site}); await refresh(); }; }
+  // progress photo: get a one-time upload url, PUT the file to Convex storage, then log the storage id
+  { const _pf=document.getElementById('phFile'), _pb=document.getElementById('phBtn'), _pm=document.getElementById('phMsg');
+    if(_pb&&_pf){
+      _pb.onclick=()=>_pf.click();
+      _pf.onchange=async()=>{
+        const f=_pf.files&&_pf.files[0]; if(!f) return;
+        if(!/^image\//.test(f.type)){ if(_pm) _pm.textContent='Please choose an image file.'; return; }
+        if(f.size>15*1024*1024){ if(_pm) _pm.textContent='That image is too large (15MB max).'; return; }
+        _pb.disabled=true; _pb.textContent='Uploading…'; if(_pm) _pm.textContent='Uploading your photo securely…';
+        try{
+          const up=await api({action:'photo_upload_url'});
+          const url=up&&(up.uploadUrl||up.url); if(!url) throw new Error('no upload url');
+          const res=await fetch(url,{method:'POST',headers:{'Content-Type':f.type},body:f});
+          const j=await res.json(); if(!res.ok||!j.storageId) throw new Error('upload failed');
+          await api({action:'add_log',kind:'photo',body:j.storageId});
+          await refresh();
+        }catch(e){ _pb.disabled=false; _pb.textContent='Add a progress photo'; if(_pm) _pm.textContent='Upload failed. Please try again.'; }
+      };
+    } }
   // food search (USDA FoodData Central, no PHI) -> log macros against plan target
   const foodBtn=$('foodBtn');
   if(foodBtn){
