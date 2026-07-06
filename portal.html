@@ -130,6 +130,61 @@ async function api(payload){
   return await r.json();
 }
 const esc = (s)=> (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// ---- phone-photo pipeline (mirrors bloom.html) ----
+// iPhones shoot HEIC, which browsers can't decode/display, and full-res phone shots are multi-MB.
+// So every uploaded photo goes HEIC->JPEG (heic2any) then through a canvas downscale to a small
+// JPEG. Keeps progress photos from jamming on file limits the way the InBody scans used to.
+let __heicPromise = null;
+function ensureHeic2any(){
+  if (window.heic2any) return Promise.resolve(window.heic2any);
+  if (__heicPromise) return __heicPromise;
+  __heicPromise = new Promise((res)=>{
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+    s.onload=()=>res(window.heic2any||null);
+    s.onerror=()=>res(null);
+    document.head.appendChild(s);
+  });
+  return __heicPromise;
+}
+// Re-encode any decodable image to a downscaled JPEG via canvas (normalizes format + shrinks size).
+function reencodeToJpeg(blob, maxPx){
+  return new Promise((resolve)=>{
+    const url=URL.createObjectURL(blob);
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.naturalWidth, h=img.naturalHeight;
+      const scale=Math.min(1, maxPx/Math.max(w,h));
+      w=Math.max(1,Math.round(w*scale)); h=Math.max(1,Math.round(h*scale));
+      const c=document.createElement('canvas'); c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      c.toBlob((b)=>resolve(b?new File([b],'photo.jpg',{type:'image/jpeg'}):null),'image/jpeg',0.88);
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(url); resolve(null); };
+    img.src=url;
+  });
+}
+// Convert ANY uploaded photo to a browser-friendly, right-sized JPEG (HEIC/HEIF/PNG/TIFF/big JPEG).
+async function toUploadableImage(file){
+  let working=file;
+  const isHeic=/heic|heif/i.test(file.type||'')||/\.(heic|heif)$/i.test(file.name||'');
+  if (isHeic){
+    const heic=await ensureHeic2any();
+    if (heic){
+      try{
+        const out=await heic({ blob:file, toType:'image/jpeg', quality:0.9 });
+        working=new File([Array.isArray(out)?out[0]:out],'photo.jpg',{type:'image/jpeg'});
+      }catch(e){ console.warn('HEIC convert failed:', e); }
+    }
+  }
+  try{
+    const jpeg=await reencodeToJpeg(working, 1600);
+    if (jpeg && jpeg.size>0) return jpeg;
+  }catch(e){ /* fall through to original */ }
+  return working;
+}
 const PROGRAMS = { glp1:'GLP-1 Weight Loss', metabolic:'Metabolic & Hormone', coaching:'Coaching & Nutrition', unsure:'Getting started' };
 const fmtDate = (s)=>{ if(!s) return ''; const d=new Date(s); return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); };
 const fmtWhen = (s)=>{ if(!s) return ''; const d=new Date(s); return d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})+' at '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); };
@@ -522,7 +577,7 @@ function render(){
   }).join(''):'';
   const progressPhotos=`<details class="card overflow-hidden" open><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Progress photos</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
     ${photoGrid?`<div class="grid grid-cols-3 gap-2 mb-3">${photoGrid}</div>`:`<p class="text-sm text-[#6b7280] mb-3">Your private before-and-after gallery. Add a photo every couple of weeks to see the change the scale can't. Only you and your Vitality care team can ever see these.</p>`}
-    <input id="phFile" type="file" accept="image/*" class="hidden">
+    <input id="phFile" type="file" accept="image/*,.heic,.heif" class="hidden">
     <button id="phBtn" class="w-full px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Add a progress photo</button>
     <p id="phMsg" class="text-[11px] text-[#9aa0ab] mt-2 text-center">Stored privately · visible only to you and your care team</p>
   </div></details>`;
@@ -618,17 +673,21 @@ function render(){
       _pb.onclick=()=>_pf.click();
       _pf.onchange=async()=>{
         const f=_pf.files&&_pf.files[0]; if(!f) return;
-        if(!/^image\//.test(f.type)){ if(_pm) _pm.textContent='Please choose an image file.'; return; }
-        if(f.size>15*1024*1024){ if(_pm) _pm.textContent='That image is too large (15MB max).'; return; }
-        _pb.disabled=true; _pb.textContent='Uploading…'; if(_pm) _pm.textContent='Uploading your photo securely…';
+        const looksImg=/^image\//.test(f.type||'')||/\.(heic|heif|jpe?g|png|webp|tiff?)$/i.test(f.name||'');
+        if(!looksImg){ if(_pm) _pm.textContent='Please choose a photo.'; return; }
+        if(f.size>30*1024*1024){ if(_pm) _pm.textContent='That photo is too large (30MB max).'; return; }
+        _pb.disabled=true; _pb.textContent='Processing…'; if(_pm) _pm.textContent='Preparing your photo…';
         try{
+          const upFile=(await toUploadableImage(f))||f;   // HEIC->JPEG + downscale to 1600px so it can't jam the upload
+          _pb.textContent='Uploading…'; if(_pm) _pm.textContent='Uploading securely…';
           const up=await api({action:'photo_upload_url'});
           const url=up&&(up.uploadUrl||up.url); if(!url) throw new Error('no upload url');
-          const res=await fetch(url,{method:'POST',headers:{'Content-Type':f.type},body:f});
+          const res=await fetch(url,{method:'POST',headers:{'Content-Type':upFile.type||'image/jpeg'},body:upFile});
           const j=await res.json(); if(!res.ok||!j.storageId) throw new Error('upload failed');
           await api({action:'add_log',kind:'photo',body:j.storageId});
           await refresh();
         }catch(e){ _pb.disabled=false; _pb.textContent='Add a progress photo'; if(_pm) _pm.textContent='Upload failed. Please try again.'; }
+        finally{ try{ _pf.value=''; }catch(_){} }
       };
     } }
   // food search (USDA FoodData Central, no PHI) -> log macros against plan target
