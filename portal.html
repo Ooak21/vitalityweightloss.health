@@ -464,7 +464,7 @@ function render(){
   // Side-effect log (GLP-1): patient reports symptoms; each one also drops a note on the provider's CRM record.
   const SYMPTOMS=['Nausea','Vomiting','Constipation','Diarrhea','Fatigue','Headache','Injection-site reaction','Appetite loss','Heartburn / reflux','Dizziness','Other'];
   const seLogs=logs.filter(l=>l.kind==='side_effect');
-  const sideEffects=`<details class="card overflow-hidden"><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Side effects</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
+  const sideEffects=`<details class="card overflow-hidden" open><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Side effects</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
     <p class="text-sm text-[#6b7280] mb-3">Report any side effects so your care team can adjust your plan. Anything you log here is shared with Dr. DeBry.</p>
     <div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 space-y-2">
       <div><label class="text-[11px] font-semibold text-[#6b7280]">Symptom</label><select id="seSym" class="field mt-1 w-full">${SYMPTOMS.map(s=>`<option>${esc(s)}</option>`).join('')}</select></div>
@@ -478,7 +478,7 @@ function render(){
   // Daily check-in: hydration, sleep, energy, mood in one quick log (absorbs Thrive's daily trackers).
   const ciLogs=logs.filter(l=>l.kind==='checkin');
   const _ciToday=ciLogs.find(l=>new Date(l.logged_at).toDateString()===new Date().toDateString());
-  const checkin=`<details class="card overflow-hidden"><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Daily check-in</h2>${_ciToday?'<span class="chip bg-[#eafaf0] text-[#0a7a3d]">Done today ✓</span>':'<span class="chev text-[#0a6cf5]">▸</span>'}</summary><div class="px-5 pb-5">
+  const checkin=`<details class="card overflow-hidden" open><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Daily check-in</h2>${_ciToday?'<span class="chip bg-[#eafaf0] text-[#0a7a3d]">Done today ✓</span>':'<span class="chev text-[#0a6cf5]">▸</span>'}</summary><div class="px-5 pb-5">
     ${_ciToday?`<div class="rounded-xl bg-[#eafaf0] border border-[#cdeedd] p-3 mb-3 text-sm text-[#0a7a3d]">${esc(_ciToday.body||'')}</div>`:''}
     <div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 space-y-3">
       <div class="flex items-end justify-between gap-3">
