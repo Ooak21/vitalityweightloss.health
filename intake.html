@@ -1020,34 +1020,30 @@ async function submitIntake() {
   state.pageUrl = window.location.href;
   save();
   computeEligibility(state);   // flags the record: glp1_eligible / medicare_glp1_eligible / programs_qualified
-  // DEMO (no real PHI): create the patient's portal login + record, flag it, then sign them in.
+  // Create the patient's Convex portal login (self-serve). The password they set here becomes a real
+  // Convex Password account, so portal.html authenticates immediately and they can sign back in later.
   state.portalReady = false;
+  const tags = [];
+  if (state.glp1_eligible) tags.push('glp1-eligible');
+  if (state.medicare_glp1_eligible) tags.push('medicare-glp1-eligible');
+  if (state.needs_review) { tags.push('needs-review'); (state.review_codes||[]).forEach(c => tags.push('review:' + c)); }
+  if (state.reason) tags.push('reason:' + state.reason);
   try {
-    const tags = [];
-    if (state.glp1_eligible) tags.push('glp1-eligible');
-    if (state.medicare_glp1_eligible) tags.push('medicare-glp1-eligible');
-    if (state.needs_review) { tags.push('needs-review'); (state.review_codes||[]).forEach(c => tags.push('review:' + c)); }
-    if (state.reason) tags.push('reason:' + state.reason);
-    const r = await fetch(window.__SB_URL + '/functions/v1/vit-portal-signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': window.__ANON, 'Authorization': 'Bearer ' + window.__ANON },
-      body: JSON.stringify({
-        email: state.email, password: state.password,
-        first_name: state.firstName, last_name: state.lastName, phone: state.phone, dob: state.dob,
-        program: state.reason || 'glp1', tags, consent_signed_at: state.signedAt
-      })
-    });
-    const j = await r.json();
-    if (j && j.ok && window.__sb) {
-      const { error } = await window.__sb.auth.signInWithPassword({ email: state.email, password: state.password });
-      if (!error) state.portalReady = true;
+    const { signUp, signIn, STORE_PATIENT } = await import('./auth-convex.js');
+    try {
+      await signUp(state.email, state.password, STORE_PATIENT);
+      state.portalReady = true;
+    } catch (e) {
+      // Email may already have an account (returning patient / re-intake). Try their password.
+      try { await signIn(state.email, state.password, STORE_PATIENT); state.portalReady = true; }
+      catch (e2) { console.warn('portal signup/signin:', e2 && e2.message); }
     }
-  } catch (e) { console.warn('portal signup (demo continues):', e); }
+  } catch (e) { console.warn('portal auth import failed:', e && e.message); }
   try {
     await fetch(window.__CONVEX_SITE + '/patient-prefs', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: state.email, first: state.firstName, last: state.lastName, phone: state.phone,
+        email: state.email, first: state.firstName, last: state.lastName, phone: state.phone, tags,
         prefs: {
           food_allergies: state.foodAllergies || '', diet_style: state.dietStyle || '', dislikes: state.dislikes || '',
           injuries: state.injuries || '', training_location: state.trainingLocation || '', equipment: state.equipment || '', activity: state.activity || ''
