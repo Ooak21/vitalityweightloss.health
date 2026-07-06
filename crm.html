@@ -2525,11 +2525,26 @@
         </div>
       </div>`;
   }
-  function sendEmail(){ const p=patients.find(x=>x.id===selId); const tpl=$('#emailTpl').value;
+  async function sendEmail(){ const p=patients.find(x=>x.id===selId); if(!p) return; const tpl=$('#emailTpl').value;
+    if(!p.email){ alert('This patient has no email address on file, so there is nowhere to send to.'); return; }
     const label={confirm:'Appointment Confirmation',reminder:'Appointment Reminder',welcome:'Welcome'}[tpl];
-    p.notes.push({type:'message',author:'agent:mailer',auto:true,ts:new Date().toISOString(),body:`Branded email sent: "${label}" to ${p.email}.`});
-    if(USE_SUPABASE){ fetch(`${SB}/functions/v1/vit-mailer`,{method:'POST',headers:{'content-type':'application/json','apikey':ANON,'authorization':`Bearer ${ANON}`},body:JSON.stringify({patient_id:p.id,template:tpl,sender:senderSig()})}).catch(e=>console.warn('mailer',e.message)); }
-    closeEmail(); renderDetail();
+    const subject={confirm:'Your appointment is confirmed · Vitality Weight Loss',reminder:'Reminder: your upcoming appointment · Vitality Weight Loss',welcome:'Welcome to Vitality Weight Loss'}[tpl];
+    renderEmailPreview();                       // guarantee the HTML matches the selected template
+    const html=$('#emailPreview').innerHTML;    // WYSIWYG: send exactly what was previewed
+    const btn=[...document.querySelectorAll('#emailModal button')].find(b=>/send email/i.test(b.textContent));
+    const restore=btn?btn.textContent:''; if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
+    let ok=false, errMsg='';
+    try{
+      const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'send_email',patient_id:p.id,template:tpl,to:p.email,subject,html})});
+      const j=await r.json().catch(()=>({})); ok=r.ok&&j&&j.ok===true; errMsg=(j&&j.error)||('status '+r.status);
+    }catch(e){ errMsg=e.message; }
+    if(btn){ btn.disabled=false; btn.textContent=restore||'Send email'; }
+    if(ok){
+      p.notes.push({type:'message',author:'agent:mailer',auto:true,ts:new Date().toISOString(),body:`Branded email sent: "${label}" to ${p.email}`});
+      closeEmail(); renderDetail();
+    } else {
+      alert('The email could not be sent'+(errMsg?' ('+errMsg+')':'')+'. Please try again, or check the patient email address.');
+    }
   }
 
   // ---------------- Import InBody scan (PDF → vit-inbody-intake) ----------------
