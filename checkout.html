@@ -165,14 +165,13 @@
    is not used). The Clover public key + merchant id are publishable and belong in
    client code; the private key lives only in Convex (CLOVER_API_TOKEN). Card data is
    entered in Clover's iframe, tokenized to a clv_ source, and charged server-side by
-   /pay-service. Add ?test=1 to the URL to charge $1 instead of the real price.
+   /pay-service (one-time) or /subscribe-service (membership, recurring).
    ========================================================================== */
 const CLOVER_PUBLIC_KEY  = 'f9d8910605425172a0b627094e16f27b';
 const CLOVER_MERCHANT_ID = 'ECK6FJ94X1JM1';
 const CLOVER_SDK_URL     = 'https://checkout.clover.com/sdk.js';   // production
 const PAY_SERVICE_URL    = 'https://quixotic-cat-492.convex.site/pay-service';
 const SUBSCRIBE_URL      = 'https://quixotic-cat-492.convex.site/subscribe-service';
-const TEST_DOLLAR        = new URLSearchParams(location.search).get('test') === '1';
 const RECURRING_SKUS     = ['membership'];   // billed monthly (card-on-file + daily cron); others are one-time
 
 /* GLP-1 has its own clinical intake + Clover checkout on glp1.html. */
@@ -312,7 +311,7 @@ async function doPay(){
     if (!token) throw new Error('Please check your card details.');
   } catch(e){ btn.disabled=false; err.textContent=(e&&e.message)||'Please check your card details.'; err.style.display='block'; return; }
 
-  const amountCents = TEST_DOLLAR ? 100 : selected.cents;
+  const amountCents = selected.cents;
   showProcessingOverlay();
   try {
     let j;
