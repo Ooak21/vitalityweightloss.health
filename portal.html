@@ -487,7 +487,7 @@ function render(){
       </div>
       <div><label class="text-[11px] font-semibold text-[#6b7280]">Energy</label><div class="flex gap-2 mt-1">${['Low','OK','Good','Great'].map((s,i)=>`<button type="button" data-v="${s}" class="ci-en flex-1 py-2 rounded-xl border text-sm font-semibold ${i===1?'bg-[#0a6cf5] text-white border-[#0a6cf5]':'bg-white text-[#6b7280] border-[#e6e9ee]'}">${s}</button>`).join('')}</div></div>
       <div><label class="text-[11px] font-semibold text-[#6b7280]">Mood</label><div class="flex gap-2 mt-1">${['😣','😐','🙂','😄'].map((e,i)=>`<button type="button" data-v="${e}" class="ci-mood flex-1 py-2 rounded-xl border text-xl ${i===2?'border-[#0a6cf5] bg-[#eaf2ff]':'border-[#e6e9ee] bg-white'}">${e}</button>`).join('')}</div></div>
-      <button id="ciBtn" class="w-full py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">${_ciToday?'Update today\\'s check-in':'Save today\\'s check-in'}</button>
+      <button id="ciBtn" class="w-full py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">${_ciToday?'Update check-in':'Save my check-in'}</button>
     </div>
   </div></details>`;
 
