@@ -271,7 +271,7 @@ function tabRoadmap(hb){
 
 // Phase 1 gamification streaks, points, weekly activity, badges (all derived client-side)
 function gamify(){
-  const PTS={food:10,weigh_in:5,journal:5,activity:15,scan:10,module:25,nextstep:20,injection:15,side_effect:10,checkin:15};
+  const PTS={food:10,weigh_in:5,journal:5,activity:15,scan:10,module:25,nextstep:20,injection:15,side_effect:10,checkin:15,measurement:10};
   const logs=DATA.logs||[], ib=DATA.inbody||[], plan=DATA.plan, hb=plan&&plan.handbook;
   const dk=(iso)=>new Date(iso).toDateString(), today=new Date().toDateString();
   let points=0, ptsToday=0; const dates=new Set();
@@ -419,7 +419,7 @@ function render(){
   const _today=new Date().toDateString();
   const kcalToday=logs.filter(l=>l.kind==='food'&&new Date(l.logged_at).toDateString()===_today).reduce((s,l)=>s+(+l.value_num||0),0);
   const kcalTarget=hb&&hb.nutrition?hb.nutrition.calories:null;
-  const _gl=logs.filter(l=>!['injection','side_effect','checkin'].includes(l.kind));
+  const _gl=logs.filter(l=>!['injection','side_effect','checkin','measurement'].includes(l.kind));
   const logList=_gl.length? _gl.map(l=>`<div class="flex items-start gap-3 py-2 border-b border-[#f1f3f7] last:border-0">
     <span class="chip ${l.kind==='weigh_in'?'bg-[#eaf2ff] text-[#0a3d7a]':l.kind==='food'?'bg-[#eafaf0] text-[#0a7a3d]':'bg-[#f1f3f7] text-[#6b7280]'} mt-.5 shrink-0">${l.kind==='weigh_in'?'Weigh-in':l.kind==='food'?'Food':l.kind==='activity'?'Activity':'Journal'}</span>
     <div class="min-w-0"><div class="text-sm">${l.value_num!=null?`<span class="font-semibold seg">${esc(l.value_num)}${esc(l.unit||'')}</span> `:''}${esc(l.body||'')}</div><div class="text-[11px] text-[#9aa0ab]">${fmtAgo(l.logged_at)}</div></div>
@@ -491,6 +491,26 @@ function render(){
     </div>
   </div></details>`;
 
+  // Body measurements: tape measurements (waist, hips, etc.) with latest + change. Absorbs Thrive's measurements.
+  const MEAS_SITES=['Waist','Hips','Chest','Left arm','Right arm','Left thigh','Right thigh','Neck'];
+  const measLogs=logs.filter(l=>l.kind==='measurement');
+  const measTiles=MEAS_SITES.map(site=>{
+    const ms=measLogs.filter(l=>(l.body||'')===site);
+    if(!ms.length) return '';
+    const latest=+ms[0].value_num, prev=ms[1]!=null?+ms[1].value_num:null;
+    const chg=(prev!=null)?(latest-prev):null;
+    const chgTxt=chg==null?'':(chg<0?'<span class="text-[#0a7a3d] font-semibold">'+chg.toFixed(1)+'"</span>':chg>0?'<span class="text-rose-600 font-semibold">+'+chg.toFixed(1)+'"</span>':'<span class="text-[#9aa0ab]">0"</span>');
+    return '<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-2.5 text-center"><div class="text-[10px] uppercase tracking-wide text-[#9aa0ab] font-semibold">'+esc(site)+'</div><div class="font-display text-lg font-semibold seg">'+latest+'"</div><div class="text-[11px]">'+chgTxt+'</div></div>';
+  }).filter(Boolean).join('');
+  const measurements=`<details class="card overflow-hidden" open><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Body measurements</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
+    ${measTiles?`<div class="grid grid-cols-3 gap-2 mb-3">${measTiles}</div>`:`<p class="text-sm text-[#6b7280] mb-3">Track waist and other measurements between InBody scans to watch the inches come off.</p>`}
+    <div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 flex items-end gap-2">
+      <div class="flex-1"><label class="text-[11px] font-semibold text-[#6b7280]">Measurement</label><select id="mSite" class="field mt-1 w-full">${MEAS_SITES.map(s=>`<option>${esc(s)}</option>`).join('')}</select></div>
+      <div style="width:82px"><label class="text-[11px] font-semibold text-[#6b7280]">Inches</label><input id="mVal" type="number" step="0.1" min="0" class="field mt-1 w-full" placeholder="34"></div>
+      <button id="mBtn" class="px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8] shrink-0">Log</button>
+    </div>
+  </div></details>`;
+
   const TEAM=[{n:'Dr. Peter DeBry, MD',r:'Medical Director · Obesity Medicine',img:'assets/debry.jpg'},{n:'Richard DeVera, NP',r:'Nurse Practitioner',img:'assets/devera.jpg',pos:'object-top'},{n:'Ana Trujillo',r:'Fitness Coordinator',img:'assets/ana-trujillo.jpg',pos:'object-[50%_50%]'}];
   const team=`<section class="card p-6"><h2 class="font-display text-lg font-semibold mb-3">Your care team</h2><div class="grid grid-cols-3 gap-4">${TEAM.map(t=>`<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-4 text-center"><img src="${t.img}" alt="${esc(t.n)}" loading="lazy" class="h-16 w-16 rounded-full object-cover ${t.pos||''} mx-auto mb-2 border border-[#e6e9ee]"><div class="text-sm font-semibold leading-tight">${esc(t.n)}</div><div class="text-xs text-[#6b7280] mt-1 leading-tight">${esc(t.r)}</div></div>`).join('')}</div></section>`;
 
@@ -541,7 +561,7 @@ function render(){
     <p class="text-sm text-[#6b7280] mt-1">${PROGRAMS[p.program]||'Your program'} · <span class="capitalize">${esc((p.status||'').replace('_',' '))}</span></p></div>
     <div class="grid lg:grid-cols-3 gap-6 items-start">
       <div class="lg:col-span-2 space-y-6">${approved}${team}${progress}${inbodyReport}${scanHistory}<section class="card p-6 flex items-center justify-between gap-3"><div><h2 class="font-display text-lg font-semibold">Your Personal Transformation Plan</h2><p class="text-sm text-[#6b7280] mt-0.5">Your complete Personal Transformation Plan: InBody breakdown, every metric decoded, nutrition, workouts, and habits.</p></div><button onclick="openMyHandbook()" class="shrink-0 px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">📖 Open</button></section>${planHtml}</div>
-      <div class="space-y-6">${appt}${injection}${sideEffects}${checkin}${logging}${rewards}${companion}</div>
+      <div class="space-y-6">${appt}${injection}${sideEffects}${checkin}${measurements}${logging}${rewards}${companion}</div>
     </div>`;
   document.querySelectorAll('.reqBtn').forEach(b=>b.onclick=async()=>{
     b.disabled=true; b.textContent='Sending to Dr. DeBry…';
@@ -575,6 +595,7 @@ function render(){
     document.querySelectorAll('.ci-en').forEach(b=>b.onclick=()=>{ document.querySelectorAll('.ci-en').forEach(x=>{ x.classList.remove('bg-[#0a6cf5]','text-white','border-[#0a6cf5]'); x.classList.add('bg-white','text-[#6b7280]','border-[#e6e9ee]'); }); b.classList.remove('bg-white','text-[#6b7280]','border-[#e6e9ee]'); b.classList.add('bg-[#0a6cf5]','text-white','border-[#0a6cf5]'); energy=b.dataset.v; });
     document.querySelectorAll('.ci-mood').forEach(b=>b.onclick=()=>{ document.querySelectorAll('.ci-mood').forEach(x=>{ x.classList.remove('border-[#0a6cf5]','bg-[#eaf2ff]'); x.classList.add('border-[#e6e9ee]','bg-white'); }); b.classList.remove('border-[#e6e9ee]','bg-white'); b.classList.add('border-[#0a6cf5]','bg-[#eaf2ff]'); mood=b.dataset.v; });
     const _cib=document.getElementById('ciBtn'); if(_cib) _cib.onclick=async()=>{ const sleep=($('ciSleep').value||'').trim(); _cib.disabled=true; _cib.textContent='Saving…'; await api({action:'add_log',kind:'checkin',value_num:water,unit:'glasses',body:'Water '+water+' glasses · Sleep '+(sleep||'?')+'h · Energy '+energy+' · Mood '+mood}); await refresh(); }; }
+  { const _mb=document.getElementById('mBtn'); if(_mb) _mb.onclick=async()=>{ const site=$('mSite').value, v=parseFloat($('mVal').value); if(isNaN(v))return; _mb.disabled=true; _mb.textContent='…'; await api({action:'add_log',kind:'measurement',value_num:v,unit:'in',body:site}); await refresh(); }; }
   // food search (USDA FoodData Central, no PHI) -> log macros against plan target
   const foodBtn=$('foodBtn');
   if(foodBtn){
