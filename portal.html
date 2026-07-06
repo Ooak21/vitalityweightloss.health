@@ -123,6 +123,8 @@ async function api(payload){
     if (a.action === 'load')       return await convex.query('portal:loadPortal', {});
     if (a.action === 'add_log')    return await convex.mutation('portal:addLog', { kind:a.kind, value_num:a.value_num, unit:a.unit, body:a.body });
     if (a.action === 'photo_upload_url') return await convex.mutation('portal:photoUploadUrl', {});
+    if (a.action === 'send_message') return await convex.mutation('portal:sendMessage', { body:a.body });
+    if (a.action === 'mark_messages_read') return await convex.mutation('portal:markMessagesRead', {});
     if (a.action === 'mint_token') return await convex.mutation('portal:mintToken', {});
     return { ok:false, error:'unknown action' };
   }
@@ -492,6 +494,23 @@ function render(){
   </div></details>`;
 
   // Injection tracker (GLP-1): log weekly shots + dose, rotate sites, see next dose. Absorbs Thrive Track.
+  // Secure messages with the care team (in-app only, no email/SMS egress). Absorbs Thrive's messaging.
+  const msgs=(DATA.messages||[]);
+  const unread=DATA.unreadForPatient||0;
+  const msgThread=msgs.length?msgs.map(m=>{
+    const mine=m.sender==='patient';
+    const when=m.created_at?fmtAgo(m.created_at):'';
+    return `<div class="flex ${mine?'justify-end':'justify-start'}"><div class="max-w-[80%] rounded-2xl px-3.5 py-2 ${mine?'bg-[#0a6cf5] text-white rounded-br-sm':'bg-[#f1f3f7] text-[#16201d] rounded-bl-sm'}"><div class="text-sm whitespace-pre-wrap break-words">${esc(m.body)}</div><div class="text-[10px] ${mine?'text-white/70':'text-[#9aa0ab]'} mt-0.5">${mine?'You':'Care team'} · ${when}</div></div></div>`;
+  }).join(''):`<div class="text-sm text-[#6b7280] text-center py-4">Message your care team anytime. Questions about your plan, side effects, refills, or scheduling. It is private and stays inside Vitality.</div>`;
+  const messages=`<details class="card overflow-hidden" open><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Messages${unread?` <span class="ml-1 inline-flex items-center justify-center text-[10px] font-bold bg-[#e11d48] text-white rounded-full h-5 min-w-[20px] px-1.5 align-middle">${unread}</span>`:''}</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
+    <div id="msgThread" class="space-y-2 max-h-80 overflow-y-auto mb-3 pr-1">${msgThread}</div>
+    <div class="flex items-end gap-2">
+      <textarea id="msgInput" rows="1" class="field flex-1 resize-none" placeholder="Message your care team…"></textarea>
+      <button id="msgBtn" class="px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8] shrink-0">Send</button>
+    </div>
+    <p class="text-[11px] text-[#9aa0ab] mt-2">Private and secure · not for emergencies. If this is urgent, call the clinic or 911.</p>
+  </div></details>`;
+
   const injLogs=logs.filter(l=>l.kind==='injection');
   const lastInj=injLogs[0];
   const INJ_SITES=['Left abdomen','Right abdomen','Left thigh','Right thigh','Left arm','Right arm'];
@@ -662,7 +681,7 @@ function render(){
     <p class="text-sm text-[#6b7280] mt-1">${PROGRAMS[p.program]||'Your program'} · <span class="capitalize">${esc((p.status||'').replace('_',' '))}</span></p></div>
     <div class="grid lg:grid-cols-3 gap-6 items-start">
       <div class="lg:col-span-2 space-y-6">${approved}${team}${progress}${inbodyReport}${scanHistory}<section class="card p-6 flex items-center justify-between gap-3"><div><h2 class="font-display text-lg font-semibold">Your Personal Transformation Plan</h2><p class="text-sm text-[#6b7280] mt-0.5">Your complete Personal Transformation Plan: InBody breakdown, every metric decoded, nutrition, workouts, and habits.</p></div><button onclick="openMyHandbook()" class="shrink-0 px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">📖 Open</button></section>${planHtml}</div>
-      <div class="space-y-6">${appt}${injection}${refill}${sideEffects}${checkin}${measurements}${progressPhotos}${logging}${rewards}${companion}</div>
+      <div class="space-y-6">${appt}${messages}${injection}${refill}${sideEffects}${checkin}${measurements}${progressPhotos}${logging}${rewards}${companion}</div>
     </div>`;
   document.querySelectorAll('.reqBtn').forEach(b=>b.onclick=async()=>{
     b.disabled=true; b.textContent='Sending to Dr. DeBry…';
@@ -687,6 +706,16 @@ function render(){
   { const _ib=document.getElementById('injBtn'); if(_ib) _ib.onclick=async()=>{ const med=$('injMed').value, site=$('injSite').value, dv=parseFloat($('injDose').value); _ib.disabled=true; _ib.textContent='Logging…'; await api({action:'add_log',kind:'injection',value_num:isNaN(dv)?undefined:dv,unit:'mg',body:med+' · '+site}); await refresh(); }; }
   { const _rf=document.getElementById('rfBtn'); if(_rf) _rf.onclick=async()=>{ const med=$('rfMed').value, wk=parseInt($('rfWeeks').value,10); if(isNaN(wk)||wk<1) return; _rf.disabled=true; _rf.textContent='Saving…'; await api({action:'add_log',kind:'refill',value_num:wk,unit:'weeks',body:med}); await refresh(); }; }
   { const _rr=document.getElementById('rrBtn'); if(_rr) _rr.onclick=async()=>{ _rr.disabled=true; _rr.textContent='Sending…'; const m=document.getElementById('rfMed'); await api({action:'add_log',kind:'refill_request',body:(m&&m.value)||'medication'}); await refresh(); }; }
+  // secure messaging: send to care team; auto-scroll to latest; mark care-team messages read on view
+  { const _mgb=document.getElementById('msgBtn'), _mgi=document.getElementById('msgInput'), _mgt=document.getElementById('msgThread');
+    if(_mgb&&_mgi){
+      const sendMsg=async()=>{ const t=_mgi.value.trim(); if(!t) return; _mgb.disabled=true; _mgb.textContent='…'; _mgi.disabled=true; await api({action:'send_message',body:t}); _mgi.value=''; await refresh(); };
+      _mgb.onclick=sendMsg;
+      _mgi.onkeydown=(e)=>{ if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){ e.preventDefault(); sendMsg(); } };
+    }
+    if(_mgt) _mgt.scrollTop=_mgt.scrollHeight;
+    if((DATA.unreadForPatient||0)>0){ api({action:'mark_messages_read'}).catch(()=>{}); }
+  }
   { let seSev=1, seSevLabel='Mild';
     document.querySelectorAll('.se-sev').forEach(btn=>btn.onclick=()=>{ document.querySelectorAll('.se-sev').forEach(x=>{ x.classList.remove('bg-[#0a6cf5]','text-white','border-[#0a6cf5]'); x.classList.add('bg-white','text-[#6b7280]','border-[#e6e9ee]'); }); btn.classList.remove('bg-white','text-[#6b7280]','border-[#e6e9ee]'); btn.classList.add('bg-[#0a6cf5]','text-white','border-[#0a6cf5]'); seSev=+btn.dataset.sev; seSevLabel=btn.dataset.label; });
     const _seb=document.getElementById('seBtn'); if(_seb) _seb.onclick=async()=>{ const sym=$('seSym').value, note=($('seNote').value||'').trim(); _seb.disabled=true; _seb.textContent='Logging…'; await api({action:'add_log',kind:'side_effect',value_num:seSev,unit:'',body:sym+' · '+seSevLabel+(note?': '+note:'')}); await refresh(); };
