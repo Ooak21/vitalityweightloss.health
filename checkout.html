@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" href="assets/favicon.png">
-<title>Vitality — Checkout</title>
+<title>Vitality Checkout</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://js.stripe.com/v3/"></script>
@@ -137,11 +137,27 @@
   </div>
 </footer>
 
+<!-- Shared facility-waiver text + version. Single source of truth across intake / checkout / checkin. -->
+<script src="/facility-waiver.js"></script>
+
+<!-- Facility waiver modal: required for in-person services before payment -->
+<div id="waiverModal" style="display:none;position:fixed;inset:0;z-index:100000;background:rgba(16,24,40,.55);align-items:center;justify-content:center;padding:18px;">
+  <div style="background:#fff;border-radius:18px;max-width:660px;width:100%;max-height:92vh;overflow:auto;padding:24px;box-shadow:0 20px 60px rgba(16,24,40,.25);">
+    <h2 style="font-size:19px;margin:0 0 6px;">One step before payment</h2>
+    <p style="color:#6b7280;font-size:14px;line-height:1.55;margin:0 0 16px;">This service includes access to the Vitality fitness facility. Please read and sign the facility waiver to continue.</p>
+    <div id="waiverHost"></div>
+    <div style="display:flex;gap:10px;margin-top:18px;">
+      <button id="waiverCancelBtn" type="button" style="flex:0 0 auto;padding:13px 18px;border:1px solid #e6e9ee;background:#fff;border-radius:12px;font:600 14px/1 Inter,sans-serif;color:#6b7280;cursor:pointer;">Cancel</button>
+      <button id="waiverAgreeBtn" type="button" disabled style="flex:1;padding:13px;border:0;background:#16201d;color:#fff;border-radius:12px;font:600 15px/1 Inter,sans-serif;cursor:pointer;opacity:.55;">Agree &amp; continue to payment</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ============================================================================
-   CONFIG — drop in the Innovative Blockchain Solutions TEST keys.
+   CONFIG. Drop in the Innovative Blockchain Solutions TEST keys.
    - STRIPE_PK: your Stripe TEST publishable key (pk_test_…). The Payment Element
-     renders the instant this is set — that's the "speed front end."
+     renders the instant this is set. That's the "speed front end."
    - STRIPE_PAY_URL: the Convex /pay-stripe endpoint that creates a PaymentIntent
      (convex/stripe.ts). Leave '' to run a frontend-only speed demo (no real charge).
    ========================================================================== */
@@ -156,7 +172,7 @@ const SKUS = [
   { id:'consult',    name:'Provider consult',        desc:'One-time telehealth visit', cents:9900, rail:'stripe' },
   { id:'trt',        name:'Total Male (TRT) intake', desc:'Men’s hormone program intake', cents:14900, rail:'stripe' },
   { id:'labs',       name:'Lab panel',               desc:'Baseline bloodwork', cents:12900, rail:'stripe' },
-  { id:'merch',      name:'Vitality tee',            desc:'Cotton, ships in 3–5 days', cents:3200, rail:'stripe' },
+  { id:'merch',      name:'Vitality tee',            desc:'Cotton, ships in 3 to 5 days', cents:3200, rail:'stripe' },
   { id:'glp1',       name:'GLP-1 weight-loss program', desc:'Clinical intake + prescription', cents:0, rail:'clover' },
 ];
 
@@ -227,10 +243,40 @@ function mountStripe(){
   paymentEl.mount('#payment-element');
 }
 
+/* facility waiver gate (in-person services only; NOT merch, NOT the GLP-1 sku) */
+const WAIVER_SKUS = ['membership','consult','trt','labs'];   // edit here to change which services require the waiver
+let waiverSigned = false;
+function openWaiverModal(){
+  const modal = document.getElementById('waiverModal');
+  const host  = document.getElementById('waiverHost');
+  const agree = document.getElementById('waiverAgreeBtn');
+  window.renderFacilityWaiver(host, { onChange: s => { agree.disabled = !s.ok; agree.style.opacity = s.ok ? '1' : '.55'; } });
+  agree.onclick = async () => {
+    const st = window.facilityWaiverState(host);
+    if (!st.ok) return;
+    agree.disabled = true;
+    try {
+      await fetch('https://quixotic-cat-492.convex.site/waiver-ack', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ waiver_type:'fitness_facility', waiver_version:(window.FACILITY_WAIVER_VERSION||'unknown'), name: st.name, surface:'checkout' })
+      });
+    } catch(e){ console.warn('waiver ack (continues):', e); }
+    waiverSigned = true;
+    modal.style.display = 'none';
+    doPay();
+  };
+  document.getElementById('waiverCancelBtn').onclick = () => { modal.style.display='none'; };
+  modal.style.display = 'flex';
+}
 async function pay(){
+  if (WAIVER_SKUS.includes(selected.id) && !waiverSigned){ openWaiverModal(); return; }
+  doPay();
+}
+
+async function doPay(){
   const btn = document.getElementById('payBtn'); const err = document.getElementById('payErr');
   err.style.display='none';
-  if (!elements){ err.textContent='Card form not ready — add your Stripe pk_test key.'; err.style.display='block'; return; }
+  if (!elements){ err.textContent='Card form not ready. Add your Stripe pk_test key.'; err.style.display='block'; return; }
   btn.disabled = true;
   const { error: submitErr } = await elements.submit();
   if (submitErr){ btn.disabled=false; err.textContent = submitErr.message; err.style.display='block'; return; }
@@ -262,7 +308,7 @@ function showSuccess(){
     <div class="ok-card">
       <div class="ok-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
       <h2 style="font-size:20px;margin:0 0 6px;">You're all set</h2>
-      <p class="lede" style="margin:0 auto;max-width:320px;">${selected.name} — ${fmt(selected.cents)} confirmed. A receipt is on its way to your email.</p>
+      <p class="lede" style="margin:0 auto;max-width:320px;">${selected.name}: ${fmt(selected.cents)} confirmed. A receipt is on its way to your email.</p>
     </div>`;
   window.vitRetranslate&&window.vitRetranslate();
 }
@@ -271,7 +317,7 @@ function showSuccess(){
 renderSkus(); syncSummary(); mountStripe();
 document.getElementById('payBtn').onclick = pay;
 document.getElementById('railNote').innerHTML =
-  'Service payments run on <b>Stripe</b> (fast). The <b>GLP-1</b> program runs on <b>Clover</b> on a separate, isolated rail — Stripe prohibits GLP-1 processing, and keeping it apart protects every other service from an account freeze.';
+  'Service payments run on <b>Stripe</b> (fast). The <b>GLP-1</b> program runs on <b>Clover</b> on a separate, isolated rail. Stripe prohibits GLP-1 processing, and keeping it apart protects every other service from an account freeze.';
 if (new URLSearchParams(location.search).get('paid')==='1') showSuccess();
 </script>
 <!-- EN/ES shell: shares localStorage 'vit_lang'. vitRetranslate() re-applies after SKU/summary/success re-renders. -->
@@ -287,7 +333,7 @@ if (new URLSearchParams(location.search).get('paid')==='1') showSuccess();
     "GLP-1 weight-loss program":"Programa GLP-1 de pérdida de peso",
     "Monthly membership":"Membresía mensual","One-time telehealth visit":"Visita única de telesalud",
     "Men's hormone program intake":"Admisión del programa hormonal masculino","Baseline bloodwork":"Análisis de sangre inicial",
-    "Cotton, ships in 3–5 days":"Algodón, envío en 3–5 días","Clinical intake + prescription":"Admisión clínica + receta",
+    "Cotton, ships in 3 to 5 days":"Algodón, envío en 3 a 5 días","Clinical intake + prescription":"Admisión clínica + receta",
     "Fast lane":"Vía rápida","Clover · clinical":"Clover · clínico","Apply":"Solicitar",
     "You're all set":"¡Todo listo!","Payment could not be completed.":"No se pudo completar el pago."
   };

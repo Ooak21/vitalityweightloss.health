@@ -157,12 +157,15 @@
 
 <div class="muted-foot">Vitality Weight Loss · Front Desk Check-In · <span class="lock-link" onclick="lock()">Lock</span></div>
 
+<!-- Shared facility-waiver text + version. Single source of truth across intake / checkout / checkin. -->
+<script src="/facility-waiver.js"></script>
+
 <script type="module">
   // --- config + auth (individual staff sign-in via Convex Auth; same accounts as the CRM) ---
   import { signIn, getToken as authToken, staffRole, signOut, STORE_STAFF } from './auth-convex.js';
   const CONVEX = 'https://quixotic-cat-492.convex.site';
 
-  // --- disclosures (PLACEHOLDER copy — swap with the clinic's real legal text before live patients) ---
+  // disclosures (PLACEHOLDER copy, swap with the clinic's real legal text before live patients)
   const DISCLOSURES = [
     { key:'npp', version:'v1', title:'HIPAA Notice of Privacy Practices',
       body:'PLACEHOLDER. This acknowledges that you have been offered Vitality Weight Loss’s Notice of Privacy Practices, which describes how your protected health information may be used and disclosed and how you can access that information. Replace this text with the clinic’s official Notice acknowledgment.' },
@@ -172,6 +175,9 @@
       body:'PLACEHOLDER. You understand you are financially responsible for services rendered, and that missed or late-cancelled appointments may be subject to a fee per clinic policy. Replace this text with the clinic’s official financial and no-show policy.' },
     { key:'telehealth', version:'v1', title:'Telehealth Consent',
       body:'PLACEHOLDER. You consent to receive care via telehealth where appropriate, understanding its benefits and limitations. Replace this text with the clinic’s official telehealth consent language.' },
+    // Facility waiver joins the existing disclosures (in-person patients only; async GLP-1 / Bloom never see the kiosk).
+    { key:'facility_waiver', version: (window.FACILITY_WAIVER_VERSION || 'FFW-2026-07-05'), title:'Fitness Facility Use, Assumption of Risk & Release of Liability',
+      body: (window.FACILITY_WAIVER_HTML || 'Fitness Facility Waiver unavailable. Please see the front desk.') },
   ];
 
   // --- state ---
@@ -187,7 +193,7 @@
     if (name === 'done') resetTimer = setTimeout(reset, 12000);
     if (name === 'disclosures') renderDisclosures();
   }
-  function reset(){ // back to a fresh patient — does NOT sign the device out
+  function reset(){ // back to a fresh patient, does NOT sign the device out
     digits = ''; patient = null; agreed = {};
     renderPhone();
     go('welcome');
@@ -210,14 +216,14 @@
     finally { btn.disabled = false; btn.textContent = label; }
   }
   async function lock(){ try { await signOut(STORE_STAFF); } catch(_){} clearTimeout(idleTimer); digits = ''; patient = null; agreed = {}; renderPhone(); go('lock'); }
-  function unauthorized(){ lock(); document.getElementById('lockErr').textContent = 'Session ended — please sign in again.'; }
+  function unauthorized(){ lock(); document.getElementById('lockErr').textContent = 'Session ended. Please sign in again.'; }
 
   // Auto-lock a walked-away iPad: after inactivity, sign the staff member out so the next
   // person must sign in with their own account (keeps per-user accountability on a shared device).
   let idleTimer = null;
   const IDLE_MS = 20 * 60 * 1000;
   function armIdleLock(){ resetIdle(); ['click','touchstart','keydown'].forEach(ev => document.addEventListener(ev, resetIdle, { passive:true })); }
-  function resetIdle(){ clearTimeout(idleTimer); idleTimer = setTimeout(() => { lock(); document.getElementById('lockErr').textContent = 'Locked after inactivity — please sign in again.'; }, IDLE_MS); }
+  function resetIdle(){ clearTimeout(idleTimer); idleTimer = setTimeout(() => { lock(); document.getElementById('lockErr').textContent = 'Locked after inactivity. Please sign in again.'; }, IDLE_MS); }
 
   // --- phone keypad ---
   function renderPhone(){
@@ -302,7 +308,7 @@
   function updateDiscState(){
     const done = DISCLOSURES.filter(d => agreed[d.key]).length;
     document.getElementById('discProgress').textContent =
-      done === DISCLOSURES.length ? 'All set — tap Check in below.' : 'Agreed to ' + done + ' of ' + DISCLOSURES.length + '.';
+      done === DISCLOSURES.length ? 'All set. Tap Check in below.' : 'Agreed to ' + done + ' of ' + DISCLOSURES.length + '.';
     document.getElementById('checkinBtn').disabled = done !== DISCLOSURES.length;
   }
 
