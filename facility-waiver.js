@@ -1,11 +1,11 @@
 /*
  * Vitality Weight Loss: Fitness Facility Use, Assumption of Risk, and Release of
  * Liability Agreement. SINGLE SOURCE OF TRUTH for the facility waiver text used across
- * intake.html, checkout.html, and checkin.html. Do not fork this text into a page; import
+ * checkout.html and checkin.html (intake and the async drug flows are excluded). Do not fork this text into a page; import
  * window.FACILITY_WAIVER_HTML so all surfaces stay identical and versioned together.
  *
  * Placement (per Luis 2026-07-05): required reading + acknowledgement on the in-person /
- * facility flows only. EXCLUDED: async drug flows (glp1.html / glp1A / glp1B / bloom.html)
+ * facility flows only. EXCLUDED: the async drug flows (intake.html [async GLP-1], glp1.html / glp1A / glp1B, bloom.html)
  * because those patients never use the facility.
  *
  * When the legal text changes, bump FACILITY_WAIVER_VERSION so prior acknowledgements are
