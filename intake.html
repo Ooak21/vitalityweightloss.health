@@ -765,17 +765,27 @@ const flow = [
       : PRICING[drug].label;
     const _variantEs = drug==='tirz' ? 'inyecciones semanales de tirzepatida compuesta' : drug==='oral' ? 'semaglutida oral (sublingual) diaria compuesta' : 'inyecciones semanales de semaglutida compuesta';
     const _variantEn = drug==='tirz' ? 'weekly compounded tirzepatide injections' : drug==='oral' ? 'daily compounded oral (sublingual) semaglutide' : 'weekly compounded semaglutide injections';
-    const ACKS = _ackEs ? [
+    // SMART CONSENTS (Fred req 2026-07-05): the medication-specific consents (async GLP-1 review +
+    // compounded 503A) show ONLY when the patient is pursuing GLP-1. General-consult / other patients
+    // get a neutral assumption-of-risk + HIPAA instead; medication informed consent is captured later
+    // if a provider actually recommends GLP-1 (deferred to the prescribe step).
+    const isGlp1 = (state.reason === 'glp1' || state.reason === 'medicare_glp1');
+    const _medAcks = _ackEs ? [
       { id:1, html:'Envío esta evaluación para una <strong>revisión de telesalud asincrónica</strong> por el Dr. Peter DeBry, MD. He leído los riesgos y beneficios de ' + _variantEs + ' y consiento el tratamiento <strong>si el Dr. DeBry aprueba mi receta</strong> según mi historial.', doc:'consent' },
-      { id:2, html:'Entiendo que mi medicamento es <strong>preparado (compuesto)</strong> por una <strong>farmacia 503A con licencia en EE. UU.</strong> y <strong>no está aprobado por la FDA</strong>, aunque el ingrediente activo sí está aprobado por la FDA en su forma de marca.', doc:'compounded' },
-      { id:3, html:'Asumo voluntariamente los riesgos, libero a Vitality de responsabilidad salvo por negligencia grave, y reconozco haber recibido el Aviso de Prácticas de Privacidad de HIPAA.', doc:'risk' },
-      { id:5, html:'Consiento recibir recordatorios clínicos, de citas y del programa por mensaje de texto y correo electrónico. Puedo cancelar los SMS no clínicos respondiendo STOP.', doc:'comms' }
+      { id:2, html:'Entiendo que mi medicamento es <strong>preparado (compuesto)</strong> por una <strong>farmacia 503A con licencia en EE. UU.</strong> y <strong>no está aprobado por la FDA</strong>, aunque el ingrediente activo sí está aprobado por la FDA en su forma de marca.', doc:'compounded' }
     ] : [
       { id:1, html:'I am submitting this intake for <strong>asynchronous telehealth review</strong> by Dr. Peter DeBry, MD. I have read the risks and benefits of ' + _variantEn + ' and consent to treatment <strong>if and when Dr. DeBry approves my prescription</strong> based on my history.', doc:'consent' },
-      { id:2, html:'I understand my medication is <strong>compounded</strong> by a <strong>USA-licensed 503A pharmacy</strong> and is <strong>not FDA-approved</strong>, although the active ingredient is FDA-approved in brand-name form.', doc:'compounded' },
-      { id:3, html:'I voluntarily assume the risks, release Vitality from liability except for gross negligence, and acknowledge receipt of the HIPAA Notice of Privacy Practices.', doc:'risk' },
-      { id:5, html:'I consent to clinical, appointment, and program text + email reminders. I can opt out of non-clinical SMS by replying STOP.', doc:'comms' }
+      { id:2, html:'I understand my medication is <strong>compounded</strong> by a <strong>USA-licensed 503A pharmacy</strong> and is <strong>not FDA-approved</strong>, although the active ingredient is FDA-approved in brand-name form.', doc:'compounded' }
     ];
+    const _riskAck = _ackEs
+      ? (isGlp1 ? { id:3, html:'Asumo voluntariamente los riesgos, libero a Vitality de responsabilidad salvo por negligencia grave, y reconozco haber recibido el Aviso de Prácticas de Privacidad de HIPAA.', doc:'risk' }
+                : { id:3, html:'Asumo voluntariamente los riesgos ordinarios de mi visita y atención en Vitality, libero a Vitality de responsabilidad salvo por negligencia grave, y reconozco haber recibido el Aviso de Prácticas de Privacidad de HIPAA.', doc:'risk_general' })
+      : (isGlp1 ? { id:3, html:'I voluntarily assume the risks, release Vitality from liability except for gross negligence, and acknowledge receipt of the HIPAA Notice of Privacy Practices.', doc:'risk' }
+                : { id:3, html:'I voluntarily assume the ordinary risks of my visit and care at Vitality, release Vitality from liability except for gross negligence, and acknowledge receipt of the HIPAA Notice of Privacy Practices.', doc:'risk_general' });
+    const _commsAck = _ackEs
+      ? { id:5, html:'Consiento recibir recordatorios clínicos, de citas y del programa por mensaje de texto y correo electrónico. Puedo cancelar los SMS no clínicos respondiendo STOP.', doc:'comms' }
+      : { id:5, html:'I consent to clinical, appointment, and program text + email reminders. I can opt out of non-clinical SMS by replying STOP.', doc:'comms' };
+    const ACKS = [ ...(isGlp1 ? _medAcks : []), _riskAck, _commsAck ];
 
     // Track which docs the user has already opened (persists across reloads / back-nav).
     state.acksRead = state.acksRead || {};
@@ -853,7 +863,8 @@ const flow = [
       { id:'age18', text:'I certify that I am at least 18 years of age.' },
       { id:'accuracy', text:'I certify the health and personal information I provided is true, accurate, and complete to the best of my knowledge. Providing false information may result in denial of care and could endanger my health.' },
       { id:'verifyid', text:'I understand Vitality and the prescribing physician may request a valid government-issued photo ID or other identity verification at any time, and may decline, delay, or discontinue treatment if my identity or eligibility cannot be reasonably confirmed.' },
-      { id:'noguarantee', text:'I understand that completing this intake does not guarantee a prescription, and the physician may determine that asynchronous treatment is not appropriate for me.' }
+      // Prescription-specific attestation only when the patient is pursuing GLP-1 (a general consult does not imply a prescription).
+      ...(isGlp1 ? [{ id:'noguarantee', text:'I understand that completing this intake does not guarantee a prescription, and the physician may determine that asynchronous treatment is not appropriate for me.' }] : [])
     ];
     const attWrap = h('div', { style:'margin:12px 0 4px;' });
     attWrap.appendChild(h('div', { class:'sig-label' }, ['Please confirm each statement']));
@@ -1073,6 +1084,14 @@ const DOCS = {
     <p>To the fullest extent permitted by Nevada law, I release Vitality Weight Loss, LLC and Peter DeBry, MD from claims arising from my voluntary participation, except those arising from gross negligence or willful misconduct. Governing law: Nevada. Disputes resolved in Clark County, Nevada.</p>
     <h4>HIPAA Notice of Privacy Practices summary</h4>
     <p>Vitality is a HIPAA covered entity. PHI is used for treatment, payment, and operations. Your rights include access, amendment, restriction, accounting of disclosures, and filing a complaint with Vitality's Privacy Officer or HHS Office for Civil Rights without retaliation.</p>
+  `,
+  // General (non-medication) assumption-of-risk + HIPAA for general-consult / other reasons.
+  // DRAFT neutral wording, pending Fred + DeBry sign-off (Fred req 2026-07-05).
+  risk_general: `
+    <h4>Assumption of risk</h4>
+    <p>I voluntarily assume the ordinary risks associated with my visit to and care at Vitality Weight Loss. To the fullest extent permitted by Nevada law, I release Vitality Weight Loss and its providers and staff from claims arising from my voluntary participation, except those arising from gross negligence or willful misconduct. Governing law: Nevada. Disputes are resolved in Clark County, Nevada.</p>
+    <h4>HIPAA Notice of Privacy Practices summary</h4>
+    <p>Vitality is a HIPAA covered entity. Your protected health information is used for treatment, payment, and health-care operations. Your rights include access, amendment, restriction, an accounting of disclosures, and filing a complaint with Vitality's Privacy Officer or the HHS Office for Civil Rights without retaliation.</p>
   `,
   billing: `
     <h4>Billing &amp; cancellation</h4>
@@ -1339,6 +1358,14 @@ function vitalitySetLang(lang){
   vitalityUpdateShell();
   if (window.__lastScreen) render(window.__lastScreen);
 }
+
+// Spanish general (non-medication) assumption-of-risk + HIPAA (DRAFT, pending Fred + DeBry sign-off).
+if (window.DOCS_ES) window.DOCS_ES.risk_general = `
+    <h4>Asunción de riesgo</h4>
+    <p>Asumo voluntariamente los riesgos ordinarios de mi visita y atención en Vitality Weight Loss. En la máxima medida permitida por la ley de Nevada, libero a Vitality Weight Loss y a sus proveedores y personal de reclamaciones derivadas de mi participación voluntaria, salvo las que surjan de negligencia grave o mala conducta intencional. Ley aplicable: Nevada. Las disputas se resuelven en el condado de Clark, Nevada.</p>
+    <h4>Resumen del Aviso de Prácticas de Privacidad de HIPAA</h4>
+    <p>Vitality es una entidad cubierta por HIPAA. Su información médica protegida se usa para tratamiento, pago y operaciones de atención médica. Sus derechos incluyen acceso, enmienda, restricción, un recuento de divulgaciones, y presentar una queja ante el Oficial de Privacidad de Vitality o la Oficina de Derechos Civiles de HHS sin represalias.</p>
+  `;
 
 document.addEventListener('DOMContentLoaded', function(){
   var opts = document.querySelectorAll('.lang-opt');
