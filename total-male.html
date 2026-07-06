@@ -15,6 +15,8 @@
   .font-display{font-family:'Montserrat','Inter',sans-serif;}
   .brand-name{font-family:'Montserrat','Inter',sans-serif;font-weight:600;font-size:1.18rem;color:var(--ink);letter-spacing:.15em;text-transform:uppercase;line-height:1;display:flex;flex-direction:column;align-items:center;}
   .brand-name .sub{font-weight:500;font-size:.5rem;letter-spacing:.30em;text-transform:uppercase;margin-top:3px;}
+  /* Narrow screens: shrink the wordmark + nav CTA so they do not collide with the Espanol toggle. */
+  @media (max-width:430px){ .brand-name{font-size:.86rem;letter-spacing:.06em;} .brand-name .sub{font-size:.38rem;letter-spacing:.18em;} #navCta{font-size:.72rem;padding:7px 11px;} nav .gap-3{gap:.4rem;} }
 </style>
   <script src="/ga.js" defer></script>
 </head>
@@ -29,7 +31,7 @@
     </a>
     <div class="flex items-center gap-3">
       <button id="langToggle" type="button" class="text-sm font-semibold text-[#0a6cf5] hover:underline whitespace-nowrap" aria-label="Cambiar idioma">Español</button>
-      <a href="intake.html" class="px-5 py-2.5 rounded-2xl bg-[#16201d] text-white font-semibold text-sm hover:bg-[#2b3440] transition whitespace-nowrap">Claim $99 assessment</a>
+      <a href="intake.html" id="navCta" class="px-5 py-2.5 rounded-2xl bg-[#16201d] text-white font-semibold text-sm hover:bg-[#2b3440] transition whitespace-nowrap">Claim $99 assessment</a>
     </div>
   </div>
 </nav>
