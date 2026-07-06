@@ -271,7 +271,7 @@ function tabRoadmap(hb){
 
 // Phase 1 gamification streaks, points, weekly activity, badges (all derived client-side)
 function gamify(){
-  const PTS={food:10,weigh_in:5,journal:5,activity:15,scan:10,module:25,nextstep:20};
+  const PTS={food:10,weigh_in:5,journal:5,activity:15,scan:10,module:25,nextstep:20,injection:15};
   const logs=DATA.logs||[], ib=DATA.inbody||[], plan=DATA.plan, hb=plan&&plan.handbook;
   const dk=(iso)=>new Date(iso).toDateString(), today=new Date().toDateString();
   let points=0, ptsToday=0; const dates=new Set();
@@ -419,7 +419,8 @@ function render(){
   const _today=new Date().toDateString();
   const kcalToday=logs.filter(l=>l.kind==='food'&&new Date(l.logged_at).toDateString()===_today).reduce((s,l)=>s+(+l.value_num||0),0);
   const kcalTarget=hb&&hb.nutrition?hb.nutrition.calories:null;
-  const logList=logs.length? logs.map(l=>`<div class="flex items-start gap-3 py-2 border-b border-[#f1f3f7] last:border-0">
+  const _gl=logs.filter(l=>l.kind!=='injection');
+  const logList=_gl.length? _gl.map(l=>`<div class="flex items-start gap-3 py-2 border-b border-[#f1f3f7] last:border-0">
     <span class="chip ${l.kind==='weigh_in'?'bg-[#eaf2ff] text-[#0a3d7a]':l.kind==='food'?'bg-[#eafaf0] text-[#0a7a3d]':'bg-[#f1f3f7] text-[#6b7280]'} mt-.5 shrink-0">${l.kind==='weigh_in'?'Weigh-in':l.kind==='food'?'Food':l.kind==='activity'?'Activity':'Journal'}</span>
     <div class="min-w-0"><div class="text-sm">${l.value_num!=null?`<span class="font-semibold seg">${esc(l.value_num)}${esc(l.unit||'')}</span> `:''}${esc(l.body||'')}</div><div class="text-[11px] text-[#9aa0ab]">${fmtAgo(l.logged_at)}</div></div>
   </div>`).join('') : `<p class="text-sm text-[#9aa0ab] py-2">No entries yet. Log a weigh-in, a food, or a quick note.</p>`;
@@ -432,6 +433,32 @@ function render(){
       <div id="foodResults" class="mt-1"></div>
     </div>
     <div id="logList" class="max-h-64 overflow-y-auto">${logList}</div>
+  </div></details>`;
+
+  // Injection tracker (GLP-1): log weekly shots + dose, rotate sites, see next dose. Absorbs Thrive Track.
+  const injLogs=logs.filter(l=>l.kind==='injection');
+  const lastInj=injLogs[0];
+  const INJ_SITES=['Left abdomen','Right abdomen','Left thigh','Right thigh','Left arm','Right arm'];
+  const lastSite=lastInj?(lastInj.body||'').split('·').pop().trim():'';
+  const nextSite=INJ_SITES.find(s=>s!==lastSite)||INJ_SITES[0];
+  const nextDue=lastInj?lastInj.logged_at+7*86400000:null;
+  const daysToNext=nextDue!=null?Math.ceil((nextDue-Date.now())/86400000):null;
+  const nextDueTxt=nextDue!=null?new Date(nextDue).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+  const injStatus=daysToNext==null?'':(daysToNext<=0?'Due now':'in '+daysToNext+' day'+(daysToNext===1?'':'s'));
+  const injection=`<details class="card overflow-hidden" open><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Injection tracker</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
+    ${lastInj?`<div class="grid grid-cols-2 gap-2 mb-3">
+      <div class="rounded-xl bg-[#eaf2ff] border border-[#d6e6ff] p-3"><div class="text-[10px] uppercase tracking-wide text-[#0a3d7a] font-semibold">Last injection</div><div class="text-sm font-semibold mt-.5">${fmtAgo(lastInj.logged_at)}</div><div class="text-xs text-[#6b7280]">${esc(lastInj.body||'')}${lastInj.value_num!=null?' · '+esc(lastInj.value_num)+' mg':''}</div></div>
+      <div class="rounded-xl ${daysToNext<=0?'bg-[#fff4ed] border-[#ffe2cf]':'bg-[#eafaf0] border-[#cdeedd]'} border p-3"><div class="text-[10px] uppercase tracking-wide ${daysToNext<=0?'text-[#9a5a00]':'text-[#0a7a3d]'} font-semibold">Next dose</div><div class="text-sm font-semibold mt-.5">${injStatus}</div><div class="text-xs text-[#6b7280]">${nextDueTxt}</div></div>
+    </div>`:`<p class="text-sm text-[#6b7280] mb-3">Log each weekly GLP-1 injection to track your dose, rotate injection sites, and see when your next dose is due.</p>`}
+    <div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 space-y-2">
+      <div class="flex gap-2">
+        <div class="flex-1"><label class="text-[11px] font-semibold text-[#6b7280]">Medication</label><select id="injMed" class="field mt-1 w-full"><option>Semaglutide</option><option>Tirzepatide</option><option>Oral Semaglutide</option></select></div>
+        <div style="width:96px"><label class="text-[11px] font-semibold text-[#6b7280]">Dose (mg)</label><input id="injDose" type="number" step="0.05" min="0" class="field mt-1 w-full" placeholder="0.25"></div>
+      </div>
+      <div><label class="text-[11px] font-semibold text-[#6b7280]">Injection site${lastInj?` <span class="text-[#0a7a3d] font-normal">· rotate to ${esc(nextSite)}</span>`:''}</label><select id="injSite" class="field mt-1 w-full">${INJ_SITES.map(s=>`<option ${s===nextSite?'selected':''}>${esc(s)}</option>`).join('')}</select></div>
+      <button id="injBtn" class="w-full py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Log injection</button>
+    </div>
+    ${injLogs.length?`<div class="mt-3"><div class="text-[11px] font-semibold text-[#6b7280] mb-1">Recent injections</div>${injLogs.slice(0,6).map(l=>`<div class="flex items-center justify-between py-1.5 border-b border-[#f1f3f7] last:border-0"><span class="text-sm">${esc(l.body||'')}</span><span class="text-xs text-[#9aa0ab]">${l.value_num!=null?esc(l.value_num)+' mg · ':''}${fmtAgo(l.logged_at)}</span></div>`).join('')}</div>`:''}
   </div></details>`;
 
   const TEAM=[{n:'Dr. Peter DeBry, MD',r:'Medical Director · Obesity Medicine',img:'assets/debry.jpg'},{n:'Richard DeVera, NP',r:'Nurse Practitioner',img:'assets/devera.jpg',pos:'object-top'},{n:'Ana Trujillo',r:'Fitness Coordinator',img:'assets/ana-trujillo.jpg',pos:'object-[50%_50%]'}];
@@ -484,7 +511,7 @@ function render(){
     <p class="text-sm text-[#6b7280] mt-1">${PROGRAMS[p.program]||'Your program'} · <span class="capitalize">${esc((p.status||'').replace('_',' '))}</span></p></div>
     <div class="grid lg:grid-cols-3 gap-6 items-start">
       <div class="lg:col-span-2 space-y-6">${approved}${team}${progress}${inbodyReport}${scanHistory}<section class="card p-6 flex items-center justify-between gap-3"><div><h2 class="font-display text-lg font-semibold">Your Personal Transformation Plan</h2><p class="text-sm text-[#6b7280] mt-0.5">Your complete Personal Transformation Plan: InBody breakdown, every metric decoded, nutrition, workouts, and habits.</p></div><button onclick="openMyHandbook()" class="shrink-0 px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">📖 Open</button></section>${planHtml}</div>
-      <div class="space-y-6">${appt}${logging}${rewards}${companion}</div>
+      <div class="space-y-6">${appt}${injection}${logging}${rewards}${companion}</div>
     </div>`;
   document.querySelectorAll('.reqBtn').forEach(b=>b.onclick=async()=>{
     b.disabled=true; b.textContent='Sending to Dr. DeBry…';
@@ -506,6 +533,7 @@ function render(){
   const refresh=async()=>{ DATA=await api({action:'load'}); render(); };
   $('wBtn').onclick=async()=>{ const v=parseFloat($('wIn').value); if(isNaN(v))return; $('wBtn').disabled=true; await api({action:'add_log',kind:'weigh_in',value_num:v,unit:' lb'}); await refresh(); };
   $('jBtn').onclick=async()=>{ const t=$('jIn').value.trim(); if(!t)return; $('jBtn').disabled=true; await api({action:'add_log',kind:'journal',body:t}); await refresh(); };
+  { const _ib=document.getElementById('injBtn'); if(_ib) _ib.onclick=async()=>{ const med=$('injMed').value, site=$('injSite').value, dv=parseFloat($('injDose').value); _ib.disabled=true; _ib.textContent='Logging…'; await api({action:'add_log',kind:'injection',value_num:isNaN(dv)?undefined:dv,unit:'mg',body:med+' · '+site}); await refresh(); }; }
   // food search (USDA FoodData Central, no PHI) -> log macros against plan target
   const foodBtn=$('foodBtn');
   if(foodBtn){
