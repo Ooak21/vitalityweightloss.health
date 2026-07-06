@@ -985,7 +985,7 @@ function viewSubmitted(p) {
       <h1>Thanks, ${fn} you're in good hands.</h1>
       <p class="lede" style="margin:0 auto 16px;max-width:480px;">Your intake is complete and your patient record is started. A couple of your health answers need a quick review by our care team before we can offer the prescription program.</p>
       <div class="info" style="text-align:left;margin:8px 0;"><strong>What happens next</strong><br><span style="color:var(--muted)">Our team reviews your answers and reaches out, usually within one business day. Vitality offers more than medication, and we'll help you find the path that's safe and right for you.</span></div>
-      <p class="lede" style="margin:18px auto 18px;max-width:480px;">Open your patient portal to follow your care and messages.</p>`;
+      <p class="lede" style="margin:18px auto 18px;max-width:480px;">Your patient portal is being set up so you can follow your care and messages.</p>`;
   } else {
     let approved = '<div class="info" style="text-align:left;margin:8px 0;"><strong>✓ GLP-1 weight-loss program</strong><br><span style="color:var(--muted)">You cleared every medical safety screen. Dr. DeBry can review and prescribe.</span></div>';
     if (medicare) approved += '<div class="info warn" style="text-align:left;margin:8px 0;"><strong>✓ Medicare $50/mo GLP-1 Bridge</strong> <span style="font-size:11px;opacity:.65">(pending provider confirmation)</span><br><span style="color:var(--muted)">Based on your answers, you may qualify for brand-name Wegovy or Zepbound at about $50/month.</span></div>';
@@ -993,12 +993,15 @@ function viewSubmitted(p) {
       <h1>You're all set, ${fn}.</h1>
       <p class="lede" style="margin:0 auto 16px;max-width:480px;">Your intake is complete and your patient record is started. Here's what you may qualify for:</p>
       ${approved}
-      <p class="lede" style="margin:18px auto 18px;max-width:480px;">Next, open your patient portal. From there you can <strong>send your request to Dr. DeBry and choose your medication</strong> whenever you're ready.</p>`;
+      <p class="lede" style="margin:18px auto 18px;max-width:480px;">Once your patient portal is set up, you can <strong>send your request to Dr. DeBry and choose your medication</strong> whenever you're ready.</p>`;
   }
+  const portalCta = state.portalReady
+    ? `<a class="cta cta-green" href="portal.html" style="display:inline-flex;text-decoration:none;margin-top:4px;">Go to my patient portal &rarr;</a>`
+    : `<div class="info" style="text-align:left;margin:8px auto 2px;max-width:480px;"><strong>Your portal login is on the way.</strong><br><span style="color:var(--muted)">Our team is setting up your patient portal and will email your login${state.email ? ' to ' + state.email : ''}, usually within one business day.</span></div>`;
   card.innerHTML = `
     <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
     ${body}
-    <a class="cta cta-green" href="${portalUrl}" style="display:inline-flex;text-decoration:none;margin-top:4px;">Go to my patient portal &rarr;</a>
+    ${portalCta}
     <div class="skip-info">No charge today.</div>
   `;
   p.appendChild(card);
@@ -1020,8 +1023,11 @@ async function submitIntake() {
   state.pageUrl = window.location.href;
   save();
   computeEligibility(state);   // flags the record: glp1_eligible / medicare_glp1_eligible / programs_qualified
-  // Create the patient's Convex portal login (self-serve). The password they set here becomes a real
-  // Convex Password account, so portal.html authenticates immediately and they can sign back in later.
+  // Portal access is STAFF-PROVISIONED by design: self-registration is disabled platform-wide
+  // (convex/auth.ts) as a HIPAA control, so we do NOT create the login here. We create the chart +
+  // eligibility tags, and the /patient-prefs bridge drops a front-desk task to set up the login and
+  // email the patient. The submitted screen tells the patient their portal is being set up.
+  // (Compliance rationale documented in docs/DECISION-portal-provisioning.md.)
   state.portalReady = false;
   const tags = [];
   if (state.glp1_eligible) tags.push('glp1-eligible');
@@ -1029,21 +1035,10 @@ async function submitIntake() {
   if (state.needs_review) { tags.push('needs-review'); (state.review_codes||[]).forEach(c => tags.push('review:' + c)); }
   if (state.reason) tags.push('reason:' + state.reason);
   try {
-    const { signUp, signIn, STORE_PATIENT } = await import('./auth-convex.js');
-    try {
-      await signUp(state.email, state.password, STORE_PATIENT);
-      state.portalReady = true;
-    } catch (e) {
-      // Email may already have an account (returning patient / re-intake). Try their password.
-      try { await signIn(state.email, state.password, STORE_PATIENT); state.portalReady = true; }
-      catch (e2) { console.warn('portal signup/signin:', e2 && e2.message); }
-    }
-  } catch (e) { console.warn('portal auth import failed:', e && e.message); }
-  try {
     await fetch(window.__CONVEX_SITE + '/patient-prefs', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: state.email, first: state.firstName, last: state.lastName, phone: state.phone, tags,
+        email: state.email, first: state.firstName, last: state.lastName, phone: state.phone, tags, requestPortalLogin: true,
         prefs: {
           food_allergies: state.foodAllergies || '', diet_style: state.dietStyle || '', dislikes: state.dislikes || '',
           injuries: state.injuries || '', training_location: state.trainingLocation || '', equipment: state.equipment || '', activity: state.activity || ''
