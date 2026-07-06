@@ -78,13 +78,16 @@ if (USE_CONVEX) {
 $('signout').onclick = ()=> signOutFn().then(()=>location.replace('portal-login.html'));
 async function api(payload){
   const a = payload || {};
-  if (USE_CONVEX) {
-    if (a.action === 'load')       return await convex.query('portal:loadPortal', {});
-    if (a.action === 'add_log')    return await convex.mutation('portal:addLog', { kind:a.kind, value_num:a.value_num, unit:a.unit, body:a.body });
-    if (a.action === 'mint_token') return await convex.mutation('portal:mintToken', {});
-    return { ok:false, error:'unknown action' };
-  }
-  const r=await fetch(FN,{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON,'Authorization':'Bearer '+TOKEN},body:JSON.stringify(payload||{})}); return await r.json();
+  // Never throw: a failed call returns {ok:false} so callers re-render instead of leaving a button stuck.
+  try {
+    if (USE_CONVEX) {
+      if (a.action === 'load')       return await convex.query('portal:loadPortal', {});
+      if (a.action === 'add_log')    return await convex.mutation('portal:addLog', { kind:a.kind, value_num:a.value_num, unit:a.unit, body:a.body });
+      if (a.action === 'mint_token') return await convex.mutation('portal:mintToken', {});
+      return { ok:false, error:'unknown action' };
+    }
+    const r=await fetch(FN,{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON,'Authorization':'Bearer '+TOKEN},body:JSON.stringify(payload||{})}); return await r.json();
+  } catch(e){ console.warn('rewards api error:', a.action, e && e.message); return { ok:false, error:(e && e.message) || 'request failed' }; }
 }
 
 function gamify(){

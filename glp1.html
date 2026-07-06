@@ -1863,6 +1863,7 @@ function viewPay(p) {
   const showErr = (m) => { payErr.textContent = m; payErr.style.display = 'block'; };
 
   payBtn.onclick = async () => {
+    const orig = payBtn.textContent;
     if (!__cloverInst) {
       // iframe not ready — offer the webview-safe hosted path
       hideProcessingOverlay();
@@ -1870,7 +1871,7 @@ function viewPay(p) {
       return goToHostedCheckout();
     }
     payErr.style.display = 'none';
-    const orig = payBtn.textContent; payBtn.disabled = true; payBtn.textContent = 'Processing…';
+    payBtn.disabled = true; payBtn.textContent = 'Processing…';
     try {
       const res = await __cloverInst.createToken();
       if (res && res.errors) { payBtn.disabled = false; payBtn.textContent = orig; return showErr(Object.values(res.errors).map(x => (x && x.message) || x).join(' ')); }

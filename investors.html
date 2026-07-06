@@ -247,16 +247,19 @@
     const phone = document.getElementById('inq-phone').value.trim();
     const units = document.getElementById('inq-units').value;
     const err = document.getElementById('inq-err');
-    if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.style.display = 'block'; return; }
+    if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Please enter your name and a valid email.'; err.style.display = 'block'; return; }
     err.style.display = 'none';
     const btn = document.getElementById('inq-send'); btn.disabled = true; btn.textContent = 'Sending…';
+    let ok = false;
     try {
-      await fetch(INQUIRY_ENDPOINT, {
+      const r = await fetch(INQUIRY_ENDPOINT, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ event: 'inquiry', name, email, phone, units: units ? parseInt(units, 10) : undefined }),
       });
-    } catch (e) { /* lead is best-effort; still confirm to the user */ }
+      ok = r.ok;
+    } catch (e) { ok = false; }
     btn.disabled = false; btn.textContent = 'Send request';
+    if (!ok) { err.textContent = 'Something went wrong sending your request. Please try again, or call us at (702) 602-5002.'; err.style.display = 'block'; return; }
     document.getElementById('inq-form').style.display = 'none';
     document.getElementById('inq-done').style.display = 'block';
   });

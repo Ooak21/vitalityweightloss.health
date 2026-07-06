@@ -119,17 +119,24 @@ $('signout').onclick = ()=> signOutFn().then(()=>location.replace('portal-login.
 
 async function api(payload){
   const a = payload || {};
-  if (USE_CONVEX) {
-    if (a.action === 'load')       return await convex.query('portal:loadPortal', {});
-    if (a.action === 'add_log')    return await convex.mutation('portal:addLog', { kind:a.kind, value_num:a.value_num, unit:a.unit, body:a.body });
-    if (a.action === 'photo_upload_url') return await convex.mutation('portal:photoUploadUrl', {});
-    if (a.action === 'send_message') return await convex.mutation('portal:sendMessage', { body:a.body });
-    if (a.action === 'mark_messages_read') return await convex.mutation('portal:markMessagesRead', {});
-    if (a.action === 'mint_token') return await convex.mutation('portal:mintToken', {});
-    return { ok:false, error:'unknown action' };
+  // Never throw: a failed call returns {ok:false} so callers fall through to refresh() (which
+  // rebuilds the cards, re-enabling any button that was disabled on click). No stuck buttons.
+  try {
+    if (USE_CONVEX) {
+      if (a.action === 'load')       return await convex.query('portal:loadPortal', {});
+      if (a.action === 'add_log')    return await convex.mutation('portal:addLog', { kind:a.kind, value_num:a.value_num, unit:a.unit, body:a.body });
+      if (a.action === 'photo_upload_url') return await convex.mutation('portal:photoUploadUrl', {});
+      if (a.action === 'send_message') return await convex.mutation('portal:sendMessage', { body:a.body });
+      if (a.action === 'mark_messages_read') return await convex.mutation('portal:markMessagesRead', {});
+      if (a.action === 'mint_token') return await convex.mutation('portal:mintToken', {});
+      return { ok:false, error:'unknown action' };
+    }
+    const r = await fetch(FN, { method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':ANON, 'Authorization':'Bearer '+TOKEN }, body: JSON.stringify(payload||{}) });
+    return await r.json();
+  } catch(e){
+    console.warn('portal api error:', a.action, e && e.message);
+    return { ok:false, error:(e && e.message) || 'request failed' };
   }
-  const r = await fetch(FN, { method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':ANON, 'Authorization':'Bearer '+TOKEN }, body: JSON.stringify(payload||{}) });
-  return await r.json();
 }
 const esc = (s)=> (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -709,7 +716,7 @@ function render(){
   // secure messaging: send to care team; auto-scroll to latest; mark care-team messages read on view
   { const _mgb=document.getElementById('msgBtn'), _mgi=document.getElementById('msgInput'), _mgt=document.getElementById('msgThread');
     if(_mgb&&_mgi){
-      const sendMsg=async()=>{ const t=_mgi.value.trim(); if(!t) return; _mgb.disabled=true; _mgb.textContent='…'; _mgi.disabled=true; await api({action:'send_message',body:t}); _mgi.value=''; await refresh(); };
+      const sendMsg=async()=>{ const t=_mgi.value.trim(); if(!t) return; _mgb.disabled=true; _mgb.textContent='…'; _mgi.disabled=true; const r=await api({action:'send_message',body:t}); if(r&&r.ok){ _mgi.value=''; await refresh(); } else { _mgb.disabled=false; _mgb.textContent='Send'; _mgi.disabled=false; alert('Message could not be sent. Please check your connection and try again.'); } };
       _mgb.onclick=sendMsg;
       _mgi.onkeydown=(e)=>{ if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){ e.preventDefault(); sendMsg(); } };
     }
