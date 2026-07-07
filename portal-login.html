@@ -49,7 +49,7 @@
   const f=document.getElementById('loginForm'), err=document.getElementById('err'), btn=document.getElementById('btn');
   f.addEventListener('submit', async (e)=>{
     e.preventDefault(); err.classList.add('hidden'); btn.textContent='Signing in…'; btn.disabled=true;
-    const email=document.getElementById('email').value.trim(), password=document.getElementById('password').value;
+    const email=document.getElementById('email').value.trim().toLowerCase(), password=document.getElementById('password').value;
     try {
       if (USE_CONVEX_AUTH) {
         const { signIn, STORE_PATIENT } = await import('./auth-convex.js');
