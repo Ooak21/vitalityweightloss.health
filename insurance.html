@@ -46,6 +46,13 @@
   input:focus,select:focus,textarea:focus{outline:0;border-color:var(--green);box-shadow:0 0 0 3px rgba(10,108,245,.12);}
   textarea{resize:vertical;min-height:64px;}
   select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%236b7280' d='M1 1l5 5 5-5'/></svg>");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px;}
+  .combo{position:relative;}
+  .combo-list{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;background:var(--white);border:1.5px solid var(--line);border-radius:11px;box-shadow:var(--shadow-1);max-height:240px;overflow:auto;padding:5px;}
+  .combo-opt{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 11px;border-radius:8px;cursor:pointer;font-size:14px;color:var(--ink);}
+  .combo-opt:hover,.combo-opt.active{background:#eef4ff;}
+  .combo-opt .pid{font-size:11px;color:var(--muted);flex:0 0 auto;}
+  .combo-opt.special{color:var(--green-deep);font-weight:600;border-top:1px solid var(--line-2);margin-top:3px;}
+  .combo-hint{font-size:12px;color:var(--muted);margin-top:5px;}
   .consent{display:flex;gap:11px;align-items:flex-start;margin-top:18px;padding:14px;background:var(--cream-2);border:1px solid var(--line-2);border-radius:12px;}
   .consent input{width:18px;height:18px;flex:0 0 auto;margin-top:1px;accent-color:var(--green);}
   .consent label{font-size:12.5px;color:var(--muted);line-height:1.5;font-weight:400;}
@@ -141,13 +148,12 @@
             <select name="sex" required><option value="">Select…</option><option value="F">Female</option><option value="M">Male</option></select>
           </div>
           <div class="field full"><label>Insurance carrier <span class="req">*</span></label>
-            <select name="carrier" required>
-              <option value="">Select…</option>
-              <option>Cigna</option><option>UnitedHealthcare</option><option>Aetna</option>
-              <option>Anthem (BCBS)</option><option>Humana</option><option>Sierra Health &amp; Life</option>
-              <option>Tricare / VA</option><option>Medicare</option><option>Nevada Medicaid</option>
-              <option>Other</option><option>Self-pay (no insurance)</option>
-            </select>
+            <div class="combo">
+              <input type="text" name="carrier" id="carrierInput" autocomplete="off" placeholder="Start typing your insurer, e.g. UnitedHealthcare" required>
+              <input type="hidden" name="payer_id" id="payerId">
+              <div class="combo-list" id="carrierList" role="listbox" hidden></div>
+            </div>
+            <div class="combo-hint">Pick your plan from the list, or type it as shown on your card and we'll verify it.</div>
           </div>
           <div class="field"><label>Member / Subscriber ID <span class="req">*</span></label><input name="member_id" autocomplete="off" required></div>
           <div class="field"><label>Group number</label><input name="group_number" autocomplete="off"></div>
@@ -210,6 +216,35 @@ function hideProcessingOverlay(){if(__t){clearInterval(__t);__t=null;}const o=do
 const form = document.getElementById('form');
 const err  = document.getElementById('formErr');
 const showErr = m => { err.textContent=m; err.style.display='block'; window.vitRetranslate&&window.vitRetranslate(); };
+
+/* ---- carrier combobox: Stedi payer type-ahead. Sets a hidden payer_id on select; if the
+   patient just types (no pick), the server resolves the carrier text or routes to staff review. ---- */
+(function(){
+  const PAYER_SEARCH_URL = INSURANCE_URL.replace(/\/insurance-check$/, '/payer-search');
+  const input=document.getElementById('carrierInput'), hidden=document.getElementById('payerId'), list=document.getElementById('carrierList');
+  if(!input||!list) return;
+  let t=null, activeIdx=-1, opts=[];
+  const SPECIALS=[{name:'Self-pay (no insurance)',payer_id:'',special:true}];
+  function close(){ list.hidden=true; list.innerHTML=''; activeIdx=-1; opts=[]; }
+  function pick(o){ input.value=o.name; hidden.value=o.payer_id||''; close(); }
+  function render(payers){
+    opts=(payers||[]).concat(SPECIALS);
+    list.innerHTML=opts.map((o,i)=>`<div class="combo-opt${o.special?' special':''}" data-i="${i}"><span>${o.name}</span>${o.special?'':`<span class="pid">${o.payer_id}</span>`}</div>`).join('');
+    list.hidden=false; activeIdx=-1;
+    [...list.children].forEach(el=>el.addEventListener('mousedown',e=>{e.preventDefault();pick(opts[+el.dataset.i]);}));
+  }
+  async function search(q){
+    try{ const r=await fetch(PAYER_SEARCH_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q})});
+      const j=await r.json().catch(()=>({})); if(input.value.trim()!==q) return; render(j.payers||[]); }catch(_){}
+  }
+  input.addEventListener('input',()=>{ hidden.value=''; const q=input.value.trim(); clearTimeout(t);
+    if(q.length<2){ close(); return; } t=setTimeout(()=>search(q),220); });
+  input.addEventListener('keydown',e=>{ if(list.hidden)return;
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){ e.preventDefault(); activeIdx=(activeIdx+(e.key==='ArrowDown'?1:-1)+opts.length)%opts.length; [...list.children].forEach((el,i)=>el.classList.toggle('active',i===activeIdx)); }
+    else if(e.key==='Enter'&&activeIdx>=0){ e.preventDefault(); pick(opts[activeIdx]); }
+    else if(e.key==='Escape'){ close(); } });
+  input.addEventListener('blur',()=>setTimeout(close,150));
+})();
 
 form.addEventListener('submit', async (e)=>{
   e.preventDefault(); err.style.display='none';
