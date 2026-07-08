@@ -175,10 +175,12 @@
 </section>
 
 <!-- LEAD CAPTURE -->
-<section id="join" class="section py-20 bg-[#16201d] text-white">
-  <div class="max-w-lg mx-auto px-6 md:px-8">
+<section id="join" class="section relative py-20 text-white overflow-hidden bg-[#3f7d24] bg-cover bg-center bg-scroll md:bg-fixed" style="background-image:url('assets/vitality90-join-bg.jpg');">
+  <!-- dark scrim keeps white copy legible over the bright green; bg is fixed on desktop for a parallax reveal, normal-scroll on mobile (iOS ignores fixed) -->
+  <div class="absolute inset-0" style="background:linear-gradient(180deg, rgba(14,38,18,0.66) 0%, rgba(14,38,18,0.52) 55%, rgba(14,38,18,0.66) 100%)"></div>
+  <div class="max-w-lg mx-auto px-6 md:px-8 relative z-10">
     <div class="text-center mb-8">
-      <span class="text-xs font-semibold tracking-[0.18em] text-[#9fcbff] uppercase">Founding cohort</span>
+      <span class="text-xs font-semibold tracking-[0.18em] text-[#e2f7d3] uppercase">Founding cohort</span>
       <h2 class="font-display text-3xl md:text-4xl font-semibold tracking-[-1px] mt-3 mb-3">Start Vitality 90 free.</h2>
       <p class="text-white/80 text-lg leading-relaxed">Leave your details and we will contact you about the next available cohort. No charge and no card required today.</p>
     </div>
@@ -201,7 +203,7 @@
         <p class="text-sm text-[#6b7280]">Thank you for your interest in Vitality 90. Our team will reach out shortly about the next founding cohort.</p>
       </div>
     </div>
-    <p class="text-white/55 text-sm mt-5 text-center">Limited spots per cohort. Submitting this form does not guarantee acceptance into the program.</p>
+    <p class="text-white/70 text-sm mt-5 text-center">Limited spots per cohort. Submitting this form does not guarantee acceptance into the program.</p>
   </div>
 </section>
 
