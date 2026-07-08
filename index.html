@@ -206,6 +206,10 @@
         <span class="w-1.5 h-1.5 rounded-full bg-[#74992F] mt-1.5 flex-shrink-0"></span>
         <span class="text-[13px] leading-tight"><span class="font-semibold">Medicare $50/mo GLP-1 Bridge</span><br><span class="text-[#6b7280]">coming July 1</span></span>
       </a>
+      <a href="vitality90.html" class="flex items-start gap-2 px-5 py-2.5 bg-[#eef4ff] border-b border-[#f1f3f6] hover:bg-[#e2edff]">
+        <span class="w-1.5 h-1.5 rounded-full bg-[#0a6cf5] mt-1.5 flex-shrink-0"></span>
+        <span class="text-[13px] leading-tight"><span class="font-semibold">Vitality 90</span><br><span class="text-[#6b7280]">free 90-day founding cohort</span></span>
+      </a>
       <a href="#physician" class="px-5 py-2.5 hover:bg-[#f5f7fa]">The Physician</a>
       <a href="#programs" class="px-5 py-2.5 hover:bg-[#f5f7fa]">Programs</a>
       <a href="#how" class="px-5 py-2.5 hover:bg-[#f5f7fa]">How it works</a>
@@ -282,7 +286,7 @@
     </p>
     <div class="flex flex-col sm:flex-row gap-4 justify-center mt-10">
       <a href="intake.html" class="px-8 py-4 rounded-3xl bg-[#0a6cf5] text-white font-semibold text-lg hover:bg-[#0856c8] transition-all active:scale-[0.985] shadow-2xl shadow-black/40">Become a Patient</a>
-      <a href="glp1.html" class="px-8 py-4 rounded-3xl bg-[#374151] text-white font-semibold text-lg hover:bg-[#2b3440] transition-all border border-white/15">Take the 60-Sec Quiz</a>
+      <a href="vitality90.html" class="px-8 py-4 rounded-3xl bg-[#374151] text-white font-semibold text-lg hover:bg-[#2b3440] transition-all border border-white/15">Start Vitality 90 · Free</a>
     </div>
     <div class="flex items-center justify-center gap-6 mt-10 text-sm text-[#16201d] font-semibold hero-text-dark">
       <span class="flex items-center gap-2"><span class="text-[#0a6cf5]">✓</span> Real physician oversight</span>
@@ -1137,7 +1141,7 @@ function playVwl(){
     "Everything under one roof: scans, workouts, consults, injections, and education, all at Vitality Academies. The difference between a program you download and a place that has your back.":"Todo bajo un mismo techo: escaneos, entrenamientos, consultas, inyecciones y educación, todo en Vitality Academies. La diferencia entre un programa que descargas y un lugar que te respalda.",
     "Lose the weight.":"Baja de peso.","Keep the science.":"Con la ciencia de tu lado.",
     "Physician-led GLP-1 and hormone optimization, built around your body by a board-certified physician, not a template.":"Optimización de GLP-1 y hormonas dirigida por un médico, diseñada para tu cuerpo por un médico certificado, no por una plantilla.",
-    "Take the 60-Sec Quiz":"Haz el test de 60 segundos","Real physician oversight":"Supervisión médica real","GLP-1 & hormone protocols":"Protocolos de GLP-1 y hormonas",
+    "Start Vitality 90 · Free":"Comienza Vitality 90 · Gratis","Real physician oversight":"Supervisión médica real","GLP-1 & hormone protocols":"Protocolos de GLP-1 y hormonas",
     "Semaglutide & tirzepatide":"Semaglutida y tirzepatida","Obesity-medicine board-certified":"Certificado en medicina de obesidad","Nutrition coaching":"Asesoría nutricional","Someone always answers":"Siempre te contestamos",
     "Your Care Team":"Tu Equipo Médico","Physician-led, and it shows.":"Dirigido por un médico, y se nota.",
     "A board-certified obesity-medicine physician, an experienced nurse practitioner, and a metabolic-health PhD. Real clinicians, not a portal.":"Un médico certificado en medicina de obesidad, un enfermero practicante con experiencia y una PhD en salud metabólica. Clínicos de verdad, no un portal.",
@@ -1221,7 +1225,8 @@ function playVwl(){
   var msgs=[
     {html:'<span class="font-semibold text-[#16201d]">Medicare $50/mo GLP-1 Bridge</span> <span class="text-[#16201d]/55">&middot; coming July 1</span>', href:'guides/semaglutide-medicare-nevada.html'},
     {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Vitality Bloom</span> <span class="text-[#16201d]/55">&middot; new online hair-loss treatment &rarr;</span>', href:'bloom.html'},
-    {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Vitality Total Male</span> <span class="text-[#16201d]/55">&middot; TRT + GLP-1 for men &rarr;</span>', href:'total-male.html'}
+    {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Vitality Total Male</span> <span class="text-[#16201d]/55">&middot; TRT + GLP-1 for men &rarr;</span>', href:'total-male.html'},
+    {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Vitality 90</span> <span class="text-[#16201d]/55">&middot; free 90-day founding cohort &rarr;</span>', href:'vitality90.html'}
   ];
   var reel=document.createElement('div'); reel.id='navSlotReel'; reel.style.willChange='transform';
   for(var i=0;i<COPIES;i++){ var m=msgs[i%msgs.length]; var a=document.createElement('a'); a.href=m.href;

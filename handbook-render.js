@@ -102,7 +102,7 @@
     var ai = hb.ai_analysis; if (!ai || typeof ai !== "object") return "";
     var col = function (t, items, tone) { if (!arr(items).length) return ""; return '<div><div class="text-[11px] uppercase tracking-wide font-semibold mb-1" style="color:' + tone + '">' + esc(t) + '</div><ul class="text-sm text-[#4b5563] space-y-1">' + bullets(items) + "</ul></div>"; };
     var txt = function (t, v) { return v ? "<div>" + sub(t) + '<p class="text-sm text-[#4b5563]">' + esc(v) + "</p></div>" : ""; };
-    return card(head("Clinical AI analysis", "What your composition is telling us", "brain") +
+    return card(head("Your body composition analysis", "What your InBody scan is telling us, read by your Vitality Medical Team", "brain") +
       '<div class="grid md:grid-cols-3 gap-4 mb-2">' + col("Strengths", ai.strengths, "#10b981") + col("Risk factors", ai.risk_factors, "#ef4444") + col("Areas for improvement", ai.areas_for_improvement, "#f59e0b") + "</div>" +
       '<div class="grid md:grid-cols-2 gap-x-6 gap-y-1 mt-2">' + txt("Metabolic observations", ai.metabolic_observations) + txt("Body composition analysis", ai.body_composition_analysis) + txt("Lifestyle analysis", ai.lifestyle_analysis) + txt("Exercise readiness", ai.exercise_readiness) + txt("Nutrition readiness", ai.nutrition_readiness) + "</div>");
   }
