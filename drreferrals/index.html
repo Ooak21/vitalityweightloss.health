@@ -492,7 +492,43 @@
 <div class="footer-tag">Physician Led &nbsp;•&nbsp; Patient Focused &nbsp;•&nbsp; Results Driven</div>
 
 <script>
-  /* ==========================================================================
-     ===> WEB DEV: WIRE SUBMIT HERE
-     --------------------------------------------------------------------------
-     This handler curre
+/* Physician referral submit -> Convex (HIPAA/BAA-covered). PHI is POSTed to the backend and stored
+   in Convex; it is NEVER placed in the URL (the old page did a native GET that leaked patient PHI). */
+(function(){
+  var ENDPOINT = 'https://quixotic-cat-492.convex.site/referral-intake';
+  var form = document.getElementById('referralForm');
+  if(!form) return;
+  var formHead = document.querySelector('.form-head');
+  var confirmEl = document.getElementById('confirm');
+  var btn = form.querySelector('button[type="submit"]');
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    if(!form.checkValidity()){ form.reportValidity(); return; }
+    var body = {};
+    new FormData(form).forEach(function(v,k){
+      if(k === 'comorbidities'){ (body.comorbidities = body.comorbidities || []).push(v); }
+      else { body[k] = v; }
+    });
+    if(btn){ btn.disabled = true; btn.textContent = 'Submitting...'; }
+    fetch(ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
+      .then(function(r){ return r.json().then(function(j){ return { ok:r.ok, j:j }; }, function(){ return { ok:r.ok, j:{} }; }); })
+      .then(function(res){
+        if(res.ok && res.j && res.j.ok){
+          if(form) form.style.display = 'none';
+          if(formHead) formHead.style.display = 'none';
+          if(confirmEl) confirmEl.style.display = 'block';
+          window.scrollTo({ top:0, behavior:'smooth' });
+        } else {
+          if(btn){ btn.disabled = false; btn.textContent = 'Submit Referral'; }
+          alert((res.j && res.j.error) || 'Something went wrong submitting the referral. Please try again, or fax securely to 702-988-8818.');
+        }
+      })
+      .catch(function(){
+        if(btn){ btn.disabled = false; btn.textContent = 'Submit Referral'; }
+        alert('Network error. Please try again, or fax securely to 702-988-8818.');
+      });
+  });
+})();
+</script>
+</body>
+</html>
