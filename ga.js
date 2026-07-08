@@ -9,7 +9,7 @@
  */
 (function () {
   "use strict";
-  var GA4_MEASUREMENT_ID = "G-XXXXXXXXXX"; // <-- paste the real GA4 Measurement ID here
+  var GA4_MEASUREMENT_ID = "G-HWCGE6Q1LS"; // Vitality Weight Loss GA4 property (live 2026-07-07)
 
   var LIVE = /^G-[A-Z0-9]{6,}$/.test(GA4_MEASUREMENT_ID);
 
