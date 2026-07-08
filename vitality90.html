@@ -102,27 +102,27 @@
 </script>
 
 <!-- HERO -->
-<!-- BG: swap this gradient for a hero image (set background-image on #v90hero) -->
-<header id="v90hero" class="relative bg-[#16201d] text-white overflow-hidden pt-20" style="background:linear-gradient(135deg, #0d1a2d 0%, #16201d 45%, #1a2f4a 100%);">
-  <div class="absolute inset-0 opacity-[0.22]" style="background:radial-gradient(60% 80% at 80% 0%, #0a6cf5 0%, transparent 60%)"></div>
-  <div class="absolute inset-0 opacity-[0.12]" style="background:radial-gradient(50% 50% at 20% 80%, #10b981 0%, transparent 55%)"></div>
+<!-- BG: hero image lives on #v90hero. To swap, replace assets/vitality90-hero.jpg (keep it wide + light on the left) or change the url below. -->
+<header id="v90hero" class="relative overflow-hidden pt-20 bg-[#dfeef8]" style="background-image:url('assets/vitality90-hero.jpg'); background-size:cover; background-position:82% center;">
+  <!-- soft white scrim on the left so the dark headline stays crisp over the photo -->
+  <div class="absolute inset-0" style="background:linear-gradient(100deg, rgba(255,255,255,0.93) 0%, rgba(255,255,255,0.74) 33%, rgba(255,255,255,0.2) 56%, rgba(255,255,255,0) 72%)"></div>
   <div class="max-w-5xl mx-auto px-6 md:px-8 py-24 md:py-32 relative z-10">
-    <span class="text-xs font-semibold tracking-[0.2em] uppercase text-[#9fcbff]">Founding cohort &middot; Dr. Peter DeBry, MD</span>
-    <h1 class="font-display text-5xl md:text-7xl font-semibold tracking-[-2px] leading-[0.98] mt-4 mb-6 hero-text">
+    <span class="text-xs font-semibold tracking-[0.2em] uppercase text-[#0a6cf5]">Founding cohort &middot; Dr. Peter DeBry, MD</span>
+    <h1 class="font-display text-5xl md:text-7xl font-semibold tracking-[-2px] leading-[0.98] mt-4 mb-6 text-[#16201d]">
       Vitality 90.<br>
-      <span class="text-[#9fcbff]">90 days. Physician-led. Free to start.</span>
+      <span class="text-[#0a6cf5]">90 days. Physician-led. Free to start.</span>
     </h1>
-    <p class="text-lg md:text-xl text-white/85 max-w-2xl leading-relaxed">
+    <p class="text-lg md:text-xl text-[#334155] font-medium max-w-md sm:max-w-lg leading-relaxed">
       A founding-cohort medical weight-loss program built by Dr. Peter DeBry. Start free, no card, no charge today. Limited spots per cohort.
     </p>
     <div class="flex flex-col sm:flex-row gap-4 mt-10">
-      <a href="#join" id="heroCta" class="px-8 py-4 rounded-3xl bg-[#0a6cf5] text-white font-semibold text-lg hover:bg-[#0856c8] transition text-center">Join the founding cohort &rarr;</a>
-      <a href="#how" class="px-8 py-4 rounded-3xl bg-white/10 text-white font-semibold text-lg hover:bg-white/15 transition border border-white/15 text-center">What you get</a>
+      <a href="#join" id="heroCta" class="px-8 py-4 rounded-3xl bg-[#0a6cf5] text-white font-semibold text-lg hover:bg-[#0856c8] transition text-center shadow-xl shadow-[#0a6cf5]/25">Join the founding cohort &rarr;</a>
+      <a href="#how" class="px-8 py-4 rounded-3xl bg-white text-[#16201d] font-semibold text-lg hover:bg-[#f1f3f7] transition border border-[#e6e9ee] text-center shadow-sm">What you get</a>
     </div>
-    <div class="flex flex-wrap items-center gap-x-6 gap-y-2 mt-9 text-sm text-white/75">
-      <span>&#10003; Free to enroll, no card required</span>
-      <span>&#10003; Physician oversight by Dr. DeBry</span>
-      <span>&#10003; Limited founding-cohort spots</span>
+    <div class="flex flex-wrap items-center gap-x-6 gap-y-2 mt-9 text-sm text-[#334155] font-semibold">
+      <span class="inline-flex items-center gap-1.5"><span class="text-[#0a6cf5]">&#10003;</span> Free to enroll, no card required</span>
+      <span class="inline-flex items-center gap-1.5"><span class="text-[#0a6cf5]">&#10003;</span> Physician oversight by Dr. DeBry</span>
+      <span class="inline-flex items-center gap-1.5"><span class="text-[#0a6cf5]">&#10003;</span> Limited founding-cohort spots</span>
     </div>
   </div>
 </header>
