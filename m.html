@@ -1,247 +1,302 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <link rel="icon" type="image/png" href="assets/favicon.png">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>My Vitality Plan</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>Vitality Thrive</title>
 <meta name="robots" content="noindex">
+<!-- PWA: installable home-screen app -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0e1512">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Vitality Thrive">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js" defer></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  body{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:#f7f8fa;color:#16201d;overscroll-behavior:none}
+  /* THEME TOKENS — dark is default (matches the marketing); light toggle persists. */
+  :root, [data-theme="dark"]{
+    --bg:#0e1512; --surface:#18211d; --surface2:#212b26; --border:#2b3a33;
+    --text:#eef2f0; --muted:#93a49c; --accent:#3b82f6; --accent-soft:rgba(59,130,246,.16);
+    --green:#7bb23f; --tile-glow:rgba(123,178,63,.10);
+  }
+  [data-theme="light"]{
+    --bg:#f7f8fa; --surface:#ffffff; --surface2:#f1f3f7; --border:#e6e9ee;
+    --text:#16201d; --muted:#6b7280; --accent:#0a6cf5; --accent-soft:rgba(10,108,245,.10);
+    --green:#5f9127; --tile-glow:rgba(10,108,245,.05);
+  }
+  body{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:var(--bg);color:var(--text);overscroll-behavior:none;transition:background .25s,color .25s}
   .font-display{font-family:'Montserrat','Inter',sans-serif}
-  .card{background:#fff;border:1px solid #e6e9ee;border-radius:18px}
-  .field{width:100%;background:#fff;border:1px solid #e6e9ee;border-radius:12px;padding:.7rem .9rem;font-size:1rem}
-  .field:focus{outline:none;border-color:#0a6cf5;box-shadow:0 0 0 3px rgba(10,108,245,.12)}
-  .tabbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:.5rem 0;font-size:.7rem;font-weight:600;color:#9aa0ab}
-  .tabbtn.on{color:#0a6cf5}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:18px}
+  .surf2{background:var(--surface2)}
+  .bd{border-color:var(--border)!important}
+  .muted{color:var(--muted)!important}
+  .accent{color:var(--accent)!important}
+  .btnp{background:var(--accent);color:#fff}
+  .field{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.7rem .9rem;font-size:1rem;color:var(--text)}
+  .field:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
   .seg{font-variant-numeric:tabular-nums}
-  #reader{border-radius:16px;overflow:hidden;position:relative;min-height:240px;background:#000}#reader video,#reader canvas{width:100%!important;height:auto!important;display:block}#reader canvas.drawingBuffer{position:absolute;top:0;left:0}
+  /* app tile (the apex grid) */
+  .tile{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;aspect-ratio:1/1;overflow:hidden;transition:transform .12s,border-color .2s;text-align:left}
+  .tile:active{transform:scale(.97)}
+  .tile .ic{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--accent-soft)}
+  .tile .ic svg{width:24px;height:24px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  #reader{border-radius:16px;overflow:hidden;position:relative;min-height:240px;background:#000}
+  #reader video,#reader canvas{width:100%!important;height:auto!important;display:block}
 </style>
-  <script src="/ga.js" defer></script>
+<script src="/ga.js" defer></script>
 </head>
-<body class="min-h-screen pb-20">
+<body class="min-h-screen pb-8">
 
-<header class="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-[#e6e9ee]">
+<header class="sticky top-0 z-20 backdrop-blur border-b bd" style="background:color-mix(in srgb, var(--bg) 86%, transparent)">
   <div class="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
-    <div class="flex items-center gap-2"><img src="assets/logo-icon.png" class="h-6 w-auto" alt="Vitality"><span class="font-display font-semibold">My Plan</span></div>
-    <span id="pts" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#eaf2ff] text-[#0a3d7a]">0 pts today</span>
+    <button id="brand" class="flex items-center gap-2">
+      <img src="assets/logo-icon.png" class="h-7 w-auto" alt="Vitality">
+      <span class="font-display font-bold tracking-tight text-[15px]">VITALITY <span class="accent">THRIVE</span></span>
+    </button>
+    <div class="flex items-center gap-2">
+      <span id="pts" class="text-xs font-semibold px-2.5 py-1 rounded-full" style="background:var(--accent-soft);color:var(--accent)">0 pts</span>
+      <button id="themeBtn" aria-label="Toggle theme" class="w-9 h-9 rounded-full flex items-center justify-center bd border" style="background:var(--surface)"></button>
+    </div>
   </div>
 </header>
 
 <main class="max-w-md mx-auto px-4 py-4">
-  <div id="boot" class="text-center text-[#9aa0ab] text-sm py-24">Loading your plan…</div>
-  <div id="view" class="hidden space-y-4"></div>
+  <div id="boot" class="text-center muted text-sm py-24">Loading…</div>
+  <div id="view" class="hidden"></div>
 </main>
-
-<nav id="tabs" class="hidden fixed bottom-0 inset-x-0 z-20 bg-white border-t border-[#e6e9ee]">
-  <div class="max-w-md mx-auto flex">
-    <button class="tabbtn on" data-t="today"><span class="text-lg">🍽️</span>Today</button>
-    <button class="tabbtn" data-t="shop"><span class="text-lg">🛒</span>Shop</button>
-    <button class="tabbtn" data-t="scan"><span class="text-lg">📷</span>Scan</button>
-  </div>
-</nav>
 
 <script>
 const SB='https://jtifhcvbgxqwlywugvjv.supabase.co', ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWZoY3ZiZ3hxd2x5d3Vndmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDc5NTgsImV4cCI6MjA4ODA4Mzk1OH0.UfRVLuvM8_HPvKXUEDXb0cxR50znv16L5Tf99AnSc7g';
 const $=(id)=>document.getElementById(id);
 const esc=(s)=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const TOKEN=(location.hash.match(/t=([a-z0-9]+)/i)||[])[1]||null;
-let DATA=null, TAB='today', LIVE_ON=false, stream=null, rafId=null, videoEl=null, detector=null;
-try{ if('BarcodeDetector' in window) detector=new BarcodeDetector(); }catch(e){ detector=null; }
+// token: from the QR (#t=...) OR a persisted one, so an installed icon reopens the last plan.
+let TOKEN=(location.hash.match(/t=([a-z0-9]+)/i)||[])[1]||null;
+if(TOKEN){ try{localStorage.setItem('vit_tok',TOKEN);}catch(e){} } else { try{TOKEN=localStorage.getItem('vit_tok');}catch(e){} }
+let DATA=null, VIEW='home';
 
-// Convex cutover flag (companion = token-based, no login). OFF = legacy edge fn.
-const USE_CONVEX = true;
-const CONVEX_URL = 'https://quixotic-cat-492.convex.cloud';
-let _convex = null;
-async function getConvex(){ if(!_convex){ const { ConvexHttpClient } = await import('https://esm.sh/convex@1.41.0/browser'); _convex = new ConvexHttpClient(CONVEX_URL); } return _convex; }
+/* ---------- THEME (dark default, light toggle, persisted) ---------- */
+const SUN='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+const MOON='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+function applyTheme(t){ document.documentElement.dataset.theme=t; $('themeBtn').innerHTML=(t==='dark')?SUN:MOON; document.querySelector('meta[name=theme-color]').setAttribute('content', t==='dark'?'#0e1512':'#f7f8fa'); try{localStorage.setItem('vit_theme',t);}catch(e){} }
+applyTheme((()=>{ try{return localStorage.getItem('vit_theme')||'dark';}catch(e){return 'dark';} })());
+$('themeBtn').onclick=()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
 
+/* ---------- DATA API (token-based; Convex primary, edge-fn fallback) ---------- */
+const CONVEX_URL='https://quixotic-cat-492.convex.cloud';
+let _convex=null;
+async function getConvex(){ if(!_convex){ const { ConvexHttpClient } = await import('https://esm.sh/convex@1.41.0/browser'); _convex=new ConvexHttpClient(CONVEX_URL); } return _convex; }
 async function api(fn, payload){
-  const p = payload || {};
-  if (USE_CONVEX) {
-    const c = await getConvex();
-    if (p.action === 'load')    return await c.query('portal:loadByToken', { token: TOKEN });
-    if (p.action === 'add_log') return await c.mutation('portal:addLogByToken', { token: TOKEN, kind:p.kind, value_num:p.value_num, unit:p.unit, body:p.body });
-    if (fn === 'vit-menu-scan') {
-      const site = CONVEX_URL.replace('.convex.cloud','.convex.site');
-      const rr = await fetch(site+'/menu-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN,image:p.image,restaurant:p.restaurant})});
-      return await rr.json();
-    }
-  }
-  const r=await fetch(SB+'/functions/v1/'+fn,{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON},body:JSON.stringify({token:TOKEN,...payload})});
-  return await r.json();
+  const p=payload||{};
+  const c=await getConvex();
+  if(p.action==='load')    return await c.query('portal:loadByToken', { token:TOKEN });
+  if(p.action==='add_log') return await c.mutation('portal:addLogByToken', { token:TOKEN, kind:p.kind, value_num:p.value_num, unit:p.unit, body:p.body });
+  if(fn==='vit-menu-scan'){ const site=CONVEX_URL.replace('.convex.cloud','.convex.site'); const rr=await fetch(site+'/menu-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN,image:p.image,restaurant:p.restaurant})}); return await rr.json(); }
+  return {};
 }
+async function log(kind, extra){ try{ await api({action:'add_log',kind,...(extra||{})}); DATA=await api({action:'load'}); refreshPts(); }catch(e){} }
 function hb(){ return (DATA&&DATA.plan&&DATA.plan.handbook)||{}; }
 function todayName(){ return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()]; }
+
+/* ---------- GAMIFY (points/streak) — future: merge wearable data here ---------- */
 function gamify(){
-  const PTS={food:10,weigh_in:5,journal:5,activity:15,scan:10,module:25,nextstep:20};
-  const logs=DATA.logs||[], ib=DATA.inbody||[], plan=DATA.plan, h=plan&&plan.handbook;
-  const dk=(iso)=>new Date(iso).toDateString();
+  const PTS={food:10,weigh_in:5,journal:5,activity:15,scan:10,module:25,nextstep:20,injection:15,measurement:10,checkin:15};
+  const logs=(DATA&&DATA.logs)||[]; const dk=(iso)=>new Date(iso).toDateString();
   let points=0; const dates=new Set();
   logs.forEach(l=>{ points+=PTS[l.kind]||5; dates.add(dk(l.logged_at)); });
   let streak=0, cur=new Date(); if(!dates.has(cur.toDateString())) cur.setDate(cur.getDate()-1);
   while(dates.has(cur.toDateString())){ streak++; cur.setDate(cur.getDate()-1); }
-  let week=0; for(let i=0;i<7;i++){ const d=new Date(); d.setDate(d.getDate()-i); if(dates.has(d.toDateString())) week++; }
-  const start=(h&&h.summary&&h.summary.weight)||(ib[0]&&+ib[0].weight_lb)||null;
-  const goal=(plan&&plan.goal_weight)||(h&&h.summary&&h.summary.goal_weight)||null;
-  const wl=logs.filter(l=>l.kind==='weigh_in'&&l.value_num!=null);
-  const cw=wl.length?+wl[0].value_num:(ib.length?+ib[ib.length-1].weight_lb:start);
-  const lost=(start!=null&&cw!=null)?(start-cw):0, n=logs.length;
-  const B=(i,l,e)=>({icon:i,label:l,earned:!!e});
-  const badges=[B('👣','First step',n>=1),B('⚖️','Weigh-in',logs.some(l=>l.kind==='weigh_in')),B('🍽️','Food',logs.some(l=>l.kind==='food')),B('🔥','3-day',streak>=3),B('🗓️','Week',streak>=7),B('📉','Down 5',lost>=5),B('💪','Down 10',lost>=10),B('⭐','50 logs',n>=50),B('🚀','Setup',new Set(logs.filter(l=>l.kind==='nextstep').map(l=>(l.body||'').split(':')[0])).size>=1),B('🎉','All set',new Set(logs.filter(l=>l.kind==='nextstep').map(l=>(l.body||'').split(':')[0])).size>=5),B('🎓','PhD',new Set(logs.filter(l=>l.kind==='module').map(l=>(l.body||'').split(':')[0])).size>=3),B('🏆','Goal',goal!=null&&cw!=null&&cw<=goal)];
-  return {points,streak,week,badges,earned:badges.filter(b=>b.earned).length};
+  return {points,streak};
 }
 function refreshPts(){ const g=gamify(); $('pts').textContent='🔥'+g.streak+' · '+g.points+' pts'; }
+function logsOf(kind){ return ((DATA&&DATA.logs)||[]).filter(l=>l.kind===kind); }
 
-// ---------- NEXT STEPS (onboarding, gamified) ----------
-const NEXTSTEPS=[
- {slug:'vision',icon:'🎯',title:'Vision board',detail:'Make a vision board with your "why" in pictures and words, and hang it where you see it daily. Snap a photo and email it to success@vitalityweightloss.health.'},
- {slug:'object',icon:'🏋️',title:'Goal object',detail:'Pick an object that equals your goal weight, decorate it, keep it on your bed, and feel it every day. Email a photo to success@vitalityweightloss.health.'},
- {slug:'labs',icon:'🧪',title:'Lab work',detail:'Get your required labs (CMP, A1C, lipid, TSH, CBC, pregnancy, lipase and amylase, fasting insulin). Email results to success@vitalityweightloss.health. Recent labs from another doctor work too.'},
- {slug:'gear',icon:'👟',title:'Exercise gear',detail:'Get functional gear ready: good shoes, a swimsuit, sweatpants, a tee. It does not need to be fancy.'},
- {slug:'consent',icon:'✍️',title:'Comms acknowledgment',detail:'We send non-urgent updates by email and text, which may not be fully secure. For anything urgent, always call us or seek emergency care. Tap complete to acknowledge.'},
+/* ---------- ROUTER ---------- */
+const TILES=[
+  {id:'scan',   label:'Menu Scanner', sub:'Eat smarter on GLP-1', icon:'<path d="M3 9V5a2 2 0 0 1 2-2h4M15 3h4a2 2 0 0 1 2 2v4M21 15v4a2 2 0 0 1-2 2h-4M9 21H5a2 2 0 0 1-2-2v-4"/><circle cx="12" cy="12" r="3"/>'},
+  {id:'meal',   label:'Meal Tracker', sub:'Track meals, build habits', icon:'<path d="M3 2v7c0 1.1.9 2 2 2h0a2 2 0 0 0 2-2V2M5 2v20M11 2v20M11 8s4-1 4-4-4-2-4 2 4 4 4 4"/>'},
+  {id:'workout',label:'Workout Tracker', sub:'Stay consistent', icon:'<path d="M6.5 6.5 17.5 17.5M4 8l2-2M8 4l2 2M20 16l-2 2M16 20l-2-2M2 12l2 2M20 8l2 2"/>'},
+  {id:'inject', label:'Injection Tracker', sub:'Stay on schedule', icon:'<path d="M18 2l4 4M17 3l4 4M20 5 8.5 16.5 3 21l.5-5.5L15 4M12 8l4 4"/>'},
+  {id:'phd',    label:'Your PhD', sub:'Learn. Understand. Transform.', icon:'<path d="M12 3a4 4 0 0 0-4 4v1a3 3 0 0 0 0 6 3 3 0 0 0 4 3 3 3 0 0 0 4-3 3 3 0 0 0 0-6V7a4 4 0 0 0-4-4z"/>'},
+  {id:'ibt',    label:'IBT Curriculum', sub:'Behavior change, real results', icon:'<path d="M22 10 12 5 2 10l10 5 10-5zM6 12v5c0 1 2.7 3 6 3s6-2 6-3v-5"/>'},
 ];
-function doneNext(){ const s=new Set(); (DATA.logs||[]).filter(l=>l.kind==='nextstep').forEach(l=>{const sl=(l.body||'').split(':')[0].trim(); if(sl)s.add(sl);}); return s; }
-async function completeStep(slug){ const t=NEXTSTEPS.find(s=>s.slug===slug); await api({action:'add_log',kind:'nextstep',body:`${slug}: ${t?t.title:slug}`}); DATA=await api({action:'load'}); viewToday.stepOpen=null; render(); }
+function go(v){ VIEW=v; render(); window.scrollTo(0,0); }
+function backBar(title){ return `<button onclick="go('home')" class="flex items-center gap-1.5 mb-3 text-sm font-semibold muted"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg> ${esc(title)}</button>`; }
+function needPlan(msg){ return `<div class="card p-6 text-center"><div class="muted text-sm">${esc(msg||'Connect your plan by scanning the QR code in your Vitality portal.')}</div></div>`; }
 
-// ---------- TODAY ----------
-function viewToday(){
+/* ---------- HOME (the apex tile grid — matches the ad) ---------- */
+function viewHome(){
+  const g=gamify();
+  const first=(DATA&&DATA.patient&&DATA.patient.first_name)||null;
+  $('view').innerHTML=`
+    <div class="mb-4">
+      <div class="text-2xl font-display font-bold tracking-tight">Welcome${first?', '+esc(first):''}.</div>
+      <div class="muted text-sm mt-0.5">Your complete health partner.</div>
+    </div>
+    <div class="grid grid-cols-3 gap-2 mb-4">
+      <div class="card p-3 text-center"><div class="font-display text-xl font-bold">${g.streak}🔥</div><div class="text-[10px] muted font-semibold uppercase tracking-wide">streak</div></div>
+      <div class="card p-3 text-center"><div class="font-display text-xl font-bold seg">${g.points}</div><div class="text-[10px] muted font-semibold uppercase tracking-wide">points</div></div>
+      <div class="card p-3 text-center"><div class="font-display text-xl font-bold seg">${logsOf('injection').length}</div><div class="text-[10px] muted font-semibold uppercase tracking-wide">doses</div></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      ${TILES.map(t=>`<button class="tile" onclick="go('${t.id}')">
+        <div class="ic"><svg viewBox="0 0 24 24">${t.icon}</svg></div>
+        <div><div class="font-display font-bold leading-tight mt-3">${esc(t.label)}</div><div class="text-[11px] muted mt-0.5 leading-snug">${esc(t.sub)}</div></div>
+      </button>`).join('')}
+    </div>
+    ${!DATA?`<div class="mt-4">${needPlan('Sign in from your Vitality portal QR to load your plan. You can still explore the app.')}</div>`:''}`;
+}
+
+/* ---------- MEAL TRACKER (plan + today + intake + shopping) ---------- */
+function viewMeal(){
+  if(!DATA){ $('view').innerHTML=backBar('Meal Tracker')+needPlan(); return; }
   const h=hb(), meals=h.meals||[], n=h.nutrition||{};
   let day=meals.find(m=>m.day===todayName())||meals[0];
   const t=new Date().toDateString();
-  const kcalToday=(DATA.logs||[]).filter(l=>l.kind==='food'&&new Date(l.logged_at).toDateString()===t).reduce((s,l)=>s+(+l.value_num||0),0);
+  const kcalToday=logsOf('food').filter(l=>new Date(l.logged_at).toDateString()===t).reduce((s,l)=>s+(+l.value_num||0),0);
   const target=n.calories||null;
-  const dayChips=meals.map(m=>`<button data-day="${esc(m.day)}" class="dc px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${m.day===(day&&day.day)?'bg-[#0a6cf5] text-white':'bg-white border border-[#e6e9ee] text-[#6b7280]'}">${esc(m.day.slice(0,3))}</button>`).join('');
-  const meal=(m)=>`<div class="rounded-xl overflow-hidden border border-[#eef0f4]">${m.image?`<img src="${esc(m.image)}" alt="" loading="lazy" class="w-full h-28 object-cover">`:''}<div class="p-3"><div class="text-[11px] uppercase tracking-wide text-[#0a6cf5] font-semibold">${esc(m.meal)}</div><div class="text-sm font-semibold">${esc(m.name)}</div><div class="text-[11px] text-[#9aa0ab] seg">${m.kcal} kcal · ${m.protein}g protein</div><div class="text-xs text-[#6b7280] mt-.5">${esc(m.ingredients)}</div></div></div>`;
-  const g=gamify();
-  const rstrip=`<div class="card p-3">
-    <div class="grid grid-cols-3 gap-2 text-center mb-2">
-      <div><div class="font-display text-lg font-semibold">${g.streak} 🔥</div><div class="text-[10px] text-[#9aa0ab] font-semibold uppercase tracking-wide">streak</div></div>
-      <div><div class="font-display text-lg font-semibold seg">${g.points}</div><div class="text-[10px] text-[#9aa0ab] font-semibold uppercase tracking-wide">points</div></div>
-      <div><div class="font-display text-lg font-semibold seg">${g.week}/7</div><div class="text-[10px] text-[#9aa0ab] font-semibold uppercase tracking-wide">this week</div></div>
+  const meal=(m)=>`<div class="rounded-xl overflow-hidden border bd">${m.image?`<img src="${esc(m.image)}" alt="" loading="lazy" class="w-full h-28 object-cover">`:''}<div class="p-3"><div class="text-[11px] uppercase tracking-wide accent font-semibold">${esc(m.meal)}</div><div class="text-sm font-semibold">${esc(m.name)}</div><div class="text-[11px] muted seg">${m.kcal} kcal · ${m.protein}g protein</div><div class="text-xs muted mt-0.5">${esc(m.ingredients)}</div></div></div>`;
+  const chips=meals.map(m=>`<button data-day="${esc(m.day)}" class="dc px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${m.day===(day&&day.day)?'btnp':'card muted'}">${esc(m.day.slice(0,3))}</button>`).join('');
+  const shop=(h.shopping||[]);
+  $('view').innerHTML=backBar('Meal Tracker')+`
+    ${target?`<div class="card p-3 mb-3"><div class="flex justify-between text-xs mb-1"><span class="muted font-semibold">Today's intake</span><span class="seg ${kcalToday>target?'text-rose-500':''}">${kcalToday} / ${target} kcal</span></div><div class="h-1.5 rounded-full surf2 overflow-hidden"><div class="h-full" style="width:${Math.min(100,target?kcalToday/target*100:0).toFixed(0)}%;background:${kcalToday>target?'#f43f5e':'var(--accent)'}"></div></div></div>`:''}
+    <div class="flex gap-1.5 overflow-x-auto pb-2">${chips}</div>
+    <div id="dayCard" class="card p-4 mb-3"><div class="font-display font-semibold mb-2">${day?esc(day.day):''} <span class="text-xs muted font-normal seg">${day?day.kcal+' kcal · '+day.protein+'g protein':''}</span></div><div class="space-y-3">${day?(day.items||[]).map(meal).join(''):'No plan loaded yet.'}</div></div>
+    ${shop.length?`<div class="card p-4"><div class="font-display font-semibold mb-2">🛒 Shopping list</div><div class="space-y-1">${shop.map((x,i)=>`<label class="flex items-center gap-3 py-1.5 border-b bd last:border-0"><input type="checkbox" data-i="${i}" class="ck w-5 h-5 rounded accent-[#0a6cf5]"><span class="flex-1 text-sm ckl">${esc(x.item)}</span><span class="text-xs muted">${esc(x.qty||'')}</span></label>`).join('')}</div></div>`:''}`;
+  $('view').querySelectorAll('.dc').forEach(b=>b.onclick=()=>{ day=meals.find(m=>m.day===b.dataset.day); viewMeal(); });
+  const shk='vitshop_'+((DATA.patient&&DATA.patient.id)||'x'); let ch={}; try{ch=JSON.parse(localStorage.getItem(shk)||'{}');}catch(e){}
+  $('view').querySelectorAll('.ck').forEach(c=>{ c.checked=!!ch[c.dataset.i]; if(c.checked)c.nextElementSibling.classList.add('line-through','muted'); c.onchange=()=>{ ch[c.dataset.i]=c.checked; localStorage.setItem(shk,JSON.stringify(ch)); c.nextElementSibling.classList.toggle('line-through',c.checked); c.nextElementSibling.classList.toggle('muted',c.checked); }; });
+}
+
+/* ---------- WORKOUT TRACKER ---------- */
+function viewWorkout(){
+  const h=hb(), w=h.workouts||{}; const days=Array.isArray(w)?w:(w.days||w.week||[]);
+  const recent=logsOf('activity').slice(0,8);
+  $('view').innerHTML=backBar('Workout Tracker')+`
+    <div class="card p-4 mb-3">
+      <div class="font-display font-semibold mb-1">Log a workout</div>
+      <div class="muted text-xs mb-3">Every session counts. +15 points.</div>
+      <input id="wkNote" class="field mb-2" placeholder="What did you do? (e.g. 30 min walk, strength)">
+      <button id="wkLog" class="w-full py-3 rounded-xl btnp font-semibold">Log workout</button>
     </div>
-    <div class="flex gap-2 overflow-x-auto pt-1 border-t border-[#f1f3f7]">${g.badges.map(b=>`<div class="shrink-0 text-center ${b.earned?'':'opacity-30'}" title="${esc(b.label)}"><div class="text-xl leading-none">${b.icon}</div></div>`).join('')}</div>
-  </div>`;
-  const _nd=doneNext(), _nsOpen=viewToday.stepOpen;
-  const nsCard = _nd.size>=NEXTSTEPS.length ? '' : `<div class="card p-3">
-    <div class="flex items-center justify-between mb-2"><div class="text-sm font-semibold">🚀 Your Next Steps</div><span class="text-[11px] text-[#9aa0ab]">${_nd.size}/${NEXTSTEPS.length}</span></div>
-    <div class="flex gap-1.5 mb-2">${NEXTSTEPS.map(s=>{const d=_nd.has(s.slug);return `<div class="w-8 h-8 rounded-full flex items-center justify-center text-base border ${d?'bg-[#eafaf0] border-[#0a7a3d]':'bg-[#f7f8fa] border-dashed border-[#cdd5df] opacity-50 grayscale'}">${s.icon}</div>`;}).join('')}</div>
-    <div class="space-y-1.5">${NEXTSTEPS.map(s=>{const d=_nd.has(s.slug),op=_nsOpen===s.slug;return `<div class="rounded-xl border ${d?'bg-[#eafaf0] border-[#cdeedd]':'border-[#eef0f4]'}"><button data-ns="${s.slug}" class="w-full flex items-center gap-2 p-2.5 text-left"><span class="text-lg">${s.icon}</span><span class="text-sm font-semibold flex-1">${esc(s.title)}</span><span class="text-[11px] ${d?'text-[#0a7a3d] font-semibold':'text-[#9aa0ab]'}">${d?'✓':(op?'▲':'▾')}</span></button>${(op&&!d)?`<div class="px-2.5 pb-2.5"><p class="text-xs text-[#6b7280] leading-relaxed mb-2">${esc(s.detail)}</p><button data-nsdone="${s.slug}" class="w-full py-2 rounded-lg bg-[#0a6cf5] text-white text-sm font-semibold">Mark complete · +20</button></div>`:''}</div>`;}).join('')}</div>
-  </div>`;
-  $('view').innerHTML=`
-    ${rstrip}
-    ${nsCard}
-    ${target?`<div class="card p-3"><div class="flex justify-between text-xs mb-1"><span class="text-[#6b7280] font-semibold">Today's intake</span><span class="seg ${kcalToday>target?'text-rose-600':'text-[#16201d]'}">${kcalToday} / ${target} kcal</span></div><div class="h-1.5 rounded-full bg-[#eef0f4] overflow-hidden"><div class="h-full ${kcalToday>target?'bg-rose-400':'bg-[#0a6cf5]'}" style="width:${Math.min(100,target?kcalToday/target*100:0).toFixed(0)}%"></div></div></div>`:''}
-    <div class="flex gap-1.5 overflow-x-auto pb-1">${dayChips}</div>
-    <div class="card p-4"><div class="font-display font-semibold mb-2">${day?esc(day.day):''} <span class="text-xs text-[#9aa0ab] font-normal seg">${day?day.kcal+' kcal · '+day.protein+'g protein':''}</span></div><div class="space-y-3">${day?(day.items||[]).map(meal).join(''):'No plan loaded.'}</div></div>`;
-  $('view').querySelectorAll('.dc').forEach(b=>b.onclick=()=>{ day=meals.find(m=>m.day===b.dataset.day); renderDay(day); });
-  $('view').querySelectorAll('[data-ns]').forEach(b=>b.onclick=()=>{ viewToday.stepOpen = viewToday.stepOpen===b.dataset.ns?null:b.dataset.ns; viewToday(); });
-  $('view').querySelectorAll('[data-nsdone]').forEach(b=>b.onclick=()=>completeStep(b.dataset.nsdone));
-  function renderDay(d){ viewToday.current=d; viewToday(); } // simple re-render on chip
+    ${days&&days.length?`<div class="card p-4 mb-3"><div class="font-display font-semibold mb-2">Your plan</div><div class="space-y-2">${days.map(d=>`<div class="rounded-xl surf2 p-3"><div class="text-sm font-semibold">${esc(d.day||d.title||'Session')}</div><div class="text-xs muted">${esc(d.focus||d.summary||(Array.isArray(d.exercises)?d.exercises.map(e=>e.name||e).join(', '):''))}</div></div>`).join('')}</div></div>`:''}
+    <div class="card p-4"><div class="font-display font-semibold mb-2">Recent</div>${recent.length?`<div class="space-y-1.5">${recent.map(l=>`<div class="flex justify-between text-sm border-b bd last:border-0 py-1.5"><span>${esc(l.body||'Workout')}</span><span class="text-xs muted">${new Date(l.logged_at).toLocaleDateString()}</span></div>`).join('')}</div>`:'<div class="muted text-sm">No workouts logged yet.</div>'}</div>`;
+  $('view')&&$('wkLog')&&($('wkLog').onclick=async()=>{ const v=($('wkNote').value||'').trim()||'Workout'; $('wkLog').disabled=true; $('wkLog').textContent='Logged ✓'; await log('activity',{body:v}); setTimeout(viewWorkout,600); });
 }
 
-// ---------- SHOP ----------
-function shopKey(){ return 'vitshop_'+(DATA.patient?DATA.patient.id:'x'); }
-function getChecks(){ try{return JSON.parse(localStorage.getItem(shopKey())||'{}');}catch(e){return {};} }
-function viewShop(){
-  const list=(hb().shopping||[]);
-  const checks=getChecks();
-  const done=list.filter((x,i)=>checks[i]).length;
-  $('view').innerHTML=`
-    <div class="card p-4">
-      <div class="flex items-center justify-between mb-3"><div class="font-display font-semibold">Shopping list</div><span class="text-xs text-[#9aa0ab]">${done}/${list.length}</span></div>
-      <div class="space-y-1">${list.map((x,i)=>`<label class="flex items-center gap-3 py-1.5 border-b border-[#f1f3f7] last:border-0">
-        <input type="checkbox" data-i="${i}" ${checks[i]?'checked':''} class="ck w-5 h-5 rounded accent-[#0a6cf5]">
-        <span class="flex-1 text-sm ${checks[i]?'line-through text-[#9aa0ab]':''}">${esc(x.item)}</span>
-        <span class="text-xs text-[#9aa0ab]">${esc(x.qty||'')}</span>
-      </label>`).join('')}</div>
-    </div>`;
-  $('view').querySelectorAll('.ck').forEach(c=>c.onchange=()=>{ const ch=getChecks(); ch[c.dataset.i]=c.checked; localStorage.setItem(shopKey(),JSON.stringify(ch)); viewShop(); });
+/* ---------- INJECTION TRACKER (functional logger; dose-metering "pen" visual = v2) ---------- */
+const INJ_SITES=['Abdomen (L)','Abdomen (R)','Thigh (L)','Thigh (R)','Upper arm (L)','Upper arm (R)'];
+function viewInjection(){
+  const hist=logsOf('injection');
+  const last=hist[0];
+  const nextDue=last?new Date(new Date(last.logged_at).getTime()+7*864e5):null; // weekly GLP-1 default
+  $('view').innerHTML=backBar('Injection Tracker')+`
+    <div class="card p-4 mb-3">
+      <div class="flex items-center justify-between mb-3">
+        <div><div class="font-display font-semibold">Next dose</div><div class="text-xs muted">Weekly schedule</div></div>
+        <div class="text-right"><div class="font-display text-lg font-bold seg accent">${nextDue?nextDue.toLocaleDateString(undefined,{month:'short',day:'numeric'}):'—'}</div><div class="text-[10px] muted uppercase font-semibold">${nextDue?(nextDue<new Date()?'due now':'upcoming'):'log your first'}</div></div>
+      </div>
+      <label class="text-xs muted font-semibold">Dose (mg)</label>
+      <input id="injDose" class="field mt-1 mb-2" inputmode="decimal" placeholder="e.g. 0.25, 0.5, 1.0, 2.4">
+      <label class="text-xs muted font-semibold">Site</label>
+      <select id="injSite" class="field mt-1 mb-3">${INJ_SITES.map(s=>`<option>${s}</option>`).join('')}</select>
+      <button id="injLog" class="w-full py-3 rounded-xl btnp font-semibold">Log injection · +15</button>
+      <p class="text-[11px] muted mt-2 text-center">Rotate sites. Never double a missed dose without asking your provider.</p>
+    </div>
+    <div class="card p-4"><div class="font-display font-semibold mb-2">History</div>${hist.length?`<div class="space-y-1.5">${hist.slice(0,12).map(l=>`<div class="flex justify-between items-center text-sm border-b bd last:border-0 py-1.5"><span class="font-semibold">${esc((l.value_num!=null?l.value_num+' mg':'Dose'))}</span><span class="text-xs muted">${esc((l.body||'').replace(/^\d+(\.\d+)?mg\s*·?\s*/,''))} · ${new Date(l.logged_at).toLocaleDateString()}</span></div>`).join('')}</div>`:'<div class="muted text-sm">No injections logged yet.</div>'}</div>`;
+  $('injLog')&&($('injLog').onclick=async()=>{ const d=parseFloat($('injDose').value)||null; const site=$('injSite').value; $('injLog').disabled=true; $('injLog').textContent='Logged ✓'; await log('injection',{value_num:d,unit:'mg',body:(d?d+'mg · ':'')+site}); setTimeout(viewInjection,600); });
 }
 
-// ---------- SCAN (photo: menu or product — Claude vision, personalized, NO barcodes) ----------
+/* ---------- YOUR PhD (education modules) ---------- */
+const MODULES=[
+  {slug:'metabolism',icon:'⚙️',title:'Metabolism 101',detail:'Why your body fights back, and how to win. The science of GLP-1, set points, and why weight is a medical condition, not willpower.'},
+  {slug:'food',icon:'🥗',title:'Food, Actually',detail:'Eating for your life, not a meal plan. Protein-first, plate method, and building meals you actually enjoy.'},
+  {slug:'habits',icon:'🔁',title:'Habits That Stick',detail:'Small systems that beat willpower. Anchoring, stacking, and riding the urge without white-knuckling it.'},
+  {slug:'maintain',icon:'🎓',title:'Graduation',detail:'Your maintenance plan, for life. How to hold your results and what changes when you hit your goal.'},
+];
+function viewPhd(){
+  const done=new Set(logsOf('module').map(l=>(l.body||'').split(':')[0].trim()));
+  const op=viewPhd.open;
+  $('view').innerHTML=backBar('Your PhD')+`
+    <div class="card p-4 mb-3"><div class="flex items-center justify-between"><div><div class="font-display font-semibold">Personal Health Degree</div><div class="text-xs muted">Learn. Understand. Transform.</div></div><div class="text-right"><div class="font-display text-lg font-bold seg">${done.size}/${MODULES.length}</div><div class="text-[10px] muted uppercase font-semibold">credits</div></div></div></div>
+    <div class="space-y-2">${MODULES.map(m=>{const d=done.has(m.slug),o=op===m.slug;return `<div class="card overflow-hidden"><button data-m="${m.slug}" class="w-full flex items-center gap-3 p-3.5 text-left"><span class="text-xl">${m.icon}</span><span class="flex-1"><span class="text-sm font-semibold block">${esc(m.title)}</span></span><span class="text-xs ${d?'accent font-semibold':'muted'}">${d?'✓ done':(o?'▲':'▾')}</span></button>${o?`<div class="px-3.5 pb-3.5"><p class="text-xs muted leading-relaxed mb-2">${esc(m.detail)}</p>${d?'':`<button data-md="${m.slug}" class="w-full py-2 rounded-lg btnp text-sm font-semibold">Mark complete · +25</button>`}</div>`:''}</div>`;}).join('')}</div>`;
+  $('view').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ viewPhd.open=viewPhd.open===b.dataset.m?null:b.dataset.m; viewPhd(); });
+  $('view').querySelectorAll('[data-md]').forEach(b=>b.onclick=async()=>{ const m=MODULES.find(x=>x.slug===b.dataset.md); b.disabled=true; b.textContent='Completed ✓'; await log('module',{body:`${b.dataset.md}: ${m?m.title:''}`}); setTimeout(()=>{viewPhd.open=null;viewPhd();},600); });
+}
+
+/* ---------- IBT CURRICULUM (behavior tasks / next steps) ---------- */
+const STEPS=[
+ {slug:'vision',icon:'🎯',title:'Set your anchor',detail:'Make a vision board with your "why" in pictures and words, and hang it where you see it daily. Snap a photo and email it to success@vitalityweightloss.health.'},
+ {slug:'object',icon:'🏋️',title:'Goal object',detail:'Pick an object that equals your goal weight, decorate it, keep it close, and feel it daily. Email a photo to success@vitalityweightloss.health.'},
+ {slug:'labs',icon:'🧪',title:'Lab work',detail:'Get your required labs (CMP, A1C, lipid, TSH, CBC, pregnancy, lipase/amylase, fasting insulin). Email results to success@vitalityweightloss.health. Recent labs from another doctor work too.'},
+ {slug:'gear',icon:'👟',title:'Exercise gear',detail:'Get functional gear ready: good shoes, a swimsuit, sweatpants, a tee. It does not need to be fancy.'},
+ {slug:'consent',icon:'✍️',title:'Comms acknowledgment',detail:'We send non-urgent updates by email and text, which may not be fully secure. For anything urgent, always call us or seek emergency care. Tap complete to acknowledge.'},
+];
+function viewIbt(){
+  const done=new Set(logsOf('nextstep').map(l=>(l.body||'').split(':')[0].trim()));
+  const op=viewIbt.open;
+  $('view').innerHTML=backBar('IBT Curriculum')+`
+    <div class="card p-4 mb-3"><div class="flex items-center justify-between mb-2"><div><div class="font-display font-semibold">Behavior change program</div><div class="text-xs muted">One keystone action at a time.</div></div><span class="font-display font-bold seg">${done.size}/${STEPS.length}</span></div><div class="flex gap-1.5">${STEPS.map(s=>`<div class="w-8 h-8 rounded-full flex items-center justify-center text-base border bd ${done.has(s.slug)?'':'opacity-40 grayscale'}" style="${done.has(s.slug)?'background:var(--accent-soft)':'background:var(--surface2)'}">${s.icon}</div>`).join('')}</div></div>
+    <div class="space-y-2">${STEPS.map(s=>{const d=done.has(s.slug),o=op===s.slug;return `<div class="card overflow-hidden"><button data-s="${s.slug}" class="w-full flex items-center gap-3 p-3.5 text-left"><span class="text-lg">${s.icon}</span><span class="text-sm font-semibold flex-1">${esc(s.title)}</span><span class="text-xs ${d?'accent font-semibold':'muted'}">${d?'✓':(o?'▲':'▾')}</span></button>${(o&&!d)?`<div class="px-3.5 pb-3.5"><p class="text-xs muted leading-relaxed mb-2">${esc(s.detail)}</p><button data-sd="${s.slug}" class="w-full py-2 rounded-lg btnp text-sm font-semibold">Mark complete · +20</button></div>`:''}</div>`;}).join('')}</div>`;
+  $('view').querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{ viewIbt.open=viewIbt.open===b.dataset.s?null:b.dataset.s; viewIbt(); });
+  $('view').querySelectorAll('[data-sd]').forEach(b=>b.onclick=async()=>{ const s=STEPS.find(x=>x.slug===b.dataset.sd); b.disabled=true; b.textContent='Completed ✓'; await log('nextstep',{body:`${b.dataset.sd}: ${s?s.title:''}`}); setTimeout(()=>{viewIbt.open=null;viewIbt();},600); });
+}
+
+/* ---------- MENU SCANNER (photo -> Claude vision -> plan check) ---------- */
+const VB={good:{c:'#10b981',ic:'✓',lab:'Good pick'},mods:{c:'#f59e0b',ic:'⚠',lab:'OK with mods'},skip:{c:'#f43f5e',ic:'✕',lab:'Skip'}};
 function viewScan(){
-  $('view').innerHTML=`
+  $('view').innerHTML=backBar('Menu Scanner')+`
     <div class="card p-4">
       <div class="font-display font-semibold mb-1">Scan a menu or product</div>
-      <p class="text-xs text-[#6b7280] mb-3">Snap a photo of a restaurant menu or a product, and we'll check it against your plan. No barcodes.</p>
-      <input id="rest" class="field w-full mb-3" placeholder="Restaurant or brand (optional)">
+      <p class="text-xs muted mb-3">Snap a photo of a restaurant menu or a product and we'll check it against your plan. No barcodes.</p>
+      <input id="rest" class="field mb-3" placeholder="Restaurant or brand (optional)">
       <div class="grid grid-cols-2 gap-2">
-        <label class="py-3 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold text-center cursor-pointer">📷 Take photo<input id="cam" type="file" accept="image/*" capture="environment" class="hidden"></label>
-        <label class="py-3 rounded-xl bg-white border border-[#e6e9ee] text-[#16201d] text-sm font-semibold text-center cursor-pointer">⬆️ Upload<input id="up" type="file" accept="image/*" class="hidden"></label>
+        <label class="py-3 rounded-xl btnp text-sm font-semibold text-center cursor-pointer">📷 Take photo<input id="cam" type="file" accept="image/*" capture="environment" class="hidden"></label>
+        <label class="py-3 rounded-xl card font-semibold text-sm text-center cursor-pointer">⬆️ Upload<input id="up" type="file" accept="image/*" class="hidden"></label>
       </div>
       <div id="result" class="mt-3"></div>
     </div>`;
   $('cam').onchange=e=>{ if(e.target.files[0]) onPhoto(e.target.files[0]); };
   $('up').onchange=e=>{ if(e.target.files[0]) onPhoto(e.target.files[0]); };
 }
-// downscale the photo so the upload is small + fast, then send to the vision scanner
 function onPhoto(file){
+  if(!DATA){ $('result').innerHTML=needPlan('Connect your plan first so we can check items against it.'); return; }
   const fr=new FileReader();
-  fr.onload=()=>{ const img=new Image(); img.onload=()=>{
-    const max=1280, sc=Math.min(1,max/Math.max(img.width,img.height));
-    const c=document.createElement('canvas'); c.width=Math.round(img.width*sc); c.height=Math.round(img.height*sc);
-    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-    doScan(c.toDataURL('image/jpeg',0.82));
-  }; img.onerror=()=>doScan(fr.result); img.src=fr.result; };
+  fr.onload=()=>{ const img=new Image(); img.onload=()=>{ const max=1280, sc=Math.min(1,max/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.round(img.width*sc); c.height=Math.round(img.height*sc); c.getContext('2d').drawImage(img,0,0,c.width,c.height); doScan(c.toDataURL('image/jpeg',0.82)); }; img.onerror=()=>doScan(fr.result); img.src=fr.result; };
   fr.readAsDataURL(file);
 }
 async function doScan(dataURL){
-  const res=$('result');
-  res.innerHTML='<div class="card p-5 text-center"><div class="animate-spin mx-auto mb-3" style="width:34px;height:34px;border:3px solid #e6e9ee;border-top-color:#0a6cf5;border-radius:50%"></div><div class="text-sm text-[#6b7280]">Reading it and checking your plan…</div></div>';
+  const res=$('result'); res.innerHTML='<div class="card p-5 text-center"><div class="animate-spin mx-auto mb-3" style="width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%"></div><div class="text-sm muted">Reading it and checking your plan…</div></div>';
   const rest=(($('rest')&&$('rest').value)||'').trim();
   const d=await api('vit-menu-scan',{image:dataURL,restaurant:rest});
-  if(!d||!d.ok){ res.innerHTML='<div class="card p-4 text-sm text-rose-600 text-center">Couldn’t read that photo. Try again with the menu or label filling the frame, in good light.</div>'; return; }
-  renderScan(d);
-}
-const VBADGE={good:{bg:'bg-emerald-50',bd:'border-emerald-200',tx:'text-emerald-700',ic:'✓',lab:'Good pick'},mods:{bg:'bg-amber-50',bd:'border-amber-200',tx:'text-amber-700',ic:'⚠',lab:'OK with mods'},skip:{bg:'bg-rose-50',bd:'border-rose-200',tx:'text-rose-700',ic:'✕',lab:'Skip'}};
-function renderScan(d){
-  const res=$('result');
+  if(!d||!d.ok){ res.innerHTML='<div class="card p-4 text-sm text-rose-500 text-center">Couldn’t read that photo. Try again with the menu filling the frame, in good light.</div>'; return; }
   const picks=(d.top_picks||[]);
-  const top=(d.kind==='menu'&&picks.length)?`<div class="card overflow-hidden mb-3"><div class="bg-emerald-50 border-b border-emerald-200 p-4"><div class="font-display font-semibold text-emerald-700 mb-1">✓ Top picks for you</div>${picks.map((n,i)=>`<div class="text-sm text-[#16201d] flex gap-2 py-0.5"><span class="text-emerald-600 font-bold">${i+1}</span>${esc(n)}</div>`).join('')}</div></div>`:'';
-  const items=(d.items||[]).map((it,idx)=>{
-    const c=VBADGE[it.verdict]||VBADGE.mods;
-    const macros=[it.protein_g!=null?`🥩 ~${it.protein_g}g protein`:'',it.cal!=null?`🔥 ~${it.cal} cal`:''].filter(Boolean).join('  ·  ');
-    const canLog=it.cal!=null&&it.verdict!=='skip';
-    return `<div class="card overflow-hidden mb-2">
-      <div class="${c.bg} ${c.bd} border-b p-3 flex items-center justify-between gap-2">
-        <div class="font-semibold text-sm ${c.tx} min-w-0 truncate">${esc(it.name)}</div>
-        <div class="text-[11px] font-bold ${c.tx} whitespace-nowrap">${c.ic} ${c.lab}</div>
-      </div>
-      <div class="p-3">
-        ${macros?`<div class="text-xs text-[#6b7280] mb-1.5">${macros}</div>`:''}
-        <div class="text-xs text-[#16201d] leading-snug">${esc(it.reason||'')}</div>
-        ${it.how_to_order?`<div class="text-xs text-[#6b7280] mt-2 bg-[#f7f8fa] rounded-lg p-2">💡 <b>How to order:</b> ${esc(it.how_to_order)}</div>`:''}
-        ${canLog?`<button class="logItem mt-2 w-full py-2 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold" data-i="${idx}">Log this (+10 pts)</button>`:''}
-      </div></div>`;
+  const top=(d.kind==='menu'&&picks.length)?`<div class="card p-4 mb-3"><div class="font-display font-semibold mb-1" style="color:#10b981">✓ Top picks for you</div>${picks.map((n,i)=>`<div class="text-sm flex gap-2 py-0.5"><span style="color:#10b981" class="font-bold">${i+1}</span>${esc(n)}</div>`).join('')}</div>`:'';
+  const items=(d.items||[]).map((it,idx)=>{ const c=VB[it.verdict]||VB.mods; const macros=[it.protein_g!=null?`🥩 ~${it.protein_g}g protein`:'',it.cal!=null?`🔥 ~${it.cal} cal`:''].filter(Boolean).join('  ·  '); const canLog=it.cal!=null&&it.verdict!=='skip';
+    return `<div class="card overflow-hidden mb-2"><div class="p-3 border-b bd flex items-center justify-between gap-2"><div class="font-semibold text-sm min-w-0 truncate">${esc(it.name)}</div><div class="text-[11px] font-bold whitespace-nowrap" style="color:${c.c}">${c.ic} ${c.lab}</div></div><div class="p-3">${macros?`<div class="text-xs muted mb-1.5">${macros}</div>`:''}<div class="text-xs leading-snug">${esc(it.reason||'')}</div>${it.how_to_order?`<div class="text-xs muted mt-2 surf2 rounded-lg p-2">💡 <b>How to order:</b> ${esc(it.how_to_order)}</div>`:''}${canLog?`<button class="logItem mt-2 w-full py-2 rounded-xl btnp text-xs font-semibold" data-i="${idx}">Log this (+10 pts)</button>`:''}</div></div>`;
   }).join('');
-  res.innerHTML=(d.summary?`<div class="text-xs text-[#6b7280] mb-2 px-1">${esc(d.summary)}</div>`:'')+top+(items||'<div class="card p-4 text-sm text-[#6b7280] text-center">No items detected. Try a clearer photo.</div>');
-  res.querySelectorAll('.logItem').forEach(b=>b.onclick=async()=>{
-    const it=d.items[+b.dataset.i]; b.disabled=true; b.textContent='Logged ✓';
-    await api('vit-portal-data',{action:'add_log',kind:'food',value_num:it.cal||0,unit:' kcal',body:`${it.name}${it.protein_g?' · '+it.protein_g+'g P':''}${d.restaurant?' @ '+d.restaurant:''}`});
-    DATA=await api('vit-portal-data',{action:'load'}); refreshPts();
-  });
+  res.innerHTML=(d.summary?`<div class="text-xs muted mb-2 px-1">${esc(d.summary)}</div>`:'')+top+(items||'<div class="card p-4 text-sm muted text-center">No items detected. Try a clearer photo.</div>');
+  res.querySelectorAll('.logItem').forEach(b=>b.onclick=async()=>{ const it=d.items[+b.dataset.i]; b.disabled=true; b.textContent='Logged ✓'; await log('food',{value_num:it.cal||0,unit:' kcal',body:`${it.name}${it.protein_g?' · '+it.protein_g+'g P':''}${d.restaurant?' @ '+d.restaurant:''}`}); });
 }
 
+/* ---------- RENDER ---------- */
 function render(){
   refreshPts();
-  if(TAB==='today') viewToday(); else if(TAB==='shop') viewShop(); else viewScan();
-  $('tabs').querySelectorAll('.tabbtn').forEach(b=>b.classList.toggle('on',b.dataset.t===TAB));
+  const v={home:viewHome,meal:viewMeal,workout:viewWorkout,inject:viewInjection,phd:viewPhd,ibt:viewIbt,scan:viewScan}[VIEW]||viewHome;
+  v();
 }
-$('tabs').querySelectorAll('.tabbtn').forEach(b=>b.onclick=async()=>{
-  if(LIVE_ON) stopLive();
-  TAB=b.dataset.t; render();
-});
+$('brand').onclick=()=>go('home');
 
 (async()=>{
-  if(!TOKEN){ $('boot').innerHTML='Open this from the QR code in your Vitality portal.'; return; }
-  DATA=await api('vit-portal-data',{action:'load'});
-  if(!DATA||!DATA.ok||!DATA.patient){ $('boot').innerHTML='This link has expired. Open a fresh QR from your portal.'; return; }
-  $('boot').classList.add('hidden'); $('view').classList.remove('hidden'); $('tabs').classList.remove('hidden');
-  render();
+  $('boot').classList.add('hidden'); $('view').classList.remove('hidden');
+  render();                       // show the app shell immediately (works even before data loads)
+  if(TOKEN){ try{ DATA=await api({action:'load'}); if(DATA&&DATA.ok&&DATA.patient){ render(); } }catch(e){} }
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('/sw.js').catch(()=>{}); }
 })();
 </script>
 </body>
