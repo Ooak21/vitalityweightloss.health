@@ -197,6 +197,18 @@ async function toUploadableImage(file){
 const PROGRAMS = { glp1:'GLP-1 Weight Loss', metabolic:'Metabolic & Hormone', coaching:'Coaching & Nutrition', unsure:'Getting started' };
 const fmtDate = (s)=>{ if(!s) return ''; const d=new Date(s); return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); };
 const fmtWhen = (s)=>{ if(!s) return ''; const d=new Date(s); return d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})+' at '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); };
+// --- injection dose tube (desktop, mirrors the Thrive app) ---
+const P_MEDS=['Semaglutide','Tirzepatide','Oral Semaglutide']; const PMAX=50;
+let pUnits=10,pConc=2.5,pMed='Semaglutide',pSite='',pPreset=false,pDrag=false;
+const pKey=()=>'vitinj_'+((DATA&&DATA.patient&&DATA.patient.id)||'x');
+const pxU=(u)=>20+(Math.max(0,Math.min(PMAX,u))/PMAX)*260;
+const puX=(x)=>Math.max(0,Math.min(PMAX,Math.round((x-20)/260*PMAX)));
+const pmgU=(u)=>+(u/100*pConc).toFixed(2);
+const puMg=(mg)=>Math.round(mg/pConc*100);
+function pRemember(){ try{localStorage.setItem(pKey(),JSON.stringify({med:pMed,conc:pConc,units:pUnits,site:pSite}));}catch(e){} }
+function pPresetInj(){ if(pPreset)return; pPreset=true; try{const s=JSON.parse(localStorage.getItem(pKey())||'null'); if(s){if(s.med)pMed=s.med;if(s.conc)pConc=+s.conc;if(s.units!=null)pUnits=+s.units;if(s.site)pSite=s.site;}}catch(e){} }
+function pSyrRefresh(){ const x=pxU(pUnits); const f=document.getElementById('pInjFill'); if(f)f.setAttribute('width',Math.max(0,x-20)); const pl=document.getElementById('pInjPl'); if(pl){pl.setAttribute('x1',x);pl.setAttribute('x2',x);} const k=document.getElementById('pInjKnob'); if(k)k.setAttribute('cx',x); const r=document.getElementById('pInjRead'); if(r)r.innerHTML='<span class="font-display text-2xl font-bold seg">'+pUnits+'</span><span class="text-[#9aa0ab] text-sm ml-1">units</span><span class="text-[#9aa0ab] text-sm ml-2">&asymp; '+pmgU(pUnits)+' mg</span>'; }
+function pSetUnits(u){ pUnits=Math.max(0,Math.min(PMAX,Math.round(u))); pSyrRefresh(); }
 const fmtAgo = (s)=>{ if(!s) return ''; const diff=(Date.now()-new Date(s).getTime())/1000; if(diff<60) return 'just now'; if(diff<3600) return Math.floor(diff/60)+'m ago'; if(diff<86400) return Math.floor(diff/3600)+'h ago'; return Math.floor(diff/86400)+'d ago'; };
 
 // projected weight curve (day 0 = start) with goal marker
@@ -532,13 +544,32 @@ function render(){
       <div class="rounded-xl bg-[#eaf2ff] border border-[#d6e6ff] p-3"><div class="text-[10px] uppercase tracking-wide text-[#0a3d7a] font-semibold">Last injection</div><div class="text-sm font-semibold mt-.5">${fmtAgo(lastInj.logged_at)}</div><div class="text-xs text-[#6b7280]">${esc(lastInj.body||'')}${lastInj.value_num!=null?' · '+esc(lastInj.value_num)+' mg':''}</div></div>
       <div class="rounded-xl ${daysToNext<=0?'bg-[#fff4ed] border-[#ffe2cf]':'bg-[#eafaf0] border-[#cdeedd]'} border p-3"><div class="text-[10px] uppercase tracking-wide ${daysToNext<=0?'text-[#9a5a00]':'text-[#0a7a3d]'} font-semibold">Next dose</div><div class="text-sm font-semibold mt-.5">${injStatus}</div><div class="text-xs text-[#6b7280]">${nextDueTxt}</div></div>
     </div>`:`<p class="text-sm text-[#6b7280] mb-3">Log each weekly GLP-1 injection to track your dose, rotate injection sites, and see when your next dose is due.</p>`}
-    <div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 space-y-2">
-      <div class="flex gap-2">
-        <div class="flex-1"><label class="text-[11px] font-semibold text-[#6b7280]">Medication</label><select id="injMed" class="field mt-1 w-full"><option>Semaglutide</option><option>Tirzepatide</option><option>Oral Semaglutide</option></select></div>
-        <div style="width:96px"><label class="text-[11px] font-semibold text-[#6b7280]">Dose (mg)</label><input id="injDose" type="number" step="0.05" min="0" class="field mt-1 w-full" placeholder="0.25"></div>
+    ${(()=>{ pPresetInj(); if(!pSite) pSite=nextSite; return ''; })()}
+    <div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3">
+      <div class="flex gap-1.5 mb-3">${P_MEDS.map(m=>`<button data-pmed="${m}" class="pim flex-1 py-2 rounded-lg text-xs font-semibold ${m===pMed?'bg-[#0a6cf5] text-white':'bg-white border border-[#e6e9ee] text-[#6b7280]'}">${m}</button>`).join('')}</div>
+      <svg id="pInjSyr" viewBox="0 0 300 92" style="width:100%;touch-action:none;user-select:none;display:block">
+        <line x1="3" y1="48" x2="18" y2="48" stroke="#9aa0ab" stroke-width="2.5" stroke-linecap="round"/>
+        <rect x="20" y="30" width="260" height="36" rx="9" fill="#eef1f5" stroke="#dfe3e9" stroke-width="1.5"/>
+        <clipPath id="pInjClip"><rect x="20" y="30" width="260" height="36" rx="9"/></clipPath>
+        <rect id="pInjFill" x="20" y="30" width="${pxU(pUnits)-20}" height="36" clip-path="url(#pInjClip)" fill="#0a6cf5" opacity="0.85"/>
+        ${[0,10,20,30,40,50].map(u=>`<line x1="${pxU(u)}" y1="21" x2="${pxU(u)}" y2="30" stroke="#9aa0ab" stroke-width="1.4"/><text x="${pxU(u)}" y="15" text-anchor="middle" font-size="9" fill="#9aa0ab">${u}</text>`).join('')}
+        <rect x="279" y="23" width="7" height="50" rx="2" fill="#9aa0ab"/>
+        <line id="pInjPl" x1="${pxU(pUnits)}" y1="25" x2="${pxU(pUnits)}" y2="71" stroke="#0a6cf5" stroke-width="3"/>
+        <circle id="pInjKnob" cx="${pxU(pUnits)}" cy="48" r="12" fill="#0a6cf5" stroke="#fff" stroke-width="3"/>
+      </svg>
+      <div id="pInjRead" class="text-center mt-1 mb-3"><span class="font-display text-2xl font-bold seg">${pUnits}</span><span class="text-[#9aa0ab] text-sm ml-1">units</span><span class="text-[#9aa0ab] text-sm ml-2">&asymp; ${pmgU(pUnits)} mg</span></div>
+      <div class="flex items-center justify-center gap-2 mb-3">
+        <button data-pstep="-1" class="pist w-10 h-10 rounded-full bg-white border border-[#e6e9ee] font-bold text-lg leading-none">&minus;</button>
+        <div class="flex gap-1.5">${[0.25,0.5,1,1.7,2.4].map(mg=>`<button data-pmg="${mg}" class="piq px-2.5 py-1.5 rounded-lg bg-white border border-[#e6e9ee] text-xs font-semibold">${mg}mg</button>`).join('')}</div>
+        <button data-pstep="1" class="pist w-10 h-10 rounded-full bg-white border border-[#e6e9ee] font-bold text-lg leading-none">+</button>
       </div>
-      <div><label class="text-[11px] font-semibold text-[#6b7280]">Injection site${lastInj?` <span class="text-[#0a7a3d] font-normal">· rotate to ${esc(nextSite)}</span>`:''}</label><select id="injSite" class="field mt-1 w-full">${INJ_SITES.map(s=>`<option ${s===nextSite?'selected':''}>${esc(s)}</option>`).join('')}</select></div>
-      <button id="injBtn" class="w-full py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Log injection</button>
+      <div class="flex items-center gap-2 mb-3">
+        <label class="text-[11px] font-semibold text-[#6b7280] whitespace-nowrap">Vial</label>
+        <select id="pInjConc" class="field py-2 text-sm flex-1">${[1,2,2.5,5,10,20].map(c=>`<option value="${c}" ${c===pConc?'selected':''}>${c} mg/mL</option>`).join('')}</select>
+        <select id="injSite" class="field py-2 text-sm flex-1">${INJ_SITES.map(s=>`<option ${s===pSite?'selected':''}>${esc(s)}</option>`).join('')}</select>
+      </div>
+      <button id="injBtn" class="w-full py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Log this injection</button>
+      <p class="text-[11px] text-[#9aa0ab] mt-2 text-center">Your provider sets your dose and vial strength. Confirm against your prescription, and rotate sites.</p>
     </div>
     ${injLogs.length?`<div class="mt-3"><div class="text-[11px] font-semibold text-[#6b7280] mb-1">Recent injections</div>${injLogs.slice(0,6).map(l=>`<div class="flex items-center justify-between py-1.5 border-b border-[#f1f3f7] last:border-0"><span class="text-sm">${esc(l.body||'')}</span><span class="text-xs text-[#9aa0ab]">${l.value_num!=null?esc(l.value_num)+' mg · ':''}${fmtAgo(l.logged_at)}</span></div>`).join('')}</div>`:''}
   </div></details>`;
@@ -710,7 +741,17 @@ function render(){
   const refresh=async()=>{ DATA=await api({action:'load'}); render(); };
   $('wBtn').onclick=async()=>{ const v=parseFloat($('wIn').value); if(isNaN(v))return; $('wBtn').disabled=true; await api({action:'add_log',kind:'weigh_in',value_num:v,unit:' lb'}); await refresh(); };
   $('jBtn').onclick=async()=>{ const t=$('jIn').value.trim(); if(!t)return; $('jBtn').disabled=true; await api({action:'add_log',kind:'journal',body:t}); await refresh(); };
-  { const _ib=document.getElementById('injBtn'); if(_ib) _ib.onclick=async()=>{ const med=$('injMed').value, site=$('injSite').value, dv=parseFloat($('injDose').value); _ib.disabled=true; _ib.textContent='Logging…'; await api({action:'add_log',kind:'injection',value_num:isNaN(dv)?undefined:dv,unit:'mg',body:med+' · '+site}); await refresh(); }; }
+  { const _svr=document.getElementById('pInjSyr'); if(_svr){ const _toU=(e)=>{ const r=_svr.getBoundingClientRect(); const cx=(e.clientX!=null)?e.clientX:0; return puX((cx-r.left)/r.width*300); };
+      _svr.addEventListener('pointerdown',e=>{ pDrag=true; try{_svr.setPointerCapture(e.pointerId);}catch(_){}; pSetUnits(_toU(e)); });
+      _svr.addEventListener('pointermove',e=>{ if(pDrag){ e.preventDefault(); pSetUnits(_toU(e)); } });
+      const _st=()=>{pDrag=false;}; _svr.addEventListener('pointerup',_st); _svr.addEventListener('pointercancel',_st);
+      document.querySelectorAll('.pist').forEach(b=>b.onclick=()=>pSetUnits(pUnits+(+b.dataset.pstep)));
+      document.querySelectorAll('.piq').forEach(b=>b.onclick=()=>pSetUnits(puMg(+b.dataset.pmg)));
+      document.querySelectorAll('.pim').forEach(b=>b.onclick=()=>{ pMed=b.dataset.pmed; document.querySelectorAll('.pim').forEach(x=>{ x.className='pim flex-1 py-2 rounded-lg text-xs font-semibold '+(x.dataset.pmed===pMed?'bg-[#0a6cf5] text-white':'bg-white border border-[#e6e9ee] text-[#6b7280]'); }); });
+      const _pc=document.getElementById('pInjConc'); if(_pc)_pc.onchange=e=>{ pConc=+e.target.value; pSyrRefresh(); };
+      const _psel=document.getElementById('injSite'); if(_psel)_psel.onchange=e=>{ pSite=e.target.value; };
+    }
+    const _ib=document.getElementById('injBtn'); if(_ib) _ib.onclick=async()=>{ const mg=pmgU(pUnits); pRemember(); _ib.disabled=true; _ib.textContent='Logging…'; await api({action:'add_log',kind:'injection',value_num:mg,unit:'mg',body:pMed+' · '+pUnits+' units · '+pConc+' mg/mL · '+pSite}); await refresh(); }; }
   { const _rf=document.getElementById('rfBtn'); if(_rf) _rf.onclick=async()=>{ const med=$('rfMed').value, wk=parseInt($('rfWeeks').value,10); if(isNaN(wk)||wk<1) return; _rf.disabled=true; _rf.textContent='Saving…'; await api({action:'add_log',kind:'refill',value_num:wk,unit:'weeks',body:med}); await refresh(); }; }
   { const _rr=document.getElementById('rrBtn'); if(_rr) _rr.onclick=async()=>{ _rr.disabled=true; _rr.textContent='Sending…'; const m=document.getElementById('rfMed'); await api({action:'add_log',kind:'refill_request',body:(m&&m.value)||'medication'}); await refresh(); }; }
   // secure messaging: send to care team; auto-scroll to latest; mark care-team messages read on view
