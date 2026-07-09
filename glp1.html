@@ -837,6 +837,31 @@ function computeEligibility(s) {
   return s;
 }
 
+// MEDICARE GLP-1 BRIDGE routing -----------------------------------------------
+// Mirrors the official CoverMyMeds "Medicare GLP-1 Bridge" PA form (eff. 2026-07-01).
+// A Part-D-eligible diagnosis (moderate-severe OSA, MASH/NASH with fibrosis, type 2 diabetes,
+// OR established CV disease) routes the GLP-1 to the patient's Part D PLAN. Weight-loss-only
+// with none of those -> continue through the BRIDGE. Patient self-reports; Dr. DeBry completes the PA.
+function computeMedicareBridge(s) {
+  const c = s.bridge || {};
+  const cvd = !!(c.mi || c.stroke || c.pad || c.hfpef);
+  const partD = !!c.osa || !!c.mash || s.diabetes === 't2' || cvd;
+  s.bridge_cvd = cvd;
+  s.bridge_part_d_eligible = partD;
+  s.bridge_route = partD ? 'part_d_plan' : 'bridge';
+  const inches = (parseInt(s.heightFt) || 0) * 12 + (parseInt(s.heightIn) || 0);
+  const lbs = parseInt(s.weightLbs) || 0;
+  const bmi = inches > 0 && lbs > 0 ? +(((lbs / (inches * inches)) * 703).toFixed(1)) : null;
+  s.bridge_bmi = bmi;
+  s.bridge_bmi_band = bmi == null ? '' :
+    bmi < 27 ? 'Less than 27' :
+    bmi < 30 ? '27 to 29.9' :
+    bmi < 35 ? '30 to 34.9 (E66.811)' :
+    bmi < 40 ? '35 to 39.9 (E66.812)' : '40 or more (E66.813)';
+  save();
+  return s;
+}
+
 // STATE ----------------------------------------------------------------------
 const STORAGE_KEY = 'vitality_glp1_intake_v1';
 const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
@@ -956,6 +981,29 @@ function singleSelectChip(parent, key, options, opts={}) {
         }
         next();
       }, 280);
+    };
+    group.appendChild(btn);
+  });
+  parent.appendChild(group);
+}
+
+// multi-select checklist: each option toggles a boolean on state[bag][option.key]. No auto-advance.
+function multiSelectChip(parent, bag, options) {
+  state[bag] = state[bag] || {};
+  const group = h('div', { class: 'opt-group' });
+  options.forEach(o => {
+    const btn = h('button', { class:'opt', type:'button' }, [
+      h('span', { class:'check' }),
+      h('div', { class:'opt-body' }, [
+        document.createTextNode(o.label),
+        o.sub ? h('small', {}, [document.createTextNode(o.sub)]) : null
+      ])
+    ]);
+    if (state[bag][o.key]) btn.classList.add('selected');
+    btn.onclick = () => {
+      state[bag][o.key] = !state[bag][o.key];
+      btn.classList.toggle('selected');
+      save();
     };
     group.appendChild(btn);
   });
@@ -1287,6 +1335,33 @@ const flow = [
       { label:'Not sure', value:'unsure' }
     ]);
   }},
+
+  // MEDICARE BRIDGE: MBI (only when enrolled) --------------------------------
+  { id:'mbi', section:'Medicare Bridge', relevantWhen:(s) => s.medicare === 'yes', view:(p) => {
+    p.appendChild(h('h1', {}, ['Your Medicare number']));
+    p.appendChild(h('p', { class:'lede' }, ['The Medicare Beneficiary Identifier (MBI) on the front of your red, white, and blue Medicare card. It lets us run your $50 Bridge benefit. Optional here you can also give it to our team on your eligibility call.']));
+    textInput(p, 'bridge_mbi', 'Medicare number (MBI)', '1EG4-TE5-MK73', 'text');
+    p.appendChild(h('div', { class:'info' }, ['Your MBI is protected health information. It is transmitted securely and used only to verify your Medicare drug coverage.']));
+    ctaBtn(p, { disabled:false });
+  }, canContinue:(s) => true },
+
+  // MEDICARE BRIDGE: conditions checklist (drives Part D vs Bridge routing) ---
+  { id:'bridge_conditions', section:'Medicare Bridge', relevantWhen:(s) => s.medicare === 'yes', view:(p) => {
+    p.appendChild(h('h1', {}, ['Have you been diagnosed with any of these?']));
+    p.appendChild(h('p', { class:'lede' }, ['Check all that apply. Some diagnoses are covered directly by your Medicare Part D plan, so this helps Dr. DeBry route your GLP-1 the right way. If none apply, just continue.']));
+    multiSelectChip(p, 'bridge', [
+      { key:'osa',    label:'Moderate-to-severe sleep apnea (OSA)' },
+      { key:'mash',   label:'MASH / NASH liver disease with scarring', sub:'Fatty-liver disease with fibrosis' },
+      { key:'mi',     label:'Previous heart attack' },
+      { key:'stroke', label:'Previous stroke' },
+      { key:'pad',    label:'Peripheral artery disease', sub:'Narrowed arteries in the legs' },
+      { key:'hfpef',  label:'Heart failure' },
+      { key:'htn',    label:'High blood pressure that is hard to control', sub:'Still high despite two or more BP medications' },
+      { key:'ckd',    label:'Kidney disease (stage 3 or higher)' }
+    ]);
+    p.appendChild(h('div', { class:'info' }, ['Not sure about one? Leave it unchecked. Dr. DeBry confirms your full history before submitting anything to Medicare.']));
+    ctaBtn(p, { disabled:false });
+  }, canContinue:(s) => true },
 
   // EDU + DRUG ---------------------------------------------------------------
   { id:'edu-options', section:'Your options', view:(p) => {
@@ -1967,6 +2042,23 @@ function buildClinicalRecord() {
       .filter(f => state[f.k] !== undefined && String(state[f.k]).trim() !== '')
       .map(f => ({ q: f.q, a: f.m ? (f.m[state[f.k]] || String(state[f.k])) : String(state[f.k]) })),
   };
+  // Medicare GLP-1 Bridge: attach structured PA routing + a human-readable summary for the chart.
+  if (state.medicare === 'yes') {
+    computeMedicareBridge(state);
+    const cond = state.bridge || {};
+    state.clinicalRecord.medicare_bridge = {
+      enrolled: true, mbi: state.bridge_mbi || '', conditions: cond, diabetes: state.diabetes || '',
+      part_d_eligible: !!state.bridge_part_d_eligible, route: state.bridge_route || 'bridge',
+      initial_bmi: state.bridge_bmi, initial_bmi_band: state.bridge_bmi_band || '',
+    };
+    const CMAP = { osa:'Moderate-severe OSA', mash:'MASH/NASH with fibrosis', mi:'Previous heart attack', stroke:'Previous stroke', pad:'Symptomatic PAD', hfpef:'Heart failure', htn:'Uncontrolled hypertension', ckd:'CKD stage 3a+' };
+    const checked = Object.keys(CMAP).filter(k => cond[k]).map(k => CMAP[k]);
+    state.clinicalRecord.items.push({ q:'Medicare enrolled', a:'Yes' });
+    if (state.bridge_mbi) state.clinicalRecord.items.push({ q:'Medicare number (MBI)', a: state.bridge_mbi });
+    state.clinicalRecord.items.push({ q:'Bridge PA conditions', a: checked.length ? checked.join(', ') : 'None reported' });
+    state.clinicalRecord.items.push({ q:'Initial BMI band (PA Q5)', a: state.bridge_bmi_band || '—' });
+    state.clinicalRecord.items.push({ q:'GLP-1 coverage route', a: state.bridge_route === 'part_d_plan' ? 'Part D plan (has qualifying dx)' : 'GLP-1 Bridge (weight-loss only)' });
+  }
   save();
 }
 
