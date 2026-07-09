@@ -103,18 +103,12 @@ async function log(kind, extra){ try{ await api({action:'add_log',kind,...(extra
 function hb(){ return (DATA&&DATA.plan&&DATA.plan.handbook)||{}; }
 function todayName(){ return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()]; }
 
-/* ---------- GAMIFY (points/streak) — future: merge wearable data here ---------- */
-function gamify(){
-  const PTS={food:10,weigh_in:5,journal:5,activity:15,scan:10,module:25,nextstep:20,injection:15,measurement:10,checkin:15};
-  const logs=(DATA&&DATA.logs)||[]; const dk=(iso)=>new Date(iso).toDateString();
-  let points=0; const dates=new Set();
-  logs.forEach(l=>{ points+=PTS[l.kind]||5; dates.add(dk(l.logged_at)); });
-  let streak=0, cur=new Date(); if(!dates.has(cur.toDateString())) cur.setDate(cur.getDate()-1);
-  while(dates.has(cur.toDateString())){ streak++; cur.setDate(cur.getDate()-1); }
-  return {points,streak};
-}
-function refreshPts(){ const g=gamify(); $('pts').textContent='🔥'+g.streak+' · '+g.points+' pts'; }
+/* ---------- GAMIFY — read the ONE canonical server-computed engine (DATA.gamification) so the app's
+   points/streak/level MATCH the portal + CRM exactly, never re-derive it here (that's what drifts). ---------- */
+function G(){ return (DATA&&DATA.gamification)||{points:0,streak:0,level:''}; }
+function refreshPts(){ const g=G(); $('pts').textContent='🔥'+(g.streak||0)+' · '+(g.points||0)+' pts'; }
 function logsOf(kind){ return ((DATA&&DATA.logs)||[]).filter(l=>l.kind===kind); }
+function latestScan(){ const ib=(DATA&&DATA.inbody)||[]; return ib.length?ib[ib.length-1]:null; }
 
 /* ---------- ROUTER ---------- */
 const TILES=[
@@ -131,18 +125,19 @@ function needPlan(msg){ return `<div class="card p-6 text-center"><div class="mu
 
 /* ---------- HOME (the apex tile grid — matches the ad) ---------- */
 function viewHome(){
-  const g=gamify();
-  const first=(DATA&&DATA.patient&&DATA.patient.first_name)||null;
+  const g=G(); const ib=latestScan();
+  const first=(DATA&&DATA.patient&&DATA.patient.first)||null;
   $('view').innerHTML=`
     <div class="mb-4">
       <div class="text-2xl font-display font-bold tracking-tight">Welcome${first?', '+esc(first):''}.</div>
       <div class="muted text-sm mt-0.5">Your complete health partner.</div>
     </div>
-    <div class="grid grid-cols-3 gap-2 mb-4">
-      <div class="card p-3 text-center"><div class="font-display text-xl font-bold">${g.streak}🔥</div><div class="text-[10px] muted font-semibold uppercase tracking-wide">streak</div></div>
-      <div class="card p-3 text-center"><div class="font-display text-xl font-bold seg">${g.points}</div><div class="text-[10px] muted font-semibold uppercase tracking-wide">points</div></div>
-      <div class="card p-3 text-center"><div class="font-display text-xl font-bold seg">${logsOf('injection').length}</div><div class="text-[10px] muted font-semibold uppercase tracking-wide">doses</div></div>
+    <div class="grid grid-cols-3 gap-2 mb-3">
+      <div class="card p-3 text-center"><div class="font-display text-xl font-bold">${g.streak||0}🔥</div><div class="text-[10px] muted font-semibold uppercase tracking-wide">streak</div></div>
+      <div class="card p-3 text-center"><div class="font-display text-xl font-bold seg">${g.points||0}</div><div class="text-[10px] muted font-semibold uppercase tracking-wide">points</div></div>
+      <div class="card p-3 text-center"><div class="font-display text-xl font-bold seg">${ib?Math.round(ib.weight_lb):'—'}</div><div class="text-[10px] muted font-semibold uppercase tracking-wide">${ib?'lb':'weight'}</div></div>
     </div>
+    ${ib?`<div class="card p-4 mb-4"><div class="flex items-center justify-between mb-2"><div class="font-display font-semibold text-sm">Latest InBody scan</div><span class="text-[11px] muted">${esc(ib.test_date||'')}</span></div><div class="grid grid-cols-3 gap-2 text-center"><div><div class="font-display font-bold seg">${Math.round(ib.weight_lb)}</div><div class="text-[10px] muted uppercase">lb</div></div><div><div class="font-display font-bold seg">${Math.round(ib.pbf_pct)}%</div><div class="text-[10px] muted uppercase">body fat</div></div><div><div class="font-display font-bold seg">${Math.round(ib.smm_lb)}</div><div class="text-[10px] muted uppercase">lb muscle</div></div></div></div>`:''}
     <div class="grid grid-cols-2 gap-3">
       ${TILES.map(t=>`<button class="tile" onclick="go('${t.id}')">
         <div class="ic"><svg viewBox="0 0 24 24">${t.icon}</svg></div>
