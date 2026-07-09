@@ -75,6 +75,7 @@
 const SB='https://jtifhcvbgxqwlywugvjv.supabase.co', ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWZoY3ZiZ3hxd2x5d3Vndmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDc5NTgsImV4cCI6MjA4ODA4Mzk1OH0.UfRVLuvM8_HPvKXUEDXb0cxR50znv16L5Tf99AnSc7g';
 const $=(id)=>document.getElementById(id);
 const esc=(s)=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtDate=(s)=>{ if(!s) return ''; const d=new Date(s); return isNaN(d)?'':d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }; // matches the portal's fmtDate exactly
 // token: from the QR (#t=...) OR a persisted one, so an installed icon reopens the last plan.
 let TOKEN=(location.hash.match(/t=([a-z0-9]+)/i)||[])[1]||null;
 if(TOKEN){ try{localStorage.setItem('vit_tok',TOKEN);}catch(e){} } else { try{TOKEN=localStorage.getItem('vit_tok');}catch(e){} }
@@ -118,7 +119,7 @@ const TILES=[
   {id:'meal',   label:'Meal Tracker', sub:'Track meals, build habits', icon:'<path d="M3 2v7c0 1.1.9 2 2 2h0a2 2 0 0 0 2-2V2M5 2v20M11 2v20M11 8s4-1 4-4-4-2-4 2 4 4 4 4"/>'},
   {id:'workout',label:'Workout Tracker', sub:'Stay consistent', icon:'<path d="M6.5 6.5 17.5 17.5M4 8l2-2M8 4l2 2M20 16l-2 2M16 20l-2-2M2 12l2 2M20 8l2 2"/>'},
   {id:'inject', label:'Injection Tracker', sub:'Stay on schedule', icon:'<path d="M18 2l4 4M17 3l4 4M20 5 8.5 16.5 3 21l.5-5.5L15 4M12 8l4 4"/>'},
-  {id:'phd',    label:'Your PhD', sub:'Learn. Understand. Transform.', icon:'<path d="M12 3a4 4 0 0 0-4 4v1a3 3 0 0 0 0 6 3 3 0 0 0 4 3 3 3 0 0 0 4-3 3 3 0 0 0 0-6V7a4 4 0 0 0-4-4z"/>'},
+  {id:'phd',    label:'Your PhD', sub:'Learn. Understand. Transform.', icon:'<path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/>'},
   {id:'ibt',    label:'IBT Curriculum', sub:'Behavior change, real results', icon:'<path d="M22 10 12 5 2 10l10 5 10-5zM6 12v5c0 1 2.7 3 6 3s6-2 6-3v-5"/>'},
 ];
 function go(v){ VIEW=v; render(); window.scrollTo(0,0); }
@@ -139,7 +140,7 @@ function viewHome(){
       <div class="card p-3 text-center"><div class="font-display text-xl font-bold seg">${g.points||0}</div><div class="text-[10px] muted font-semibold uppercase tracking-wide">points</div></div>
       <div class="card p-3 text-center"><div class="font-display text-xl font-bold seg">${ib?Math.round(ib.weight_lb):'—'}</div><div class="text-[10px] muted font-semibold uppercase tracking-wide">${ib?'lb':'weight'}</div></div>
     </div>
-    ${ib?`<div class="card p-4 mb-4"><div class="flex items-center justify-between mb-2"><div class="font-display font-semibold text-sm">Latest InBody scan</div><span class="text-[11px] muted">${esc(ib.test_date||'')}</span></div><div class="grid grid-cols-3 gap-2 text-center"><div><div class="font-display font-bold seg">${Math.round(ib.weight_lb)}</div><div class="text-[10px] muted uppercase">lb</div></div><div><div class="font-display font-bold seg">${Math.round(ib.pbf_pct)}%</div><div class="text-[10px] muted uppercase">body fat</div></div><div><div class="font-display font-bold seg">${Math.round(ib.smm_lb)}</div><div class="text-[10px] muted uppercase">lb muscle</div></div></div></div>`:''}
+    ${ib?`<div class="card p-4 mb-4"><div class="flex items-center justify-between mb-2"><div class="font-display font-semibold text-sm">Latest InBody scan</div><span class="text-[11px] muted">${fmtDate(ib.test_date)}</span></div><div class="grid grid-cols-3 gap-2 text-center"><div><div class="font-display font-bold seg">${Math.round(ib.weight_lb)}</div><div class="text-[10px] muted uppercase">lb</div></div><div><div class="font-display font-bold seg">${Math.round(ib.pbf_pct)}%</div><div class="text-[10px] muted uppercase">body fat</div></div><div><div class="font-display font-bold seg">${Math.round(ib.smm_lb)}</div><div class="text-[10px] muted uppercase">lb muscle</div></div></div></div>`:''}
     <div class="grid grid-cols-2 gap-3">
       ${TILES.map(t=>`<button class="tile" onclick="go('${t.id}')">
         <div class="ic"><svg viewBox="0 0 24 24">${t.icon}</svg></div>
