@@ -1281,8 +1281,32 @@
     return renderCrmView(p);
   }
 
+  // Shared Medicare GLP-1 Bridge card — used by BOTH the CRM view and Dr. DeBry's Provider view.
+  // Returns '' when the patient has no captured Bridge data. The button opens the prefilled PA.
+  function medicareBridgeCard(p){
+    const mb = p && p.medicare_bridge;
+    if(!mb) return '';
+    const CMAP={osa:'Mod-severe OSA',mash:'MASH/NASH + fibrosis',mi:'Prior heart attack',stroke:'Prior stroke',pad:'Symptomatic PAD',hfpef:'Heart failure',htn:'Uncontrolled HTN',ckd:'CKD stage 3a+'};
+    const cond=Object.keys(CMAP).filter(k=>mb.conditions&&mb.conditions[k]);
+    const isPartD=mb.route==='part_d_plan';
+    return `<div class="glass rounded-2xl p-4 border border-[#0a6cf5]/25">
+      <div class="sect-h flex items-center gap-1.5">🏥 Medicare GLP-1 Bridge</div>
+      <div class="mt-1"><span class="badge b-active" style="background:${isPartD?'#fff7ed':'#eef6ff'};color:${isPartD?'#b45309':'#0a6cf5'}">${isPartD?'Routes to Part D plan':'GLP-1 Bridge (weight-loss)'}</span></div>
+      <div class="text-[11px] text-[#6b7280] mt-3">Medicare number (MBI)</div>
+      <div class="font-mono text-sm text-[#16201d] tracking-wide">${mb.mbi?esc(mb.mbi):'<span class="text-[#9aa0ab] italic font-sans">collect on eligibility call</span>'}</div>
+      <div class="text-[11px] text-[#6b7280] mt-2">Initial BMI (PA Q5)</div>
+      <div class="text-sm text-[#16201d]">${mb.initial_bmi_band?esc(mb.initial_bmi_band):'—'}${mb.initial_bmi?` · ${esc(String(mb.initial_bmi))}`:''}</div>
+      <div class="text-[11px] text-[#6b7280] mt-2">Reported conditions</div>
+      <div class="text-sm text-[#16201d] flex flex-wrap gap-1 mt-0.5">${cond.length?cond.map(k=>`<span class="badge b-active" style="background:#f1f3f7;color:#3d4a45">${CMAP[k]}</span>`).join(''):'<span class="text-[#9aa0ab]">None reported (weight-loss only)</span>'}</div>
+      <div class="text-[11px] text-[#6b7280] mt-3 leading-snug">${isPartD?'Has a Part-D-eligible diagnosis, so submit GLP-1 coverage to the patient&rsquo;s Part D plan.':'No Part-D-eligible dx, so file the Bridge PA at CoverMyMeds (BIN 028918 / PCN MEDDGLP1BR) after a denied pharmacy claim.'} Dr. DeBry confirms clinical details before submitting.</div>
+      <button onclick="generateBridgePA('${p.id}')" class="mt-3 w-full px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8] inline-flex items-center justify-center gap-1.5">📄 Generate prefilled PA</button>
+    </div>`;
+  }
+
   function renderProviderView(p){
     const age = p.dob ? (new Date().getFullYear()-new Date(p.dob).getFullYear()) : '-';
+    const tlHtml = (()=>{ try { return timeline(p); } catch(e){ console.error('provider timeline failed', e); return '<div class="text-xs text-[#be123c]">Timeline unavailable.</div>'; } })();
+    try {
     $('#detailMain').innerHTML = `
       <div class="p-6 max-w-3xl">
         <div class="flex items-start justify-between gap-4 mb-6">
@@ -1301,6 +1325,8 @@
           ${infoRow(p,'dob','Date of birth')}
           ${infoRow(p,'program','Program')}
         </div>
+
+        ${p.medicare_bridge ? `<div class="mb-6">${medicareBridgeCard(p)}</div>` : ''}
 
         ${p.review&&p.review.length ? `
         <div class="rounded-2xl border border-[#ffd9a8] bg-[#fff7ed] p-5 mb-6">
@@ -1411,13 +1437,23 @@
 
         <div class="glass border border-[#e6e9ee] rounded-2xl p-5">
           <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-4">Chart timeline</div>
-          <div class="overflow-y-auto scroll -mr-2 pr-2" style="max-height:420px">${timeline(p)}</div>
+          <div class="overflow-y-auto scroll -mr-2 pr-2" style="max-height:420px">${tlHtml}</div>
           <div class="flex gap-2 mt-2 pt-3 border-t border-[#e6e9ee]">
             <input id="noteInput" class="field" placeholder="Add a note to the chart…" onkeydown="if(event.key==='Enter')addNote('${p.id}')">
             <button onclick="addNote('${p.id}')" class="px-4 py-2 rounded-lg bg-[#f1f3f7] border border-[#e6e9ee] text-sm font-medium hover:border-[#0a6cf5]/40">Add</button>
           </div>
         </div>
       </div>`;
+    } catch(e){
+      // Never leave the provider view blank: fall back to identity + the Medicare Bridge card so the
+      // clinical action (Generate PA) is always reachable. The console error names the real cause.
+      console.error('renderProviderView failed', e);
+      $('#detailMain').innerHTML = `<div class="p-6 max-w-3xl">
+        <h2 class="font-display text-2xl font-semibold tracking-[-1px]">${(p.first||'')+' '+(p.last||'')}</h2>
+        <div class="text-sm text-[#6b7280] mt-1 mb-4">${PROG[p.program]||'-'} program · age ${age}</div>
+        ${p.medicare_bridge ? medicareBridgeCard(p) : '<div class="text-sm text-[#be123c]">Some chart sections could not render. Reload the page.</div>'}
+      </div>`;
+    }
     syncBodyDock();
     if (isProvider()) loadClinicalReview(p.id);
   }
@@ -1513,24 +1549,7 @@
 
         <!-- RIGHT: associations -->
         <div class="flex flex-col gap-4">
-          ${p.medicare_bridge ? (()=>{
-            const mb=p.medicare_bridge;
-            const CMAP={osa:'Mod-severe OSA',mash:'MASH/NASH + fibrosis',mi:'Prior heart attack',stroke:'Prior stroke',pad:'Symptomatic PAD',hfpef:'Heart failure',htn:'Uncontrolled HTN',ckd:'CKD stage 3a+'};
-            const cond=Object.keys(CMAP).filter(k=>mb.conditions&&mb.conditions[k]);
-            const isPartD=mb.route==='part_d_plan';
-            return `<div class="glass rounded-2xl p-4 border border-[#0a6cf5]/25">
-              <div class="sect-h flex items-center gap-1.5">🏥 Medicare GLP-1 Bridge</div>
-              <div class="mt-1"><span class="badge b-active" style="background:${isPartD?'#fff7ed':'#eef6ff'};color:${isPartD?'#b45309':'#0a6cf5'}">${isPartD?'Routes to Part D plan':'GLP-1 Bridge (weight-loss)'}</span></div>
-              <div class="text-[11px] text-[#6b7280] mt-3">Medicare number (MBI)</div>
-              <div class="font-mono text-sm text-[#16201d] tracking-wide">${mb.mbi?esc(mb.mbi):'<span class="text-[#9aa0ab] italic font-sans">collect on eligibility call</span>'}</div>
-              <div class="text-[11px] text-[#6b7280] mt-2">Initial BMI (PA Q5)</div>
-              <div class="text-sm text-[#16201d]">${mb.initial_bmi_band?esc(mb.initial_bmi_band):'—'}${mb.initial_bmi?` · ${esc(String(mb.initial_bmi))}`:''}</div>
-              <div class="text-[11px] text-[#6b7280] mt-2">Reported conditions</div>
-              <div class="text-sm text-[#16201d] flex flex-wrap gap-1 mt-0.5">${cond.length?cond.map(k=>`<span class="badge b-active" style="background:#f1f3f7;color:#3d4a45">${CMAP[k]}</span>`).join(''):'<span class="text-[#9aa0ab]">None reported (weight-loss only)</span>'}</div>
-              <div class="text-[11px] text-[#6b7280] mt-3 leading-snug">${isPartD?'Has a Part-D-eligible diagnosis, so submit GLP-1 coverage to the patient&rsquo;s Part D plan.':'No Part-D-eligible dx, so file the Bridge PA at CoverMyMeds (BIN 028918 / PCN MEDDGLP1BR) after a denied pharmacy claim.'} Dr. DeBry confirms clinical details before submitting.</div>
-              <button onclick="generateBridgePA('${p.id}')" class="mt-3 w-full px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8] inline-flex items-center justify-center gap-1.5">📄 Generate prefilled PA</button>
-            </div>`;
-          })() : ''}
+          ${medicareBridgeCard(p)}
           <div class="glass rounded-2xl p-4"><div class="sect-h flex items-center gap-1.5"><img src="assets/deck-icons/billing.svg" alt="" style="width:15px;height:15px;opacity:.85">Subscription &amp; billing</div><div class="text-sm ${p.subscription?'':'text-[#9aa0ab]'}">${p.subscription?`<span class="font-display text-lg font-semibold">$${((p.subscription.recurring_cents||0)/100).toFixed(0)}</span><span class="text-[#6b7280]">/mo</span> · <span class="badge b-active">${p.subscription.status||'active'}</span>`:'No subscription on file'}</div></div>
           <div class="glass rounded-2xl p-4"><div class="sect-h flex items-center gap-1.5"><img src="assets/deck-icons/glp1.svg" alt="" style="width:15px;height:15px;opacity:.85">Program</div><div class="text-sm font-medium">${PROG[p.program]||'Not set'}</div></div>
           <div class="glass rounded-2xl p-4"><div class="sect-h">Referral source</div>${p.referred_by?`<div class="text-sm font-medium text-[#0a6cf5]">${esc(p.referred_by.practice_name)}</div>${p.referred_by.provider_name?`<div class="text-xs text-[#6b7280] mt-1">${esc(p.referred_by.provider_name)}</div>`:''}`:'<div class="text-sm text-[#9aa0ab]">None set</div>'}</div>
