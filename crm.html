@@ -1396,10 +1396,18 @@
         </div>
         <div id="veeStatus" class="text-xs text-[#6b7280] mb-6"></div>
 
-        <div id="chartVitalsPanel" class="mb-4"></div>
-        <div id="chartListsPanel" class="mb-2"></div>
-        <div id="chartNotesPanel" class="mb-6"></div>
-        <div id="chartDocsPanel" class="mb-6"></div>
+        <div class="glass border border-[#e6e9ee] rounded-2xl overflow-hidden mb-6" id="chartCard">
+          <div class="flex items-center gap-1 px-4 pt-2.5 border-b border-[#eef1f4]">
+            <button class="chart-tab px-3.5 py-2.5 text-sm font-semibold text-[#0a6cf5] border-b-2 border-[#0a6cf5] -mb-px" data-ct="summary" onclick="chartTab('summary',this)">Summary</button>
+            <button class="chart-tab px-3.5 py-2.5 text-sm font-semibold text-[#6b7280] border-b-2 border-transparent -mb-px" data-ct="notes" onclick="chartTab('notes',this)">Notes</button>
+            <button class="chart-tab px-3.5 py-2.5 text-sm font-semibold text-[#6b7280] border-b-2 border-transparent -mb-px" data-ct="docs" onclick="chartTab('docs',this)">Documents</button>
+          </div>
+          <div class="p-5">
+            <div id="chartTabSummary"><div id="chartListsPanel"></div></div>
+            <div id="chartTabNotes" class="hidden"><div id="chartNotesPanel"></div></div>
+            <div id="chartTabDocs" class="hidden"><div id="chartDocsPanel"></div></div>
+          </div>
+        </div>
 
         ${p.inbody ? `
         <div class="glass border border-[#e6e9ee] rounded-2xl p-5 mb-6">
@@ -3048,7 +3056,7 @@ HARD RULES:
     const r = await fetch(CONVEX_URL+'/chart-notes',{ method:'POST', headers:await convexHeaders(), body:JSON.stringify(payload) });
     return await r.json().catch(()=>({ ok:false, error:'bad response' }));
   }
-  function chartShell(inner){ return `<div class="glass border border-[#e6e9ee] rounded-2xl p-5"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-3">Clinical chart · encounter notes</div>${inner}</div>`; }
+  function chartShell(inner){ return chartSection('Encounter notes', '', inner); }
   function fmtNoteDate(n){ const t = n.encounter_date ? new Date(n.encounter_date+'T00:00:00') : new Date(n.created_at); return isNaN(t)?'':t.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
   function renderNoteCard(n){
     const signed = n.status==='signed';
@@ -3077,8 +3085,8 @@ HARD RULES:
     if(!j || j.ok===false){ box.innerHTML=chartShell('<div class="text-sm text-[#9aa0ab]">Clinical notes are available to providers and admins.</div>'); return; }
     window.__chartNotes=j.notes||[];
     const list=window.__chartNotes.length?window.__chartNotes.map(renderNoteCard).join(''):'<div class="text-sm text-[#9aa0ab]">No encounter notes yet.</div>';
-    const newBtn=j.canWrite?`<button onclick="openNoteEditor('${pid}')" class="px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">+ New note</button>`:'';
-    box.innerHTML=`<div class="glass border border-[#e6e9ee] rounded-2xl p-5"><div class="flex items-center justify-between mb-4"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Clinical chart · encounter notes</div>${newBtn}</div><div class="space-y-3">${list}</div></div>`;
+    const newBtn=j.canWrite?`<button onclick="openNoteEditor('${pid}')" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ New note</button>`:'';
+    box.innerHTML=chartSection('Encounter notes', newBtn, `<div class="space-y-3">${list}</div>`);
   }
   function soapFields(){
     const f=(id,label,ph)=>`<div><div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mb-1">${label}</div><textarea id="${id}" rows="4" class="field w-full resize-y" placeholder="${ph}"></textarea></div>`;
@@ -3130,19 +3138,19 @@ HARD RULES:
       else { const r=await postChart({action:'create',patient_id:ctx.pid,...body}); if(!r.ok) throw new Error(r.error||'create failed'); noteId=r.id; window.__noteCtx.noteId=noteId; }
       if(sign){ const s=await postChart({action:'sign',note_id:noteId}); if(!s.ok) throw new Error(s.error||'sign failed'); }
       document.getElementById('noteOverlay')?.remove();
-      await loadChartNotes(ctx.pid); if(sign) renderDetail();
+      await loadChartNotes(ctx.pid);
     }catch(e){ alert('Could not save the note: '+e.message); if(btn){ btn.disabled=false; btn.textContent=o; } }
   };
   window.signNote = async function(noteId){
     if(!confirm('Sign and lock this note? After signing it cannot be edited — only addenda can be added.')) return;
     const pid=((window.__chartNotes||[]).find(x=>x.id===noteId)||{}).patient_id||selId;
-    try{ const s=await postChart({action:'sign',note_id:noteId}); if(!s.ok) throw new Error(s.error||'sign failed'); await loadChartNotes(pid); renderDetail(); }
+    try{ const s=await postChart({action:'sign',note_id:noteId}); if(!s.ok) throw new Error(s.error||'sign failed'); await loadChartNotes(pid); }
     catch(e){ alert('Could not sign: '+e.message); }
   };
   window.addNoteAddendum = async function(noteId){
     const t=((document.getElementById('noteAddText')||{}).value||''); if(!t.trim()){ alert('Enter addendum text.'); return; }
     const pid=((window.__chartNotes||[]).find(x=>x.id===noteId)||{}).patient_id||selId;
-    try{ const r=await postChart({action:'addendum',note_id:noteId,text:t}); if(!r.ok) throw new Error(r.error||'failed'); document.getElementById('noteOverlay')?.remove(); await loadChartNotes(pid); renderDetail(); }
+    try{ const r=await postChart({action:'addendum',note_id:noteId,text:t}); if(!r.ok) throw new Error(r.error||'failed'); document.getElementById('noteOverlay')?.remove(); await loadChartNotes(pid); }
     catch(e){ alert('Could not add addendum: '+e.message); }
   };
   window.deleteNoteDraft = async function(noteId){
@@ -3167,23 +3175,30 @@ HARD RULES:
     return `<div class="bg-[#f7fafd] border border-[#e6eef7] rounded-xl p-3">${pHtml}${mHtml}</div>`;
   }
   async function loadChartLists(pid){
-    const listsBox=document.getElementById('chartListsPanel'), vitalsBox=document.getElementById('chartVitalsPanel');
-    const clear=()=>{ if(listsBox)listsBox.innerHTML=''; if(vitalsBox)vitalsBox.innerHTML=''; };
-    let j; try{ j=await postLists({action:'list',patient_id:pid}); }catch(e){ clear(); return; }
-    if(!j || j.ok===false){ clear(); return; }   // non-clinical staff: hidden (notes panel carries the message)
+    const box=document.getElementById('chartListsPanel'); if(!box) return;
+    let j; try{ j=await postLists({action:'list',patient_id:pid}); }catch(e){ box.innerHTML=''; return; }
+    if(!j || j.ok===false){ box.innerHTML=''; return; }   // non-clinical staff: hidden (notes tab carries the message)
     window.__chartProblems=j.problems||[]; window.__chartMeds=j.meds||[]; window.__chartVitals=j.vitals||[]; window.__chartListsWrite=!!j.canWrite;
-    if(vitalsBox) vitalsBox.innerHTML=vitalsCard(j);
-    if(listsBox) listsBox.innerHTML=problemsCard(j)+medsCard(j);
+    box.innerHTML = vitalsCard(j)+problemsCard(j)+medsCard(j);
+  }
+  // Tab switch for the unified Clinical Chart card.
+  window.chartTab=function(name, el){
+    ['summary','notes','docs'].forEach(n=>{ const c=document.getElementById('chartTab'+n.charAt(0).toUpperCase()+n.slice(1)); if(c) c.classList.toggle('hidden', n!==name); });
+    document.querySelectorAll('#chartCard .chart-tab').forEach(b=>{ const on=(b===el)||(b.dataset.ct===name); b.classList.toggle('text-[#0a6cf5]',on); b.classList.toggle('border-[#0a6cf5]',on); b.classList.toggle('text-[#6b7280]',!on); b.classList.toggle('border-transparent',!on); });
+  };
+  // One consistent section wrapper inside the chart card (replaces the old separate glass boxes).
+  function chartSection(title, addBtn, body){
+    return `<div class="pb-4 mb-4 border-b border-[#eef1f4] last:border-0 last:mb-0 last:pb-0"><div class="flex items-center justify-between mb-2.5"><div class="text-[11px] font-semibold tracking-[.1em] text-[#0a6cf5] uppercase">${title}</div>${addBtn||''}</div>${body}</div>`;
   }
   function problemsCard(j){
     const rows=(j.problems||[]).length?j.problems.map(renderProblemRow).join(''):'<div class="text-sm text-[#9aa0ab]">No problems recorded.</div>';
     const add=j.canWrite?`<button onclick="openProblemModal()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add problem</button>`:'';
-    return `<div class="glass border border-[#e6e9ee] rounded-2xl p-5 mb-4"><div class="flex items-center justify-between mb-3"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Problem list</div>${add}</div><div>${rows}</div></div>`;
+    return chartSection('Problem list', add, `<div>${rows}</div>`);
   }
   function medsCard(j){
     const rows=(j.meds||[]).length?j.meds.map(renderMedRow).join(''):'<div class="text-sm text-[#9aa0ab]">No medications recorded.</div>';
     const add=j.canWrite?`<button onclick="openMedModal()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add medication</button>`:'';
-    return `<div class="glass border border-[#e6e9ee] rounded-2xl p-5 mb-4"><div class="flex items-center justify-between mb-3"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Medications</div>${add}</div><div>${rows}</div></div>`;
+    return chartSection('Medications', add, `<div>${rows}</div>`);
   }
   function renderProblemRow(p){
     const resolved=p.status==='resolved';
@@ -3256,7 +3271,7 @@ HARD RULES:
       const hist=vs.length>1?`<details class="mt-1"><summary class="text-xs text-[#0a6cf5] font-semibold cursor-pointer">History (${vs.length})</summary><div class="mt-2 overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-[10px] uppercase tracking-wide text-[#6b7280] text-left border-b border-[#e6e9ee]"><th class="py-1.5 pr-3">Date</th><th class="py-1.5 pr-3">Weight</th><th class="py-1.5 pr-3">BMI</th><th class="py-1.5 pr-3">BP</th><th class="py-1.5 pr-3">HR</th>${j.canWrite?'<th class="py-1.5"></th>':''}</tr></thead><tbody>${vs.map(renderVitalsRow).join('')}</tbody></table></div></details>`:'';
       bodyHtml=grid+hist;
     }
-    return `<div class="glass border border-[#e6e9ee] rounded-2xl p-5"><div class="flex items-center justify-between mb-3"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Vitals</div>${add}</div>${bodyHtml}</div>`;
+    return chartSection('Vitals', add, bodyHtml);
   }
   function renderVitalsRow(v){
     const bp=(v.bp_systolic!=null&&v.bp_diastolic!=null)?`${v.bp_systolic}/${v.bp_diastolic}`:'—';
@@ -3291,7 +3306,7 @@ HARD RULES:
     window.__chartDocsWrite=!!j.canWrite; window.__chartDocs=j.docs||[];
     const rows=(j.docs||[]).length?j.docs.map(renderDocRow).join(''):'<div class="text-sm text-[#9aa0ab]">No documents on file.</div>';
     const add=j.canWrite?`<button onclick="openDocUpload()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">⬆ Upload document</button>`:'';
-    box.innerHTML=`<div class="glass border border-[#e6e9ee] rounded-2xl p-5"><div class="flex items-center justify-between mb-3"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Documents</div>${add}</div><div class="space-y-1.5">${rows}</div></div>`;
+    box.innerHTML=chartSection('Documents', add, `<div class="space-y-1.5">${rows}</div>`);
   }
   function renderDocRow(d){
     const dt=new Date(d.created_at); const dstr=isNaN(dt)?'':dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
