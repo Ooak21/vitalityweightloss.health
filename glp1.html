@@ -2050,6 +2050,8 @@ function buildClinicalRecord() {
       enrolled: true, mbi: state.bridge_mbi || '', conditions: cond, diabetes: state.diabetes || '',
       part_d_eligible: !!state.bridge_part_d_eligible, route: state.bridge_route || 'bridge',
       initial_bmi: state.bridge_bmi, initial_bmi_band: state.bridge_bmi_band || '',
+      dob: state.dob || '',
+      addr_line1: state.addrLine1 || '', addr_city: state.addrCity || '', addr_state: state.addrState || 'NV', addr_zip: state.addrZip || '',
     };
     const CMAP = { osa:'Moderate-severe OSA', mash:'MASH/NASH with fibrosis', mi:'Previous heart attack', stroke:'Previous stroke', pad:'Symptomatic PAD', hfpef:'Heart failure', htn:'Uncontrolled hypertension', ckd:'CKD stage 3a+' };
     const checked = Object.keys(CMAP).filter(k => cond[k]).map(k => CMAP[k]);

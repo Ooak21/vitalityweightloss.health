@@ -1528,6 +1528,7 @@
               <div class="text-[11px] text-[#6b7280] mt-2">Reported conditions</div>
               <div class="text-sm text-[#16201d] flex flex-wrap gap-1 mt-0.5">${cond.length?cond.map(k=>`<span class="badge b-active" style="background:#f1f3f7;color:#3d4a45">${CMAP[k]}</span>`).join(''):'<span class="text-[#9aa0ab]">None reported (weight-loss only)</span>'}</div>
               <div class="text-[11px] text-[#6b7280] mt-3 leading-snug">${isPartD?'Has a Part-D-eligible diagnosis, so submit GLP-1 coverage to the patient&rsquo;s Part D plan.':'No Part-D-eligible dx, so file the Bridge PA at CoverMyMeds (BIN 028918 / PCN MEDDGLP1BR) after a denied pharmacy claim.'} Dr. DeBry confirms clinical details before submitting.</div>
+              <button onclick="generateBridgePA('${p.id}')" class="mt-3 w-full px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8] inline-flex items-center justify-center gap-1.5">📄 Generate prefilled PA</button>
             </div>`;
           })() : ''}
           <div class="glass rounded-2xl p-4"><div class="sect-h flex items-center gap-1.5"><img src="assets/deck-icons/billing.svg" alt="" style="width:15px;height:15px;opacity:.85">Subscription &amp; billing</div><div class="text-sm ${p.subscription?'':'text-[#9aa0ab]'}">${p.subscription?`<span class="font-display text-lg font-semibold">$${((p.subscription.recurring_cents||0)/100).toFixed(0)}</span><span class="text-[#6b7280]">/mo</span> · <span class="badge b-active">${p.subscription.status||'active'}</span>`:'No subscription on file'}</div></div>
@@ -2881,6 +2882,115 @@ HARD RULES:
       alert('Preferences saved. Regenerate the plan to personalize it with these.');
     }catch(e){ err.textContent='Could not save: '+e.message; err.classList.remove('hidden'); }
     finally{ btn.disabled=false; btn.textContent=o; }
+  };
+  // ---------------- one-click Medicare GLP-1 Bridge PA prefill (provider files at CoverMyMeds or fax) ----------------
+  // Renders the official CoverMyMeds "Medicare GLP-1 Bridge Prior Authorization Request Form" as an
+  // EDITABLE, print-ready page, prefilled from the patient's captured intake (p.medicare_bridge) plus
+  // Dr. DeBry's prescriber block. Everything is a real input/checkbox so DeBry verifies every answer
+  // against the chart, corrects anything, picks the drug + signs, then prints to PDF / faxes to
+  // 1-800-530-2404 or copies into CoverMyMeds.com. Pure client-side — PHI never leaves the authed session.
+  window.generateBridgePA = function(id){
+    const p = (patients||[]).find(x=>x.id===id);
+    if(!p){ alert('Patient not found.'); return; }
+    const mb = p.medicare_bridge;
+    if(!mb){ alert('No Medicare Bridge data was captured for this patient.'); return; }
+    const e = esc;
+    const cond = mb.conditions || {}, diab = mb.diabetes || '';
+    const RX = { name:'Peter W DeBry, MD', npi:'1831137991', taxId:'', addr:'6140 Brent Thurman Way Ste 100', city:'Las Vegas, NV', zip:'89148', phone:'(702) 602-5002', fax:'', contact:'' };
+    const patName = ((p.first||'')+' '+(p.last||'')).trim();
+    const dob = mb.dob || p.dob || '';
+    const addr = mb.addr_line1 || '', pcity = (mb.addr_city||'') + (mb.addr_state?(', '+mb.addr_state):''), pzip = mb.addr_zip || '', phone = p.phone || '';
+    const band = mb.initial_bmi_band || '', isPartD = mb.route === 'part_d_plan';
+    const BANDS = ['Less than 27','27 to 29.9','30 to 34.9 (E66.811)','35 to 39.9 (E66.812)','40 or more (E66.813)'];
+    const DRUGS = ['Foundayo Tablets','Wegovy Injection','Wegovy Tablets','Wegovy HD Injection','Zepbound Kwikpen'];
+    const fld = (v) => `<input class="fl" value="${e(v||'')}">`;
+    const yn = (n,y) => `<span class="yn"><label><input type="checkbox" ${y?'checked':''}> Yes</label><label><input type="checkbox" ${y?'':'checked'}> No</label></span>`;
+    const q = (num,txt,y) => `<tr><td class="qn">Q${num}.</td><td class="qt">${txt}</td><td class="qa">${yn('q'+num,y)}</td></tr>`;
+    const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Medicare GLP-1 Bridge PA — ${e(patName)}</title>
+<style>
+  *{box-sizing:border-box} body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#16201d;margin:0;background:#eef1f4;font-size:12px}
+  .bar{position:sticky;top:0;background:#16201d;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;z-index:5}
+  .bar b{font-size:14px} .bar .sp{flex:1}
+  .btn{background:#0a6cf5;color:#fff;border:0;border-radius:8px;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer} .btn:hover{background:#0856c8}
+  .btn.g{background:#334155} .sheet{max-width:820px;margin:16px auto;background:#fff;padding:26px 30px;box-shadow:0 6px 24px rgba(16,24,40,.12)}
+  h1{font-size:15px;text-align:center;margin:0 0 2px} .sub{text-align:center;font-size:11px;color:#334155;margin-bottom:12px}
+  .warn{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:8px;padding:9px 12px;margin:0 0 12px;font-size:11px}
+  .note{background:#f1f5ff;border:1px solid #cfe0ff;border-radius:8px;padding:9px 12px;margin:0 0 14px;font-size:11px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:0 22px} .box{border:1px solid #cbd2da;border-radius:8px;padding:12px 14px;margin-bottom:12px}
+  .box h3{margin:0 0 8px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#0a6cf5}
+  .r{display:flex;align-items:center;gap:8px;margin-bottom:7px} .r label.k{width:110px;font-size:11px;color:#3d4a45;flex:0 0 auto}
+  .fl{flex:1;border:0;border-bottom:1px solid #c7ccd6;font:inherit;font-size:12px;padding:2px 2px 3px;min-width:0;background:transparent}
+  .fl:focus{outline:none;border-bottom-color:#0a6cf5}
+  table.qs{width:100%;border-collapse:collapse;margin-top:4px} table.qs td{border-top:1px solid #e6e9ee;padding:8px 4px;vertical-align:top;font-size:11.5px}
+  td.qn{width:34px;color:#6b7280;font-weight:600} td.qa{width:130px;white-space:nowrap}
+  .yn label{margin-right:12px;font-size:11.5px;cursor:pointer} .yn input{transform:translateY(1px)}
+  .drugs label,.bmi label{display:block;margin:5px 0;font-size:12px;cursor:pointer} .drugs input,.bmi input{margin-right:7px}
+  .sig{display:flex;gap:30px;margin-top:22px} .sig .line{flex:1;border-top:1px solid #16201d;padding-top:4px;font-size:10px;color:#6b7280}
+  .fine{font-size:9px;color:#8a929e;line-height:1.5;margin-top:14px}
+  @media print{ body{background:#fff} .bar{display:none} .sheet{box-shadow:none;margin:0;max-width:none;padding:0}
+    .fl{border-bottom:1px solid #999} .btn{display:none} }
+</style></head><body>
+<div class="bar">
+  <b>Medicare GLP-1 Bridge PA</b><span style="opacity:.8">${e(patName)||'Patient'}</span>
+  <span class="sp"></span>
+  <button class="btn" onclick="window.print()">Print / Save PDF</button>
+  <button class="btn g" onclick="window.close()">Close</button>
+</div>
+<div class="sheet">
+  <h1>MEDICARE GLP-1 BRIDGE PRIOR AUTHORIZATION REQUEST FORM</h1>
+  <div class="sub">Submit electronic PA at Covermymeds.com &nbsp;OR&nbsp; Fax to: 1-800-530-2404</div>
+  ${isPartD ? `<div class="warn"><b>Routing check:</b> the patient reported a Part-D-eligible diagnosis (OSA, MASH, type 2 diabetes, or established CV disease). Per this form, GLP-1 coverage for those patients must be submitted to the patient&rsquo;s <b>Part D plan</b>, not the Bridge. Confirm before filing.</div>` : ''}
+  <div class="note"><b>Prefilled from the patient&rsquo;s intake.</b> Dr. DeBry must verify every answer against the chart, select the requested drug, and sign before submitting. A denied pharmacy claim to the GLP-1 Bridge <b>BIN 028918 / PCN MEDDGLP1BR</b> is required before a PA can be submitted.</div>
+  <div class="grid">
+    <div class="box"><h3>Patient</h3>
+      <div class="r"><label class="k">Name</label>${fld(patName)}</div>
+      <div class="r"><label class="k">Medicare MBI</label>${fld(mb.mbi)}</div>
+      <div class="r"><label class="k">Date of birth</label>${fld(dob)}</div>
+      <div class="r"><label class="k">Address</label>${fld(addr)}</div>
+      <div class="r"><label class="k">City, State</label>${fld(pcity)}</div>
+      <div class="r"><label class="k">ZIP</label>${fld(pzip)}</div>
+      <div class="r"><label class="k">Phone</label>${fld(phone)}</div>
+    </div>
+    <div class="box"><h3>Prescriber</h3>
+      <div class="r"><label class="k">Name</label>${fld(RX.name)}</div>
+      <div class="r"><label class="k">NPI</label>${fld(RX.npi)}</div>
+      <div class="r"><label class="k">Tax ID</label>${fld(RX.taxId)}</div>
+      <div class="r"><label class="k">Address</label>${fld(RX.addr)}</div>
+      <div class="r"><label class="k">City, State</label>${fld(RX.city)}</div>
+      <div class="r"><label class="k">ZIP</label>${fld(RX.zip)}</div>
+      <div class="r"><label class="k">Phone</label>${fld(RX.phone)}</div>
+      <div class="r"><label class="k">Fax</label>${fld(RX.fax)}</div>
+      <div class="r"><label class="k">Office contact</label>${fld(RX.contact)}</div>
+    </div>
+  </div>
+  <div class="box"><h3>Requested drug (select one)</h3><div class="drugs">
+    ${DRUGS.map(d=>`<label><input type="radio" name="drug"> ${d}</label>`).join('')}
+  </div></div>
+  <div class="box"><h3>Clinical</h3>
+    <table class="qs">
+      <tr><td class="qn">Q1.</td><td class="qt">Part-D-eligible diagnosis acknowledgment (OSA / MASH / type 2 diabetes / established CV disease routes to the Part D plan).</td><td class="qa"><span class="yn"><label><input type="checkbox" checked> Acknowledged</label></span></td></tr>
+      ${q(2,'Moderate to severe obstructive sleep apnea (OSA)?', !!cond.osa)}
+      ${q(3,'Noncirrhotic MASH with moderate-to-advanced fibrosis (formerly NASH)?', !!cond.mash)}
+      ${q(4,'Type 2 diabetes?', diab==='t2')}
+      <tr><td class="qn">Q5.</td><td class="qt">Body Mass Index (BMI) at GLP-1 therapy initiation (use the initial BMI):<div class="bmi" style="margin-top:5px">${BANDS.map(bd=>`<label><input type="radio" name="bmi" ${bd===band?'checked':''}> ${bd}</label>`).join('')}</div></td><td class="qa"></td></tr>
+      ${q(6,'Pre-diabetes (per ADA guidelines)?', diab==='pre')}
+      ${q(7,'Previous myocardial infarction?', !!cond.mi)}
+      ${q(8,'Previous stroke?', !!cond.stroke)}
+      ${q(9,'Symptomatic peripheral artery disease?', !!cond.pad)}
+      ${q(10,'Heart failure with preserved ejection fraction?', !!cond.hfpef)}
+      ${q(11,'Uncontrolled hypertension (SBP &gt;140 or DBP &gt;90 despite two antihypertensives)?', !!cond.htn)}
+      ${q(12,'Chronic kidney disease stage 3a or above?', !!cond.ckd)}
+    </table>
+  </div>
+  <div class="sig">
+    <div class="line">Prescriber signature</div>
+    <div class="line" style="flex:0 0 200px">Date</div>
+  </div>
+  <div class="fine">I declare under penalty of perjury under the laws of the United States of America that the information provided is true and correct. This transmission contains confidential information that is legally privileged and intended only for the named recipient. Generated from Vitality patient intake ${e(patName)} on ${e(fmtDate(Date.now()))} for provider review. Verify all fields before submission.</div>
+</div></body></html>`;
+    const w = window.open('', '_blank');
+    if(!w){ alert('Popup blocked. Allow popups for this site, then click Generate again.'); return; }
+    w.document.open(); w.document.write(html); w.document.close();
   };
   // ---------------- generate starting plan from InBody ----------------
   window.generatePlan = async function(id, force, btn){

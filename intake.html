@@ -1134,6 +1134,8 @@ async function submitIntake() {
             route: state.bridge_route || 'bridge',     // part_d_plan | bridge
             initial_bmi: state.bridge_bmi,
             initial_bmi_band: state.bridge_bmi_band || '',
+            dob: state.dob || '',                      // prefill the PA patient block
+            addr_line1: state.addrLine1 || '', addr_city: state.addrCity || '', addr_state: state.addrState || 'NV', addr_zip: state.addrZip || '',
             captured_at: state.signedAt
           } } : {})
         }
