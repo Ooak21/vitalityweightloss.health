@@ -3340,7 +3340,14 @@ HARD RULES:
       if(/^image\//.test(type)){ body.innerHTML=`<img src="${objUrl}" alt="${esc(d.filename)}" style="max-width:100%;max-height:100%;object-fit:contain">`; }
       else if(/pdf/.test(type)||/\.pdf$/i.test(d.filename)){ body.innerHTML=`<iframe src="${objUrl}" class="w-full h-full" style="border:0;background:#fff;border-radius:8px"></iframe>`; }
       else { body.innerHTML=`<div class="text-white/80 text-sm text-center p-6">No inline preview for this file type.<br>Use “Open in new tab” above.</div>`; }
-    }catch(e){ const body=document.getElementById('previewBody'); if(body) body.innerHTML=`<div class="text-white/80 text-sm p-6">Could not load preview. Use “Open in new tab” above.</div>`; }
+    }catch(e){
+      // Blob fetch can be blocked cross-origin. Images still render via a direct <img src>; others fall back.
+      const body=document.getElementById('previewBody'); if(!body) return;
+      const isImg=/^image\//.test(d.content_type||'')||/\.(png|jpe?g|gif|webp|bmp)$/i.test(d.filename);
+      body.innerHTML = isImg
+        ? `<img src="${d.url}" alt="${esc(d.filename)}" style="max-width:100%;max-height:100%;object-fit:contain">`
+        : `<div class="text-white/80 text-sm p-6 text-center">Preview couldn’t load inline. Use “Open in new tab” above.</div>`;
+    }
   };
 
   // ---------------- generate starting plan from InBody ----------------
