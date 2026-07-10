@@ -1396,6 +1396,7 @@
         </div>
         <div id="veeStatus" class="text-xs text-[#6b7280] mb-6"></div>
 
+        <div id="chartListsPanel" class="mb-2"></div>
         <div id="chartNotesPanel" class="mb-6"></div>
 
         ${p.inbody ? `
@@ -1458,6 +1459,7 @@
     }
     syncBodyDock();
     if (isProvider()) loadClinicalReview(p.id);
+    loadChartLists(p.id);
     loadChartNotes(p.id);
   }
 
@@ -3100,7 +3102,7 @@ HARD RULES:
     const typeVal=note?note.encounter_type:'follow_up', dateVal=note?(note.encounter_date||today):today;
     const typeOpts=Object.entries(NOTE_TYPE_LABELS).map(([k,vv])=>`<option value="${k}" ${k===typeVal?'selected':''}>${vv}</option>`).join('');
     ov.innerHTML=`<div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-6"><div class="flex items-center justify-between p-4 border-b border-[#e6e9ee]"><div><div class="font-display text-lg font-semibold">${isNew?'New encounter note':'Edit draft'}</div><div class="text-xs text-[#6b7280]">${esc(pname)}</div></div><button onclick="document.getElementById('noteOverlay').remove()" class="text-[#9aa0ab] hover:text-[#16201d] text-2xl leading-none">×</button></div>
-      <div class="p-5 space-y-3"><div class="flex gap-3 flex-wrap items-end"><label class="text-xs font-semibold text-[#3d4a45]">Encounter type<select id="noteType" class="field mt-1 block">${typeOpts}</select></label><label class="text-xs font-semibold text-[#3d4a45]">Date of service<input id="noteDate" type="date" value="${dateVal}" class="field mt-1 block"></label><button onclick="applyNoteTemplate()" class="px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-sm font-semibold hover:bg-[#0a6cf5]/10">Use template</button></div>${soapFields()}</div>
+      <div class="p-5 space-y-3"><div class="flex gap-3 flex-wrap items-end"><label class="text-xs font-semibold text-[#3d4a45]">Encounter type<select id="noteType" class="field mt-1 block">${typeOpts}</select></label><label class="text-xs font-semibold text-[#3d4a45]">Date of service<input id="noteDate" type="date" value="${dateVal}" class="field mt-1 block"></label><button onclick="applyNoteTemplate()" class="px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-sm font-semibold hover:bg-[#0a6cf5]/10">Use template</button></div>${noteRefStrip()}${soapFields()}</div>
       <div class="flex items-center justify-between gap-2 p-4 border-t border-[#e6e9ee]"><div class="text-[11px] text-[#9aa0ab]">${isNew?'Saved as a draft you can edit until you sign.':'Draft · editable until signed.'}</div><div class="flex gap-2">${!isNew?`<button onclick="deleteNoteDraft('${note.id}')" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#be123c] text-sm font-semibold hover:bg-[#fef2f2]">Delete</button>`:''}<button id="noteSaveBtn" onclick="saveNoteDraft(false)" class="px-4 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-sm font-semibold hover:bg-[#0a6cf5]/10">Save draft</button><button id="noteSignBtn" onclick="saveNoteDraft(true)" class="px-4 py-2 rounded-xl bg-[#0a7a3d] text-white text-sm font-semibold hover:bg-[#0a6a34]">Sign & lock</button></div></div></div>`;
     document.body.appendChild(ov);
     window.__noteCtx={ pid, noteId: note?note.id:null };
@@ -3146,6 +3148,95 @@ HARD RULES:
     try{ const r=await postChart({action:'delete',note_id:noteId}); if(!r.ok) throw new Error(r.error||'failed'); document.getElementById('noteOverlay')?.remove(); await loadChartNotes(pid); }
     catch(e){ alert('Could not delete: '+e.message); }
   };
+
+  // ================= Clinical charting — problem list & medication list =================
+  async function postLists(payload){ const r=await fetch(CONVEX_URL+'/chart-lists',{ method:'POST', headers:await convexHeaders(), body:JSON.stringify(payload) }); return await r.json().catch(()=>({ ok:false, error:'bad response' })); }
+  const MED_SOURCES = { prescribed:'Prescribed here', reported:'Patient-reported', external:'External prescriber' };
+  // Reference strip shown at the top of the note editor: active problems + active meds (read-only), so
+  // each encounter note is written with the coded diagnoses and current medications in view.
+  function noteRefStrip(){
+    const probs=(window.__chartProblems||[]).filter(p=>p.status==='active');
+    const meds=(window.__chartMeds||[]).filter(m=>m.status==='active');
+    if(!probs.length && !meds.length) return '';
+    const chip=(t)=>`<span class="inline-block bg-white border border-[#e6eef7] text-[#3d4a45] rounded-full px-2 py-0.5 text-[11px] mr-1 mb-1">${esc(t)}</span>`;
+    const pHtml=probs.length?`<div class="mb-1"><span class="text-[10px] uppercase tracking-wide text-[#0a6cf5] font-semibold mr-1">Active problems</span>${probs.map(p=>chip((p.code?p.code+' ':'')+p.label)).join('')}</div>`:'';
+    const mHtml=meds.length?`<div><span class="text-[10px] uppercase tracking-wide text-[#0a6cf5] font-semibold mr-1">Active meds</span>${meds.map(m=>chip(m.name+(m.dose?' '+m.dose:''))).join('')}</div>`:'';
+    return `<div class="bg-[#f7fafd] border border-[#e6eef7] rounded-xl p-3">${pHtml}${mHtml}</div>`;
+  }
+  async function loadChartLists(pid){
+    const box=document.getElementById('chartListsPanel'); if(!box) return;
+    let j; try{ j=await postLists({action:'list',patient_id:pid}); }catch(e){ box.innerHTML=''; return; }
+    if(!j || j.ok===false){ box.innerHTML=''; return; }   // non-clinical staff: hidden (notes panel carries the message)
+    window.__chartProblems=j.problems||[]; window.__chartMeds=j.meds||[]; window.__chartListsWrite=!!j.canWrite;
+    box.innerHTML = problemsCard(j) + medsCard(j);
+  }
+  function problemsCard(j){
+    const rows=(j.problems||[]).length?j.problems.map(renderProblemRow).join(''):'<div class="text-sm text-[#9aa0ab]">No problems recorded.</div>';
+    const add=j.canWrite?`<button onclick="openProblemModal()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add problem</button>`:'';
+    return `<div class="glass border border-[#e6e9ee] rounded-2xl p-5 mb-4"><div class="flex items-center justify-between mb-3"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Problem list</div>${add}</div><div>${rows}</div></div>`;
+  }
+  function medsCard(j){
+    const rows=(j.meds||[]).length?j.meds.map(renderMedRow).join(''):'<div class="text-sm text-[#9aa0ab]">No medications recorded.</div>';
+    const add=j.canWrite?`<button onclick="openMedModal()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add medication</button>`:'';
+    return `<div class="glass border border-[#e6e9ee] rounded-2xl p-5 mb-4"><div class="flex items-center justify-between mb-3"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Medications</div>${add}</div><div>${rows}</div></div>`;
+  }
+  function renderProblemRow(p){
+    const resolved=p.status==='resolved';
+    const code=p.code?`<span class="font-mono text-[11px] text-[#0a6cf5] mr-1">${esc(p.code)}</span>`:'';
+    const meta=[resolved?('resolved'+(p.resolved_date?' '+p.resolved_date:'')):'active', p.onset_date?('onset '+p.onset_date):''].filter(Boolean).join(' · ');
+    const acts=window.__chartListsWrite?`<button onclick="openProblemModal('${p.id}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="setProblemStatus('${p.id}','${resolved?'active':'resolved'}')" class="text-[#6b7280] hover:underline">${resolved?'reactivate':'resolve'}</button> · <button onclick="deleteProblem('${p.id}')" class="text-[#be123c] hover:underline">delete</button>`:'';
+    return `<div class="flex items-start justify-between gap-3 py-2 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm ${resolved?'line-through text-[#9aa0ab]':'text-[#16201d] font-medium'}">${code}${esc(p.label)}</div><div class="text-[11px] text-[#9aa0ab]">${meta}${p.note?' · '+esc(p.note):''}</div></div><div class="text-[11px] whitespace-nowrap pt-0.5">${acts}</div></div>`;
+  }
+  function renderMedRow(m){
+    const dc=m.status==='discontinued';
+    const line=[esc(m.name)+(m.dose?' '+esc(m.dose):''), m.sig?esc(m.sig):''].filter(Boolean).join(' · ');
+    const src=m.source&&MED_SOURCES[m.source]?MED_SOURCES[m.source]:(m.source||'');
+    const meta=[dc?('discontinued'+(m.stop_date?' '+m.stop_date:'')):'active', src, (m.start_date&&!dc)?('since '+m.start_date):''].filter(Boolean).join(' · ');
+    const acts=window.__chartListsWrite?`<button onclick="openMedModal('${m.id}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="setMedStatus('${m.id}','${dc?'active':'discontinued'}')" class="text-[#6b7280] hover:underline">${dc?'reactivate':'discontinue'}</button> · <button onclick="deleteMed('${m.id}')" class="text-[#be123c] hover:underline">delete</button>`:'';
+    return `<div class="flex items-start justify-between gap-3 py-2 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm ${dc?'line-through text-[#9aa0ab]':'text-[#16201d] font-medium'}">${line}</div><div class="text-[11px] text-[#9aa0ab]">${meta}${m.note?' · '+esc(m.note):''}</div></div><div class="text-[11px] whitespace-nowrap pt-0.5">${acts}</div></div>`;
+  }
+  function listModalShell(title, bodyHtml, footerHtml){
+    let ov=document.getElementById('listOverlay'); if(ov) ov.remove();
+    ov=document.createElement('div'); ov.id='listOverlay'; ov.className='fixed inset-0 z-[85] bg-black/40 flex items-start justify-center overflow-y-auto p-4'; ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+    ov.innerHTML=`<div class="bg-white rounded-2xl shadow-2xl w-full max-w-md my-8"><div class="flex items-center justify-between p-4 border-b border-[#e6e9ee]"><div class="font-display text-lg font-semibold">${title}</div><button onclick="document.getElementById('listOverlay').remove()" class="text-[#9aa0ab] hover:text-[#16201d] text-2xl leading-none">×</button></div><div class="p-5 space-y-3">${bodyHtml}</div><div class="flex justify-end gap-2 p-4 border-t border-[#e6e9ee]">${footerHtml}</div></div>`;
+    document.body.appendChild(ov);
+  }
+  const _lf=(id,label,val,ph,type)=>`<label class="block text-xs font-semibold text-[#3d4a45]">${label}<input id="${id}" type="${type||'text'}" value="${esc(val||'')}" placeholder="${esc(ph||'')}" class="field mt-1 block w-full"></label>`;
+  window.openProblemModal=function(problemId){
+    const p=problemId?(window.__chartProblems||[]).find(x=>x.id===problemId):null;
+    const statusSel=`<label class="block text-xs font-semibold text-[#3d4a45]">Status<select id="pmStatus" class="field mt-1 block w-full"><option value="active" ${(!p||p.status==='active')?'selected':''}>Active</option><option value="resolved" ${p&&p.status==='resolved'?'selected':''}>Resolved</option></select></label>`;
+    const body=_lf('pmCode','ICD-10 code (optional)',p?p.code:'','e.g., E66.811')+_lf('pmLabel','Problem',p?p.label:'','e.g., Obesity, Class 1')+_lf('pmOnset','Onset date (optional)',p?p.onset_date:'','','date')+statusSel+`<label class="block text-xs font-semibold text-[#3d4a45]">Note (optional)<textarea id="pmNote" rows="2" class="field mt-1 block w-full resize-none">${esc(p?p.note:'')}</textarea></label>`;
+    const footer=`${p?`<button onclick="deleteProblem('${p.id}')" class="mr-auto px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#be123c] text-sm font-semibold hover:bg-[#fef2f2]">Delete</button>`:''}<button onclick="document.getElementById('listOverlay').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-sm font-semibold hover:bg-[#f1f3f7]">Cancel</button><button id="pmSave" onclick="saveProblem('${problemId||''}')" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Save</button>`;
+    listModalShell(problemId?'Edit problem':'Add problem', body, footer);
+  };
+  window.saveProblem=async function(problemId){
+    const gv=(id)=>{const e=document.getElementById(id);return e?e.value:undefined;};
+    const label=(gv('pmLabel')||'').trim(); if(!label){ alert('Enter a problem description.'); return; }
+    const btn=document.getElementById('pmSave'); if(btn){btn.disabled=true;btn.textContent='Saving…';}
+    const payload={ code:gv('pmCode'), label, status:gv('pmStatus'), onset_date:gv('pmOnset'), note:gv('pmNote') };
+    try{ const r = problemId ? await postLists({action:'problem_update',problem_id:problemId,...payload}) : await postLists({action:'problem_add',patient_id:selId,...payload}); if(!r.ok) throw new Error(r.error||'save failed'); document.getElementById('listOverlay')?.remove(); await loadChartLists(selId); }
+    catch(e){ alert('Could not save: '+e.message); if(btn){btn.disabled=false;btn.textContent='Save';} }
+  };
+  window.setProblemStatus=async function(id,status){ try{ const r=await postLists({action:'problem_update',problem_id:id,status}); if(!r.ok) throw new Error(r.error||'failed'); await loadChartLists(selId);}catch(e){ alert('Could not update: '+e.message);} };
+  window.deleteProblem=async function(id){ if(!confirm('Remove this problem from the list?')) return; try{ const r=await postLists({action:'problem_delete',problem_id:id}); if(!r.ok) throw new Error(r.error||'failed'); document.getElementById('listOverlay')?.remove(); await loadChartLists(selId);}catch(e){ alert('Could not delete: '+e.message);} };
+  window.openMedModal=function(medId){
+    const m=medId?(window.__chartMeds||[]).find(x=>x.id===medId):null;
+    const statusSel=`<label class="block text-xs font-semibold text-[#3d4a45]">Status<select id="mmStatus" class="field mt-1 block w-full"><option value="active" ${(!m||m.status==='active')?'selected':''}>Active</option><option value="discontinued" ${m&&m.status==='discontinued'?'selected':''}>Discontinued</option></select></label>`;
+    const srcSel=`<label class="block text-xs font-semibold text-[#3d4a45]">Source<select id="mmSource" class="field mt-1 block w-full">${Object.entries(MED_SOURCES).map(([k,vv])=>`<option value="${k}" ${(m&&m.source===k)||(!m&&k==='prescribed')?'selected':''}>${vv}</option>`).join('')}</select></label>`;
+    const body=_lf('mmName','Medication',m?m.name:'','e.g., Semaglutide')+_lf('mmDose','Dose (optional)',m?m.dose:'','e.g., 0.5 mg')+_lf('mmSig','Directions / sig (optional)',m?m.sig:'','e.g., inject subcutaneously weekly')+srcSel+_lf('mmStart','Start date (optional)',m?m.start_date:'','','date')+statusSel+`<label class="block text-xs font-semibold text-[#3d4a45]">Note (optional)<textarea id="mmNote" rows="2" class="field mt-1 block w-full resize-none">${esc(m?m.note:'')}</textarea></label>`;
+    const footer=`${m?`<button onclick="deleteMed('${m.id}')" class="mr-auto px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#be123c] text-sm font-semibold hover:bg-[#fef2f2]">Delete</button>`:''}<button onclick="document.getElementById('listOverlay').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-sm font-semibold hover:bg-[#f1f3f7]">Cancel</button><button id="mmSave" onclick="saveMed('${medId||''}')" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Save</button>`;
+    listModalShell(medId?'Edit medication':'Add medication', body, footer);
+  };
+  window.saveMed=async function(medId){
+    const gv=(id)=>{const e=document.getElementById(id);return e?e.value:undefined;};
+    const name=(gv('mmName')||'').trim(); if(!name){ alert('Enter a medication name.'); return; }
+    const btn=document.getElementById('mmSave'); if(btn){btn.disabled=true;btn.textContent='Saving…';}
+    const payload={ name, dose:gv('mmDose'), sig:gv('mmSig'), source:gv('mmSource'), start_date:gv('mmStart'), status:gv('mmStatus'), note:gv('mmNote') };
+    try{ const r = medId ? await postLists({action:'med_update',med_id:medId,...payload}) : await postLists({action:'med_add',patient_id:selId,...payload}); if(!r.ok) throw new Error(r.error||'save failed'); document.getElementById('listOverlay')?.remove(); await loadChartLists(selId); }
+    catch(e){ alert('Could not save: '+e.message); if(btn){btn.disabled=false;btn.textContent='Save';} }
+  };
+  window.setMedStatus=async function(id,status){ try{ const r=await postLists({action:'med_update',med_id:id,status}); if(!r.ok) throw new Error(r.error||'failed'); await loadChartLists(selId);}catch(e){ alert('Could not update: '+e.message);} };
+  window.deleteMed=async function(id){ if(!confirm('Remove this medication from the list?')) return; try{ const r=await postLists({action:'med_delete',med_id:id}); if(!r.ok) throw new Error(r.error||'failed'); document.getElementById('listOverlay')?.remove(); await loadChartLists(selId);}catch(e){ alert('Could not delete: '+e.message);} };
 
   // ---------------- generate starting plan from InBody ----------------
   window.generatePlan = async function(id, force, btn){
