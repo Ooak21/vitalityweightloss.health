@@ -3360,10 +3360,14 @@ HARD RULES:
     document.body.appendChild(ov);
     try{
       const r=await fetch(d.url); if(!r.ok) throw new Error('fetch '+r.status);
-      const blob=await r.blob(); const objUrl=URL.createObjectURL(blob); ov._url=objUrl;
-      const type=blob.type||d.content_type||''; const body=document.getElementById('previewBody'); if(!body) return;
-      if(isHeic){ body.innerHTML=heicMsg; }
-      else if(/^image\//.test(type)){ body.innerHTML=`<img src="${objUrl}" alt="${esc(d.filename)}" style="max-width:100%;max-height:100%;object-fit:contain">`; }
+      let blob=await r.blob(); let type=blob.type||d.content_type||'';
+      if(isHeic){
+        const be=document.getElementById('previewBody'); if(be) be.innerHTML='<div class="text-white/70 text-sm">Converting HEIC…</div>';
+        const heic2any=await loadHeic2any(); const jpg=await heic2any({ blob, toType:'image/jpeg', quality:0.9 }); blob=Array.isArray(jpg)?jpg[0]:jpg; type='image/jpeg';
+      }
+      const objUrl=URL.createObjectURL(blob); ov._url=objUrl;
+      const body=document.getElementById('previewBody'); if(!body) return;
+      if(/^image\//.test(type)){ body.innerHTML=`<img src="${objUrl}" alt="${esc(d.filename)}" style="max-width:100%;max-height:100%;object-fit:contain">`; }
       else if(/pdf/.test(type)||/\.pdf$/i.test(d.filename)){ body.innerHTML=`<iframe src="${objUrl}" class="w-full h-full" style="border:0;background:#fff;border-radius:8px"></iframe>`; }
       else { body.innerHTML=`<div class="text-white/80 text-sm text-center p-6">No inline preview for this file type.<br>Use “Open in new tab” above.</div>`; }
     }catch(e){
