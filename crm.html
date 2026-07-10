@@ -1396,6 +1396,8 @@
         </div>
         <div id="veeStatus" class="text-xs text-[#6b7280] mb-6"></div>
 
+        <div id="chartNotesPanel" class="mb-6"></div>
+
         ${p.inbody ? `
         <div class="glass border border-[#e6e9ee] rounded-2xl p-5 mb-6">
           <div class="flex items-center justify-between mb-4">
@@ -1456,6 +1458,7 @@
     }
     syncBodyDock();
     if (isProvider()) loadClinicalReview(p.id);
+    loadChartNotes(p.id);
   }
 
   // ============ CRM (operational) view ============
@@ -3011,6 +3014,139 @@ HARD RULES:
     if(!w){ alert('Popup blocked. Allow popups for this site, then click Generate again.'); return; }
     w.document.open(); w.document.write(html); w.document.close();
   };
+  // ================= Clinical charting — signed SOAP encounter notes =================
+  const NOTE_TYPE_LABELS = { initial_consult:'Initial consult', follow_up:'Follow-up', dose_titration:'Dose titration', async_review:'Async review', other:'Clinical note' };
+  const NOTE_TEMPLATES = {
+    initial_consult: {
+      subjective:'Chief complaint: weight management.\nHPI: \nWeight history / prior attempts: \nDiet & activity: \nROS: denies chest pain, SOB, abdominal pain, suicidal ideation.\nPMH/PSH: \nMeds & allergies: reviewed.\nFamily history of MTC/MEN-2: denied.',
+      objective:'Vitals: \nWeight / InBody: \nGeneral: well-appearing, no acute distress.',
+      assessment:'E66.9 Obesity, unspecified.\nCandidate for GLP-1 therapy; no contraindications identified on screening.',
+      plan:'Start GLP-1 (agent/dose): \nCounseled on administration, side effects (GI/nausea), and red flags.\nNutrition & activity counseling provided.\nLabs if indicated: \nFollow-up in 4 weeks.' },
+    follow_up: {
+      subjective:'Interval since last visit: \nTolerability / side effects: \nAdherence: \nAppetite & satiety: \nDiet & activity changes: \nRed flags denied.',
+      objective:'Weight (change since last): \nBP / HR: \nInBody trend: ',
+      assessment:'Obesity, on GLP-1 therapy — tolerating, progressing toward goal.',
+      plan:'Continue current dose OR titrate to: \nReinforce nutrition & activity.\nLabs if due: \nFollow-up in 4 weeks.' },
+    dose_titration: {
+      subjective:'Tolerability at current dose: \nSide effects: \nReason for titration: ',
+      objective:'Weight: \nCurrent dose: ',
+      assessment:'Tolerating current dose; appropriate to titrate.',
+      plan:'Increase dose to: \nCounseled on expected side effects with dose increase.\nFollow-up in 4 weeks.' },
+    async_review: {
+      subjective:'Asynchronous review of patient-submitted intake/check-in.\nReported: ',
+      objective:'Reviewed intake, screening answers, and submitted data. Weight/InBody: ',
+      assessment:'Reviewed asynchronously; no contraindication identified (or see below).',
+      plan:'Rx decision: \nMessage sent to patient via secure portal.\nFollow-up: ' },
+    other: { subjective:'', objective:'', assessment:'', plan:'' },
+  };
+  async function postChart(payload){
+    const r = await fetch(CONVEX_URL+'/chart-notes',{ method:'POST', headers:await convexHeaders(), body:JSON.stringify(payload) });
+    return await r.json().catch(()=>({ ok:false, error:'bad response' }));
+  }
+  function chartShell(inner){ return `<div class="glass border border-[#e6e9ee] rounded-2xl p-5"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-3">Clinical chart · encounter notes</div>${inner}</div>`; }
+  function fmtNoteDate(n){ const t = n.encounter_date ? new Date(n.encounter_date+'T00:00:00') : new Date(n.created_at); return isNaN(t)?'':t.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+  function renderNoteCard(n){
+    const signed = n.status==='signed';
+    const badge = signed ? '<span class="badge b-active" style="background:#eaf7ef;color:#0a7a3d">🔒 Signed</span>' : '<span class="badge b-active" style="background:#fff7ed;color:#b45309">Draft</span>';
+    const who = signed ? (n.signed_by||n.author) : n.author;
+    const preview = esc(((n.assessment||n.subjective||n.plan||'').replace(/\s+/g,' ')).slice(0,110));
+    const adn = (n.addenda&&n.addenda.length) ? ` · ${n.addenda.length} addend${n.addenda.length===1?'um':'a'}` : '';
+    const acts = [];
+    if(n.canEdit) acts.push(`<button onclick="openNote('${n.id}')" class="text-[#0a6cf5] text-xs font-semibold hover:underline">Edit</button>`);
+    else acts.push(`<button onclick="openNote('${n.id}')" class="text-[#0a6cf5] text-xs font-semibold hover:underline">View</button>`);
+    if(n.canSign) acts.push(`<button onclick="signNote('${n.id}')" class="text-[#0a7a3d] text-xs font-semibold hover:underline">Sign</button>`);
+    if(n.canDelete) acts.push(`<button onclick="deleteNoteDraft('${n.id}')" class="text-[#be123c] text-xs font-semibold hover:underline">Delete</button>`);
+    return `<div class="border border-[#e6e9ee] rounded-xl p-3.5">
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0"><div class="text-sm font-semibold text-[#16201d]">${NOTE_TYPE_LABELS[n.encounter_type]||'Clinical note'} · ${fmtNoteDate(n)}</div>
+        <div class="text-[11px] text-[#6b7280]">${esc(who)}${adn}</div></div>${badge}
+      </div>
+      ${preview?`<div class="text-xs text-[#6b7280] mt-1.5">${preview}…</div>`:''}
+      <div class="flex gap-3 mt-2">${acts.join('')}</div>
+    </div>`;
+  }
+  async function loadChartNotes(pid){
+    const box=document.getElementById('chartNotesPanel'); if(!box) return;
+    box.innerHTML=chartShell('<div class="text-sm text-[#9aa0ab]">Loading notes…</div>');
+    let j; try{ j=await postChart({action:'list',patient_id:pid}); }catch(e){ box.innerHTML=chartShell('<div class="text-sm text-[#be123c]">Could not load notes.</div>'); return; }
+    if(!j || j.ok===false){ box.innerHTML=chartShell('<div class="text-sm text-[#9aa0ab]">Clinical notes are available to providers and admins.</div>'); return; }
+    window.__chartNotes=j.notes||[];
+    const list=window.__chartNotes.length?window.__chartNotes.map(renderNoteCard).join(''):'<div class="text-sm text-[#9aa0ab]">No encounter notes yet.</div>';
+    const newBtn=j.canWrite?`<button onclick="openNoteEditor('${pid}')" class="px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">+ New note</button>`:'';
+    box.innerHTML=`<div class="glass border border-[#e6e9ee] rounded-2xl p-5"><div class="flex items-center justify-between mb-4"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Clinical chart · encounter notes</div>${newBtn}</div><div class="space-y-3">${list}</div></div>`;
+  }
+  function soapFields(){
+    const f=(id,label,ph)=>`<div><div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mb-1">${label}</div><textarea id="${id}" rows="4" class="field w-full resize-y" placeholder="${ph}"></textarea></div>`;
+    return f('noteSubjective','Subjective','Patient-reported: symptoms, tolerability, adherence…')+f('noteObjective','Objective','Vitals, weight, InBody, exam…')+f('noteAssessment','Assessment','Clinical impression + ICD-10 (e.g., E66.811)…')+f('notePlan','Plan','Medication/dose, counseling, labs, follow-up…');
+  }
+  function soapReadonly(n){
+    const blk=(label,val)=>`<div><div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mb-1">${label}</div><div class="text-sm text-[#16201d] whitespace-pre-wrap">${val?esc(val):'<span class=\'text-[#9aa0ab]\'>—</span>'}</div></div>`;
+    return blk('Subjective',n.subjective)+blk('Objective',n.objective)+blk('Assessment',n.assessment)+blk('Plan',n.plan);
+  }
+  window.openNoteEditor = function(pid){ openNoteModal(pid, null); };
+  window.openNote = function(noteId){ const n=(window.__chartNotes||[]).find(x=>x.id===noteId); if(!n){ alert('Note not found — reload the record.'); return; } openNoteModal(n.patient_id, n); };
+  function openNoteModal(pid, note){
+    const isNew=!note, signed=note&&note.status==='signed', editable=isNew||(note&&note.canEdit);
+    const patient=(patients||[]).find(x=>x.id===pid)||{}; const pname=((patient.first||'')+' '+(patient.last||'')).trim();
+    const today=new Date().toISOString().slice(0,10);
+    let ov=document.getElementById('noteOverlay'); if(ov) ov.remove();
+    ov=document.createElement('div'); ov.id='noteOverlay'; ov.className='fixed inset-0 z-[80] bg-black/40 flex items-start justify-center overflow-y-auto p-4'; ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+    if(signed && !editable){
+      const adHtml=(note.addenda&&note.addenda.length)?`<div class="pt-3 border-t border-[#e6e9ee]"><div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mb-2">Addenda</div>${note.addenda.map(ad=>`<div class="bg-[#f7f8fa] border border-[#e6e9ee] rounded-lg p-3 mb-2"><div class="text-[11px] text-[#6b7280] mb-1">${esc(ad.author)} · ${new Date(ad.at).toLocaleString('en-US')}</div><div class="text-sm text-[#16201d] whitespace-pre-wrap">${esc(ad.text)}</div></div>`).join('')}</div>`:'';
+      const amend=note.canAmend?`<div class="pt-3 border-t border-[#e6e9ee]"><div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mb-2">Add addendum</div><textarea id="noteAddText" rows="3" class="field w-full resize-none" placeholder="Appended and attributed; the signed note itself stays unchanged."></textarea><div class="flex justify-end mt-2"><button onclick="addNoteAddendum('${note.id}')" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Add addendum</button></div></div>`:'';
+      ov.innerHTML=`<div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-6"><div class="flex items-center justify-between p-4 border-b border-[#e6e9ee]"><div><div class="font-display text-lg font-semibold">${NOTE_TYPE_LABELS[note.encounter_type]||'Clinical note'} · ${fmtNoteDate(note)}</div><div class="text-xs text-[#6b7280]">🔒 Signed by ${esc(note.signed_by||note.author)} · ${esc(pname)}</div></div><button onclick="document.getElementById('noteOverlay').remove()" class="text-[#9aa0ab] hover:text-[#16201d] text-2xl leading-none">×</button></div><div class="p-5 space-y-4">${soapReadonly(note)}${adHtml}${amend}</div></div>`;
+      document.body.appendChild(ov); return;
+    }
+    const typeVal=note?note.encounter_type:'follow_up', dateVal=note?(note.encounter_date||today):today;
+    const typeOpts=Object.entries(NOTE_TYPE_LABELS).map(([k,vv])=>`<option value="${k}" ${k===typeVal?'selected':''}>${vv}</option>`).join('');
+    ov.innerHTML=`<div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-6"><div class="flex items-center justify-between p-4 border-b border-[#e6e9ee]"><div><div class="font-display text-lg font-semibold">${isNew?'New encounter note':'Edit draft'}</div><div class="text-xs text-[#6b7280]">${esc(pname)}</div></div><button onclick="document.getElementById('noteOverlay').remove()" class="text-[#9aa0ab] hover:text-[#16201d] text-2xl leading-none">×</button></div>
+      <div class="p-5 space-y-3"><div class="flex gap-3 flex-wrap items-end"><label class="text-xs font-semibold text-[#3d4a45]">Encounter type<select id="noteType" class="field mt-1 block">${typeOpts}</select></label><label class="text-xs font-semibold text-[#3d4a45]">Date of service<input id="noteDate" type="date" value="${dateVal}" class="field mt-1 block"></label><button onclick="applyNoteTemplate()" class="px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-sm font-semibold hover:bg-[#0a6cf5]/10">Use template</button></div>${soapFields()}</div>
+      <div class="flex items-center justify-between gap-2 p-4 border-t border-[#e6e9ee]"><div class="text-[11px] text-[#9aa0ab]">${isNew?'Saved as a draft you can edit until you sign.':'Draft · editable until signed.'}</div><div class="flex gap-2">${!isNew?`<button onclick="deleteNoteDraft('${note.id}')" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#be123c] text-sm font-semibold hover:bg-[#fef2f2]">Delete</button>`:''}<button id="noteSaveBtn" onclick="saveNoteDraft(false)" class="px-4 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-sm font-semibold hover:bg-[#0a6cf5]/10">Save draft</button><button id="noteSignBtn" onclick="saveNoteDraft(true)" class="px-4 py-2 rounded-xl bg-[#0a7a3d] text-white text-sm font-semibold hover:bg-[#0a6a34]">Sign & lock</button></div></div></div>`;
+    document.body.appendChild(ov);
+    window.__noteCtx={ pid, noteId: note?note.id:null };
+    const set=(id,val)=>{ const e=document.getElementById(id); if(e) e.value=val||''; };
+    if(note){ set('noteSubjective',note.subjective); set('noteObjective',note.objective); set('noteAssessment',note.assessment); set('notePlan',note.plan); }
+    else if(patient.inbody && patient.inbody.weight_lb!=null){ set('noteObjective', `Weight: ${patient.inbody.weight_lb} lb (InBody ${fmtDate(patient.inbody.test_date)})\n`); }
+  }
+  window.applyNoteTemplate = function(){
+    const type=(document.getElementById('noteType')||{}).value||'other'; const t=NOTE_TEMPLATES[type]||NOTE_TEMPLATES.other;
+    const fill=(id,val)=>{ const e=document.getElementById(id); if(e && !e.value.trim()) e.value=val||''; };
+    fill('noteSubjective',t.subjective); fill('noteObjective',t.objective); fill('noteAssessment',t.assessment); fill('notePlan',t.plan);
+  };
+  window.saveNoteDraft = async function(sign){
+    const ctx=window.__noteCtx||{}; const btn=document.getElementById(sign?'noteSignBtn':'noteSaveBtn'); const o=btn?btn.textContent:'';
+    const val=(id)=>{ const e=document.getElementById(id); return e?e.value:undefined; };
+    if(sign && !confirm('Sign and lock this note? After signing it cannot be edited — only addenda can be added.')) return;
+    if(btn){ btn.disabled=true; btn.textContent=sign?'Signing…':'Saving…'; }
+    const body={ encounter_type:val('noteType'), encounter_date:val('noteDate'), subjective:val('noteSubjective'), objective:val('noteObjective'), assessment:val('noteAssessment'), plan:val('notePlan') };
+    try{
+      let noteId=ctx.noteId;
+      if(noteId){ const r=await postChart({action:'update',note_id:noteId,...body}); if(r.ok===false) throw new Error(r.error||'save failed'); }
+      else { const r=await postChart({action:'create',patient_id:ctx.pid,...body}); if(!r.ok) throw new Error(r.error||'create failed'); noteId=r.id; window.__noteCtx.noteId=noteId; }
+      if(sign){ const s=await postChart({action:'sign',note_id:noteId}); if(!s.ok) throw new Error(s.error||'sign failed'); }
+      document.getElementById('noteOverlay')?.remove();
+      await loadChartNotes(ctx.pid); if(sign) renderDetail();
+    }catch(e){ alert('Could not save the note: '+e.message); if(btn){ btn.disabled=false; btn.textContent=o; } }
+  };
+  window.signNote = async function(noteId){
+    if(!confirm('Sign and lock this note? After signing it cannot be edited — only addenda can be added.')) return;
+    const pid=((window.__chartNotes||[]).find(x=>x.id===noteId)||{}).patient_id||selId;
+    try{ const s=await postChart({action:'sign',note_id:noteId}); if(!s.ok) throw new Error(s.error||'sign failed'); await loadChartNotes(pid); renderDetail(); }
+    catch(e){ alert('Could not sign: '+e.message); }
+  };
+  window.addNoteAddendum = async function(noteId){
+    const t=((document.getElementById('noteAddText')||{}).value||''); if(!t.trim()){ alert('Enter addendum text.'); return; }
+    const pid=((window.__chartNotes||[]).find(x=>x.id===noteId)||{}).patient_id||selId;
+    try{ const r=await postChart({action:'addendum',note_id:noteId,text:t}); if(!r.ok) throw new Error(r.error||'failed'); document.getElementById('noteOverlay')?.remove(); await loadChartNotes(pid); renderDetail(); }
+    catch(e){ alert('Could not add addendum: '+e.message); }
+  };
+  window.deleteNoteDraft = async function(noteId){
+    if(!confirm('Delete this draft? This cannot be undone.')) return;
+    const pid=((window.__chartNotes||[]).find(x=>x.id===noteId)||{}).patient_id||selId;
+    try{ const r=await postChart({action:'delete',note_id:noteId}); if(!r.ok) throw new Error(r.error||'failed'); document.getElementById('noteOverlay')?.remove(); await loadChartNotes(pid); }
+    catch(e){ alert('Could not delete: '+e.message); }
+  };
+
   // ---------------- generate starting plan from InBody ----------------
   window.generatePlan = async function(id, force, btn){
     const _orig = btn ? btn.innerHTML : null;
