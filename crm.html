@@ -1396,8 +1396,10 @@
         </div>
         <div id="veeStatus" class="text-xs text-[#6b7280] mb-6"></div>
 
+        <div id="chartVitalsPanel" class="mb-4"></div>
         <div id="chartListsPanel" class="mb-2"></div>
         <div id="chartNotesPanel" class="mb-6"></div>
+        <div id="chartDocsPanel" class="mb-6"></div>
 
         ${p.inbody ? `
         <div class="glass border border-[#e6e9ee] rounded-2xl p-5 mb-6">
@@ -1461,6 +1463,7 @@
     if (isProvider()) loadClinicalReview(p.id);
     loadChartLists(p.id);
     loadChartNotes(p.id);
+    loadChartDocs(p.id);
   }
 
   // ============ CRM (operational) view ============
@@ -3164,11 +3167,13 @@ HARD RULES:
     return `<div class="bg-[#f7fafd] border border-[#e6eef7] rounded-xl p-3">${pHtml}${mHtml}</div>`;
   }
   async function loadChartLists(pid){
-    const box=document.getElementById('chartListsPanel'); if(!box) return;
-    let j; try{ j=await postLists({action:'list',patient_id:pid}); }catch(e){ box.innerHTML=''; return; }
-    if(!j || j.ok===false){ box.innerHTML=''; return; }   // non-clinical staff: hidden (notes panel carries the message)
-    window.__chartProblems=j.problems||[]; window.__chartMeds=j.meds||[]; window.__chartListsWrite=!!j.canWrite;
-    box.innerHTML = problemsCard(j) + medsCard(j);
+    const listsBox=document.getElementById('chartListsPanel'), vitalsBox=document.getElementById('chartVitalsPanel');
+    const clear=()=>{ if(listsBox)listsBox.innerHTML=''; if(vitalsBox)vitalsBox.innerHTML=''; };
+    let j; try{ j=await postLists({action:'list',patient_id:pid}); }catch(e){ clear(); return; }
+    if(!j || j.ok===false){ clear(); return; }   // non-clinical staff: hidden (notes panel carries the message)
+    window.__chartProblems=j.problems||[]; window.__chartMeds=j.meds||[]; window.__chartVitals=j.vitals||[]; window.__chartListsWrite=!!j.canWrite;
+    if(vitalsBox) vitalsBox.innerHTML=vitalsCard(j);
+    if(listsBox) listsBox.innerHTML=problemsCard(j)+medsCard(j);
   }
   function problemsCard(j){
     const rows=(j.problems||[]).length?j.problems.map(renderProblemRow).join(''):'<div class="text-sm text-[#9aa0ab]">No problems recorded.</div>';
@@ -3237,6 +3242,85 @@ HARD RULES:
   };
   window.setMedStatus=async function(id,status){ try{ const r=await postLists({action:'med_update',med_id:id,status}); if(!r.ok) throw new Error(r.error||'failed'); await loadChartLists(selId);}catch(e){ alert('Could not update: '+e.message);} };
   window.deleteMed=async function(id){ if(!confirm('Remove this medication from the list?')) return; try{ const r=await postLists({action:'med_delete',med_id:id}); if(!r.ok) throw new Error(r.error||'failed'); document.getElementById('listOverlay')?.remove(); await loadChartLists(selId);}catch(e){ alert('Could not delete: '+e.message);} };
+
+  // ================= Vitals flowsheet =================
+  function vitalsCard(j){
+    const vs=j.vitals||[]; const latest=vs[0];
+    const add=j.canWrite?`<button onclick="openVitalsModal()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Record vitals</button>`:'';
+    let bodyHtml;
+    if(!vs.length){ bodyHtml='<div class="text-sm text-[#9aa0ab]">No vitals recorded.</div>'; }
+    else {
+      const cell=(label,val,unit)=>`<div class="bg-[#f7f8fa] border border-[#e6e9ee] rounded-xl p-3"><div class="text-[11px] text-[#6b7280]">${label}</div><div class="font-display text-lg font-semibold mt-0.5">${val==null?'—':esc(String(val))+(unit?`<span class="text-xs font-medium text-[#9aa0ab] ml-0.5">${unit}</span>`:'')}</div></div>`;
+      const bp=(latest.bp_systolic!=null&&latest.bp_diastolic!=null)?`${latest.bp_systolic}/${latest.bp_diastolic}`:null;
+      const grid=`<div class="text-[11px] text-[#6b7280] mb-2">Latest · ${esc(latest.measured_at)}</div><div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">${cell('Weight',latest.weight_lb,'lb')}${cell('BMI',latest.bmi,'')}${cell('BP',bp,'')}${cell('Heart rate',latest.heart_rate,'bpm')}${latest.temp_f!=null?cell('Temp',latest.temp_f,'°F'):''}${latest.waist_in!=null?cell('Waist',latest.waist_in,'in'):''}</div>`;
+      const hist=vs.length>1?`<details class="mt-1"><summary class="text-xs text-[#0a6cf5] font-semibold cursor-pointer">History (${vs.length})</summary><div class="mt-2 overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-[10px] uppercase tracking-wide text-[#6b7280] text-left border-b border-[#e6e9ee]"><th class="py-1.5 pr-3">Date</th><th class="py-1.5 pr-3">Weight</th><th class="py-1.5 pr-3">BMI</th><th class="py-1.5 pr-3">BP</th><th class="py-1.5 pr-3">HR</th>${j.canWrite?'<th class="py-1.5"></th>':''}</tr></thead><tbody>${vs.map(renderVitalsRow).join('')}</tbody></table></div></details>`:'';
+      bodyHtml=grid+hist;
+    }
+    return `<div class="glass border border-[#e6e9ee] rounded-2xl p-5"><div class="flex items-center justify-between mb-3"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Vitals</div>${add}</div>${bodyHtml}</div>`;
+  }
+  function renderVitalsRow(v){
+    const bp=(v.bp_systolic!=null&&v.bp_diastolic!=null)?`${v.bp_systolic}/${v.bp_diastolic}`:'—';
+    const acts=window.__chartListsWrite?`<td class="py-1.5 text-right whitespace-nowrap text-[11px]"><button onclick="openVitalsModal('${v.id}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="deleteVitals('${v.id}')" class="text-[#be123c] hover:underline">del</button></td>`:'';
+    return `<tr class="border-b border-[#f1f3f7] last:border-0"><td class="py-1.5 pr-3 whitespace-nowrap">${esc(v.measured_at)}</td><td class="py-1.5 pr-3">${v.weight_lb!=null?v.weight_lb+' lb':'—'}</td><td class="py-1.5 pr-3">${v.bmi!=null?v.bmi:'—'}</td><td class="py-1.5 pr-3">${bp}</td><td class="py-1.5 pr-3">${v.heart_rate!=null?v.heart_rate:'—'}</td>${acts}</tr>`;
+  }
+  window.openVitalsModal=function(vitalsId){
+    const v=vitalsId?(window.__chartVitals||[]).find(x=>x.id===vitalsId):null;
+    const today=new Date().toISOString().slice(0,10);
+    const nf=(id,label,val,unit)=>`<label class="block text-xs font-semibold text-[#3d4a45]">${label}${unit?` <span class="text-[#9aa0ab] font-normal">(${unit})</span>`:''}<input id="${id}" type="number" step="any" value="${val==null?'':esc(String(val))}" class="field mt-1 block w-full"></label>`;
+    const body=`<label class="block text-xs font-semibold text-[#3d4a45]">Date<input id="vtDate" type="date" value="${v?esc(v.measured_at):today}" class="field mt-1 block w-full"></label><div class="grid grid-cols-2 gap-3">${nf('vtWeight','Weight',v?v.weight_lb:'','lb')}${nf('vtHeight','Height',v?v.height_in:'','in')}${nf('vtSys','BP systolic',v?v.bp_systolic:'')}${nf('vtDia','BP diastolic',v?v.bp_diastolic:'')}${nf('vtHr','Heart rate',v?v.heart_rate:'','bpm')}${nf('vtTemp','Temp',v?v.temp_f:'','°F')}${nf('vtWaist','Waist',v?v.waist_in:'','in')}</div><label class="block text-xs font-semibold text-[#3d4a45]">Note (optional)<input id="vtNote" type="text" value="${v?esc(v.note):''}" class="field mt-1 block w-full"></label><div class="text-[11px] text-[#9aa0ab]">BMI is calculated automatically from weight + height.</div>`;
+    const footer=`${v?`<button onclick="deleteVitals('${v.id}')" class="mr-auto px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#be123c] text-sm font-semibold hover:bg-[#fef2f2]">Delete</button>`:''}<button onclick="document.getElementById('listOverlay').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-sm font-semibold hover:bg-[#f1f3f7]">Cancel</button><button id="vtSave" onclick="saveVitals('${vitalsId||''}')" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Save</button>`;
+    listModalShell(vitalsId?'Edit vitals':'Record vitals', body, footer);
+  };
+  window.saveVitals=async function(vitalsId){
+    const num=(id)=>{const e=document.getElementById(id); const s=e?String(e.value).trim():''; return (s===''||isNaN(Number(s)))?undefined:Number(s);};
+    const btn=document.getElementById('vtSave'); if(btn){btn.disabled=true;btn.textContent='Saving…';}
+    const payload={ measured_at:(document.getElementById('vtDate')||{}).value||undefined, weight_lb:num('vtWeight'), height_in:num('vtHeight'), bp_systolic:num('vtSys'), bp_diastolic:num('vtDia'), heart_rate:num('vtHr'), temp_f:num('vtTemp'), waist_in:num('vtWaist'), note:(document.getElementById('vtNote')||{}).value||undefined };
+    try{ const r=vitalsId?await postLists({action:'vitals_update',vitals_id:vitalsId,...payload}):await postLists({action:'vitals_add',patient_id:selId,...payload}); if(!r.ok) throw new Error(r.error||'save failed'); document.getElementById('listOverlay')?.remove(); await loadChartLists(selId); }
+    catch(e){ alert('Could not save vitals: '+e.message); if(btn){btn.disabled=false;btn.textContent='Save';} }
+  };
+  window.deleteVitals=async function(id){ if(!confirm('Delete this vitals entry?')) return; try{ const r=await postLists({action:'vitals_delete',vitals_id:id}); if(!r.ok) throw new Error(r.error||'failed'); document.getElementById('listOverlay')?.remove(); await loadChartLists(selId);}catch(e){ alert('Could not delete: '+e.message);} };
+
+  // ================= Documents vault =================
+  const DOC_TYPE_LABELS = { id:'ID', insurance_card:'Insurance card', lab:'Lab result', inbody:'InBody scan', consent:'Consent form', other:'Other' };
+  async function postDocs(payload){ const r=await fetch(CONVEX_URL+'/chart-docs',{ method:'POST', headers:await convexHeaders(), body:JSON.stringify(payload) }); return await r.json().catch(()=>({ ok:false, error:'bad response' })); }
+  function fmtBytes(n){ if(n==null) return ''; if(n<1024) return n+' B'; if(n<1048576) return (n/1024).toFixed(0)+' KB'; return (n/1048576).toFixed(1)+' MB'; }
+  async function loadChartDocs(pid){
+    const box=document.getElementById('chartDocsPanel'); if(!box) return;
+    let j; try{ j=await postDocs({action:'list',patient_id:pid}); }catch(e){ box.innerHTML=''; return; }
+    if(!j || j.ok===false){ box.innerHTML=''; return; }
+    window.__chartDocsWrite=!!j.canWrite;
+    const rows=(j.docs||[]).length?j.docs.map(renderDocRow).join(''):'<div class="text-sm text-[#9aa0ab]">No documents on file.</div>';
+    const add=j.canWrite?`<button onclick="openDocUpload()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">⬆ Upload document</button>`:'';
+    box.innerHTML=`<div class="glass border border-[#e6e9ee] rounded-2xl p-5"><div class="flex items-center justify-between mb-3"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Documents</div>${add}</div><div class="space-y-1.5">${rows}</div></div>`;
+  }
+  function renderDocRow(d){
+    const dt=new Date(d.created_at); const dstr=isNaN(dt)?'':dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    const meta=[DOC_TYPE_LABELS[d.doc_type]||d.doc_type, dstr, fmtBytes(d.size), 'by '+esc(d.uploaded_by)].filter(Boolean).join(' · ');
+    const view=d.url?`<a href="${d.url}" target="_blank" rel="noopener" class="text-[#0a6cf5] hover:underline">view</a>`:'<span class="text-[#9aa0ab]">unavailable</span>';
+    const del=window.__chartDocsWrite?` · <button onclick="deleteDoc('${d.id}')" class="text-[#be123c] hover:underline">delete</button>`:'';
+    return `<div class="flex items-start justify-between gap-3 py-2 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm text-[#16201d] font-medium truncate">📄 ${esc(d.filename)}</div><div class="text-[11px] text-[#9aa0ab]">${meta}${d.note?' · '+esc(d.note):''}</div></div><div class="text-[11px] whitespace-nowrap pt-0.5">${view}${del}</div></div>`;
+  }
+  window.openDocUpload=function(){
+    const typeOpts=Object.entries(DOC_TYPE_LABELS).map(([k,vv])=>`<option value="${k}" ${k==='insurance_card'?'selected':''}>${vv}</option>`).join('');
+    const body=`<label class="block text-xs font-semibold text-[#3d4a45]">Document type<select id="docType" class="field mt-1 block w-full">${typeOpts}</select></label><label class="block text-xs font-semibold text-[#3d4a45]">Note (optional)<input id="docNote" type="text" class="field mt-1 block w-full" placeholder="e.g., front of card"></label><label class="block text-xs font-semibold text-[#3d4a45]">File<input id="docFile" type="file" accept="application/pdf,image/*" class="field mt-1 block w-full text-sm"></label><div class="text-[11px] text-[#9aa0ab]">PDF or image, stored securely on the chart.</div>`;
+    const footer=`<button onclick="document.getElementById('listOverlay').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-sm font-semibold hover:bg-[#f1f3f7]">Cancel</button><button id="docUpBtn" onclick="uploadDoc()" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Upload</button>`;
+    listModalShell('Upload document', body, footer);
+  };
+  window.uploadDoc=async function(){
+    const fileEl=document.getElementById('docFile'); const f=fileEl&&fileEl.files&&fileEl.files[0]; if(!f){ alert('Choose a file first.'); return; }
+    const doc_type=(document.getElementById('docType')||{}).value||'other'; const note=(document.getElementById('docNote')||{}).value||undefined;
+    const btn=document.getElementById('docUpBtn'); if(btn){btn.disabled=true;btn.textContent='Uploading…';}
+    try{
+      const u=await postDocs({action:'upload_url'}); if(!u.ok||!u.uploadUrl) throw new Error(u.error||'could not start upload');
+      const ct=f.type||'application/octet-stream';
+      const up=await fetch(u.uploadUrl,{method:'POST',headers:{'Content-Type':ct},body:f}); if(!up.ok) throw new Error('upload failed ('+up.status+')');
+      const { storageId }=await up.json();
+      const r=await postDocs({action:'record',patient_id:selId,storage_id:storageId,filename:f.name,content_type:ct,size:f.size,doc_type,note});
+      if(!r.ok) throw new Error(r.error||'could not save document');
+      document.getElementById('listOverlay')?.remove(); await loadChartDocs(selId);
+    }catch(e){ alert('Upload error: '+e.message); if(btn){btn.disabled=false;btn.textContent='Upload';} }
+  };
+  window.deleteDoc=async function(id){ if(!confirm('Delete this document? This removes the file.')) return; try{ const r=await postDocs({action:'delete',document_id:id}); if(!r.ok) throw new Error(r.error||'failed'); await loadChartDocs(selId);}catch(e){ alert('Could not delete: '+e.message);} };
 
   // ---------------- generate starting plan from InBody ----------------
   window.generatePlan = async function(id, force, btn){
