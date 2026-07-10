@@ -3288,7 +3288,7 @@ HARD RULES:
     const box=document.getElementById('chartDocsPanel'); if(!box) return;
     let j; try{ j=await postDocs({action:'list',patient_id:pid}); }catch(e){ box.innerHTML=''; return; }
     if(!j || j.ok===false){ box.innerHTML=''; return; }
-    window.__chartDocsWrite=!!j.canWrite;
+    window.__chartDocsWrite=!!j.canWrite; window.__chartDocs=j.docs||[];
     const rows=(j.docs||[]).length?j.docs.map(renderDocRow).join(''):'<div class="text-sm text-[#9aa0ab]">No documents on file.</div>';
     const add=j.canWrite?`<button onclick="openDocUpload()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">⬆ Upload document</button>`:'';
     box.innerHTML=`<div class="glass border border-[#e6e9ee] rounded-2xl p-5"><div class="flex items-center justify-between mb-3"><div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Documents</div>${add}</div><div class="space-y-1.5">${rows}</div></div>`;
@@ -3296,7 +3296,7 @@ HARD RULES:
   function renderDocRow(d){
     const dt=new Date(d.created_at); const dstr=isNaN(dt)?'':dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
     const meta=[DOC_TYPE_LABELS[d.doc_type]||d.doc_type, dstr, fmtBytes(d.size), 'by '+esc(d.uploaded_by)].filter(Boolean).join(' · ');
-    const view=d.url?`<a href="${d.url}" target="_blank" rel="noopener" class="text-[#0a6cf5] hover:underline">view</a>`:'<span class="text-[#9aa0ab]">unavailable</span>';
+    const view=d.url?`<button onclick="openDocPreview('${d.id}')" class="text-[#0a6cf5] hover:underline">view</button>`:'<span class="text-[#9aa0ab]">unavailable</span>';
     const del=window.__chartDocsWrite?` · <button onclick="deleteDoc('${d.id}')" class="text-[#be123c] hover:underline">delete</button>`:'';
     return `<div class="flex items-start justify-between gap-3 py-2 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm text-[#16201d] font-medium truncate">📄 ${esc(d.filename)}</div><div class="text-[11px] text-[#9aa0ab]">${meta}${d.note?' · '+esc(d.note):''}</div></div><div class="text-[11px] whitespace-nowrap pt-0.5">${view}${del}</div></div>`;
   }
@@ -3321,6 +3321,27 @@ HARD RULES:
     }catch(e){ alert('Upload error: '+e.message); if(btn){btn.disabled=false;btn.textContent='Upload';} }
   };
   window.deleteDoc=async function(id){ if(!confirm('Delete this document? This removes the file.')) return; try{ const r=await postDocs({action:'delete',document_id:id}); if(!r.ok) throw new Error(r.error||'failed'); await loadChartDocs(selId);}catch(e){ alert('Could not delete: '+e.message);} };
+  // In-app preview: fetch the bytes into a blob and render inline (image or PDF), so "view" previews
+  // instead of downloading (Convex storage serves files with a download disposition).
+  function closeDocPreview(){ const o=document.getElementById('previewOverlay'); if(o){ if(o._url) URL.revokeObjectURL(o._url); o.remove(); } }
+  window.closeDocPreview=closeDocPreview;
+  window.openDocPreview=async function(id){
+    const d=(window.__chartDocs||[]).find(x=>x.id===id); if(!d){ alert('Document not found — reload the record.'); return; }
+    if(!d.url){ alert('This document is unavailable.'); return; }
+    closeDocPreview();
+    const ov=document.createElement('div'); ov.id='previewOverlay'; ov.className='fixed inset-0 z-[90] bg-black/70 flex flex-col p-4'; ov._url=null;
+    ov.onclick=e=>{ if(e.target===ov) closeDocPreview(); };
+    ov.innerHTML=`<div class="flex items-center justify-between text-white mb-3 px-1 shrink-0"><div class="text-sm font-semibold truncate">📄 ${esc(d.filename)}</div><div class="flex gap-4 items-center text-sm"><a href="${d.url}" target="_blank" rel="noopener" class="hover:underline">Open in new tab</a><button onclick="closeDocPreview()" class="text-2xl leading-none">×</button></div></div><div id="previewBody" class="flex-1 min-h-0 flex items-center justify-center bg-white/5 rounded-xl overflow-auto"><div class="text-white/70 text-sm">Loading preview…</div></div>`;
+    document.body.appendChild(ov);
+    try{
+      const r=await fetch(d.url); if(!r.ok) throw new Error('fetch '+r.status);
+      const blob=await r.blob(); const objUrl=URL.createObjectURL(blob); ov._url=objUrl;
+      const type=blob.type||d.content_type||''; const body=document.getElementById('previewBody'); if(!body) return;
+      if(/^image\//.test(type)){ body.innerHTML=`<img src="${objUrl}" alt="${esc(d.filename)}" style="max-width:100%;max-height:100%;object-fit:contain">`; }
+      else if(/pdf/.test(type)||/\.pdf$/i.test(d.filename)){ body.innerHTML=`<iframe src="${objUrl}" class="w-full h-full" style="border:0;background:#fff;border-radius:8px"></iframe>`; }
+      else { body.innerHTML=`<div class="text-white/80 text-sm text-center p-6">No inline preview for this file type.<br>Use “Open in new tab” above.</div>`; }
+    }catch(e){ const body=document.getElementById('previewBody'); if(body) body.innerHTML=`<div class="text-white/80 text-sm p-6">Could not load preview. Use “Open in new tab” above.</div>`; }
+  };
 
   // ---------------- generate starting plan from InBody ----------------
   window.generatePlan = async function(id, force, btn){
