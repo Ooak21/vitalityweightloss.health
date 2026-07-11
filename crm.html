@@ -2596,8 +2596,8 @@
   // photo (10MB+) blows the Convex httpAction's 64MB memory cap (the base64 is held several
   // times server-side). 1600px is plenty for Claude vision to read an InBody results sheet.
   async function downscaleImageToB64(file, maxDim, quality){
-    const dataUrl=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
-    const img=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=dataUrl; });
+    const dataUrl=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>rej(new Error('could not read the image file')); r.readAsDataURL(file); });
+    const img=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>rej(new Error('could not decode the image (unsupported or corrupt format)')); i.src=dataUrl; });
     let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
     if(Math.max(w,h)>maxDim){ const s=maxDim/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s); }
     const c=document.createElement('canvas'); c.width=w; c.height=h;
@@ -2606,8 +2606,8 @@
   }
   // Downscale a photo to a Blob (canvas JPEG) before upload — keeps Claude fast/cheap.
   async function downscaleImageToBlob(file, maxDim, quality){
-    const dataUrl=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
-    const img=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=dataUrl; });
+    const dataUrl=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>rej(new Error('could not read the image file')); r.readAsDataURL(file); });
+    const img=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>rej(new Error('could not decode the image (unsupported or corrupt format)')); i.src=dataUrl; });
     let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
     if(Math.max(w,h)>maxDim){ const s=maxDim/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s); }
     const c=document.createElement('canvas'); c.width=w; c.height=h;
@@ -2622,7 +2622,17 @@
         const isPdf=(f.type||'').includes('pdf')||/\.pdf$/i.test(f.name);
         let uploadBlob, srcMedia;
         if(isPdf){ uploadBlob=f; srcMedia='application/pdf'; }
-        else { btn.textContent='Preparing…'; uploadBlob=await downscaleImageToBlob(f,1600,0.85); srcMedia='image/jpeg'; }
+        else {
+          btn.textContent='Preparing…';
+          let img=f;
+          // iPhone photos are HEIC, which desktop browsers can't draw to a canvas. Convert first.
+          if(/heic|heif/i.test(f.type||'')||/\.(heic|heif)$/i.test(f.name)){
+            btn.textContent='Converting…';
+            try{ const heic2any=await loadHeic2any(); const jpg=await heic2any({blob:f,toType:'image/jpeg',quality:0.85}); img=Array.isArray(jpg)?jpg[0]:jpg; }
+            catch(err){ throw new Error('Could not convert this iPhone HEIC photo. Upload the InBody as a PDF, or take a screenshot of the results sheet and upload that.'); }
+          }
+          uploadBlob=await downscaleImageToBlob(img,1600,0.85); srcMedia='image/jpeg';
+        }
         // 1) one-time upload URL (staff-gated)
         btn.textContent='Uploading…';
         const u=await fetch(`${CONVEX_URL}/inbody-upload-url`,{method:'POST',headers:await convexHeaders()});
@@ -2639,7 +2649,7 @@
           const who=patients.find(p=>p.id===j.patient_id);
           alert(j.matched ? `InBody scan imported to ${who?who.first+' '+who.last:'the matched profile'}.` : 'Scan imported, but no patient matched the phone on the sheet, created an unmatched record.');
         } else alert('Import failed: '+(j.error||'unknown'));
-      }catch(e){ alert('Import error: '+e.message); }
+      }catch(e){ alert('Import error: '+((e&&e.message)?e.message:'could not process this file. Upload the InBody as a PDF or a screenshot of the results sheet.')); }
       btn.textContent=orig; btn.disabled=false;
     };
     inp.click();
