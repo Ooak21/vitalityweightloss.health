@@ -718,7 +718,7 @@ function render(){
     <div><h1 class="font-display text-2xl font-semibold tracking-[-.5px]">Welcome back, ${esc(p.first)}</h1>
     <p class="text-sm text-[#6b7280] mt-1">${PROGRAMS[p.program]||'Your program'} · <span class="capitalize">${esc((p.status||'').replace('_',' '))}</span></p></div>
     <div class="grid lg:grid-cols-3 gap-6 items-start">
-      <div class="lg:col-span-2 space-y-6">${approved}${team}${progress}${inbodyReport}${scanHistory}<section class="card p-6 flex items-center justify-between gap-3"><div><h2 class="font-display text-lg font-semibold">Your Personal Transformation Plan</h2><p class="text-sm text-[#6b7280] mt-0.5">Your complete Personal Transformation Plan: InBody breakdown, every metric decoded, nutrition, workouts, and habits.</p></div><button onclick="openMyHandbook()" class="shrink-0 px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">📖 Open</button></section>${planHtml}</div>
+      <div class="lg:col-span-2 space-y-6">${approved}${team}${progress}${inbodyReport}${scanHistory}<section class="card p-6 flex items-center justify-between gap-3"><div><h2 class="font-display text-lg font-semibold">Your Personal Transformation Plan</h2><p class="text-sm text-[#6b7280] mt-0.5">Your complete Personal Transformation Plan: InBody breakdown, every metric decoded, nutrition, workouts, and habits.</p></div><button onclick="openMyHandbook()" class="shrink-0 px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">📖 Open</button></section></div>
       <div class="space-y-6">${appt}${messages}${injection}${refill}${sideEffects}${checkin}${measurements}${progressPhotos}${logging}${rewards}${companion}</div>
     </div>`;
   document.querySelectorAll('.reqBtn').forEach(b=>b.onclick=async()=>{
@@ -728,8 +728,8 @@ function render(){
   });
   if(QR_URL && window.QRCode){ const qb=$('qrBox'); if(qb){ qb.innerHTML=''; new QRCode(qb,{text:QR_URL,width:170,height:170,colorDark:'#16201d',colorLight:'#ffffff'}); } }
 
-  // tabs
-  if (hb){
+  // tabs — secondary plan section retired; only wire if its DOM is actually present
+  if (hb && $('ptab-body')){
     const renderers={overview:tabOverview,meals:tabMeals,workouts:tabWorkouts,roadmap:tabRoadmap};
     const body=$('ptab-body'); body.innerHTML=tabOverview(hb);
     $('ptabs').querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
