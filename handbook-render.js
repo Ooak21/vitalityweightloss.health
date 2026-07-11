@@ -41,6 +41,132 @@
   var sub = function (t, ic) { return '<h3 class="hb-sub font-display text-base font-semibold text-[#16201d] mt-4 mb-1 flex items-center gap-2">' + (ic ? icon(ic, "w-4 h-4") : "") + "<span>" + esc(t) + "</span></h3>"; };
   function statusDot(s) { var c = s === "positive" ? "#10b981" : s === "watch" ? "#f59e0b" : s === "priority" ? "#ef4444" : "#9aa0ab"; return '<span class="inline-block w-2.5 h-2.5 rounded-full shrink-0" style="background:' + c + '"></span>'; }
 
+  // ── Data-viz helpers ── inline SVG only (renders on screen AND print, no libraries).
+  // Every chart is guarded: returns "" when the data isn't there yet (handbook streams in),
+  // so partial/generating handbooks never break. Purely additive to the existing sections.
+  function num(v){ if(v==null) return 0; var m=String(v).replace(/[^0-9.\-]/g,""); var n=parseFloat(m); return isFinite(n)?n:0; }
+  var CADJ='style="-webkit-print-color-adjust:exact;print-color-adjust:exact"';
+  function vizBox(label, inner){ return '<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-4">' + (label ? '<div class="text-[11px] uppercase tracking-wide text-[#0a6cf5] font-semibold mb-2">' + esc(label) + '</div>' : "") + inner + "</div>"; }
+
+  // Donut: daily macro calorie split (protein 4, carbs 4, fat 9 kcal/g).
+  function macroDonut(dt) {
+    dt = dt || {};
+    var p = num(dt.protein_g), c = num(dt.carbs_g), f = num(dt.fat_g);
+    var pC = p * 4, cC = c * 4, fC = f * 9, tot = pC + cC + fC;
+    if (tot <= 0) return "";
+    var segs = [["Protein", pC, p, "#0a6cf5"], ["Carbs", cC, c, "#f59e0b"], ["Fat", fC, f, "#8b5cf6"]];
+    var R = 54, CIRC = 2 * Math.PI * R, off = 0;
+    var ring = segs.map(function (s) {
+      var len = s[1] / tot * CIRC;
+      var el = '<circle cx="70" cy="70" r="' + R + '" fill="none" stroke="' + s[3] + '" stroke-width="22" stroke-dasharray="' + len.toFixed(2) + " " + (CIRC - len).toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '" transform="rotate(-90 70 70)"/>';
+      off += len; return el;
+    }).join("");
+    var kcal = num(dt.calories) || Math.round(tot);
+    var legend = segs.map(function (s) {
+      var pct = Math.round(s[1] / tot * 100);
+      return '<div class="flex items-center gap-2 text-sm py-0.5"><span class="inline-block w-3 h-3 rounded-sm shrink-0" style="background:' + s[3] + '"></span><span class="font-semibold text-[#16201d]">' + s[0] + '</span><span class="ml-auto tabular-nums text-[#6b7280]">' + Math.round(s[2]) + 'g</span><span class="tabular-nums text-[#9aa0ab] w-9 text-right">' + pct + "%</span></div>";
+    }).join("");
+    return vizBox("Daily macro balance",
+      '<div class="flex items-center gap-4"><svg width="140" height="140" viewBox="0 0 140 140" class="shrink-0" ' + CADJ + ">" + ring +
+        '<text x="70" y="66" text-anchor="middle" style="font-size:24px;font-weight:600;fill:#16201d;font-family:Inter,system-ui,sans-serif">' + kcal + "</text>" +
+        '<text x="70" y="85" text-anchor="middle" style="font-size:9px;fill:#9aa0ab;letter-spacing:.12em;font-family:Inter,system-ui,sans-serif">KCAL / DAY</text></svg>' +
+        '<div class="flex-1 min-w-0">' + legend + "</div></div>");
+  }
+
+  // Bars: daily calories across week 1, with a dashed daily-target reference line.
+  function weeklyCalsChart(n) {
+    var days = arr(n.week_one_meal_plan); if (days.length < 2) return "";
+    var vals = days.map(function (d) { return num(d.daily_total_calories); });
+    if (!vals.some(function (v) { return v > 0; })) return "";
+    var dt = n.daily_targets || {}, target = num(dt.calories);
+    var maxV = Math.max.apply(null, vals.concat([target])); if (maxV <= 0) return "";
+    var W = 360, H = 150, padX = 8, padT = 16, padB = 22, n7 = vals.length, plotH = H - padT - padB, plotW = W - padX * 2;
+    var slot = plotW / n7, bw = Math.min(34, slot * 0.6);
+    var bars = vals.map(function (v, i) {
+      var h = v > 0 ? Math.max(2, v / maxV * plotH) : 0, x = padX + i * slot + (slot - bw) / 2, y = padT + plotH - h;
+      var raw = String(days[i].day || ("D" + (i + 1)));
+      var lbl = /^day\s*\d/i.test(raw) ? raw.replace(/^day\s*/i, "D") : raw.slice(0, 3);
+      return '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="3" fill="#0a6cf5" opacity="0.88"/>' +
+        '<text x="' + (x + bw / 2).toFixed(1) + '" y="' + (y - 4).toFixed(1) + '" text-anchor="middle" style="font-size:9px;fill:#6b7280;font-family:Inter,system-ui,sans-serif">' + (v ? Math.round(v) : "") + "</text>" +
+        '<text x="' + (x + bw / 2).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle" style="font-size:9px;fill:#9aa0ab;font-family:Inter,system-ui,sans-serif">' + esc(lbl) + "</text>";
+    }).join("");
+    var tgtLine = "";
+    if (target > 0) {
+      var ty = padT + plotH - (target / maxV * plotH);
+      tgtLine = '<line x1="' + padX + '" y1="' + ty.toFixed(1) + '" x2="' + (W - padX) + '" y2="' + ty.toFixed(1) + '" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3"/>';
+    }
+    var caption = target > 0 ? '<div class="flex items-center gap-1.5 text-xs text-[#6b7280] mt-1.5"><span class="inline-block w-4 border-t-2 border-dashed" style="border-color:#f59e0b"></span>Daily target: ' + Math.round(target) + ' kcal</div>' : "";
+    return vizBox("Calories across week 1",
+      '<svg width="100%" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="xMidYMid meet" ' + CADJ + ">" + bars + tgtLine + "</svg>" + caption);
+  }
+
+  // The nutrition "dashboard" row: macro donut + weekly bars, side by side (stacks in print).
+  function nutritionViz(n, dt) {
+    var parts = [macroDonut(dt), weeklyCalsChart(n)].filter(Boolean);
+    if (!parts.length) return "";
+    return '<div class="grid md:grid-cols-2 gap-4 mb-4">' + parts.join("") + "</div>";
+  }
+
+  // Line chart: projected weight (primary) + body fat % (secondary) over the program.
+  function projectionChart(ps) {
+    var pts = arr(ps).map(function (p) { return { day: num(p.day), w: num(p.projected_weight_lb), bf: num(p.projected_body_fat_pct) }; })
+      .filter(function (p) { return p.w > 0; }).sort(function (a, b) { return a.day - b.day; });
+    if (pts.length < 2) return "";
+    var W = 640, H = 250, L = 46, Rp = 46, T = 20, B = 34, plotW = W - L - Rp, plotH = H - T - B;
+    var days = pts.map(function (p) { return p.day; }), ws = pts.map(function (p) { return p.w; });
+    var bfs = pts.filter(function (p) { return p.bf > 0; }).map(function (p) { return p.bf; });
+    var hasBf = bfs.length === pts.length && bfs.length > 0;
+    var dMin = Math.min.apply(null, days), dMax = Math.max.apply(null, days);
+    var wMin = Math.min.apply(null, ws), wMax = Math.max.apply(null, ws);
+    var wPad = (wMax - wMin) * 0.18 || 4, wLo = wMin - wPad, wHi = wMax + wPad;
+    var bfLo = 0, bfHi = 1;
+    if (hasBf) { var bMin = Math.min.apply(null, bfs), bMax = Math.max.apply(null, bfs), bPad = (bMax - bMin) * 0.25 || 2; bfLo = bMin - bPad; bfHi = bMax + bPad; }
+    var X = function (d) { return L + (dMax === dMin ? 0 : (d - dMin) / (dMax - dMin)) * plotW; };
+    var Yw = function (w) { return T + (1 - (w - wLo) / (wHi - wLo)) * plotH; };
+    var Ybf = function (b) { return T + (1 - (b - bfLo) / (bfHi - bfLo)) * plotH; };
+    var grid = "", lblY = "";
+    for (var g = 0; g <= 3; g++) {
+      var gy = T + g / 3 * plotH, wv = wHi - (g / 3) * (wHi - wLo);
+      grid += '<line x1="' + L + '" y1="' + gy.toFixed(1) + '" x2="' + (W - Rp) + '" y2="' + gy.toFixed(1) + '" stroke="#eef0f4" stroke-width="1"/>';
+      lblY += '<text x="' + (L - 6) + '" y="' + (gy + 3).toFixed(1) + '" text-anchor="end" style="font-size:9px;fill:#9aa0ab;font-family:Inter,system-ui,sans-serif">' + Math.round(wv) + "</text>";
+    }
+    var wLine = pts.map(function (p, i) { return (i ? "L" : "M") + X(p.day).toFixed(1) + " " + Yw(p.w).toFixed(1); }).join(" ");
+    var area = wLine + " L" + X(pts[pts.length - 1].day).toFixed(1) + " " + (T + plotH).toFixed(1) + " L" + X(pts[0].day).toFixed(1) + " " + (T + plotH).toFixed(1) + " Z";
+    var wDots = pts.map(function (p) { return '<circle cx="' + X(p.day).toFixed(1) + '" cy="' + Yw(p.w).toFixed(1) + '" r="3" fill="#0a6cf5"/>'; }).join("");
+    var bfSvg = "";
+    if (hasBf) {
+      var bfLine = pts.map(function (p, i) { return (i ? "L" : "M") + X(p.day).toFixed(1) + " " + Ybf(p.bf).toFixed(1); }).join(" ");
+      var bfDots = pts.map(function (p) { return '<circle cx="' + X(p.day).toFixed(1) + '" cy="' + Ybf(p.bf).toFixed(1) + '" r="2.5" fill="#10b981"/>'; }).join("");
+      bfSvg = '<path d="' + bfLine + '" fill="none" stroke="#10b981" stroke-width="2"/>' + bfDots +
+        '<text x="' + (W - Rp + 6) + '" y="' + (T + 4) + '" style="font-size:9px;fill:#10b981;font-family:Inter,system-ui,sans-serif">' + Math.round(bfHi) + '%</text>' +
+        '<text x="' + (W - Rp + 6) + '" y="' + (T + plotH) + '" style="font-size:9px;fill:#10b981;font-family:Inter,system-ui,sans-serif">' + Math.round(bfLo) + "%</text>";
+    }
+    var xt = pts.map(function (p) { return '<text x="' + X(p.day).toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle" style="font-size:9px;fill:#9aa0ab;font-family:Inter,system-ui,sans-serif">D' + p.day + "</text>"; }).join("");
+    var start = pts[0], goal = pts[pts.length - 1];
+    var legend = '<div class="flex items-center gap-4 text-xs mt-2 flex-wrap">' +
+      '<span class="flex items-center gap-1.5"><span class="inline-block w-3.5 h-[3px] rounded" style="background:#0a6cf5"></span>Projected weight (lb)</span>' +
+      (hasBf ? '<span class="flex items-center gap-1.5"><span class="inline-block w-3.5 h-[3px] rounded" style="background:#10b981"></span>Body fat (%)</span>' : "") +
+      '<span class="ml-auto text-[#6b7280]">Day ' + start.day + ': <b class="text-[#16201d]">' + Math.round(start.w) + ' lb</b> → Day ' + goal.day + ': <b class="text-[#0a6cf5]">' + Math.round(goal.w) + " lb</b></span></div>";
+    return vizBox("Projected trajectory",
+      '<svg width="100%" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="xMidYMid meet" ' + CADJ + ">" +
+        grid + lblY + '<path d="' + area + '" fill="#0a6cf5" opacity="0.08"/><path d="' + wLine + '" fill="none" stroke="#0a6cf5" stroke-width="2.5"/>' + wDots + bfSvg + xt + "</svg>" + legend);
+  }
+
+  // Status bar: how the InBody metrics distribute across on-track / watch / priority.
+  function statusSummary(its) {
+    its = arr(its); if (its.length < 2) return "";
+    var cnt = { positive: 0, watch: 0, priority: 0, other: 0 };
+    its.forEach(function (it) { var s = (it.status || "").toLowerCase(); if (s === "positive") cnt.positive++; else if (s === "watch") cnt.watch++; else if (s === "priority") cnt.priority++; else cnt.other++; });
+    var tot = its.length;
+    var segs = [["#10b981", cnt.positive], ["#f59e0b", cnt.watch], ["#ef4444", cnt.priority], ["#cbd2da", cnt.other]];
+    var bar = segs.filter(function (s) { return s[1] > 0; }).map(function (s) { return '<div style="width:' + (s[1] / tot * 100).toFixed(2) + "%;background:" + s[0] + '" ' + CADJ + "></div>"; }).join("");
+    var chip = function (label, color, n) { return '<div class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-full" style="background:' + color + '"></span><span class="font-semibold text-[#16201d]">' + n + '</span><span class="text-[#6b7280]">' + label + "</span></div>"; };
+    return '<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-4 mb-4"><div class="flex items-center justify-between mb-2 flex-wrap gap-2"><div class="text-[11px] uppercase tracking-wide text-[#0a6cf5] font-semibold">Metrics at a glance</div><div class="flex items-center gap-4 text-sm">' +
+      chip("on track", "#10b981", cnt.positive) + chip("to watch", "#f59e0b", cnt.watch) + chip("priority", "#ef4444", cnt.priority) + "</div></div>" +
+      '<div class="flex w-full h-3 rounded-full overflow-hidden" ' + CADJ + ">" + bar + "</div>" +
+      '<div class="text-xs text-[#9aa0ab] mt-1.5">' + tot + " body-composition metrics analyzed</div></div>";
+  }
+
   function staticCounseling() {
     var block = function (t, lede, items, ic) {
       return '<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-4">' + sub(t, ic) +
@@ -96,7 +222,7 @@
         '<div><span class="text-[10px] uppercase tracking-wide text-[#0a6cf5] font-semibold">Recommended action</span><p class="text-[#4b5563]">' + esc(it.recommended_action) + "</p></div>" +
         '<div class="text-[11px] text-[#9aa0ab] pt-1 border-t border-[#f1f3f7]"><span class="font-semibold">Literature basis:</span> ' + esc(it.literature_basis) + "</div></div></details>";
     }).join("");
-    return card(head("Complete InBody analysis", "Every metric, decoded", "activity") + '<div class="space-y-2">' + rows + "</div>");
+    return card(head("Complete InBody analysis", "Every metric, decoded", "activity") + statusSummary(its) + '<div class="space-y-2">' + rows + "</div>");
   }
   function aiAnalysis(hb) {
     var ai = hb.ai_analysis; if (!ai || typeof ai !== "object") return "";
@@ -124,6 +250,7 @@
     }).join("");
     var roadmap = arr(n.monthly_roadmap).map(function (m) { return '<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3"><div class="flex items-center justify-between"><div class="font-semibold text-sm text-[#16201d]">Month ' + esc(m.month) + " · " + esc(m.focus) + '</div><span class="text-xs text-[#0a6cf5] font-medium">' + esc(m.calorie_adjustment) + "</span></div>" + (arr(m.key_swaps).length ? '<ul class="text-xs text-[#6b7280] mt-1 space-y-0.5">' + bullets(m.key_swaps) + "</ul>" : "") + "</div>"; }).join("");
     return card(head("Nutrition program", "Your eating plan", "apple") +
+      nutritionViz(n, dt) +
       '<div class="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">' + tgt("Calories", dt.calories) + tgt("Protein", dt.protein_g, "g") + tgt("Carbs", dt.carbs_g, "g") + tgt("Fat", dt.fat_g, "g") + tgt("Fiber", dt.fiber_g, "g") + tgt("Water", dt.water_oz, "oz") + "</div>" +
       (arr(n.condition_tags).length ? '<div class="text-xs text-[#6b7280] mb-4"><span class="font-semibold">Condition tags:</span> ' + arr(n.condition_tags).map(esc).join(" · ") + "</div>" : "") +
       sub("Week 1 meal plan") + '<div class="space-y-2">' + days + "</div>" +
@@ -159,7 +286,7 @@
         '<div class="text-sm text-[#4b5563] leading-relaxed">' + esc(p.milestone) + '</div>' +
       '</div>';
     }).join("");
-    return card(head("", "Progress projections", "trending") + '<div class="space-y-3">' + rows + "</div>");
+    return card(head("", "Progress projections", "trending") + projectionChart(ps) + '<div class="space-y-3">' + rows + "</div>");
   }
   function nextScan(hb) {
     if (!hb.next_inbody_recommendation_days) return "";
