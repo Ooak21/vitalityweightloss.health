@@ -316,7 +316,7 @@
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div><label class="text-xs text-[#6b7280] font-semibold">Type</label><select id="apptType" class="field mt-1"><option>Consult</option><option>Follow-up</option><option>Coaching</option><option>Lab</option><option>Other</option></select></div>
-        <div><label class="text-xs text-[#6b7280] font-semibold">Provider</label><select id="apptProvider" class="field mt-1"><option>DeBry</option><option>DeVera</option><option>Black</option><option>Front Desk</option></select></div>
+        <div><label class="text-xs text-[#6b7280] font-semibold">Provider</label><select id="apptProvider" class="field mt-1"><option>DeBry</option><option>DeVera</option><option>Front Desk</option></select></div>
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div><label class="text-xs text-[#6b7280] font-semibold">Status</label><select id="apptStatus" class="field mt-1"><option value="scheduled">Scheduled</option><option value="confirmed">Confirmed</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="no_show">No-show</option></select></div>
@@ -1355,15 +1355,6 @@
             <div class="flex gap-2 flex-wrap items-center">
               <button id="importBtn" onclick="importScan()" title="Upload an InBody scan for this patient, then generate the plan" class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">⬆ Import InBody scan</button>
               <button onclick="openPrefs('${p.id}')" title="Food allergies, food preferences, injuries & aches — the plan personalizes around these" class="px-4 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">⚙ Care preferences</button>
-              <div class="relative inline-block menu-wrap">
-                <span class="inline-flex rounded-xl border border-[#0a6cf5]/40 overflow-hidden">
-                  <button onclick="generatePlan('${p.id}', false, this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ ${p.plan?'Regenerate plan':'Generate plan'}</button>
-                  <button onclick="menuToggle(this)" aria-label="More plan actions" class="px-2.5 py-2.5 text-[#0a6cf5] text-xs hover:bg-[#0a6cf5]/10 border-l border-[#0a6cf5]/40">▾</button>
-                </span>
-                <div class="menu-pop hidden absolute left-0 z-30 mt-1 w-48 bg-white rounded-xl border border-[#e6e9ee] shadow-lg p-1">
-                  <button onclick="menuClose(this);openPlan('${p.id}')" class="w-full text-left px-3 py-2 rounded-lg text-sm text-[#16201d] hover:bg-[#f1f3f7]">📋 View plan</button>
-                </div>
-              </div>
               <div class="relative inline-block menu-wrap">
                 <span class="inline-flex rounded-xl border border-[#0a6cf5]/40 overflow-hidden">
                   <button onclick="genVbisHandbook('${p.id}', this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ Generate Transformation Plan</button>
