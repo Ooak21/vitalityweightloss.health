@@ -124,6 +124,8 @@ let AUTH_MODE=null;
 let JWT=null;            // access token when AUTH_MODE==='jwt'
 let SCAN_TOKEN=null;     // companion token for /menu-scan (minted after JWT login, or = QR_TOKEN)
 let DATA=null, VIEW='home';
+let ENT=null;            // entitlements from Convex entitlements:mine
+let RECIPE_CATALOG=null; // full /recipes/catalog.json
 let _auth=null;          // { getToken, signIn, signOut, STORE_PATIENT }
 
 const CONVEX_URL='https://quixotic-cat-492.convex.cloud';
@@ -154,6 +156,11 @@ async function api(a, payload){
     if(AUTH_MODE==='jwt') return await c.query('portal:loadPortal', {});
     if(AUTH_MODE==='token' && QR_TOKEN) return await c.query('portal:loadByToken', { token:QR_TOKEN });
     return { ok:false, error:'not signed in' };
+  }
+  if(p.action==='entitlements'){
+    if(AUTH_MODE==='jwt' && JWT){ c.setAuth(JWT); return await c.query('entitlements:mine', {}); }
+    // QR-only: freemium floor until they sign in (no server patient JWT)
+    return { ok:true, tier:'vitality_90', recipes:{ max:50, allowedSlugs:null }, features:{ injection_tracker:false }, upgradeUrl:'/glp1.html', _clientFloor:true };
   }
   if(p.action==='add_log'){
     if(AUTH_MODE==='jwt') return await c.mutation('portal:addLog', { kind:p.kind, value_num:p.value_num, unit:p.unit, body:p.body });
@@ -245,12 +252,40 @@ async function ensurePatientData(){
       }catch(e){}
     }
     if(AUTH_MODE==='token') SCAN_TOKEN=QR_TOKEN;
+    try{ ENT=await api({action:'entitlements'}); }catch(e){ ENT=null; }
+    // QR-only floor: load starter slugs from static allowlist when server didn't return them
+    if(ENT && ENT._clientFloor){
+      try{
+        const st=await fetch('/recipes/v90-starter.json').then(r=>r.json());
+        ENT.recipes={ max:st.max||50, allowedSlugs:st.slugs||[] };
+      }catch(e){}
+    }
     return { ok:true };
   }
   if(d && d.ok && !d.patient){
     return { ok:false, error:'This is a staff account, not a patient login. Use the staff dashboard, or a patient portal login.' };
   }
   return { ok:false, error:(d&&d.error)||'Could not load your plan. Sign in again.' };
+}
+async function loadRecipeCatalog(){
+  if(RECIPE_CATALOG) return RECIPE_CATALOG;
+  try{
+    const j=await fetch('/recipes/catalog.json').then(r=>r.json());
+    RECIPE_CATALOG=j.recipes||[];
+  }catch(e){ RECIPE_CATALOG=[]; }
+  return RECIPE_CATALOG;
+}
+function canInject(){ return !!(ENT && ENT.features && ENT.features.injection_tracker); }
+function recipeMax(){ return (ENT && ENT.recipes && ENT.recipes.max) || 50; }
+function isPaidTier(){ return ENT && ENT.tier==='paid'; }
+function upgradeUrl(){ return (ENT && ENT.upgradeUrl) || '/glp1.html'; }
+function upgradeCard(title, body){
+  return `<div class="card p-5 text-center">
+    <div class="font-display font-semibold mb-2">${esc(title)}</div>
+    <p class="text-sm muted leading-relaxed mb-4">${esc(body)}</p>
+    <a href="${esc(upgradeUrl())}" class="inline-block w-full py-3 rounded-xl btnp font-semibold no-underline">Upgrade membership</a>
+    <p class="text-[11px] muted mt-3">Vitality 90 members keep free tools; full membership unlocks the complete library and medication tracking.</p>
+  </div>`;
 }
 async function resolveSession(){
   // 1) Fresh QR always wins for this open (desk → phone).
@@ -327,6 +362,7 @@ function latestScan(){ const ib=(DATA&&DATA.inbody)||[]; return ib.length?ib[ib.
 
 /* ---------- ROUTER ---------- */
 const TILES=[
+  {id:'resources', label:'Free Resources', sub:'Recipes that keep you full', icon:'<path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"/><circle cx="12" cy="9" r="2.5"/>'},
   {id:'plan',   label:'My Plan', sub:'Personal Transformation Plan', icon:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h8M8 15h5"/>'},
   {id:'scan',   label:'Menu Scanner', sub:'Eat smarter on GLP-1', icon:'<path d="M3 9V5a2 2 0 0 1 2-2h4M15 3h4a2 2 0 0 1 2 2v4M21 15v4a2 2 0 0 1-2 2h-4M9 21H5a2 2 0 0 1-2-2v-4"/><circle cx="12" cy="12" r="3"/>'},
   {id:'meal',   label:'Meal Tracker', sub:'Track meals, build habits', icon:'<path d="M3 2v7c0 1.1.9 2 2 2h0a2 2 0 0 0 2-2V2M5 2v20M11 2v20M11 8s4-1 4-4-4-2-4 2 4 4 4 4"/>'},
@@ -343,6 +379,17 @@ function needPlan(msg){ return `<div class="card p-6 text-center"><div class="mu
 function viewHome(){
   const g=G(); const ib=latestScan();
   const first=(DATA&&DATA.patient&&DATA.patient.first)||null;
+  const rmax=recipeMax();
+  const tierLabel=isPaidTier()?'Full membership':`Vitality 90 · ${rmax} recipes`;
+  const frBanner=DATA&&DATA.patient?`<button type="button" onclick="go('resources')" class="card w-full p-4 mb-4 text-left">
+      <div class="flex items-center justify-between gap-2 mb-1">
+        <div class="text-[11px] font-semibold uppercase tracking-wide accent">Free Resources</div>
+        <span class="text-[10px] muted font-semibold">${esc(tierLabel)}</span>
+      </div>
+      <div class="font-display font-semibold text-base mb-0.5">Recipes that keep you full</div>
+      <div class="text-xs muted leading-snug">${isPaidTier()?'Your full library is unlocked — browse all high-protein GLP-1 recipes.':`Start with ${rmax} chef-picked recipes. Upgrade anytime for the full 500 + medication tracking.`}</div>
+      <div class="text-xs accent font-semibold mt-2">Open library →</div>
+    </button>`:'';
   $('view').innerHTML=`
     <div class="mb-4">
       <div class="text-2xl font-display font-bold tracking-tight">Welcome${first?', '+esc(first):''}.</div>
@@ -354,11 +401,15 @@ function viewHome(){
       <div class="card p-3 text-center"><div class="font-display text-xl font-bold seg">${ib?Math.round(ib.weight_lb):'—'}</div><div class="text-[10px] muted font-semibold uppercase tracking-wide">${ib?'lb':'weight'}</div></div>
     </div>
     ${ib?`<div class="card p-4 mb-4"><div class="flex items-center justify-between mb-2"><div class="font-display font-semibold text-sm">Latest InBody scan</div><span class="text-[11px] muted">${fmtDate(ib.test_date)}</span></div><div class="grid grid-cols-3 gap-2 text-center"><div><div class="font-display font-bold seg">${Math.round(ib.weight_lb)}</div><div class="text-[10px] muted uppercase">lb</div></div><div><div class="font-display font-bold seg">${Math.round(ib.pbf_pct)}%</div><div class="text-[10px] muted uppercase">body fat</div></div><div><div class="font-display font-bold seg">${Math.round(ib.smm_lb)}</div><div class="text-[10px] muted uppercase">lb muscle</div></div></div></div>`:''}
+    ${frBanner}
     <div class="grid grid-cols-2 gap-3">
-      ${TILES.map(t=>`<button class="tile" onclick="go('${t.id}')">
+      ${TILES.map(t=>{
+        const locked=t.id==='inject'&&!canInject();
+        return `<button class="tile ${locked?'opacity-80':''}" onclick="go('${t.id}')">
         <div class="ic"><svg viewBox="0 0 24 24">${t.icon}</svg></div>
-        <div><div class="font-display font-bold leading-tight mt-3">${esc(t.label)}</div><div class="text-[11px] muted mt-0.5 leading-snug">${esc(t.sub)}</div></div>
-      </button>`).join('')}
+        <div><div class="font-display font-bold leading-tight mt-3">${esc(t.label)}${locked?' <span class="text-[10px] accent">PRO</span>':''}</div><div class="text-[11px] muted mt-0.5 leading-snug">${esc(locked?'Full membership':t.sub)}</div></div>
+      </button>`;
+      }).join('')}
     </div>
     ${!DATA||!DATA.patient?`<div class="mt-4">${needPlan('Sign in with your portal email and password to load biometrics and your plan. You can still explore the app shell.')}</div>`:''}`;
 }
@@ -418,6 +469,13 @@ function injReadout(){ return `<span class="font-display text-3xl font-bold seg"
 function syrRefresh(){ const x=xU(injUnits); const f=$('injFill'); if(f)f.setAttribute('width',Math.max(0,x-20)); const pl=$('injPl'); if(pl){pl.setAttribute('x1',x);pl.setAttribute('x2',x);} const k=$('injKnob'); if(k)k.setAttribute('cx',x); const r=$('injRead'); if(r)r.innerHTML=injReadout(); }
 function setUnits(u){ injUnits=Math.max(0,Math.min(INJ_MAX,Math.round(u))); syrRefresh(); }
 function viewInjection(){
+  if(!canInject()){
+    $('view').innerHTML=backBar('Injection Tracker')+upgradeCard(
+      'Medication tracking is for full members',
+      'Vitality 90 is free education and habits — not a medication program. Upgrade membership to log injections, refills, and stay on schedule with your care team.'
+    );
+    return;
+  }
   presetFromLast();
   const hist=logsOf('injection'); const last=hist[0];
   const nextDue=last?new Date(new Date(last.logged_at).getTime()+7*864e5):null;
@@ -465,6 +523,51 @@ function viewInjection(){
   $('injSiteSel').onchange=e=>{ injSite=e.target.value; };
   $('view').querySelectorAll('.im').forEach(b=>b.onclick=()=>{ injMed=b.dataset.med; viewInjection(); });
   $('injLog').onclick=async()=>{ const mg=mgU(injUnits); injRemember(); $('injLog').disabled=true; $('injLog').textContent='Logged ✓'; await log('injection',{value_num:mg,unit:'mg',body:injMed+' · '+injUnits+' units · '+injConc+' mg/mL · '+injSite}); setTimeout(viewInjection,700); };
+}
+
+/* ---------- FREE RESOURCES (tiered recipe library) ---------- */
+async function viewResources(){
+  if(!DATA||!DATA.patient){ $('view').innerHTML=backBar('Free Resources')+needPlan(); return; }
+  $('view').innerHTML=backBar('Free Resources')+`<div class="card p-6 text-center muted text-sm">Loading recipes…</div>`;
+  const all=await loadRecipeCatalog();
+  const paid=isPaidTier();
+  const allow=new Set((ENT&&ENT.recipes&&ENT.recipes.allowedSlugs)||[]);
+  const max=recipeMax();
+  let list;
+  if(paid) list=all;
+  else if(allow.size) list=all.filter(r=>allow.has(r.slug));
+  else list=all.slice(0, max); // fallback if starter list not loaded
+  const lockedCount = paid ? 0 : Math.max(0, (all.length||500) - list.length);
+  const cats=['All', ...Array.from(new Set(list.map(r=>r.cat).filter(Boolean))).sort()];
+  const cat=viewResources.cat||'All';
+  const shown=cat==='All'?list:list.filter(r=>r.cat===cat);
+  $('view').innerHTML=backBar('Free Resources')+`
+    <div class="card p-4 mb-3">
+      <div class="flex items-center justify-between gap-2 mb-1">
+        <div class="font-display font-semibold">Recipe library</div>
+        <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" style="background:var(--accent-soft);color:var(--accent)">${paid?'All unlocked':list.length+' of ~'+(all.length||500)}</span>
+      </div>
+      <p class="text-xs muted leading-relaxed">${paid
+        ? 'Full high-protein GLP-1 recipe library — yours with membership.'
+        : 'Your Vitality 90 starter pack. Upgrade to unlock the full library and medication tracking.'}</p>
+      ${!paid&&lockedCount?`<a href="${esc(upgradeUrl())}" class="inline-block mt-3 text-xs font-semibold accent no-underline">Unlock ${lockedCount}+ more recipes →</a>`:''}
+    </div>
+    <div class="flex gap-1.5 overflow-x-auto pb-2 mb-2 -mx-1 px-1" style="scrollbar-width:none">
+      ${cats.map(c=>`<button type="button" data-cat="${esc(c)}" class="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold ${c===cat?'btnp':'card muted'}">${esc(c)}</button>`).join('')}
+    </div>
+    <div class="space-y-2">
+      ${shown.map(r=>`
+        <a href="/recipes/${esc(r.slug)}.html" target="_blank" rel="noopener" class="card flex gap-3 p-3 no-underline text-inherit active:scale-[0.99] transition">
+          ${r.image?`<div class="w-20 h-20 rounded-xl bg-cover bg-center shrink-0" style="background-image:url('${esc(r.image)}')"></div>`:`<div class="w-20 h-20 rounded-xl surf2 shrink-0"></div>`}
+          <div class="min-w-0 flex-1">
+            <div class="text-[10px] uppercase tracking-wide accent font-semibold">${esc(r.cat||'')}</div>
+            <div class="text-sm font-semibold leading-snug mt-0.5">${esc(r.title)}</div>
+            <div class="text-[11px] muted mt-1">${esc(r.macros||((r.cal!=null?r.cal+' cal':'')+(r.protein_g!=null?' · '+r.protein_g+'g protein':'')))}</div>
+          </div>
+        </a>`).join('')||`<div class="card p-5 text-center text-sm muted">No recipes in this category yet.</div>`}
+    </div>
+    ${!paid?`<div class="mt-4">${upgradeCard('Want the full 500?', 'Full membership unlocks every recipe plus the injection tracker for your medication schedule.')}</div>`:''}`;
+  $('view').querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{ viewResources.cat=b.dataset.cat; viewResources(); });
 }
 
 /* ---------- MY PLAN (Personal Transformation Plan / handbook) ---------- */
@@ -689,7 +792,7 @@ async function doScan(dataURL){
 /* ---------- RENDER ---------- */
 function render(){
   refreshPts();
-  const v={home:viewHome,plan:viewPlan,meal:viewMeal,workout:viewWorkout,inject:viewInjection,phd:viewPhd,ibt:viewIbt,scan:viewScan}[VIEW]||viewHome;
+  const v={home:viewHome,resources:viewResources,plan:viewPlan,meal:viewMeal,workout:viewWorkout,inject:viewInjection,phd:viewPhd,ibt:viewIbt,scan:viewScan}[VIEW]||viewHome;
   v();
 }
 $('brand').onclick=()=>go('home');

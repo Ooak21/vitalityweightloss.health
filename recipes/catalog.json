@@ -1,0 +1,4506 @@
+{
+  "version": 1,
+  "count": 500,
+  "recipes": [
+    {
+      "slug": "semaglutide-peanut-butter-cup-smoothie",
+      "title": "Semaglutide Peanut Butter Cup Smoothie",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/5846193/pexels-photo-5846193.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 30,
+      "macros": "280 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "tirzepatide-tropical-nausea-relief-smoothie",
+      "title": "Tirzepatide Tropical Nausea-Relief Smoothie",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/12119029/pexels-photo-12119029.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 22,
+      "macros": "210 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "ozempic-alternative-cold-brew-protein-shake",
+      "title": "Ozempic-Alternative Cold Brew Protein Shake",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/2717971/pexels-photo-2717971.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 150,
+      "protein_g": 25,
+      "macros": "150 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "zepbound-friendly-antioxidant-berry-blend",
+      "title": "Zepbound-Friendly Antioxidant Berry Blend",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/4099236/pexels-photo-4099236.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 20,
+      "macros": "190 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "semaglutide-green-detox-smoothie",
+      "title": "Semaglutide Green Detox Smoothie",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/37283271/pexels-photo-37283271.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 22,
+      "macros": "220 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "tirzepatide-cauliflower-mac-and-cheese",
+      "title": "Tirzepatide Cauliflower Mac & Cheese",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/10993148/pexels-photo-10993148.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 18,
+      "macros": "260 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "wegovy-alternative-skillet-shepherds-pie",
+      "title": "Wegovy-Alternative Skillet Shepherd's Pie",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5639217/pexels-photo-5639217.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 310,
+      "protein_g": 32,
+      "macros": "310 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "semaglutide-healthy-chicken-parmesan",
+      "title": "Semaglutide Healthy Chicken Parmesan",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/13444951/pexels-photo-13444951.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 42,
+      "macros": "280 cal \u00b7 42g protein"
+    },
+    {
+      "slug": "zepbound-friendly-protein-pizza-crust",
+      "title": "Zepbound-Friendly Protein Pizza Crust",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/6493562/pexels-photo-6493562.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 40,
+      "macros": "250 cal \u00b7 40g protein"
+    },
+    {
+      "slug": "tirzepatide-no-noodle-zucchini-lasagna",
+      "title": "Tirzepatide \"No-Noodle\" Zucchini Lasagna",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/4078163/pexels-photo-4078163.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 320,
+      "protein_g": 35,
+      "macros": "320 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "semaglutide-garlic-butter-scallops",
+      "title": "Semaglutide Garlic Butter Scallops",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/28052912/pexels-photo-28052912.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 24,
+      "macros": "180 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "ozempic-alternative-tuna-stuffed-avocados",
+      "title": "Ozempic-Alternative Tuna Stuffed Avocados",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/36661265/pexels-photo-36661265.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 310,
+      "protein_g": 22,
+      "macros": "310 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "tirzepatide-lemon-pepper-mahi-mahi",
+      "title": "Tirzepatide Lemon Pepper Mahi Mahi",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/9399928/pexels-photo-9399928.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 32,
+      "macros": "160 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "zepbound-friendly-smoked-salmon-roll-ups",
+      "title": "Zepbound-Friendly Smoked Salmon Roll-Ups",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/13869899/pexels-photo-13869899.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 140,
+      "protein_g": 16,
+      "macros": "140 cal \u00b7 16g protein"
+    },
+    {
+      "slug": "semaglutide-shrimp-and-zucchini-noodles",
+      "title": "Semaglutide Shrimp & Zucchini Noodles",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/11654218/pexels-photo-11654218.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 30,
+      "macros": "210 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "tirzepatide-air-fryer-chicken-thighs",
+      "title": "Tirzepatide Air Fryer Chicken Thighs",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5704254/pexels-photo-5704254.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 26,
+      "macros": "240 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "wegovy-alternative-crispy-tofu-bites",
+      "title": "Wegovy-Alternative Crispy Tofu Bites",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/8066270/pexels-photo-8066270.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 16,
+      "macros": "180 cal \u00b7 16g protein"
+    },
+    {
+      "slug": "semaglutide-air-fryer-brussels-sprouts",
+      "title": "Semaglutide Air Fryer Brussels Sprouts",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/41171/brussels-sprouts-sprouts-cabbage-grocery-41171.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 120,
+      "protein_g": 5,
+      "macros": "120 cal \u00b7 5g protein"
+    },
+    {
+      "slug": "zepbound-friendly-turkey-meatballs-air-fryer",
+      "title": "Zepbound-Friendly Turkey Meatballs (Air Fryer)",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/34314421/pexels-photo-34314421.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 200,
+      "protein_g": 28,
+      "macros": "200 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "tirzepatide-air-fryer-fried-pickles",
+      "title": "Tirzepatide Air Fryer \"Fried\" Pickles",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/2282528/pexels-photo-2282528.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 90,
+      "protein_g": 8,
+      "macros": "90 cal \u00b7 8g protein"
+    },
+    {
+      "slug": "semaglutide-chopped-italian-salad",
+      "title": "Semaglutide Chopped Italian Salad",
+      "cat": "Salads",
+      "image": "https://images.pexels.com/photos/11558376/pexels-photo-11558376.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 24,
+      "macros": "280 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "ozempic-alternative-cucumber-tomato-feta-salad",
+      "title": "Ozempic-Alternative Cucumber Tomato Feta Salad",
+      "cat": "Salads",
+      "image": "https://images.pexels.com/photos/36929171/pexels-photo-36929171.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 170,
+      "protein_g": 8,
+      "macros": "170 cal \u00b7 8g protein"
+    },
+    {
+      "slug": "tirzepatide-protein-cobb-salad",
+      "title": "Tirzepatide Protein Cobb Salad",
+      "cat": "Salads",
+      "image": "https://images.pexels.com/photos/10480250/pexels-photo-10480250.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 340,
+      "protein_g": 40,
+      "macros": "340 cal \u00b7 40g protein"
+    },
+    {
+      "slug": "zepbound-friendly-asian-chicken-salad",
+      "title": "Zepbound-Friendly Asian Chicken Salad",
+      "cat": "Salads",
+      "image": "https://images.pexels.com/photos/9218761/pexels-photo-9218761.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 28,
+      "macros": "290 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "semaglutide-spinach-and-strawberry-salad",
+      "title": "Semaglutide Spinach & Strawberry Salad",
+      "cat": "Salads",
+      "image": "https://images.pexels.com/photos/1684362/pexels-photo-1684362.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 26,
+      "macros": "260 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "semaglutide-high-protein-bone-broth-ramen",
+      "title": "Semaglutide High-Protein Bone Broth Ramen",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/4163930/pexels-photo-4163930.png?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 25,
+      "macros": "210 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "tirzepatide-turkey-and-wild-rice-soup",
+      "title": "Tirzepatide Turkey & Wild Rice Soup",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/17130431/pexels-photo-17130431.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 22,
+      "macros": "240 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "wegovy-alternative-egg-drop-and-spinach-soup",
+      "title": "Wegovy-Alternative Egg Drop & Spinach Soup",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/12913641/pexels-photo-12913641.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 18,
+      "macros": "160 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "zepbound-friendly-creamy-cauliflower-soup",
+      "title": "Zepbound-Friendly Creamy Cauliflower Soup",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/37099928/pexels-photo-37099928.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 150,
+      "protein_g": 12,
+      "macros": "150 cal \u00b7 12g protein"
+    },
+    {
+      "slug": "ozempic-alternative-chicken-zoodle-soup",
+      "title": "Ozempic-Alternative Chicken Zoodle Soup",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/9213861/pexels-photo-9213861.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 26,
+      "macros": "190 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "tirzepatide-greek-yogurt-chicken-salad-wrap",
+      "title": "Tirzepatide Greek Yogurt Chicken Salad Wrap",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/5112582/pexels-photo-5112582.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 32,
+      "macros": "280 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "semaglutide-turkey-and-swiss-lettuce-wrap",
+      "title": "Semaglutide Turkey & Swiss Lettuce Wrap",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/30392938/pexels-photo-30392938.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 24,
+      "macros": "180 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "ozempic-alternative-roast-beef-and-provolone-roll",
+      "title": "Ozempic-Alternative Roast Beef & Provolone Roll",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/5678/food-sandwich-tasty.jpg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 26,
+      "macros": "210 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "zepbound-friendly-blt-avocado-mayo",
+      "title": "Zepbound-Friendly BLT (Avocado Mayo)",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/10165861/pexels-photo-10165861.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 16,
+      "macros": "250 cal \u00b7 16g protein"
+    },
+    {
+      "slug": "semaglutide-veggie-and-hummus-wrap",
+      "title": "Semaglutide Veggie & Hummus Wrap",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/30392946/pexels-photo-30392946.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 10,
+      "macros": "220 cal \u00b7 10g protein"
+    },
+    {
+      "slug": "tirzepatide-steak-and-asparagus-roll-ups",
+      "title": "Tirzepatide Steak & Asparagus Roll-ups",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/6166801/pexels-photo-6166801.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 35,
+      "macros": "260 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "semaglutide-stuffed-bell-peppers",
+      "title": "Semaglutide Stuffed Bell Peppers",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/1438540/pexels-photo-1438540.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 30,
+      "macros": "280 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "wegovy-alternative-garlic-herb-pork-tenderloin",
+      "title": "Wegovy-Alternative Garlic Herb Pork Tenderloin",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/792027/pexels-photo-792027.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 32,
+      "macros": "210 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "zepbound-friendly-mediterranean-baked-white-fish",
+      "title": "Zepbound-Friendly Mediterranean Baked White Fish",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/37206697/pexels-photo-37206697.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 200,
+      "protein_g": 30,
+      "macros": "200 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "ozempic-alternative-lemon-caper-chicken-piccata",
+      "title": "Ozempic-Alternative Lemon Caper Chicken Piccata",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/16845749/pexels-photo-16845749.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 35,
+      "macros": "240 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "tirzepatide-sweet-potato-hash",
+      "title": "Tirzepatide Sweet Potato Hash",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/9840182/pexels-photo-9840182.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 15,
+      "macros": "250 cal \u00b7 15g protein"
+    },
+    {
+      "slug": "semaglutide-tofu-scramble",
+      "title": "Semaglutide Tofu Scramble",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/6327660/pexels-photo-6327660.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 18,
+      "macros": "190 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "wegovy-alternative-leftover-steak-and-egg-scramble",
+      "title": "Wegovy-Alternative Leftover Steak & Egg Scramble",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/7696496/pexels-photo-7696496.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 320,
+      "protein_g": 35,
+      "macros": "320 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "zepbound-friendly-chorizo-turkey-scramble",
+      "title": "Zepbound-Friendly Chorizo (Turkey) Scramble",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/31823036/pexels-photo-31823036.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 270,
+      "protein_g": 28,
+      "macros": "270 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "ozempic-alternative-smoked-salmon-omelet",
+      "title": "Ozempic-Alternative Smoked Salmon Omelet",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/13238607/pexels-photo-13238607.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 200,
+      "protein_g": 25,
+      "macros": "200 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "tirzepatide-dark-chocolate-berry-bark",
+      "title": "Tirzepatide Dark Chocolate Berry Bark",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/918328/pexels-photo-918328.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 90,
+      "protein_g": 1,
+      "macros": "90 cal \u00b7 1g protein"
+    },
+    {
+      "slug": "semaglutide-cottage-cheese-cheesecake-bowl",
+      "title": "Semaglutide Cottage Cheese \"Cheesecake\" Bowl",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/36865493/pexels-photo-36865493.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 25,
+      "macros": "180 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "wegovy-alternative-protein-peanut-butter-balls",
+      "title": "Wegovy-Alternative Protein Peanut Butter Balls",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/10003794/pexels-photo-10003794.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 110,
+      "protein_g": 6,
+      "macros": "110 cal \u00b7 6g protein"
+    },
+    {
+      "slug": "zepbound-friendly-cinnamon-apple-rings",
+      "title": "Zepbound-Friendly Cinnamon Apple Rings",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/9922672/pexels-photo-9922672.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 4,
+      "macros": "160 cal \u00b7 4g protein"
+    },
+    {
+      "slug": "ozempic-alternative-greek-yogurt-chocolate-dip",
+      "title": "Ozempic-Alternative Greek Yogurt Chocolate Dip",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/31046120/pexels-photo-31046120.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 140,
+      "protein_g": 15,
+      "macros": "140 cal \u00b7 15g protein"
+    },
+    {
+      "slug": "tirzepatide-chia-and-berry-overnight-oats",
+      "title": "Tirzepatide Chia & Berry Overnight Oats",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/27850095/pexels-photo-27850095.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 20,
+      "macros": "280 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "semaglutide-turkey-sausage-egg-bake",
+      "title": "Semaglutide Turkey Sausage Egg Bake",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/12824418/pexels-photo-12824418.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 24,
+      "macros": "210 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "zepbound-friendly-breakfast-burrito-bowl",
+      "title": "Zepbound-Friendly Breakfast Burrito Bowl",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/5848079/pexels-photo-5848079.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 26,
+      "macros": "290 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "ozempic-alternative-cottage-cheese-and-spinach-quiche",
+      "title": "Ozempic-Alternative Cottage Cheese & Spinach Quiche",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/288264/pexels-photo-288264.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 22,
+      "macros": "180 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "semaglutide-pb-and-j-protein-oats",
+      "title": "Semaglutide PB&J Protein Oats",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/29596455/pexels-photo-29596455.png?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 22,
+      "macros": "260 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "tirzepatide-spaghetti-squash-alfredo",
+      "title": "Tirzepatide Spaghetti Squash Alfredo",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/5411629/pexels-photo-5411629.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 24,
+      "macros": "220 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "semaglutide-zoodle-shrimp-scampi",
+      "title": "Semaglutide Zoodle Shrimp Scampi",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/8697539/pexels-photo-8697539.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 28,
+      "macros": "210 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "zepbound-friendly-heart-of-palm-mac-and-cheese",
+      "title": "Zepbound-Friendly Heart of Palm Mac & Cheese",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/11094167/pexels-photo-11094167.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 15,
+      "macros": "190 cal \u00b7 15g protein"
+    },
+    {
+      "slug": "ozempic-alternative-kelp-noodle-beef-stir-fry",
+      "title": "Ozempic-Alternative Kelp Noodle Beef Stir-Fry",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/10398946/pexels-photo-10398946.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 28,
+      "macros": "260 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "tirzepatide-shirataki-chicken-pad-thai",
+      "title": "Tirzepatide Shirataki Chicken Pad Thai",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/35063429/pexels-photo-35063429.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 32,
+      "macros": "240 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "semaglutide-sheet-pan-turkey-meatballs-and-broccoli",
+      "title": "Semaglutide Sheet Pan Turkey Meatballs & Broccoli",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5863610/pexels-photo-5863610.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 30,
+      "macros": "280 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "wegovy-alternative-one-pan-lemon-garlic-chicken",
+      "title": "Wegovy-Alternative One-Pan Lemon Garlic Chicken",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/16510619/pexels-photo-16510619.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 35,
+      "macros": "250 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "tirzepatide-sheet-pan-halibut-and-asparagus",
+      "title": "Tirzepatide Sheet Pan Halibut & Asparagus",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/4397788/pexels-photo-4397788.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 36,
+      "macros": "220 cal \u00b7 36g protein"
+    },
+    {
+      "slug": "zepbound-friendly-one-pot-ground-chicken-chili",
+      "title": "Zepbound-Friendly One-Pot Ground Chicken Chili",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5792466/pexels-photo-5792466.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 32,
+      "macros": "290 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "ozempic-alternative-sheet-pan-tofu-and-green-beans",
+      "title": "Ozempic-Alternative Sheet Pan Tofu & Green Beans",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/9218768/pexels-photo-9218768.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 20,
+      "macros": "240 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "semaglutide-ginger-lime-electrolyte-slush",
+      "title": "Semaglutide Ginger-Lime Electrolyte Slush",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/5621247/pexels-photo-5621247.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 15,
+      "protein_g": 0,
+      "macros": "15 cal \u00b7 0g protein"
+    },
+    {
+      "slug": "tirzepatide-watermelon-mint-cooler",
+      "title": "Tirzepatide Watermelon Mint Cooler",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/8755253/pexels-photo-8755253.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 45,
+      "protein_g": 1,
+      "macros": "45 cal \u00b7 1g protein"
+    },
+    {
+      "slug": "zepbound-friendly-cucumber-aloe-hydrator",
+      "title": "Zepbound-Friendly Cucumber Aloe Hydrator",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/32026364/pexels-photo-32026364.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 20,
+      "protein_g": 0,
+      "macros": "20 cal \u00b7 0g protein"
+    },
+    {
+      "slug": "ozempic-alternative-protein-iced-green-tea",
+      "title": "Ozempic-Alternative Protein Iced Green Tea",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/5946971/pexels-photo-5946971.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 90,
+      "protein_g": 20,
+      "macros": "90 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "wegovy-alternative-coconut-water-berry-smash",
+      "title": "Wegovy-Alternative Coconut Water Berry Smash",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/12955709/pexels-photo-12955709.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 60,
+      "protein_g": 1,
+      "macros": "60 cal \u00b7 1g protein"
+    },
+    {
+      "slug": "semaglutide-air-fried-zucchini-chips",
+      "title": "Semaglutide Air Fried Zucchini Chips",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/34466116/pexels-photo-34466116.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 60,
+      "protein_g": 2,
+      "macros": "60 cal \u00b7 2g protein"
+    },
+    {
+      "slug": "wegovy-alternative-parmesan-whisps",
+      "title": "Wegovy-Alternative Parmesan Whisps",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/6659624/pexels-photo-6659624.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 110,
+      "protein_g": 10,
+      "macros": "110 cal \u00b7 10g protein"
+    },
+    {
+      "slug": "tirzepatide-roasted-radish-potatoes",
+      "title": "Tirzepatide Roasted Radish \"Potatoes\"",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/37202822/pexels-photo-37202822.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 70,
+      "protein_g": 1,
+      "macros": "70 cal \u00b7 1g protein"
+    },
+    {
+      "slug": "zepbound-friendly-pepperoni-chips-and-guacamole",
+      "title": "Zepbound-Friendly Pepperoni Chips & Guacamole",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/4562973/pexels-photo-4562973.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 10,
+      "macros": "180 cal \u00b7 10g protein"
+    },
+    {
+      "slug": "ozempic-alternative-crispy-kale-chips",
+      "title": "Ozempic-Alternative Crispy Kale Chips",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/12363214/pexels-photo-12363214.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 120,
+      "protein_g": 6,
+      "macros": "120 cal \u00b7 6g protein"
+    },
+    {
+      "slug": "semaglutide-chicken-and-quinoa-soup",
+      "title": "Semaglutide Chicken & Quinoa Soup",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/5865239/pexels-photo-5865239.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 28,
+      "macros": "260 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "tirzepatide-high-protein-tomato-basil-soup",
+      "title": "Tirzepatide High-Protein Tomato Basil Soup",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/539451/pexels-photo-539451.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 25,
+      "macros": "190 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "wegovy-alternative-turkey-sausage-and-cabbage-soup",
+      "title": "Wegovy-Alternative Turkey Sausage & Cabbage Soup",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/10017/pexels-photo-10017.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 22,
+      "macros": "240 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "zepbound-friendly-lentil-and-spinach-stew",
+      "title": "Zepbound-Friendly Lentil & Spinach Stew",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/35041668/pexels-photo-35041668.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 18,
+      "macros": "280 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "ozempic-alternative-bone-broth-minestrone",
+      "title": "Ozempic-Alternative Bone Broth Minestrone",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/18852561/pexels-photo-18852561.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 16,
+      "macros": "210 cal \u00b7 16g protein"
+    },
+    {
+      "slug": "tirzepatide-smashed-chickpea-and-avocado-wrap",
+      "title": "Tirzepatide Smashed Chickpea & Avocado Wrap",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/1192056/pexels-photo-1192056.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 310,
+      "protein_g": 12,
+      "macros": "310 cal \u00b7 12g protein"
+    },
+    {
+      "slug": "semaglutide-cottage-cheese-and-turkey-bowl",
+      "title": "Semaglutide Cottage Cheese & Turkey Bowl",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/4397303/pexels-photo-4397303.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 38,
+      "macros": "260 cal \u00b7 38g protein"
+    },
+    {
+      "slug": "wegovy-alternative-egg-salad-yogurt-hack",
+      "title": "Wegovy-Alternative Egg Salad (Yogurt Hack)",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/27905899/pexels-photo-27905899.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 24,
+      "macros": "220 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "zepbound-friendly-mason-jar-cobb-salad",
+      "title": "Zepbound-Friendly Mason Jar Cobb Salad",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/1640767/pexels-photo-1640767.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 340,
+      "protein_g": 35,
+      "macros": "340 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "ozempic-alternative-edamame-and-chicken-bento",
+      "title": "Ozempic-Alternative Edamame & Chicken Bento",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/1860199/pexels-photo-1860199.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 34,
+      "macros": "280 cal \u00b7 34g protein"
+    },
+    {
+      "slug": "semaglutide-zucchini-boat-enchiladas",
+      "title": "Semaglutide Zucchini Boat \"Enchiladas\"",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/9213933/pexels-photo-9213933.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 30,
+      "macros": "260 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "tirzepatide-lean-beef-stuffed-cabbage",
+      "title": "Tirzepatide Lean Beef Stuffed Cabbage",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/37238839/pexels-photo-37238839.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 28,
+      "macros": "290 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "wegovy-alternative-cauliflower-shepherds-pie",
+      "title": "Wegovy-Alternative Cauliflower Shepherd's Pie",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/7572005/pexels-photo-7572005.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 310,
+      "protein_g": 32,
+      "macros": "310 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "zepbound-friendly-turkey-stuffed-portobellos",
+      "title": "Zepbound-Friendly Turkey Stuffed Portobellos",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/4163368/pexels-photo-4163368.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 28,
+      "macros": "250 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "ozempic-alternative-baked-chicken-meatballs",
+      "title": "Ozempic-Alternative Baked Chicken Meatballs",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5836992/pexels-photo-5836992.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 32,
+      "macros": "220 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "semaglutide-fresh-ginger-lemon-tea",
+      "title": "Semaglutide Fresh Ginger Lemon Tea",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/36873287/pexels-photo-36873287.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 10,
+      "protein_g": 0,
+      "macros": "10 cal \u00b7 0g protein"
+    },
+    {
+      "slug": "tirzepatide-peppermint-chamomile-soother",
+      "title": "Tirzepatide Peppermint Chamomile Soother",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/28513378/pexels-photo-28513378.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 0,
+      "protein_g": 0,
+      "macros": "0 cal \u00b7 0g protein"
+    },
+    {
+      "slug": "wegovy-alternative-apple-cider-vinegar-tonic",
+      "title": "Wegovy-Alternative Apple Cider Vinegar Tonic",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/5471920/pexels-photo-5471920.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 5,
+      "protein_g": 0,
+      "macros": "5 cal \u00b7 0g protein"
+    },
+    {
+      "slug": "zepbound-friendly-turmeric-bone-broth-elixir",
+      "title": "Zepbound-Friendly Turmeric Bone Broth Elixir",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/18852561/pexels-photo-18852561.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 50,
+      "protein_g": 10,
+      "macros": "50 cal \u00b7 10g protein"
+    },
+    {
+      "slug": "ozempic-alternative-minty-iced-green-tea",
+      "title": "Ozempic-Alternative Minty Iced Green Tea",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/37515852/pexels-photo-37515852.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 0,
+      "protein_g": 0,
+      "macros": "0 cal \u00b7 0g protein"
+    },
+    {
+      "slug": "tirzepatide-berry-chia-pudding-bowl",
+      "title": "Tirzepatide Berry Chia Pudding Bowl",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/1510693/pexels-photo-1510693.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 10,
+      "macros": "210 cal \u00b7 10g protein"
+    },
+    {
+      "slug": "semaglutide-chocolate-avocado-protein-bowl",
+      "title": "Semaglutide Chocolate Avocado Protein Bowl",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/674557/pexels-photo-674557.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 22,
+      "macros": "280 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "wegovy-alternative-greek-yogurt-tiramisu",
+      "title": "Wegovy-Alternative Greek Yogurt Tiramisu",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/4006347/pexels-photo-4006347.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 18,
+      "macros": "160 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "zepbound-friendly-peanut-butter-banana-mash",
+      "title": "Zepbound-Friendly Peanut Butter Banana Mash",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/6050721/pexels-photo-6050721.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 8,
+      "macros": "180 cal \u00b7 8g protein"
+    },
+    {
+      "slug": "ozempic-alternative-protein-lemon-fluff",
+      "title": "Ozempic-Alternative Protein Lemon Fluff",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/6327663/pexels-photo-6327663.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 110,
+      "protein_g": 20,
+      "macros": "110 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "semaglutide-sausage-and-pepper-egg-casserole",
+      "title": "Semaglutide Sausage & Pepper Egg Casserole",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/13376638/pexels-photo-13376638.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 230,
+      "protein_g": 22,
+      "macros": "230 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "tirzepatide-blueberry-protein-oatmeal-bake",
+      "title": "Tirzepatide Blueberry Protein Oatmeal Bake",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/7167853/pexels-photo-7167853.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 18,
+      "macros": "250 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "wegovy-alternative-cottage-cheese-and-tomato-frittata",
+      "title": "Wegovy-Alternative Cottage Cheese & Tomato Frittata",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/13119151/pexels-photo-13119151.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 24,
+      "macros": "190 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "zepbound-friendly-sweet-potato-and-turkey-hash-bake",
+      "title": "Zepbound-Friendly Sweet Potato & Turkey Hash Bake",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/9219090/pexels-photo-9219090.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 24,
+      "macros": "280 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "ozempic-alternative-french-toast-casserole-high-protein",
+      "title": "Ozempic-Alternative French Toast Casserole (High Protein)",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/9597589/pexels-photo-9597589.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 20,
+      "macros": "210 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "tirzepatide-tuna-and-white-bean-salad",
+      "title": "Tirzepatide Tuna & White Bean Salad",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/6544260/pexels-photo-6544260.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 32,
+      "macros": "290 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "semaglutide-smoked-salmon-and-avocado-rice-cakes",
+      "title": "Semaglutide Smoked Salmon & Avocado Rice Cakes",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/30776226/pexels-photo-30776226.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 18,
+      "macros": "240 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "wegovy-alternative-shrimp-and-avocado-ceviche",
+      "title": "Wegovy-Alternative Shrimp & Avocado Ceviche",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/4801427/pexels-photo-4801427.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 28,
+      "macros": "260 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "zepbound-friendly-crab-and-cucumber-rolls",
+      "title": "Zepbound-Friendly Crab & Cucumber Rolls",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/29786276/pexels-photo-29786276.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 20,
+      "macros": "180 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "ozempic-alternative-canned-salmon-salad-lettuce-wraps",
+      "title": "Ozempic-Alternative Canned Salmon Salad Lettuce Wraps",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/37112193/pexels-photo-37112193.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 26,
+      "macros": "220 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "semaglutide-in-n-out-style-protein-burger",
+      "title": "Semaglutide \"In-N-Out\" Style Protein Burger",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/20902936/pexels-photo-20902936.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 310,
+      "protein_g": 35,
+      "macros": "310 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "tirzepatide-panda-express-style-orange-chicken",
+      "title": "Tirzepatide \"Panda Express\" Style Orange Chicken",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/6646268/pexels-photo-6646268.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 32,
+      "macros": "280 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "wegovy-alternative-chipotle-steak-burrito-bowl",
+      "title": "Wegovy-Alternative \"Chipotle\" Steak Burrito Bowl",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/27365297/pexels-photo-27365297.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 340,
+      "protein_g": 38,
+      "macros": "340 cal \u00b7 38g protein"
+    },
+    {
+      "slug": "zepbound-friendly-taco-bell-mexican-pizza",
+      "title": "Zepbound-Friendly \"Taco Bell\" Mexican Pizza",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/6400020/pexels-photo-6400020.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 320,
+      "protein_g": 28,
+      "macros": "320 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "ozempic-alternative-kfc-style-famous-bowl",
+      "title": "Ozempic-Alternative \"KFC\" Style Famous Bowl",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/7788313/pexels-photo-7788313.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 32,
+      "macros": "290 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "semaglutide-roasted-asparagus-and-lemon",
+      "title": "Semaglutide Roasted Asparagus & Lemon",
+      "cat": "Sides",
+      "image": "https://images.pexels.com/photos/4050980/pexels-photo-4050980.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 60,
+      "protein_g": 4,
+      "macros": "60 cal \u00b7 4g protein"
+    },
+    {
+      "slug": "tirzepatide-saut-ed-garlic-spinach",
+      "title": "Tirzepatide Saut\u00e9ed Garlic Spinach",
+      "cat": "Sides",
+      "image": "https://images.pexels.com/photos/4569050/pexels-photo-4569050.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 45,
+      "protein_g": 3,
+      "macros": "45 cal \u00b7 3g protein"
+    },
+    {
+      "slug": "wegovy-alternative-roasted-cabbage-steaks",
+      "title": "Wegovy-Alternative Roasted Cabbage Steaks",
+      "cat": "Sides",
+      "image": "https://images.pexels.com/photos/30520200/pexels-photo-30520200.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 80,
+      "protein_g": 2,
+      "macros": "80 cal \u00b7 2g protein"
+    },
+    {
+      "slug": "zepbound-friendly-steamed-green-beans-and-almonds",
+      "title": "Zepbound-Friendly Steamed Green Beans & Almonds",
+      "cat": "Sides",
+      "image": "https://images.pexels.com/photos/2942331/pexels-photo-2942331.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 90,
+      "protein_g": 4,
+      "macros": "90 cal \u00b7 4g protein"
+    },
+    {
+      "slug": "ozempic-alternative-maple-glazed-carrots",
+      "title": "Ozempic-Alternative Maple Glazed Carrots",
+      "cat": "Sides",
+      "image": "https://images.pexels.com/photos/36242483/pexels-photo-36242483.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 70,
+      "protein_g": 1,
+      "macros": "70 cal \u00b7 1g protein"
+    },
+    {
+      "slug": "tirzepatide-chocolate-casein-pudding",
+      "title": "Tirzepatide Chocolate Casein Pudding",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/3810779/pexels-photo-3810779.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 130,
+      "protein_g": 24,
+      "macros": "130 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "semaglutide-turkey-and-cheese-roll-ups",
+      "title": "Semaglutide Turkey & Cheese Roll-Ups",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/36756/food-pizza-roll-baked.jpg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 120,
+      "protein_g": 14,
+      "macros": "120 cal \u00b7 14g protein"
+    },
+    {
+      "slug": "wegovy-alternative-cottage-cheese-and-cinnamon",
+      "title": "Wegovy-Alternative Cottage Cheese & Cinnamon",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/6851930/pexels-photo-6851930.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 90,
+      "protein_g": 14,
+      "macros": "90 cal \u00b7 14g protein"
+    },
+    {
+      "slug": "zepbound-friendly-hard-boiled-egg-and-almonds",
+      "title": "Zepbound-Friendly Hard-Boiled Egg & Almonds",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/36227428/pexels-photo-36227428.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 140,
+      "protein_g": 9,
+      "macros": "140 cal \u00b7 9g protein"
+    },
+    {
+      "slug": "ozempic-alternative-edamame-snack-bowl",
+      "title": "Ozempic-Alternative Edamame Snack Bowl",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/29935499/pexels-photo-29935499.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 100,
+      "protein_g": 9,
+      "macros": "100 cal \u00b7 9g protein"
+    },
+    {
+      "slug": "semaglutide-iced-mocha-shake",
+      "title": "Semaglutide Iced Mocha Shake",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/8444410/pexels-photo-8444410.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 25,
+      "macros": "180 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "tirzepatide-cinnamon-roll-smoothie",
+      "title": "Tirzepatide Cinnamon Roll Smoothie",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/351962/pexels-photo-351962.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 26,
+      "macros": "210 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "wegovy-alternative-green-tea-matcha-shake",
+      "title": "Wegovy-Alternative Green Tea Matcha Shake",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/5946971/pexels-photo-5946971.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 22,
+      "macros": "160 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "zepbound-friendly-blueberry-muffin-shake",
+      "title": "Zepbound-Friendly Blueberry Muffin Shake",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/90607/pexels-photo-90607.png?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 230,
+      "protein_g": 24,
+      "macros": "230 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "ozempic-alternative-caramel-apple-protein-smoothie",
+      "title": "Ozempic-Alternative Caramel Apple Protein Smoothie",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/36146882/pexels-photo-36146882.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 22,
+      "macros": "210 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "tirzepatide-chicken-bacon-ranch-casserole",
+      "title": "Tirzepatide Chicken Bacon Ranch Casserole",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/144432/pexels-photo-144432.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 320,
+      "protein_g": 35,
+      "macros": "320 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "semaglutide-turkey-taco-casserole",
+      "title": "Semaglutide Turkey Taco Casserole",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/32039641/pexels-photo-32039641.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 30,
+      "macros": "280 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "wegovy-alternative-tuna-noodle-less-casserole",
+      "title": "Wegovy-Alternative Tuna Noodle-less Casserole",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/19302562/pexels-photo-19302562.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 28,
+      "macros": "250 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "zepbound-friendly-eggplant-parmesan-bake",
+      "title": "Zepbound-Friendly Eggplant Parmesan Bake",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/1707917/pexels-photo-1707917.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 15,
+      "macros": "210 cal \u00b7 15g protein"
+    },
+    {
+      "slug": "ozempic-alternative-buffalo-chicken-cauliflower-bake",
+      "title": "Ozempic-Alternative Buffalo Chicken Cauliflower Bake",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/8862763/pexels-photo-8862763.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 32,
+      "macros": "260 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "semaglutide-garlic-butter-steak-bites",
+      "title": "Semaglutide Garlic Butter Steak Bites",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/36617211/pexels-photo-36617211.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 35,
+      "macros": "280 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "tirzepatide-unstuffed-egg-roll-skillet",
+      "title": "Tirzepatide Unstuffed Egg Roll Skillet",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/7696925/pexels-photo-7696925.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 28,
+      "macros": "250 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "wegovy-alternative-chicken-and-zucchini-skillet",
+      "title": "Wegovy-Alternative Chicken & Zucchini Skillet",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/13422453/pexels-photo-13422453.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 34,
+      "macros": "220 cal \u00b7 34g protein"
+    },
+    {
+      "slug": "zepbound-friendly-shrimp-and-asparagus-stir-fry",
+      "title": "Zepbound-Friendly Shrimp & Asparagus Stir-Fry",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/6718709/pexels-photo-6718709.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 30,
+      "macros": "190 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "ozempic-alternative-ground-turkey-and-bell-pepper-hash",
+      "title": "Ozempic-Alternative Ground Turkey & Bell Pepper Hash",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/13994283/pexels-photo-13994283.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 26,
+      "macros": "240 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "tirzepatide-greek-chicken-cucumber-boats",
+      "title": "Tirzepatide Greek Chicken Cucumber Boats",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/1591226/pexels-photo-1591226.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 28,
+      "macros": "220 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "semaglutide-watermelon-and-feta-salad-with-chicken",
+      "title": "Semaglutide Watermelon & Feta Salad (with Chicken)",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/16966990/pexels-photo-16966990.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 30,
+      "macros": "280 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "wegovy-alternative-shrimp-spring-rolls-rice-paper",
+      "title": "Wegovy-Alternative Shrimp Spring Rolls (Rice Paper)",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/11434405/pexels-photo-11434405.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 24,
+      "macros": "250 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "zepbound-friendly-caprese-salad-with-chicken",
+      "title": "Zepbound-Friendly Caprese Salad with Chicken",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/5639959/pexels-photo-5639959.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 310,
+      "protein_g": 35,
+      "macros": "310 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "ozempic-alternative-cold-sesame-peanut-noodle-salad",
+      "title": "Ozempic-Alternative Cold Sesame Peanut Noodle Salad",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/5021719/pexels-photo-5021719.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 200,
+      "protein_g": 15,
+      "macros": "200 cal \u00b7 15g protein"
+    },
+    {
+      "slug": "semaglutide-vanilla-protein-mug-cake",
+      "title": "Semaglutide Vanilla Protein Mug Cake",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/17926548/pexels-photo-17926548.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 25,
+      "macros": "160 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "tirzepatide-chocolate-brownie-batter-dip",
+      "title": "Tirzepatide Chocolate Brownie Batter Dip",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/5847090/pexels-photo-5847090.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 150,
+      "protein_g": 20,
+      "macros": "150 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "wegovy-alternative-lemon-raspberry-protein-bites",
+      "title": "Wegovy-Alternative Lemon Raspberry Protein Bites",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/3026801/pexels-photo-3026801.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 120,
+      "protein_g": 8,
+      "macros": "120 cal \u00b7 8g protein"
+    },
+    {
+      "slug": "zepbound-friendly-apple-pie-cottage-cheese",
+      "title": "Zepbound-Friendly Apple Pie Cottage Cheese",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/7368081/pexels-photo-7368081.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 14,
+      "macros": "180 cal \u00b7 14g protein"
+    },
+    {
+      "slug": "ozempic-alternative-strawberry-cheesecake-fluff",
+      "title": "Ozempic-Alternative Strawberry Cheesecake Fluff",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/37244665/pexels-photo-37244665.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 130,
+      "protein_g": 22,
+      "macros": "130 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "semaglutide-quinoa-breakfast-bowl",
+      "title": "Semaglutide Quinoa Breakfast Bowl",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/6823322/pexels-photo-6823322.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 14,
+      "macros": "250 cal \u00b7 14g protein"
+    },
+    {
+      "slug": "tirzepatide-greek-yogurt-and-hemp-seed-bowl",
+      "title": "Tirzepatide Greek Yogurt & Hemp Seed Bowl",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/28286256/pexels-photo-28286256.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 26,
+      "macros": "280 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "wegovy-alternative-cottage-cheese-and-berry-bowl",
+      "title": "Wegovy-Alternative Cottage Cheese & Berry Bowl",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/15048297/pexels-photo-15048297.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 200,
+      "protein_g": 28,
+      "macros": "200 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "zepbound-friendly-tofu-scramble-bowl",
+      "title": "Zepbound-Friendly Tofu Scramble Bowl",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/6327660/pexels-photo-6327660.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 20,
+      "macros": "220 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "ozempic-alternative-savory-oatmeal-bowl",
+      "title": "Ozempic-Alternative Savory Oatmeal Bowl",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/32963319/pexels-photo-32963319.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 18,
+      "macros": "240 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "tirzepatide-chicken-and-avocado-collard-wrap",
+      "title": "Tirzepatide Chicken & Avocado Collard Wrap",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/5112582/pexels-photo-5112582.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 30,
+      "macros": "260 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "semaglutide-tuna-and-spinach-wrap",
+      "title": "Semaglutide Tuna & Spinach Wrap",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/9026808/pexels-photo-9026808.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 230,
+      "protein_g": 28,
+      "macros": "230 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "wegovy-alternative-turkey-bacon-and-tomato-lettuce-wrap",
+      "title": "Wegovy-Alternative Turkey Bacon & Tomato Lettuce Wrap",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/133578/pexels-photo-133578.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 18,
+      "macros": "180 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "zepbound-friendly-egg-salad-cabbage-wrap",
+      "title": "Zepbound-Friendly Egg Salad Cabbage Wrap",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/27583274/pexels-photo-27583274.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 20,
+      "macros": "210 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "ozempic-alternative-roast-beef-and-pickle-roll-up",
+      "title": "Ozempic-Alternative Roast Beef & Pickle Roll-Up",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/29944216/pexels-photo-29944216.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 22,
+      "macros": "160 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "semaglutide-slow-cooker-shredded-balsamic-chicken",
+      "title": "Semaglutide Slow Cooker Shredded Balsamic Chicken",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5446516/pexels-photo-5446516.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 35,
+      "macros": "220 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "tirzepatide-crockpot-lean-beef-barbacoa",
+      "title": "Tirzepatide Crockpot Lean Beef Barbacoa",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/25389275/pexels-photo-25389275.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 34,
+      "macros": "280 cal \u00b7 34g protein"
+    },
+    {
+      "slug": "wegovy-alternative-slow-cooker-turkey-carnitas",
+      "title": "Wegovy-Alternative Slow Cooker Turkey Carnitas",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/13005895/pexels-photo-13005895.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 36,
+      "macros": "240 cal \u00b7 36g protein"
+    },
+    {
+      "slug": "zepbound-friendly-garlic-and-herb-pork-roast",
+      "title": "Zepbound-Friendly Garlic & Herb Pork Roast",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/14537709/pexels-photo-14537709.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 32,
+      "macros": "210 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "ozempic-alternative-slow-cooker-lemon-chicken-soup",
+      "title": "Ozempic-Alternative Slow Cooker Lemon Chicken Soup",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/10692533/pexels-photo-10692533.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 200,
+      "protein_g": 28,
+      "macros": "200 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "tirzepatide-cucumber-and-dill-salad",
+      "title": "Tirzepatide Cucumber & Dill Salad",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/24822021/pexels-photo-24822021.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 40,
+      "protein_g": 1,
+      "macros": "40 cal \u00b7 1g protein"
+    },
+    {
+      "slug": "semaglutide-tomato-basil-salad",
+      "title": "Semaglutide Tomato Basil Salad",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/1087901/pexels-photo-1087901.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 60,
+      "protein_g": 1,
+      "macros": "60 cal \u00b7 1g protein"
+    },
+    {
+      "slug": "wegovy-alternative-zucchini-ribbon-salad",
+      "title": "Wegovy-Alternative Zucchini Ribbon Salad",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/20929210/pexels-photo-20929210.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 50,
+      "protein_g": 2,
+      "macros": "50 cal \u00b7 2g protein"
+    },
+    {
+      "slug": "zepbound-friendly-shaved-asparagus-salad",
+      "title": "Zepbound-Friendly Shaved Asparagus Salad",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/3987257/pexels-photo-3987257.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 70,
+      "protein_g": 3,
+      "macros": "70 cal \u00b7 3g protein"
+    },
+    {
+      "slug": "ozempic-alternative-jicama-and-lime-slaw",
+      "title": "Ozempic-Alternative Jicama & Lime Slaw",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/17429154/pexels-photo-17429154.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 50,
+      "protein_g": 1,
+      "macros": "50 cal \u00b7 1g protein"
+    },
+    {
+      "slug": "semaglutide-frozen-yogurt-bark",
+      "title": "Semaglutide Frozen Yogurt Bark",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/32055276/pexels-photo-32055276.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 80,
+      "protein_g": 8,
+      "macros": "80 cal \u00b7 8g protein"
+    },
+    {
+      "slug": "tirzepatide-strawberry-protein-pops",
+      "title": "Tirzepatide Strawberry Protein Pops",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/845552/pexels-photo-845552.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 90,
+      "protein_g": 15,
+      "macros": "90 cal \u00b7 15g protein"
+    },
+    {
+      "slug": "wegovy-alternative-frozen-banana-and-peanut-butter-bites",
+      "title": "Wegovy-Alternative Frozen Banana & Peanut Butter Bites",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/6659867/pexels-photo-6659867.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 110,
+      "protein_g": 3,
+      "macros": "110 cal \u00b7 3g protein"
+    },
+    {
+      "slug": "zepbound-friendly-iced-matcha-protein-cubes",
+      "title": "Zepbound-Friendly Iced Matcha Protein Cubes",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/38345070/pexels-photo-38345070.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 120,
+      "protein_g": 20,
+      "macros": "120 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "ozempic-alternative-lemon-protein-sorbet",
+      "title": "Ozempic-Alternative Lemon Protein Sorbet",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/9227968/pexels-photo-9227968.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 110,
+      "protein_g": 20,
+      "macros": "110 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "semaglutide-mcmuffin-copycat-high-protein",
+      "title": "Semaglutide \"McMuffin\" Copycat (High Protein)",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/28056044/pexels-photo-28056044.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 22,
+      "macros": "260 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "tirzepatide-starbucks-style-spinach-and-feta-wrap",
+      "title": "Tirzepatide Starbucks-Style Spinach & Feta Wrap",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/18884737/pexels-photo-18884737.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 20,
+      "macros": "240 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "zepbound-friendly-grilled-nuggets-chick-fil-a-style",
+      "title": "Zepbound-Friendly Grilled Nuggets (Chick-fil-A Style)",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/11710530/pexels-photo-11710530.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 140,
+      "protein_g": 28,
+      "macros": "140 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "wegovy-alternative-chipotle-style-burrito-bowl",
+      "title": "Wegovy-Alternative Chipotle-Style Burrito Bowl",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/27365297/pexels-photo-27365297.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 310,
+      "protein_g": 35,
+      "macros": "310 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "semaglutide-panera-style-broccoli-cheddar-soup",
+      "title": "Semaglutide Panera-Style Broccoli Cheddar Soup",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/5639476/pexels-photo-5639476.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 18,
+      "macros": "220 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "tirzepatide-sheet-pan-chicken-fajitas",
+      "title": "Tirzepatide Sheet Pan Chicken Fajitas",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/32371267/pexels-photo-32371267.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 300,
+      "protein_g": 35,
+      "macros": "300 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "semaglutide-low-carb-taco-bell-crunchwrap",
+      "title": "Semaglutide Low-Carb Taco Bell \"Crunchwrap\"",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/6400008/pexels-photo-6400008.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 320,
+      "protein_g": 28,
+      "macros": "320 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "ozempic-alternative-turkey-chili",
+      "title": "Ozempic-Alternative Turkey Chili",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/94438/pexels-photo-94438.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 310,
+      "protein_g": 32,
+      "macros": "310 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "zepbound-friendly-baked-chicken-tenders-kfc-style",
+      "title": "Zepbound-Friendly Baked Chicken Tenders (KFC Style)",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/13823350/pexels-photo-13823350.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 35,
+      "macros": "240 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "semaglutide-tofu-and-tempeh-protein-stir-fry",
+      "title": "Semaglutide Tofu & Tempeh Protein Stir-Fry",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/7009334/pexels-photo-7009334.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 26,
+      "macros": "290 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "tirzepatide-quick-tuna-and-avocado-mash",
+      "title": "Tirzepatide Quick Tuna & Avocado Mash",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/4491396/pexels-photo-4491396.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 26,
+      "macros": "260 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "semaglutide-4-ingredient-pesto-chicken-bake",
+      "title": "Semaglutide 4-Ingredient Pesto Chicken Bake",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/26575528/pexels-photo-26575528.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 310,
+      "protein_g": 38,
+      "macros": "310 cal \u00b7 38g protein"
+    },
+    {
+      "slug": "wegovy-alternative-cottage-cheese-and-tomato-bowl",
+      "title": "Wegovy-Alternative Cottage Cheese & Tomato Bowl",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5939950/pexels-photo-5939950.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 25,
+      "macros": "180 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "zepbound-friendly-sheet-pan-sausage-and-peppers",
+      "title": "Zepbound-Friendly Sheet Pan Sausage & Peppers",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/12777773/pexels-photo-12777773.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 20,
+      "macros": "280 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "tirzepatide-easy-turkey-roll-ups",
+      "title": "Tirzepatide Easy Turkey Roll-Ups",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/35407775/pexels-photo-35407775.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 22,
+      "macros": "190 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "semaglutide-chia-seed-pudding",
+      "title": "Semaglutide Chia Seed Pudding",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5947029/pexels-photo-5947029.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 15,
+      "macros": "250 cal \u00b7 15g protein"
+    },
+    {
+      "slug": "tirzepatide-edamame-and-quinoa-power-bowl",
+      "title": "Tirzepatide Edamame & Quinoa Power Bowl",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/4113142/pexels-photo-4113142.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 320,
+      "protein_g": 18,
+      "macros": "320 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "wegovy-alternative-mediterranean-lentil-salad",
+      "title": "Wegovy-Alternative Mediterranean Lentil Salad",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/12653397/pexels-photo-12653397.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 16,
+      "macros": "290 cal \u00b7 16g protein"
+    },
+    {
+      "slug": "zepbound-friendly-chickpea-pasta-with-lean-turkey",
+      "title": "Zepbound-Friendly Chickpea Pasta with Lean Turkey",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/33612030/pexels-photo-33612030.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 380,
+      "protein_g": 35,
+      "macros": "380 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "semaglutide-roasted-edamame-crunch",
+      "title": "Semaglutide Roasted Edamame Crunch",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/11073466/pexels-photo-11073466.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 130,
+      "protein_g": 12,
+      "macros": "130 cal \u00b7 12g protein"
+    },
+    {
+      "slug": "tirzepatide-wendys-frosty-protein-shake",
+      "title": "Tirzepatide Wendy's \"Frosty\" Protein Shake",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/103566/pexels-photo-103566.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 25,
+      "macros": "160 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "semaglutide-mcdonalds-style-baked-apples",
+      "title": "Semaglutide McDonald's-Style Baked Apples",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/11459428/pexels-photo-11459428.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 120,
+      "protein_g": 1,
+      "macros": "120 cal \u00b7 1g protein"
+    },
+    {
+      "slug": "ozempic-alternative-chocolate-hummus-and-strawberries",
+      "title": "Ozempic-Alternative Chocolate Hummus & Strawberries",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/718754/pexels-photo-718754.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 150,
+      "protein_g": 4,
+      "macros": "150 cal \u00b7 4g protein"
+    },
+    {
+      "slug": "zepbound-friendly-high-protein-peanut-butter-cups",
+      "title": "Zepbound-Friendly High Protein Peanut Butter Cups",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/5846193/pexels-photo-5846193.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 110,
+      "protein_g": 6,
+      "macros": "110 cal \u00b7 6g protein"
+    },
+    {
+      "slug": "tirzepatide-3-ingredient-protein-fluff",
+      "title": "Tirzepatide 3-Ingredient Protein Fluff",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/9026809/pexels-photo-9026809.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 120,
+      "protein_g": 20,
+      "macros": "120 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "semaglutide-air-fryer-turkey-burger-patty",
+      "title": "Semaglutide Air Fryer Turkey Burger Patty",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/14133038/pexels-photo-14133038.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 30,
+      "macros": "220 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "tirzepatide-air-fried-shrimp-and-zucchini",
+      "title": "Tirzepatide Air Fried Shrimp & Zucchini",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/15615007/pexels-photo-15615007.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 28,
+      "macros": "180 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "wegovy-alternative-chicken-sausage-coins",
+      "title": "Wegovy-Alternative Chicken Sausage Coins",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/8882942/pexels-photo-8882942.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 20,
+      "macros": "210 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "zepbound-friendly-air-fryer-salmon-bites",
+      "title": "Zepbound-Friendly Air Fryer Salmon Bites",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/33188697/pexels-photo-33188697.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 26,
+      "macros": "280 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "ozempic-alternative-air-fried-tofu-sticks",
+      "title": "Ozempic-Alternative Air Fried Tofu Sticks",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/4377544/pexels-photo-4377544.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 18,
+      "macros": "190 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "tirzepatide-vegan-lentil-shepherds-pie",
+      "title": "Tirzepatide Vegan Lentil Shepherd's Pie",
+      "cat": "Plant-Based",
+      "image": "https://images.pexels.com/photos/15655219/pexels-photo-15655219.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 16,
+      "macros": "280 cal \u00b7 16g protein"
+    },
+    {
+      "slug": "semaglutide-tempeh-bacon-lettuce-wrap",
+      "title": "Semaglutide Tempeh \"Bacon\" Lettuce Wrap",
+      "cat": "Plant-Based",
+      "image": "https://images.pexels.com/photos/34644340/pexels-photo-34644340.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 230,
+      "protein_g": 18,
+      "macros": "230 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "wegovy-alternative-edamame-pasta-alfredo",
+      "title": "Wegovy-Alternative Edamame Pasta Alfredo",
+      "cat": "Plant-Based",
+      "image": "https://images.pexels.com/photos/19098019/pexels-photo-19098019.png?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 26,
+      "macros": "290 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "zepbound-friendly-seitan-broccoli-stir-fry",
+      "title": "Zepbound-Friendly Seitan Broccoli Stir-Fry",
+      "cat": "Plant-Based",
+      "image": "https://images.pexels.com/photos/7515373/pexels-photo-7515373.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 270,
+      "protein_g": 32,
+      "macros": "270 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "ozempic-alternative-smashed-chickpea-salad",
+      "title": "Ozempic-Alternative Smashed Chickpea Salad",
+      "cat": "Plant-Based",
+      "image": "https://images.pexels.com/photos/6750382/pexels-photo-6750382.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 10,
+      "macros": "240 cal \u00b7 10g protein"
+    },
+    {
+      "slug": "semaglutide-chicken-and-cauliflower-rice-soup",
+      "title": "Semaglutide Chicken & Cauliflower Rice Soup",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/31872339/pexels-photo-31872339.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 28,
+      "macros": "210 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "tirzepatide-beef-bone-broth-and-mushroom-soup",
+      "title": "Tirzepatide Beef Bone Broth & Mushroom Soup",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/4163930/pexels-photo-4163930.png?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 120,
+      "protein_g": 15,
+      "macros": "120 cal \u00b7 15g protein"
+    },
+    {
+      "slug": "wegovy-alternative-greek-lemon-chicken-soup-avgolemono-hack",
+      "title": "Wegovy-Alternative Greek Lemon Chicken Soup (Avgolemono Hack)",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/10692533/pexels-photo-10692533.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 28,
+      "macros": "240 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "zepbound-friendly-turkey-and-black-bean-chili",
+      "title": "Zepbound-Friendly Turkey & Black Bean Chili",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/10658157/pexels-photo-10658157.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 32,
+      "macros": "290 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "ozempic-alternative-pureed-butternut-squash-and-protein",
+      "title": "Ozempic-Alternative Pureed Butternut Squash & Protein",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/4187620/pexels-photo-4187620.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 200,
+      "protein_g": 22,
+      "macros": "200 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "semaglutide-spinach-and-mushroom-egg-muffins",
+      "title": "Semaglutide Spinach & Mushroom Egg Muffins",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/3850900/pexels-photo-3850900.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 18,
+      "macros": "160 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "tirzepatide-turkey-bacon-quiche-crustless",
+      "title": "Tirzepatide Turkey Bacon Quiche (Crustless)",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/288264/pexels-photo-288264.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 20,
+      "macros": "190 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "wegovy-alternative-southwestern-egg-casserole",
+      "title": "Wegovy-Alternative Southwestern Egg Casserole",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/5639280/pexels-photo-5639280.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 22,
+      "macros": "220 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "zepbound-friendly-broccoli-cheddar-egg-bake",
+      "title": "Zepbound-Friendly Broccoli Cheddar Egg Bake",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/9166298/pexels-photo-9166298.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 16,
+      "macros": "180 cal \u00b7 16g protein"
+    },
+    {
+      "slug": "ozempic-alternative-asparagus-and-feta-frittata",
+      "title": "Ozempic-Alternative Asparagus & Feta Frittata",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/13119151/pexels-photo-13119151.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 170,
+      "protein_g": 15,
+      "macros": "170 cal \u00b7 15g protein"
+    },
+    {
+      "slug": "tirzepatide-cottage-cheese-cookie-dough",
+      "title": "Tirzepatide Cottage Cheese \"Cookie Dough\"",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/35327910/pexels-photo-35327910.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 26,
+      "macros": "220 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "semaglutide-edamame-trail-mix",
+      "title": "Semaglutide Edamame Trail Mix",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/12955793/pexels-photo-12955793.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 140,
+      "protein_g": 12,
+      "macros": "140 cal \u00b7 12g protein"
+    },
+    {
+      "slug": "wegovy-alternative-turkey-pepperoni-and-cheese-skewers",
+      "title": "Wegovy-Alternative Turkey Pepperoni & Cheese Skewers",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/33815578/pexels-photo-33815578.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 16,
+      "macros": "160 cal \u00b7 16g protein"
+    },
+    {
+      "slug": "zepbound-friendly-chocolate-pb2-rice-cake",
+      "title": "Zepbound-Friendly Chocolate PB2 Rice Cake",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/9501658/pexels-photo-9501658.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 110,
+      "protein_g": 6,
+      "macros": "110 cal \u00b7 6g protein"
+    },
+    {
+      "slug": "ozempic-alternative-roasted-chickpea-corn-nuts",
+      "title": "Ozempic-Alternative Roasted Chickpea \"Corn Nuts\"",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/10112101/pexels-photo-10112101.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 130,
+      "protein_g": 7,
+      "macros": "130 cal \u00b7 7g protein"
+    },
+    {
+      "slug": "semaglutide-ginger-chicken-and-rice-soup",
+      "title": "Semaglutide Ginger Chicken & Rice Soup",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/36852245/pexels-photo-36852245.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 22,
+      "macros": "210 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "tirzepatide-plain-turkey-meatballs-no-spice",
+      "title": "Tirzepatide Plain Turkey Meatballs (No Spice)",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/34480434/pexels-photo-34480434.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 28,
+      "macros": "190 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "wegovy-alternative-soft-scrambled-eggs-and-toast",
+      "title": "Wegovy-Alternative Soft Scrambled Eggs & Toast",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/13020203/pexels-photo-13020203.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 16,
+      "macros": "220 cal \u00b7 16g protein"
+    },
+    {
+      "slug": "zepbound-friendly-mashed-sweet-potatoes-and-greek-yogurt",
+      "title": "Zepbound-Friendly Mashed Sweet Potatoes & Greek Yogurt",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5718107/pexels-photo-5718107.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 200,
+      "protein_g": 14,
+      "macros": "200 cal \u00b7 14g protein"
+    },
+    {
+      "slug": "ozempic-alternative-cold-tofu-with-soy-sauce",
+      "title": "Ozempic-Alternative Cold Tofu with Soy Sauce",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/9356997/pexels-photo-9356997.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 110,
+      "protein_g": 12,
+      "macros": "110 cal \u00b7 12g protein"
+    },
+    {
+      "slug": "semaglutide-salmon-and-spinach-power-salad",
+      "title": "Semaglutide Salmon & Spinach Power Salad",
+      "cat": "Salads",
+      "image": "https://images.pexels.com/photos/30325084/pexels-photo-30325084.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 30,
+      "macros": "290 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "tirzepatide-edamame-and-shredded-chicken-crunch",
+      "title": "Tirzepatide Edamame & Shredded Chicken Crunch",
+      "cat": "Salads",
+      "image": "https://images.pexels.com/photos/1860199/pexels-photo-1860199.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 320,
+      "protein_g": 40,
+      "macros": "320 cal \u00b7 40g protein"
+    },
+    {
+      "slug": "wegovy-alternative-cottage-cheese-and-tomato-salad",
+      "title": "Wegovy-Alternative Cottage Cheese & Tomato Salad",
+      "cat": "Salads",
+      "image": "https://images.pexels.com/photos/36929171/pexels-photo-36929171.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 25,
+      "macros": "210 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "zepbound-friendly-tuna-and-avocado-mixed-greens",
+      "title": "Zepbound-Friendly Tuna & Avocado Mixed Greens",
+      "cat": "Salads",
+      "image": "https://images.pexels.com/photos/6953372/pexels-photo-6953372.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 310,
+      "protein_g": 28,
+      "macros": "310 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "ozempic-alternative-greek-turkey-meatball-salad",
+      "title": "Ozempic-Alternative Greek Turkey Meatball Salad",
+      "cat": "Salads",
+      "image": "https://images.pexels.com/photos/5863609/pexels-photo-5863609.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 32,
+      "macros": "280 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "semaglutide-garlic-butter-cod",
+      "title": "Semaglutide Garlic Butter Cod",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5713767/pexels-photo-5713767.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 170,
+      "protein_g": 28,
+      "macros": "170 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "tirzepatide-shrimp-and-zucchini-noodle-scampi",
+      "title": "Tirzepatide Shrimp & Zucchini Noodle Scampi",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5597691/pexels-photo-5597691.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 30,
+      "macros": "220 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "wegovy-alternative-seared-scallops-and-asparagus",
+      "title": "Wegovy-Alternative Seared Scallops & Asparagus",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5638522/pexels-photo-5638522.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 25,
+      "macros": "190 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "zepbound-friendly-lemon-pepper-tilapia",
+      "title": "Zepbound-Friendly Lemon Pepper Tilapia",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/33649028/pexels-photo-33649028.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 150,
+      "protein_g": 30,
+      "macros": "150 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "ozempic-alternative-white-fish-taco-skillet",
+      "title": "Ozempic-Alternative White Fish Taco Skillet",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/9044684/pexels-photo-9044684.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 32,
+      "macros": "210 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "semaglutide-casein-protein-and-almond-butter-bowl",
+      "title": "Semaglutide Casein Protein & Almond Butter Bowl",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/6802625/pexels-photo-6802625.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 26,
+      "macros": "180 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "tirzepatide-hard-boiled-egg-and-avocado",
+      "title": "Tirzepatide Hard Boiled Egg & Avocado",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/824635/pexels-photo-824635.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 150,
+      "protein_g": 7,
+      "macros": "150 cal \u00b7 7g protein"
+    },
+    {
+      "slug": "wegovy-alternative-turkey-and-cheese-apple-slices",
+      "title": "Wegovy-Alternative Turkey & Cheese Apple Slices",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/5852320/pexels-photo-5852320.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 12,
+      "macros": "160 cal \u00b7 12g protein"
+    },
+    {
+      "slug": "zepbound-friendly-greek-yogurt-and-walnuts",
+      "title": "Zepbound-Friendly Greek Yogurt & Walnuts",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/5191827/pexels-photo-5191827.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 17,
+      "macros": "190 cal \u00b7 17g protein"
+    },
+    {
+      "slug": "ozempic-alternative-roasted-edamame-and-pumpkin-seeds",
+      "title": "Ozempic-Alternative Roasted Edamame & Pumpkin Seeds",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/7217526/pexels-photo-7217526.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 140,
+      "protein_g": 12,
+      "macros": "140 cal \u00b7 12g protein"
+    },
+    {
+      "slug": "semaglutide-chia-and-raspberry-pudding",
+      "title": "Semaglutide Chia & Raspberry Pudding",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/5645175/pexels-photo-5645175.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 230,
+      "protein_g": 8,
+      "macros": "230 cal \u00b7 8g protein"
+    },
+    {
+      "slug": "tirzepatide-flaxseed-and-protein-oatmeal",
+      "title": "Tirzepatide Flaxseed & Protein Oatmeal",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/27850088/pexels-photo-27850088.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 22,
+      "macros": "260 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "wegovy-alternative-spinach-and-lentil-breakfast-bowl",
+      "title": "Wegovy-Alternative Spinach & Lentil Breakfast Bowl",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/6978180/pexels-photo-6978180.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 18,
+      "macros": "240 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "zepbound-friendly-avocado-and-hemp-seed-toast-low-carb",
+      "title": "Zepbound-Friendly Avocado & Hemp Seed Toast (Low Carb)",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/3957527/pexels-photo-3957527.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 12,
+      "macros": "250 cal \u00b7 12g protein"
+    },
+    {
+      "slug": "ozempic-alternative-berry-and-bran-flake-parfait",
+      "title": "Ozempic-Alternative Berry & Bran Flake Parfait",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/9874979/pexels-photo-9874979.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 18,
+      "macros": "210 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "semaglutide-turkey-and-carrot-meatballs",
+      "title": "Semaglutide Turkey & Carrot Meatballs",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/998245/pexels-photo-998245.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 28,
+      "macros": "220 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "tirzepatide-zucchini-and-chicken-salad",
+      "title": "Tirzepatide Zucchini & Chicken Salad",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/27870597/pexels-photo-27870597.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 32,
+      "macros": "210 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "wegovy-alternative-egg-drop-and-tofu-soup",
+      "title": "Wegovy-Alternative Egg Drop & Tofu Soup",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/12913641/pexels-photo-12913641.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 20,
+      "macros": "180 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "zepbound-friendly-cucumber-and-turkey-wrap",
+      "title": "Zepbound-Friendly Cucumber & Turkey Wrap",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/29944216/pexels-photo-29944216.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 170,
+      "protein_g": 22,
+      "macros": "170 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "ozempic-alternative-cold-rice-and-salmon-bowl",
+      "title": "Ozempic-Alternative Cold Rice & Salmon Bowl",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/37058820/pexels-photo-37058820.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 26,
+      "macros": "290 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "semaglutide-shredded-salsa-chicken",
+      "title": "Semaglutide Shredded Salsa Chicken",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/32538757/pexels-photo-32538757.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 35,
+      "macros": "220 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "tirzepatide-pulled-pork-tenderloin",
+      "title": "Tirzepatide Pulled Pork Tenderloin",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/7181419/pexels-photo-7181419.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 34,
+      "macros": "240 cal \u00b7 34g protein"
+    },
+    {
+      "slug": "wegovy-alternative-chicken-broth-and-veggie-stew",
+      "title": "Wegovy-Alternative Chicken Broth & Veggie Stew",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/28872869/pexels-photo-28872869.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 20,
+      "macros": "190 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "zepbound-friendly-black-bean-and-turkey-chili",
+      "title": "Zepbound-Friendly Black Bean & Turkey Chili",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/10658157/pexels-photo-10658157.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 32,
+      "macros": "290 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "ozempic-alternative-lemon-herb-chicken",
+      "title": "Ozempic-Alternative Lemon Herb Chicken",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5191840/pexels-photo-5191840.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 34,
+      "macros": "210 cal \u00b7 34g protein"
+    },
+    {
+      "slug": "semaglutide-whey-and-rice-cake-stack",
+      "title": "Semaglutide Whey & Rice Cake Stack",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/36165606/pexels-photo-36165606.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 25,
+      "macros": "180 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "tirzepatide-protein-oatmeal-cup",
+      "title": "Tirzepatide Protein Oatmeal Cup",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/6529616/pexels-photo-6529616.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 230,
+      "protein_g": 22,
+      "macros": "230 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "wegovy-alternative-banana-and-egg-white-pancakes",
+      "title": "Wegovy-Alternative Banana & Egg White Pancakes",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/11243321/pexels-photo-11243321.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 200,
+      "protein_g": 20,
+      "macros": "200 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "zepbound-friendly-tuna-and-sweet-potato-mash",
+      "title": "Zepbound-Friendly Tuna & Sweet Potato Mash",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/4869427/pexels-photo-4869427.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 24,
+      "macros": "260 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "ozempic-alternative-chocolate-protein-and-berries",
+      "title": "Ozempic-Alternative Chocolate Protein & Berries",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/918328/pexels-photo-918328.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 170,
+      "protein_g": 25,
+      "macros": "170 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "semaglutide-zucchini-boat-pizzas",
+      "title": "Semaglutide Zucchini Boat Pizzas",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/5848281/pexels-photo-5848281.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 18,
+      "macros": "220 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "tirzepatide-cauliflower-crust-pizza-slice",
+      "title": "Tirzepatide Cauliflower Crust Pizza Slice",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/1552642/pexels-photo-1552642.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 24,
+      "macros": "290 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "wegovy-alternative-portobello-mushroom-pizza",
+      "title": "Wegovy-Alternative Portobello Mushroom Pizza",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/17555546/pexels-photo-17555546.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 16,
+      "macros": "180 cal \u00b7 16g protein"
+    },
+    {
+      "slug": "zepbound-friendly-chicken-crust-pizza",
+      "title": "Zepbound-Friendly Chicken Crust Pizza",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/5639547/pexels-photo-5639547.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 340,
+      "protein_g": 45,
+      "macros": "340 cal \u00b7 45g protein"
+    },
+    {
+      "slug": "ozempic-alternative-turkey-pepperoni-flatbread",
+      "title": "Ozempic-Alternative Turkey Pepperoni Flatbread",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/1252841/pexels-photo-1252841.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 20,
+      "macros": "250 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "semaglutide-edamame-and-feta-mash",
+      "title": "Semaglutide Edamame & Feta Mash",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/10296244/pexels-photo-10296244.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 170,
+      "protein_g": 14,
+      "macros": "170 cal \u00b7 14g protein"
+    },
+    {
+      "slug": "tirzepatide-roasted-turkey-cubes",
+      "title": "Tirzepatide Roasted Turkey Cubes",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/12664801/pexels-photo-12664801.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 140,
+      "protein_g": 28,
+      "macros": "140 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "wegovy-alternative-cottage-cheese-and-everything-spice",
+      "title": "Wegovy-Alternative Cottage Cheese & Everything Spice",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/4198141/pexels-photo-4198141.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 100,
+      "protein_g": 14,
+      "macros": "100 cal \u00b7 14g protein"
+    },
+    {
+      "slug": "zepbound-friendly-pickled-eggs",
+      "title": "Zepbound-Friendly Pickled Eggs",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/175745/pexels-photo-175745.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 140,
+      "protein_g": 12,
+      "macros": "140 cal \u00b7 12g protein"
+    },
+    {
+      "slug": "ozempic-alternative-tofu-jerky-strips",
+      "title": "Ozempic-Alternative Tofu \"Jerky\" Strips",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/6646202/pexels-photo-6646202.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 16,
+      "macros": "160 cal \u00b7 16g protein"
+    },
+    {
+      "slug": "semaglutide-spaghetti-squash-lasagna",
+      "title": "Semaglutide Spaghetti Squash Lasagna",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/34278827/pexels-photo-34278827.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 26,
+      "macros": "280 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "tirzepatide-palmini-noodle-alfredo-bake",
+      "title": "Tirzepatide Palmini Noodle Alfredo Bake",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/5175578/pexels-photo-5175578.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 32,
+      "macros": "250 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "wegovy-alternative-zucchini-casserole",
+      "title": "Wegovy-Alternative Zucchini Casserole",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/32039641/pexels-photo-32039641.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 28,
+      "macros": "240 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "zepbound-friendly-eggplant-baked-ziti",
+      "title": "Zepbound-Friendly Eggplant \"Baked Ziti\"",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/27940895/pexels-photo-27940895.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 22,
+      "macros": "220 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "ozempic-alternative-shirataki-mac-and-cheese-bake",
+      "title": "Ozempic-Alternative Shirataki Mac & Cheese Bake",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/25449940/pexels-photo-25449940.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 25,
+      "macros": "210 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "semaglutide-turmeric-mango-smoothie",
+      "title": "Semaglutide Turmeric Mango Smoothie",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/12119029/pexels-photo-12119029.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 22,
+      "macros": "190 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "tirzepatide-berry-spinach-detox",
+      "title": "Tirzepatide Berry Spinach Detox",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/1684376/pexels-photo-1684376.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 170,
+      "protein_g": 24,
+      "macros": "170 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "wegovy-alternative-ginger-peach-cooler",
+      "title": "Wegovy-Alternative Ginger Peach Cooler",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/461210/pexels-photo-461210.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 20,
+      "macros": "180 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "zepbound-friendly-chia-green-tea-shake",
+      "title": "Zepbound-Friendly Chia Green Tea Shake",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/1438080/pexels-photo-1438080.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 150,
+      "protein_g": 22,
+      "macros": "150 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "ozempic-alternative-cucumber-mint-hydrator",
+      "title": "Ozempic-Alternative Cucumber Mint Hydrator",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/5817525/pexels-photo-5817525.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 110,
+      "protein_g": 20,
+      "macros": "110 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "semaglutide-ricotta-and-berry-bowl",
+      "title": "Semaglutide Ricotta & Berry Bowl",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/15048297/pexels-photo-15048297.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 18,
+      "macros": "220 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "tirzepatide-scrambled-tofu-and-black-beans",
+      "title": "Tirzepatide Scrambled Tofu & Black Beans",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/6327660/pexels-photo-6327660.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 18,
+      "macros": "260 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "wegovy-alternative-warm-quinoa-and-egg-bowl",
+      "title": "Wegovy-Alternative Warm Quinoa & Egg Bowl",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/6823322/pexels-photo-6823322.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 16,
+      "macros": "250 cal \u00b7 16g protein"
+    },
+    {
+      "slug": "zepbound-friendly-turkey-sausage-and-cauliflower-hash",
+      "title": "Zepbound-Friendly Turkey Sausage & Cauliflower Hash",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/374052/pexels-photo-374052.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 20,
+      "macros": "210 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "ozempic-alternative-hemp-heart-porridge",
+      "title": "Ozempic-Alternative Hemp Heart Porridge",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/28286256/pexels-photo-28286256.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 15,
+      "macros": "280 cal \u00b7 15g protein"
+    },
+    {
+      "slug": "semaglutide-turkey-and-broccoli-stir-fry",
+      "title": "Semaglutide Turkey & Broccoli Stir-Fry",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/31867670/pexels-photo-31867670.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 32,
+      "macros": "260 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "tirzepatide-ground-turkey-and-green-bean-skillet",
+      "title": "Tirzepatide Ground Turkey & Green Bean Skillet",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/34429594/pexels-photo-34429594.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 30,
+      "macros": "250 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "wegovy-alternative-turkey-stuffed-zucchini",
+      "title": "Wegovy-Alternative Turkey Stuffed Zucchini",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/36865407/pexels-photo-36865407.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 28,
+      "macros": "240 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "zepbound-friendly-turkey-and-mushroom-saut",
+      "title": "Zepbound-Friendly Turkey & Mushroom Saut\u00e9",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/8250277/pexels-photo-8250277.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 230,
+      "protein_g": 30,
+      "macros": "230 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "ozempic-alternative-turkey-cabbage-slaw-egg-roll-in-a-bowl",
+      "title": "Ozempic-Alternative Turkey Cabbage Slaw (Egg Roll in a Bowl)",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/9045146/pexels-photo-9045146.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 28,
+      "macros": "260 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "semaglutide-canned-salmon-and-cucumber-salad",
+      "title": "Semaglutide Canned Salmon & Cucumber Salad",
+      "cat": "Salads",
+      "image": "https://images.pexels.com/photos/11654303/pexels-photo-11654303.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 26,
+      "macros": "250 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "tirzepatide-white-bean-and-tomato-salad",
+      "title": "Tirzepatide White Bean & Tomato Salad",
+      "cat": "Salads",
+      "image": "https://images.pexels.com/photos/5191847/pexels-photo-5191847.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 12,
+      "macros": "220 cal \u00b7 12g protein"
+    },
+    {
+      "slug": "wegovy-alternative-chickpea-and-feta-toss",
+      "title": "Wegovy-Alternative Chickpea & Feta Toss",
+      "cat": "Salads",
+      "image": "https://images.pexels.com/photos/27850079/pexels-photo-27850079.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 14,
+      "macros": "260 cal \u00b7 14g protein"
+    },
+    {
+      "slug": "zepbound-friendly-pre-cooked-chicken-and-spinach",
+      "title": "Zepbound-Friendly Pre-cooked Chicken & Spinach",
+      "cat": "Salads",
+      "image": "https://images.pexels.com/photos/7111537/pexels-photo-7111537.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 28,
+      "macros": "210 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "ozempic-alternative-greek-tofu-salad",
+      "title": "Ozempic-Alternative Greek Tofu Salad",
+      "cat": "Salads",
+      "image": "https://images.pexels.com/photos/724664/pexels-photo-724664.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 200,
+      "protein_g": 18,
+      "macros": "200 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "semaglutide-chicken-tortilla-less-soup",
+      "title": "Semaglutide Chicken \"Tortilla-less\" Soup",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/16235564/pexels-photo-16235564.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 32,
+      "macros": "220 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "tirzepatide-lean-beef-and-barley-stew",
+      "title": "Tirzepatide Lean Beef & Barley Stew",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/7340942/pexels-photo-7340942.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 28,
+      "macros": "280 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "wegovy-alternative-turkey-sausage-and-bean-soup",
+      "title": "Wegovy-Alternative Turkey Sausage & Bean Soup",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/31372406/pexels-photo-31372406.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 26,
+      "macros": "260 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "zepbound-friendly-bone-broth-french-onion",
+      "title": "Zepbound-Friendly Bone Broth French Onion",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/4153908/pexels-photo-4153908.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 150,
+      "protein_g": 15,
+      "macros": "150 cal \u00b7 15g protein"
+    },
+    {
+      "slug": "ozempic-alternative-lentil-and-carrot-stew",
+      "title": "Ozempic-Alternative Lentil & Carrot Stew",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/1618952/pexels-photo-1618952.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 230,
+      "protein_g": 16,
+      "macros": "230 cal \u00b7 16g protein"
+    },
+    {
+      "slug": "semaglutide-cottage-cheese-and-egg-white-scramble",
+      "title": "Semaglutide Cottage Cheese & Egg White Scramble",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/7696925/pexels-photo-7696925.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 32,
+      "macros": "210 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "tirzepatide-turkey-bacon-and-spinach-wrap",
+      "title": "Tirzepatide Turkey Bacon & Spinach Wrap",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/34644340/pexels-photo-34644340.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 22,
+      "macros": "240 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "wegovy-alternative-smoked-salmon-cucumber-boats",
+      "title": "Wegovy-Alternative Smoked Salmon Cucumber Boats",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/398259/pexels-photo-398259.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 170,
+      "protein_g": 18,
+      "macros": "170 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "zepbound-friendly-leftover-chicken-and-egg-hash",
+      "title": "Zepbound-Friendly Leftover Chicken & Egg Hash",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/38003494/pexels-photo-38003494.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 35,
+      "macros": "280 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "ozempic-alternative-breakfast-turkey-meatballs",
+      "title": "Ozempic-Alternative Breakfast Turkey Meatballs",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/15125535/pexels-photo-15125535.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 200,
+      "protein_g": 28,
+      "macros": "200 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "semaglutide-baked-mahi-mahi-with-zucchini",
+      "title": "Semaglutide Baked Mahi Mahi with Zucchini",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/34429582/pexels-photo-34429582.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 32,
+      "macros": "190 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "tirzepatide-garlic-shrimp-and-asparagus-foil-pack",
+      "title": "Tirzepatide Garlic Shrimp & Asparagus Foil Pack",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/8633745/pexels-photo-8633745.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 28,
+      "macros": "180 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "wegovy-alternative-seared-tuna-steaks",
+      "title": "Wegovy-Alternative Seared Tuna Steaks",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/2683281/pexels-photo-2683281.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 38,
+      "macros": "220 cal \u00b7 38g protein"
+    },
+    {
+      "slug": "zepbound-friendly-steamed-cod-with-broccoli",
+      "title": "Zepbound-Friendly Steamed Cod with Broccoli",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5489613/pexels-photo-5489613.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 30,
+      "macros": "160 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "ozempic-alternative-flounder-and-green-bean-skillet",
+      "title": "Ozempic-Alternative Flounder & Green Bean Skillet",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/32879325/pexels-photo-32879325.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 26,
+      "macros": "180 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "semaglutide-3-minute-egg-white-and-spinach-mug",
+      "title": "Semaglutide 3-Minute Egg White & Spinach Mug",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/8992838/pexels-photo-8992838.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 120,
+      "protein_g": 20,
+      "macros": "120 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "tirzepatide-microwave-edamame-and-chicken-bowl",
+      "title": "Tirzepatide Microwave Edamame & Chicken Bowl",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/20843709/pexels-photo-20843709.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 32,
+      "macros": "250 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "wegovy-alternative-microwave-baked-potato-with-turkey",
+      "title": "Wegovy-Alternative Microwave \"Baked\" Potato with Turkey",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/35459472/pexels-photo-35459472.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 26,
+      "macros": "290 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "zepbound-friendly-2-minute-tuna-melt-no-bread",
+      "title": "Zepbound-Friendly 2-Minute Tuna Melt (No Bread)",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/27905900/pexels-photo-27905900.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 28,
+      "macros": "220 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "ozempic-alternative-cottage-cheese-marinara-bowl",
+      "title": "Ozempic-Alternative Cottage Cheese Marinara Bowl",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/6851930/pexels-photo-6851930.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 25,
+      "macros": "180 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "semaglutide-greek-yogurt-french-onion-dip",
+      "title": "Semaglutide Greek Yogurt French Onion Dip",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/6271891/pexels-photo-6271891.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 120,
+      "protein_g": 18,
+      "macros": "120 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "tirzepatide-spicy-black-bean-dip",
+      "title": "Tirzepatide Spicy Black Bean Dip",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/6400001/pexels-photo-6400001.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 10,
+      "macros": "160 cal \u00b7 10g protein"
+    },
+    {
+      "slug": "wegovy-alternative-high-protein-buffalo-chicken-dip",
+      "title": "Wegovy-Alternative High-Protein Buffalo Chicken Dip",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/8862763/pexels-photo-8862763.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 32,
+      "macros": "220 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "zepbound-friendly-edamame-hummus",
+      "title": "Zepbound-Friendly Edamame Hummus",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/29935499/pexels-photo-29935499.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 14,
+      "macros": "180 cal \u00b7 14g protein"
+    },
+    {
+      "slug": "ozempic-alternative-peanut-butter-yogurt-dip",
+      "title": "Ozempic-Alternative Peanut Butter Yogurt Dip",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/6659897/pexels-photo-6659897.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 150,
+      "protein_g": 18,
+      "macros": "150 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "semaglutide-zucchini-noodle-turkey-pho",
+      "title": "Semaglutide Zucchini Noodle Turkey Pho",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/6646072/pexels-photo-6646072.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 26,
+      "macros": "220 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "tirzepatide-cauliflower-rice-shrimp-stir-fry",
+      "title": "Tirzepatide Cauliflower Rice Shrimp Stir-Fry",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/10695972/pexels-photo-10695972.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 28,
+      "macros": "210 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "wegovy-alternative-spaghetti-squash-turkey-bolognese",
+      "title": "Wegovy-Alternative Spaghetti Squash Turkey Bolognese",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/7262351/pexels-photo-7262351.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 28,
+      "macros": "280 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "zepbound-friendly-cabbage-noodle-pad-thai",
+      "title": "Zepbound-Friendly Cabbage Noodle Pad Thai",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/34723307/pexels-photo-34723307.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 30,
+      "macros": "260 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "ozempic-alternative-shirataki-chicken-noodle-soup",
+      "title": "Ozempic-Alternative Shirataki Chicken Noodle Soup",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/10172749/pexels-photo-10172749.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 25,
+      "macros": "160 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "semaglutide-cold-soba-noodle-and-edamame-salad",
+      "title": "Semaglutide Cold Soba Noodle & Edamame Salad",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/20843710/pexels-photo-20843710.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 15,
+      "macros": "290 cal \u00b7 15g protein"
+    },
+    {
+      "slug": "tirzepatide-chilled-cucumber-yogurt-soup",
+      "title": "Tirzepatide Chilled Cucumber Yogurt Soup",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/15108371/pexels-photo-15108371.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 140,
+      "protein_g": 20,
+      "macros": "140 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "wegovy-alternative-cold-salmon-and-dill-salad",
+      "title": "Wegovy-Alternative Cold Salmon & Dill Salad",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/34618708/pexels-photo-34618708.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 230,
+      "protein_g": 26,
+      "macros": "230 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "zepbound-friendly-curried-chickpea-salad",
+      "title": "Zepbound-Friendly Curried Chickpea Salad",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/36468377/pexels-photo-36468377.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 270,
+      "protein_g": 12,
+      "macros": "270 cal \u00b7 12g protein"
+    },
+    {
+      "slug": "ozempic-alternative-chilled-tofu-and-soy-ginger",
+      "title": "Ozempic-Alternative Chilled Tofu & Soy Ginger",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/35132130/pexels-photo-35132130.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 120,
+      "protein_g": 14,
+      "macros": "120 cal \u00b7 14g protein"
+    },
+    {
+      "slug": "semaglutide-greek-yogurt-mashed-cauliflower",
+      "title": "Semaglutide Greek Yogurt Mashed Cauliflower",
+      "cat": "Sides",
+      "image": "https://images.pexels.com/photos/37206680/pexels-photo-37206680.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 120,
+      "protein_g": 15,
+      "macros": "120 cal \u00b7 15g protein"
+    },
+    {
+      "slug": "tirzepatide-cheesy-broccoli-bites",
+      "title": "Tirzepatide Cheesy Broccoli Bites",
+      "cat": "Sides",
+      "image": "https://images.pexels.com/photos/9166298/pexels-photo-9166298.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 150,
+      "protein_g": 14,
+      "macros": "150 cal \u00b7 14g protein"
+    },
+    {
+      "slug": "wegovy-alternative-protein-creamed-spinach",
+      "title": "Wegovy-Alternative Protein Creamed Spinach",
+      "cat": "Sides",
+      "image": "https://images.pexels.com/photos/12765333/pexels-photo-12765333.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 130,
+      "protein_g": 18,
+      "macros": "130 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "zepbound-friendly-brussels-sprouts-and-turkey-bacon",
+      "title": "Zepbound-Friendly Brussels Sprouts & Turkey Bacon",
+      "cat": "Sides",
+      "image": "https://images.pexels.com/photos/5612342/pexels-photo-5612342.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 10,
+      "macros": "160 cal \u00b7 10g protein"
+    },
+    {
+      "slug": "ozempic-alternative-zucchini-and-parmesan-fritters",
+      "title": "Ozempic-Alternative Zucchini & Parmesan Fritters",
+      "cat": "Sides",
+      "image": "https://images.pexels.com/photos/29042353/pexels-photo-29042353.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 15,
+      "macros": "180 cal \u00b7 15g protein"
+    },
+    {
+      "slug": "semaglutide-overnight-protein-quinoa",
+      "title": "Semaglutide Overnight Protein Quinoa",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/1640767/pexels-photo-1640767.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 270,
+      "protein_g": 24,
+      "macros": "270 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "tirzepatide-almond-butter-protein-balls",
+      "title": "Tirzepatide Almond Butter Protein Balls",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/10003794/pexels-photo-10003794.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 12,
+      "macros": "190 cal \u00b7 12g protein"
+    },
+    {
+      "slug": "wegovy-alternative-drinkable-greek-yogurt-kefir-hack",
+      "title": "Wegovy-Alternative Drinkable Greek Yogurt (Kefir Hack)",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/4324320/pexels-photo-4324320.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 150,
+      "protein_g": 20,
+      "macros": "150 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "zepbound-friendly-pre-made-turkey-sausage-bites",
+      "title": "Zepbound-Friendly Pre-made Turkey Sausage Bites",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/605624/pexels-photo-605624.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 150,
+      "protein_g": 20,
+      "macros": "150 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "ozempic-alternative-high-protein-breakfast-box",
+      "title": "Ozempic-Alternative High-Protein Breakfast Box",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/37624175/pexels-photo-37624175.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 22,
+      "macros": "260 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "semaglutide-big-mac-salad-bowl",
+      "title": "Semaglutide Big Mac Salad Bowl",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/12261069/pexels-photo-12261069.png?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 310,
+      "protein_g": 32,
+      "macros": "310 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "tirzepatide-low-carb-nachos-mini-bell-peppers",
+      "title": "Tirzepatide Low-Carb Nachos (Mini Bell Peppers)",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/5848719/pexels-photo-5848719.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 26,
+      "macros": "240 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "wegovy-alternative-baked-buffalo-chicken-wings",
+      "title": "Wegovy-Alternative Baked Buffalo Chicken Wings",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/8862763/pexels-photo-8862763.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 35,
+      "macros": "280 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "zepbound-friendly-healthy-queso-dip",
+      "title": "Zepbound-Friendly Healthy Queso Dip",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/1200358/pexels-photo-1200358.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 30,
+      "macros": "220 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "ozempic-alternative-protein-cookie-dough-bites",
+      "title": "Ozempic-Alternative Protein Cookie Dough Bites",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/19456637/pexels-photo-19456637.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 150,
+      "protein_g": 10,
+      "macros": "150 cal \u00b7 10g protein"
+    },
+    {
+      "slug": "semaglutide-palmini-pad-thai",
+      "title": "Semaglutide Palmini Pad Thai",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/34723307/pexels-photo-34723307.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 28,
+      "macros": "250 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "tirzepatide-spaghetti-squash-chow-mein",
+      "title": "Tirzepatide Spaghetti Squash Chow Mein",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/104884/pexels-photo-104884.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 25,
+      "macros": "220 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "wegovy-alternative-edamame-noodle-pesto",
+      "title": "Wegovy-Alternative Edamame Noodle Pesto",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/14333993/pexels-photo-14333993.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 26,
+      "macros": "280 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "zepbound-friendly-shirataki-pho",
+      "title": "Zepbound-Friendly Shirataki Pho",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/3903586/pexels-photo-3903586.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 25,
+      "macros": "190 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "ozempic-alternative-zoodle-primavera",
+      "title": "Ozempic-Alternative Zoodle Primavera",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/14343072/pexels-photo-14343072.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 22,
+      "macros": "210 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "semaglutide-turmeric-salmon-bowl",
+      "title": "Semaglutide Turmeric Salmon Bowl",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/17597404/pexels-photo-17597404.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 310,
+      "protein_g": 34,
+      "macros": "310 cal \u00b7 34g protein"
+    },
+    {
+      "slug": "tirzepatide-ginger-lime-chicken-skewers",
+      "title": "Tirzepatide Ginger-Lime Chicken Skewers",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5643427/pexels-photo-5643427.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 35,
+      "macros": "220 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "wegovy-alternative-chia-and-walnut-spinach-salad",
+      "title": "Wegovy-Alternative Chia & Walnut Spinach Salad",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/30982899/pexels-photo-30982899.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 270,
+      "protein_g": 26,
+      "macros": "270 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "zepbound-friendly-sardine-and-avocado-mash",
+      "title": "Zepbound-Friendly Sardine & Avocado Mash",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/1321124/pexels-photo-1321124.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 22,
+      "macros": "290 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "ozempic-alternative-golden-milk-protein-shake",
+      "title": "Ozempic-Alternative Golden Milk Protein Shake",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/11397572/pexels-photo-11397572.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 170,
+      "protein_g": 25,
+      "macros": "170 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "semaglutide-roasted-cinnamon-almonds",
+      "title": "Semaglutide Roasted Cinnamon Almonds",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/34533459/pexels-photo-34533459.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 170,
+      "protein_g": 6,
+      "macros": "170 cal \u00b7 6g protein"
+    },
+    {
+      "slug": "tirzepatide-turkey-jerky-and-pumpkin-seeds",
+      "title": "Tirzepatide Turkey Jerky & Pumpkin Seeds",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/30931727/pexels-photo-30931727.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 16,
+      "macros": "160 cal \u00b7 16g protein"
+    },
+    {
+      "slug": "wegovy-alternative-dry-roasted-black-beans",
+      "title": "Wegovy-Alternative Dry Roasted Black Beans",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/25482737/pexels-photo-25482737.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 120,
+      "protein_g": 8,
+      "macros": "120 cal \u00b7 8g protein"
+    },
+    {
+      "slug": "zepbound-friendly-protein-powder-dry-mix",
+      "title": "Zepbound-Friendly Protein Powder \"Dry\" Mix",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/7956502/pexels-photo-7956502.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 130,
+      "protein_g": 25,
+      "macros": "130 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "ozempic-alternative-crispy-baked-lupini-beans",
+      "title": "Ozempic-Alternative Crispy Baked Lupini Beans",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/10111848/pexels-photo-10111848.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 90,
+      "protein_g": 13,
+      "macros": "90 cal \u00b7 13g protein"
+    },
+    {
+      "slug": "semaglutide-monk-fruit-lemon-bars-crustless",
+      "title": "Semaglutide Monk Fruit Lemon Bars (Crustless)",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/9569395/pexels-photo-9569395.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 80,
+      "protein_g": 6,
+      "macros": "80 cal \u00b7 6g protein"
+    },
+    {
+      "slug": "tirzepatide-stevia-sweetened-ricotta-fluff",
+      "title": "Tirzepatide Stevia-Sweetened Ricotta Fluff",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/8109320/pexels-photo-8109320.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 14,
+      "macros": "180 cal \u00b7 14g protein"
+    },
+    {
+      "slug": "wegovy-alternative-dark-chocolate-almond-clusters",
+      "title": "Wegovy-Alternative Dark Chocolate Almond Clusters",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/5846199/pexels-photo-5846199.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 110,
+      "protein_g": 3,
+      "macros": "110 cal \u00b7 3g protein"
+    },
+    {
+      "slug": "zepbound-friendly-matcha-chia-pudding",
+      "title": "Zepbound-Friendly Matcha Chia Pudding",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/5589029/pexels-photo-5589029.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 170,
+      "protein_g": 6,
+      "macros": "170 cal \u00b7 6g protein"
+    },
+    {
+      "slug": "ozempic-alternative-sugar-free-jello-and-protein",
+      "title": "Ozempic-Alternative Sugar-Free Jello & Protein",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/5898212/pexels-photo-5898212.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 110,
+      "protein_g": 26,
+      "macros": "110 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "semaglutide-chicken-and-mushroom-collagen-soup",
+      "title": "Semaglutide Chicken & Mushroom Collagen Soup",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/35470289/pexels-photo-35470289.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 25,
+      "macros": "160 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "tirzepatide-beef-bone-broth-and-zucchini-soup",
+      "title": "Tirzepatide Beef Bone Broth & Zucchini Soup",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/8953854/pexels-photo-8953854.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 120,
+      "protein_g": 15,
+      "macros": "120 cal \u00b7 15g protein"
+    },
+    {
+      "slug": "wegovy-alternative-turkey-miso-broth",
+      "title": "Wegovy-Alternative Turkey Miso Broth",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/31256392/pexels-photo-31256392.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 26,
+      "macros": "190 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "zepbound-friendly-pork-and-cabbage-detox-broth",
+      "title": "Zepbound-Friendly Pork & Cabbage Detox Broth",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/20142927/pexels-photo-20142927.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 24,
+      "macros": "220 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "ozempic-alternative-lemon-dill-bone-broth-sipper",
+      "title": "Ozempic-Alternative Lemon Dill Bone Broth Sipper",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/316891/pexels-photo-316891.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 90,
+      "protein_g": 20,
+      "macros": "90 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "semaglutide-high-protein-mashed-potatoes",
+      "title": "Semaglutide High-Protein Mashed Potatoes",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/128641/pexels-photo-128641.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 14,
+      "macros": "210 cal \u00b7 14g protein"
+    },
+    {
+      "slug": "tirzepatide-blended-chicken-and-carrot-soup",
+      "title": "Tirzepatide Blended Chicken & Carrot Soup",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/10172749/pexels-photo-10172749.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 26,
+      "macros": "190 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "wegovy-alternative-savory-pumpkin-puree",
+      "title": "Wegovy-Alternative Savory Pumpkin Puree",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5605553/pexels-photo-5605553.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 150,
+      "protein_g": 25,
+      "macros": "150 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "zepbound-friendly-soft-scrambled-eggs-and-scallops",
+      "title": "Zepbound-Friendly Soft Scrambled Eggs & Scallops",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/7696496/pexels-photo-7696496.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 28,
+      "macros": "220 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "ozempic-alternative-cottage-cheese-and-applesauce",
+      "title": "Ozempic-Alternative Cottage Cheese & Applesauce",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/6851930/pexels-photo-6851930.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 140,
+      "protein_g": 14,
+      "macros": "140 cal \u00b7 14g protein"
+    },
+    {
+      "slug": "semaglutide-ground-chicken-and-asparagus-skillet",
+      "title": "Semaglutide Ground Chicken & Asparagus Skillet",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/2418486/pexels-photo-2418486.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 230,
+      "protein_g": 30,
+      "macros": "230 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "tirzepatide-beef-and-mushroom-saut",
+      "title": "Tirzepatide Beef & Mushroom Saut\u00e9",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/8250277/pexels-photo-8250277.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 270,
+      "protein_g": 28,
+      "macros": "270 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "wegovy-alternative-shrimp-and-cauliflower-rice",
+      "title": "Wegovy-Alternative Shrimp & Cauliflower Rice",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/7636383/pexels-photo-7636383.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 28,
+      "macros": "190 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "zepbound-friendly-turkey-sausage-and-cabbage",
+      "title": "Zepbound-Friendly Turkey Sausage & Cabbage",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/37275048/pexels-photo-37275048.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 22,
+      "macros": "240 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "ozempic-alternative-tofu-and-spinach-scramble",
+      "title": "Ozempic-Alternative Tofu & Spinach Scramble",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/6327660/pexels-photo-6327660.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 18,
+      "macros": "180 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "semaglutide-edamame-and-avocado-dip",
+      "title": "Semaglutide Edamame & Avocado Dip",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/4562973/pexels-photo-4562973.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 14,
+      "macros": "210 cal \u00b7 14g protein"
+    },
+    {
+      "slug": "tirzepatide-greek-yogurt-ranch-with-chicken",
+      "title": "Tirzepatide Greek Yogurt \"Ranch\" with Chicken",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/29269831/pexels-photo-29269831.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 32,
+      "macros": "190 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "wegovy-alternative-white-bean-and-tuna-mash",
+      "title": "Wegovy-Alternative White Bean & Tuna Mash",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/4869427/pexels-photo-4869427.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 26,
+      "macros": "220 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "zepbound-friendly-ricotta-and-herb-spread",
+      "title": "Zepbound-Friendly Ricotta & Herb Spread",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/13416201/pexels-photo-13416201.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 170,
+      "protein_g": 14,
+      "macros": "170 cal \u00b7 14g protein"
+    },
+    {
+      "slug": "ozempic-alternative-cottage-cheese-queso",
+      "title": "Ozempic-Alternative Cottage Cheese \"Queso\"",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/31823036/pexels-photo-31823036.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 25,
+      "macros": "190 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "semaglutide-kiwi-and-spinach-cleanser",
+      "title": "Semaglutide Kiwi & Spinach Cleanser",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/6737545/pexels-photo-6737545.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 170,
+      "protein_g": 20,
+      "macros": "170 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "tirzepatide-prune-and-vanilla-protein-shake",
+      "title": "Tirzepatide Prune & Vanilla Protein Shake",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/2351085/pexels-photo-2351085.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 25,
+      "macros": "210 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "wegovy-alternative-flax-and-berry-blast",
+      "title": "Wegovy-Alternative Flax & Berry Blast",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/27850095/pexels-photo-27850095.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 230,
+      "protein_g": 22,
+      "macros": "230 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "zepbound-friendly-avocado-and-pear-smoothie",
+      "title": "Zepbound-Friendly Avocado & Pear Smoothie",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/33089684/pexels-photo-33089684.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 22,
+      "macros": "260 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "ozempic-alternative-cucumber-and-celery-hydrator",
+      "title": "Ozempic-Alternative Cucumber & Celery Hydrator",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/4443434/pexels-photo-4443434.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 110,
+      "protein_g": 20,
+      "macros": "110 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "semaglutide-turkey-and-zucchini-lasagna",
+      "title": "Semaglutide Turkey & Zucchini Lasagna",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/2765875/pexels-photo-2765875.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 28,
+      "macros": "250 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "tirzepatide-chicken-bacon-ranch-cauliflower-bake",
+      "title": "Tirzepatide Chicken Bacon Ranch Cauliflower Bake",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/144432/pexels-photo-144432.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 320,
+      "protein_g": 35,
+      "macros": "320 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "wegovy-alternative-beef-and-cabbage-roll-casserole",
+      "title": "Wegovy-Alternative Beef & Cabbage Roll Casserole",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/37238839/pexels-photo-37238839.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 26,
+      "macros": "280 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "zepbound-friendly-tuna-and-pea-zoodle-bake",
+      "title": "Zepbound-Friendly Tuna & Pea Zoodle Bake",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/19302562/pexels-photo-19302562.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 28,
+      "macros": "250 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "ozempic-alternative-chicken-enchilada-skillet",
+      "title": "Ozempic-Alternative Chicken Enchilada Skillet",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/37006565/pexels-photo-37006565.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 32,
+      "macros": "260 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "semaglutide-chocolate-peanut-butter-mug-cake",
+      "title": "Semaglutide Chocolate Peanut Butter Mug Cake",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/6612694/pexels-photo-6612694.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 26,
+      "macros": "190 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "tirzepatide-strawberry-yogurt-bark",
+      "title": "Tirzepatide Strawberry Yogurt Bark",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/566564/pexels-photo-566564.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 70,
+      "protein_g": 8,
+      "macros": "70 cal \u00b7 8g protein"
+    },
+    {
+      "slug": "wegovy-alternative-vanilla-bean-protein-pudding",
+      "title": "Wegovy-Alternative Vanilla Bean Protein Pudding",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/36909858/pexels-photo-36909858.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 150,
+      "protein_g": 24,
+      "macros": "150 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "zepbound-friendly-cinnamon-apple-bake",
+      "title": "Zepbound-Friendly Cinnamon Apple Bake",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/7373694/pexels-photo-7373694.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 110,
+      "protein_g": 1,
+      "macros": "110 cal \u00b7 1g protein"
+    },
+    {
+      "slug": "ozempic-alternative-dark-chocolate-avocado-mousse",
+      "title": "Ozempic-Alternative Dark Chocolate Avocado Mousse",
+      "cat": "Desserts & Sweets",
+      "image": "https://images.pexels.com/photos/4940755/pexels-photo-4940755.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 4,
+      "macros": "220 cal \u00b7 4g protein"
+    },
+    {
+      "slug": "semaglutide-eggplant-mini-pizzas",
+      "title": "Semaglutide Eggplant Mini Pizzas",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/36682292/pexels-photo-36682292.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 15,
+      "macros": "180 cal \u00b7 15g protein"
+    },
+    {
+      "slug": "tirzepatide-kelp-noodle-bolognese",
+      "title": "Tirzepatide Kelp Noodle Bolognese",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/14343072/pexels-photo-14343072.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 28,
+      "macros": "260 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "wegovy-alternative-chicken-crust-margarita-pizza",
+      "title": "Wegovy-Alternative Chicken Crust Margarita Pizza",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/35760004/pexels-photo-35760004.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 340,
+      "protein_g": 45,
+      "macros": "340 cal \u00b7 45g protein"
+    },
+    {
+      "slug": "zepbound-friendly-spaghetti-squash-pad-thai",
+      "title": "Zepbound-Friendly Spaghetti Squash Pad Thai",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/15797948/pexels-photo-15797948.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 26,
+      "macros": "280 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "ozempic-alternative-cabbage-noodle-alfredo",
+      "title": "Ozempic-Alternative Cabbage Noodle Alfredo",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/11220208/pexels-photo-11220208.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 24,
+      "macros": "220 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "semaglutide-starbucks-egg-white-bites",
+      "title": "Semaglutide \"Starbucks\" Egg White Bites",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/5848049/pexels-photo-5848049.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 150,
+      "protein_g": 20,
+      "macros": "150 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "tirzepatide-mcdonalds-turkey-sausage-muffin",
+      "title": "Tirzepatide \"McDonald's\" Turkey Sausage Muffin",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/5848044/pexels-photo-5848044.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 270,
+      "protein_g": 24,
+      "macros": "270 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "wegovy-alternative-dunkin-avocado-bacon-toast",
+      "title": "Wegovy-Alternative \"Dunkin\" Avocado Bacon Toast",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/14201134/pexels-photo-14201134.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 18,
+      "macros": "290 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "zepbound-friendly-panera-mediterranean-wrap",
+      "title": "Zepbound-Friendly \"Panera\" Mediterranean Wrap",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/2969307/pexels-photo-2969307.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 20,
+      "macros": "250 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "ozempic-alternative-smoothie-king-protein-blast",
+      "title": "Ozempic-Alternative \"Smoothie King\" Protein Blast",
+      "cat": "Breakfast",
+      "image": "https://images.pexels.com/photos/3035261/pexels-photo-3035261.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 35,
+      "macros": "220 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "semaglutide-greek-chicken-deli-box",
+      "title": "Semaglutide Greek Chicken Deli Box",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/34664636/pexels-photo-34664636.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 32,
+      "macros": "260 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "tirzepatide-smoked-salmon-and-cucumber-roll",
+      "title": "Tirzepatide Smoked Salmon & Cucumber Roll",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/8951267/pexels-photo-8951267.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 18,
+      "macros": "160 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "wegovy-alternative-rotisserie-chicken-and-avocado-salad",
+      "title": "Wegovy-Alternative Rotisserie Chicken & Avocado Salad",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/5192433/pexels-photo-5192433.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 340,
+      "protein_g": 35,
+      "macros": "340 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "zepbound-friendly-tuna-and-white-bean-mash",
+      "title": "Zepbound-Friendly Tuna & White Bean Mash",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/4869427/pexels-photo-4869427.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 30,
+      "macros": "280 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "ozempic-alternative-cottage-cheese-and-veggie-platter",
+      "title": "Ozempic-Alternative Cottage Cheese & Veggie Platter",
+      "cat": "Lunches",
+      "image": "https://images.pexels.com/photos/6589/food-salad-vegetables-party.jpg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 200,
+      "protein_g": 25,
+      "macros": "200 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "semaglutide-golden-bone-broth-elixir",
+      "title": "Semaglutide Golden Bone Broth Elixir",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/18852561/pexels-photo-18852561.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 90,
+      "protein_g": 20,
+      "macros": "90 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "tirzepatide-macro-perfect-salmon-bowl",
+      "title": "Tirzepatide Macro-Perfect Salmon Bowl",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/12814860/pexels-photo-12814860.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 340,
+      "protein_g": 32,
+      "macros": "340 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "wegovy-alternative-anti-nausea-ginger-chicken",
+      "title": "Wegovy-Alternative Anti-Nausea Ginger Chicken",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/6126710/pexels-photo-6126710.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 35,
+      "macros": "210 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "zepbound-friendly-high-fiber-quinoa-salad",
+      "title": "Zepbound-Friendly High-Fiber Quinoa Salad",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5817516/pexels-photo-5817516.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 12,
+      "macros": "280 cal \u00b7 12g protein"
+    },
+    {
+      "slug": "ozempic-alternative-master-lean-turkey-chili",
+      "title": "Ozempic-Alternative Master Lean Turkey Chili",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5966140/pexels-photo-5966140.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 320,
+      "protein_g": 35,
+      "macros": "320 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "semaglutide-strawberry-cheesecake-smoothie",
+      "title": "Semaglutide Strawberry Cheesecake Smoothie",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/4051783/pexels-photo-4051783.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 28,
+      "macros": "220 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "tirzepatide-cottage-cheese-flatbread",
+      "title": "Tirzepatide Cottage Cheese Flatbread",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/19081126/pexels-photo-19081126.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 200,
+      "protein_g": 30,
+      "macros": "200 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "wegovy-alternative-lemon-dill-cod",
+      "title": "Wegovy-Alternative Lemon Dill Cod",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/12653397/pexels-photo-12653397.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 28,
+      "macros": "160 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "zepbound-friendly-edamame-and-feta-salad",
+      "title": "Zepbound-Friendly Edamame & Feta Salad",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/396132/pexels-photo-396132.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 16,
+      "macros": "210 cal \u00b7 16g protein"
+    },
+    {
+      "slug": "ozempic-alternative-chicken-and-cauliflower-gnocchi",
+      "title": "Ozempic-Alternative Chicken & Cauliflower Gnocchi",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/9213888/pexels-photo-9213888.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 28,
+      "macros": "290 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "semaglutide-high-protein-egg-salad-no-mayo",
+      "title": "Semaglutide High-Protein Egg Salad (No Mayo)",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/1359332/pexels-photo-1359332.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 24,
+      "macros": "220 cal \u00b7 24g protein"
+    },
+    {
+      "slug": "tirzepatide-roasted-radish-and-bacon-salad",
+      "title": "Tirzepatide Roasted Radish & Bacon Salad",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/551997/pexels-photo-551997.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 12,
+      "macros": "180 cal \u00b7 12g protein"
+    },
+    {
+      "slug": "wegovy-alternative-cucumber-and-feta-bites",
+      "title": "Wegovy-Alternative Cucumber & Feta Bites",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/36929171/pexels-photo-36929171.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 90,
+      "protein_g": 6,
+      "macros": "90 cal \u00b7 6g protein"
+    },
+    {
+      "slug": "zepbound-friendly-matcha-protein-bites",
+      "title": "Zepbound-Friendly Matcha Protein Bites",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/10003794/pexels-photo-10003794.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 140,
+      "protein_g": 8,
+      "macros": "140 cal \u00b7 8g protein"
+    },
+    {
+      "slug": "ozempic-alternative-sausage-and-cabbage-hash",
+      "title": "Ozempic-Alternative Sausage & Cabbage Hash",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/37275048/pexels-photo-37275048.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 22,
+      "macros": "250 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "semaglutide-anti-nausea-bone-broth-cubes",
+      "title": "Semaglutide Anti-Nausea Bone Broth Cubes",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/8477057/pexels-photo-8477057.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 45,
+      "protein_g": 10,
+      "macros": "45 cal \u00b7 10g protein"
+    },
+    {
+      "slug": "tirzepatide-shrimp-and-avocado-salad",
+      "title": "Tirzepatide Shrimp & Avocado Salad",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/10875295/pexels-photo-10875295.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 26,
+      "macros": "260 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "wegovy-alternative-cottage-cheese-queso",
+      "title": "Wegovy-Alternative Cottage Cheese Queso",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/31823036/pexels-photo-31823036.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 25,
+      "macros": "190 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "zepbound-friendly-blueberry-protein-pancakes",
+      "title": "Zepbound-Friendly Blueberry Protein Pancakes",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/65170/pexels-photo-65170.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 26,
+      "macros": "290 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "ozempic-alternative-chicken-and-zucchini-noodle-soup",
+      "title": "Ozempic-Alternative Chicken & Zucchini Noodle Soup",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/10172749/pexels-photo-10172749.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 200,
+      "protein_g": 28,
+      "macros": "200 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "semaglutide-vegan-black-bean-brownie-batter",
+      "title": "Semaglutide Vegan Black Bean Brownie Batter",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5847090/pexels-photo-5847090.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 10,
+      "macros": "210 cal \u00b7 10g protein"
+    },
+    {
+      "slug": "tirzepatide-bone-broth-and-spinach-soup",
+      "title": "Tirzepatide Bone Broth & Spinach Soup",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/6716750/pexels-photo-6716750.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 110,
+      "protein_g": 20,
+      "macros": "110 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "wegovy-alternative-baked-turkey-meatballs",
+      "title": "Wegovy-Alternative Baked Turkey Meatballs",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5836992/pexels-photo-5836992.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 200,
+      "protein_g": 28,
+      "macros": "200 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "zepbound-friendly-cauliflower-fried-rice",
+      "title": "Zepbound-Friendly Cauliflower \"Fried\" Rice",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/32655065/pexels-photo-32655065.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 16,
+      "macros": "180 cal \u00b7 16g protein"
+    },
+    {
+      "slug": "ozempic-alternative-peanut-butter-yogurt-apple-dip",
+      "title": "Ozempic-Alternative Peanut Butter Yogurt Apple Dip",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/13887557/pexels-photo-13887557.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 150,
+      "protein_g": 18,
+      "macros": "150 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "semaglutide-quick-salmon-salad",
+      "title": "Semaglutide Quick Salmon Salad",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/8980435/pexels-photo-8980435.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 230,
+      "protein_g": 26,
+      "macros": "230 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "tirzepatide-sheet-pan-chicken-and-brussels",
+      "title": "Tirzepatide Sheet Pan Chicken & Brussels",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5718117/pexels-photo-5718117.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 34,
+      "macros": "280 cal \u00b7 34g protein"
+    },
+    {
+      "slug": "wegovy-alternative-spinach-and-feta-turkey-burgers",
+      "title": "Wegovy-Alternative Spinach & Feta Turkey Burgers",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/15007048/pexels-photo-15007048.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 30,
+      "macros": "240 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "zepbound-friendly-chia-seed-jam-and-toast",
+      "title": "Zepbound-Friendly Chia Seed Jam & Toast",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/36143710/pexels-photo-36143710.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 6,
+      "macros": "180 cal \u00b7 6g protein"
+    },
+    {
+      "slug": "ozempic-alternative-protein-matcha-latte",
+      "title": "Ozempic-Alternative Protein Matcha Latte",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5946977/pexels-photo-5946977.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 130,
+      "protein_g": 22,
+      "macros": "130 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "tirzepatide-turkey-meatball-and-zoodle-bowl",
+      "title": "Tirzepatide Turkey Meatball & Zoodle Bowl",
+      "cat": "Meal Prep Bowls",
+      "image": "https://images.pexels.com/photos/9213861/pexels-photo-9213861.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 32,
+      "macros": "290 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "semaglutide-greek-chicken-and-cauliflower-rice-bowl",
+      "title": "Semaglutide Greek Chicken & Cauliflower Rice Bowl",
+      "cat": "Meal Prep Bowls",
+      "image": "https://images.pexels.com/photos/9213873/pexels-photo-9213873.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 270,
+      "protein_g": 35,
+      "macros": "270 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "wegovy-alternative-canned-tuna-poke-bowl",
+      "title": "Wegovy-Alternative Canned Tuna Poke Bowl",
+      "cat": "Meal Prep Bowls",
+      "image": "https://images.pexels.com/photos/15611222/pexels-photo-15611222.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 28,
+      "macros": "250 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "zepbound-friendly-lean-beef-and-green-bean-bowl",
+      "title": "Zepbound-Friendly Lean Beef & Green Bean Bowl",
+      "cat": "Meal Prep Bowls",
+      "image": "https://images.pexels.com/photos/31261430/pexels-photo-31261430.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 310,
+      "protein_g": 30,
+      "macros": "310 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "semaglutide-lemon-herb-shrimp-prep",
+      "title": "Semaglutide Lemon Herb Shrimp Prep",
+      "cat": "Meal Prep Bowls",
+      "image": "https://images.pexels.com/photos/8697539/pexels-photo-8697539.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 200,
+      "protein_g": 28,
+      "macros": "200 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "tirzepatide-spaghetti-squash-ragu",
+      "title": "Tirzepatide Spaghetti Squash Ragu",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/9218781/pexels-photo-9218781.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 22,
+      "macros": "240 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "semaglutide-hearts-of-palm-linguine",
+      "title": "Semaglutide Hearts of Palm \"Linguine\"",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/5507643/pexels-photo-5507643.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 26,
+      "macros": "210 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "ozempic-alternative-zoodle-pesto",
+      "title": "Ozempic-Alternative Zoodle Pesto",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/33988118/pexels-photo-33988118.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 28,
+      "macros": "280 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "zepbound-friendly-shirataki-noodle-stir-fry",
+      "title": "Zepbound-Friendly Shirataki Noodle Stir-Fry",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/8895736/pexels-photo-8895736.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 20,
+      "macros": "180 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "tirzepatide-kelp-noodle-pad-thai",
+      "title": "Tirzepatide Kelp Noodle Pad Thai",
+      "cat": "Pasta & Pizza Swaps",
+      "image": "https://images.pexels.com/photos/10756648/pexels-photo-10756648.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 25,
+      "macros": "250 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "semaglutide-anti-nausea-berry-smoothie",
+      "title": "Semaglutide Anti-Nausea Berry Smoothie",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/1359329/pexels-photo-1359329.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 22,
+      "macros": "180 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "wegovy-alternative-liquid-meal-replacement",
+      "title": "Wegovy-Alternative Liquid Meal Replacement",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/11066840/pexels-photo-11066840.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 320,
+      "protein_g": 35,
+      "macros": "320 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "tirzepatide-mint-chocolate-soother",
+      "title": "Tirzepatide Mint Chocolate Soother",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/1635985/pexels-photo-1635985.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 25,
+      "macros": "210 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "zepbound-friendly-vanilla-chai-frappe",
+      "title": "Zepbound-Friendly Vanilla Chai Frappe",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/20066463/pexels-photo-20066463.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 150,
+      "protein_g": 25,
+      "macros": "150 cal \u00b7 25g protein"
+    },
+    {
+      "slug": "semaglutide-constipation-relief-green-smoothie",
+      "title": "Semaglutide Constipation-Relief Green Smoothie",
+      "cat": "Smoothies & Drinks",
+      "image": "https://images.pexels.com/photos/37283271/pexels-photo-37283271.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 230,
+      "protein_g": 15,
+      "macros": "230 cal \u00b7 15g protein"
+    },
+    {
+      "slug": "tirzepatide-slow-cooker-salsa-chicken",
+      "title": "Tirzepatide Slow Cooker Salsa Chicken",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/15801925/pexels-photo-15801925.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 35,
+      "macros": "220 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "wegovy-alternative-bone-broth-beef-stew",
+      "title": "Wegovy-Alternative Bone Broth Beef Stew",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/34822475/pexels-photo-34822475.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 310,
+      "protein_g": 32,
+      "macros": "310 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "ozempic-alternative-pulled-chicken-lettuce-wraps",
+      "title": "Ozempic-Alternative Pulled Chicken Lettuce Wraps",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/30622041/pexels-photo-30622041.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 30,
+      "macros": "240 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "zepbound-friendly-white-chicken-chili",
+      "title": "Zepbound-Friendly White Chicken Chili",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/30119013/pexels-photo-30119013.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 32,
+      "macros": "290 cal \u00b7 32g protein"
+    },
+    {
+      "slug": "semaglutide-vegan-lentil-crockpot-soup",
+      "title": "Semaglutide Vegan Lentil Crockpot Soup",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/9027516/pexels-photo-9027516.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 16,
+      "macros": "260 cal \u00b7 16g protein"
+    },
+    {
+      "slug": "semaglutide-cinnamon-roasted-chickpeas",
+      "title": "Semaglutide Cinnamon Roasted Chickpeas",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/106974/pexels-photo-106974.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 140,
+      "protein_g": 7,
+      "macros": "140 cal \u00b7 7g protein"
+    },
+    {
+      "slug": "wegovy-alternative-flaxseed-and-berry-parfait",
+      "title": "Wegovy-Alternative Flaxseed & Berry Parfait",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/9026809/pexels-photo-9026809.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 210,
+      "protein_g": 20,
+      "macros": "210 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "tirzepatide-celery-and-almond-butter-boats",
+      "title": "Tirzepatide Celery & Almond Butter Boats",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/8922007/pexels-photo-8922007.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 110,
+      "protein_g": 4,
+      "macros": "110 cal \u00b7 4g protein"
+    },
+    {
+      "slug": "zepbound-friendly-apple-and-cheddar-slices",
+      "title": "Zepbound-Friendly Apple & Cheddar Slices",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/31975355/pexels-photo-31975355.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 170,
+      "protein_g": 7,
+      "macros": "170 cal \u00b7 7g protein"
+    },
+    {
+      "slug": "semaglutide-nutritional-yeast-popcorn",
+      "title": "Semaglutide Nutritional Yeast Popcorn",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/36319681/pexels-photo-36319681.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 130,
+      "protein_g": 6,
+      "macros": "130 cal \u00b7 6g protein"
+    },
+    {
+      "slug": "semaglutide-vegan-lentil-bolognese",
+      "title": "Semaglutide Vegan Lentil Bolognese",
+      "cat": "Plant-Based",
+      "image": "https://images.pexels.com/photos/15655219/pexels-photo-15655219.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 18,
+      "macros": "280 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "tirzepatide-tofu-and-broccoli-power-bowl",
+      "title": "Tirzepatide Tofu & Broccoli Power Bowl",
+      "cat": "Plant-Based",
+      "image": "https://images.pexels.com/photos/6120241/pexels-photo-6120241.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 22,
+      "macros": "250 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "wegovy-alternative-high-protein-black-bean-burger",
+      "title": "Wegovy-Alternative High-Protein Black Bean Burger",
+      "cat": "Plant-Based",
+      "image": "https://images.pexels.com/photos/12336021/pexels-photo-12336021.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 220,
+      "protein_g": 15,
+      "macros": "220 cal \u00b7 15g protein"
+    },
+    {
+      "slug": "zepbound-friendly-edamame-and-quinoa-salad",
+      "title": "Zepbound-Friendly Edamame & Quinoa Salad",
+      "cat": "Plant-Based",
+      "image": "https://images.pexels.com/photos/7434292/pexels-photo-7434292.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 310,
+      "protein_g": 20,
+      "macros": "310 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "semaglutide-tempeh-taco-lettuce-wraps",
+      "title": "Semaglutide Tempeh Taco Lettuce Wraps",
+      "cat": "Plant-Based",
+      "image": "https://images.pexels.com/photos/5837188/pexels-photo-5837188.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 22,
+      "macros": "240 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "tirzepatide-chicken-lettuce-wraps-pf-changs-style",
+      "title": "Tirzepatide Chicken Lettuce Wraps (PF Chang's Style)",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/860620/pexels-photo-860620.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 260,
+      "protein_g": 28,
+      "macros": "260 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "semaglutide-minestrone-soup-olive-garden-style",
+      "title": "Semaglutide Minestrone Soup (Olive Garden Style)",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/17312402/pexels-photo-17312402.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 180,
+      "protein_g": 10,
+      "macros": "180 cal \u00b7 10g protein"
+    },
+    {
+      "slug": "wegovy-alternative-skinny-chicken-cheesecake-factory-style",
+      "title": "Wegovy-Alternative Skinny Chicken (Cheesecake Factory Style)",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/15415465/pexels-photo-15415465.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 38,
+      "macros": "290 cal \u00b7 38g protein"
+    },
+    {
+      "slug": "zepbound-friendly-grilled-sirloin-texas-roadhouse-style",
+      "title": "Zepbound-Friendly Grilled Sirloin (Texas Roadhouse Style)",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/27643022/pexels-photo-27643022.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 320,
+      "protein_g": 40,
+      "macros": "320 cal \u00b7 40g protein"
+    },
+    {
+      "slug": "tirzepatide-guacamole-greens-salad-sweetgreen-style",
+      "title": "Tirzepatide Guacamole Greens Salad (Sweetgreen Style)",
+      "cat": "Fast-Food Copycats",
+      "image": "https://images.pexels.com/photos/5737254/pexels-photo-5737254.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 310,
+      "protein_g": 26,
+      "macros": "310 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "semaglutide-turkey-and-zucchini-skillet",
+      "title": "Semaglutide Turkey & Zucchini Skillet",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/36865407/pexels-photo-36865407.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 250,
+      "protein_g": 30,
+      "macros": "250 cal \u00b7 30g protein"
+    },
+    {
+      "slug": "wegovy-alternative-sheet-pan-shrimp-and-broccoli",
+      "title": "Wegovy-Alternative Sheet Pan Shrimp & Broccoli",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/5186199/pexels-photo-5186199.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 190,
+      "protein_g": 28,
+      "macros": "190 cal \u00b7 28g protein"
+    },
+    {
+      "slug": "tirzepatide-chicken-and-asparagus-foil-pack",
+      "title": "Tirzepatide Chicken & Asparagus Foil Pack",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/2418486/pexels-photo-2418486.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 35,
+      "macros": "240 cal \u00b7 35g protein"
+    },
+    {
+      "slug": "zepbound-friendly-5-ingredient-caprese-chicken",
+      "title": "Zepbound-Friendly 5-Ingredient Caprese Chicken",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/33573596/pexels-photo-33573596.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 290,
+      "protein_g": 38,
+      "macros": "290 cal \u00b7 38g protein"
+    },
+    {
+      "slug": "semaglutide-air-fryer-salmon-bites",
+      "title": "Semaglutide Air Fryer Salmon Bites",
+      "cat": "Dinners",
+      "image": "https://images.pexels.com/photos/33188697/pexels-photo-33188697.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 280,
+      "protein_g": 26,
+      "macros": "280 cal \u00b7 26g protein"
+    },
+    {
+      "slug": "tirzepatide-bone-broth-egg-drop-soup",
+      "title": "Tirzepatide Bone Broth Egg Drop Soup",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/12913641/pexels-photo-12913641.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 22,
+      "macros": "160 cal \u00b7 22g protein"
+    },
+    {
+      "slug": "semaglutide-creamy-tomato-soup-yogurt-hack",
+      "title": "Semaglutide Creamy Tomato Soup (Yogurt Hack)",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/262947/pexels-photo-262947.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 200,
+      "protein_g": 18,
+      "macros": "200 cal \u00b7 18g protein"
+    },
+    {
+      "slug": "zepbound-friendly-turkey-sausage-and-kale-soup",
+      "title": "Zepbound-Friendly Turkey Sausage & Kale Soup",
+      "cat": "Soups & Broths",
+      "image": "https://images.pexels.com/photos/5175540/pexels-photo-5175540.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 240,
+      "protein_g": 20,
+      "macros": "240 cal \u00b7 20g protein"
+    },
+    {
+      "slug": "semaglutide-cottage-cheese-deviled-eggs",
+      "title": "Semaglutide Cottage Cheese Deviled Eggs",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/36865493/pexels-photo-36865493.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 150,
+      "protein_g": 16,
+      "macros": "150 cal \u00b7 16g protein"
+    },
+    {
+      "slug": "wegovy-alternative-turkey-pepperoni-pizza-bites",
+      "title": "Wegovy-Alternative Turkey Pepperoni Pizza Bites",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/4773769/pexels-photo-4773769.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 140,
+      "protein_g": 14,
+      "macros": "140 cal \u00b7 14g protein"
+    },
+    {
+      "slug": "tirzepatide-cucumber-and-smoked-salmon-bites",
+      "title": "Tirzepatide Cucumber & Smoked Salmon Bites",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/17582279/pexels-photo-17582279.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 110,
+      "protein_g": 12,
+      "macros": "110 cal \u00b7 12g protein"
+    },
+    {
+      "slug": "zepbound-friendly-roasted-pumpkin-seeds",
+      "title": "Zepbound-Friendly Roasted Pumpkin Seeds",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/10110910/pexels-photo-10110910.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 160,
+      "protein_g": 9,
+      "macros": "160 cal \u00b7 9g protein"
+    },
+    {
+      "slug": "semaglutide-prosciutto-wrapped-asparagus",
+      "title": "Semaglutide Prosciutto-Wrapped Asparagus",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/106877/pexels-photo-106877.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 120,
+      "protein_g": 12,
+      "macros": "120 cal \u00b7 12g protein"
+    },
+    {
+      "slug": "tirzepatide-high-protein-nausea-broth",
+      "title": "Tirzepatide High-Protein Nausea Broth",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/20051307/pexels-photo-20051307.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 80,
+      "protein_g": 19,
+      "macros": "80 cal \u00b7 19g protein"
+    },
+    {
+      "slug": "semaglutide-greek-yogurt-tzatziki-with-bell-peppers",
+      "title": "Semaglutide Greek Yogurt Tzatziki with Bell Peppers",
+      "cat": "Snacks & Dips",
+      "image": "https://images.pexels.com/photos/6271891/pexels-photo-6271891.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "cal": 130,
+      "protein_g": 15,
+      "macros": "130 cal \u00b7 15g protein"
+    }
+  ]
+}
