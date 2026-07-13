@@ -30,7 +30,9 @@
     --text:#16201d; --muted:#6b7280; --accent:#0a6cf5; --accent-soft:rgba(10,108,245,.10);
     --green:#5f9127; --tile-glow:rgba(10,108,245,.05);
   }
-  body{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:var(--bg);color:var(--text);overscroll-behavior:none;transition:background .25s,color .25s}
+  body{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:var(--bg);color:var(--text);overscroll-behavior:none;transition:background .25s,color .25s;padding-bottom:max(2rem, env(safe-area-inset-bottom, 0px))}
+  /* iOS standalone PWA: content draws under status bar when black-translucent — pad the sticky chrome */
+  header.app-bar{padding-top:env(safe-area-inset-top, 0px);padding-left:env(safe-area-inset-left, 0px);padding-right:env(safe-area-inset-right, 0px)}
   .font-display{font-family:'Montserrat','Inter',sans-serif}
   .card{background:var(--surface);border:1px solid var(--border);border-radius:18px}
   .surf2{background:var(--surface2)}
@@ -51,18 +53,18 @@
 </style>
 <script src="/ga.js" defer></script>
 </head>
-<body class="min-h-screen pb-8">
+<body class="min-h-screen">
 
-<header class="sticky top-0 z-20 backdrop-blur border-b bd" style="background:color-mix(in srgb, var(--bg) 86%, transparent)">
-  <div class="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
-    <button id="brand" class="flex items-center gap-2">
-      <img src="assets/logo-icon.png" class="h-7 w-auto" alt="Vitality">
-      <span class="font-display font-bold tracking-tight text-[15px]">VITALITY <span class="accent">THRIVE</span></span>
+<header class="app-bar sticky top-0 z-20 backdrop-blur border-b bd" style="background:color-mix(in srgb, var(--bg) 86%, transparent)">
+  <div class="max-w-md mx-auto px-4 h-14 flex items-center justify-between gap-2">
+    <button id="brand" class="flex items-center gap-2 min-w-0">
+      <img src="assets/logo-icon.png" class="h-7 w-auto shrink-0" alt="Vitality">
+      <span class="font-display font-bold tracking-tight text-[15px] truncate">VITALITY <span class="accent">THRIVE</span></span>
     </button>
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-1.5 shrink-0">
       <span id="pts" class="text-xs font-semibold px-2.5 py-1 rounded-full" style="background:var(--accent-soft);color:var(--accent)">0 pts</span>
       <button id="themeBtn" aria-label="Toggle theme" class="w-9 h-9 rounded-full flex items-center justify-center bd border" style="background:var(--surface)"></button>
-      <button id="acctBtn" type="button" class="hidden text-[11px] font-semibold px-2.5 py-1.5 rounded-full bd border" style="background:var(--surface);color:var(--muted)">Sign out</button>
+      <button id="acctBtn" type="button" class="hidden text-[11px] font-semibold px-2.5 py-1.5 rounded-full bd border" style="background:var(--surface);color:var(--muted)" title="Sign out">Out</button>
     </div>
   </div>
 </header>
