@@ -599,7 +599,7 @@ function viewPhd(){
       const res=$('modResult');
       if(answered<m.quiz.length){ res.innerHTML='<span class="text-amber-500">Answer every question to finish.</span>'; return; }
       const pct=Math.round(correct/m.quiz.length*100);
-      if(correct>=Math.ceil(m.quiz.length*0.67)){
+      if(correct>=Math.ceil(m.quiz.length*2/3)){
         res.innerHTML=`<span class="accent font-semibold">Nice, ${correct}/${m.quiz.length} correct. +25 points.</span>`;
         sub.disabled=true; sub.textContent='Completed ✓';
         await log('module',{value_num:pct,body:`${m.slug}: ${m.title}`});

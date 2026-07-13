@@ -203,7 +203,7 @@ async function submitQuiz(m){
   m.quiz.forEach((q,qi)=>{ const sel=document.querySelector(`input[name="q${qi}"]:checked`); if(sel){ answered++; if(+sel.value===q.answer) correct++; } });
   if(answered<m.quiz.length){ $('modResult').innerHTML='<span class="text-amber-600">Answer every question to finish.</span>'; return; }
   const pct=Math.round(correct/m.quiz.length*100);
-  if(correct>=Math.ceil(m.quiz.length*0.67)){
+  if(correct>=Math.ceil(m.quiz.length*2/3)){
     $('modResult').innerHTML=`<span class="text-emerald-600 font-semibold">Nice, ${correct}/${m.quiz.length} correct. +25 points.</span>`;
     const btn=$('modSubmit'); btn.disabled=true; btn.textContent='Completed ✓';
     await api({action:'add_log',kind:'module',value_num:pct,body:`${m.slug}: ${m.title}`});
