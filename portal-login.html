@@ -58,7 +58,15 @@
         const { error } = await sb.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
-      location.replace('portal.html');
+      // Optional deep-link: portal-login.html?next=m → companion PWA; default = full portal.
+      // Only same-origin relative paths allowed (no open redirect).
+      const params = new URLSearchParams(location.search);
+      const raw = (params.get('next') || '').trim();
+      let dest = 'portal.html';
+      if (raw === 'm' || raw === 'm.html' || raw === '/m.html') dest = 'm.html';
+      else if (raw === 'portal' || raw === 'portal.html' || raw === '/portal.html') dest = 'portal.html';
+      else if (/^\/?[a-z0-9][a-z0-9._-]{0,40}\.html$/i.test(raw) && !raw.includes('..')) dest = raw.replace(/^\//,'');
+      location.replace(dest);
     } catch(error){
       const raw = (error && (error.message || String(error))) || '';
       // Convex Auth throws InvalidAccountId (no such email) / InvalidSecret (wrong password).

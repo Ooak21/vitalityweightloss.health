@@ -1,9 +1,10 @@
 // Vitality Thrive service worker. Minimal + health-safe: network-first so patients always see
 // fresh data, cache is only the static app shell for offline/installability. NEVER caches POSTs
 // or Convex API calls (no stale PHI, no cached auth/payment mutations).
-const CACHE = 'vitality-thrive-v1';
+const CACHE = 'vitality-thrive-v2';
 const SHELL = [
-  '/portal.html', '/portal-login.html', '/handbook-render.js',
+  '/m.html', '/portal.html', '/portal-login.html', '/auth-convex.js', '/handbook-render.js',
+  '/manifest.json',
   '/assets/logo-icon.png', '/assets/icon-192.png', '/assets/icon-512.png',
 ];
 
