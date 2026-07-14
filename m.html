@@ -879,16 +879,17 @@ function viewConnect(){
       <div id="owProg" class="hidden"><div class="flex justify-between text-xs muted font-semibold mt-3"><span id="owLab">Uploading…</span><span id="owPct">0%</span></div><div class="h-2 rounded-full surf2 overflow-hidden mt-2"><div id="owBar" class="h-full" style="width:0;background:var(--accent);transition:width .25s"></div></div></div>
       <div id="owErr" class="hidden text-xs text-rose-500 mt-2"></div>
     </div>
-    <div class="flex items-center gap-3 my-4 muted text-[11px] uppercase tracking-wide font-semibold"><div class="flex-1 h-px bd border-t"></div>or connect a device<div class="flex-1 h-px bd border-t"></div></div>
-    <div class="grid grid-cols-2 gap-2.5" id="owDevs">
-      ${['Oura','Whoop','Garmin','Fitbit','Samsung','Google Fit'].map(n=>`<button class="tile p-3 flex items-center gap-2.5 text-left" data-n="${esc(n)}"><span class="ic" style="width:32px;height:32px;border-radius:10px"><span class="accent font-bold text-xs">${esc(n[0])}</span></span><span class="text-sm font-semibold flex-1">${esc(n)}</span><span class="cta text-[11px] accent font-bold">Connect</span></button>`).join('')}
+    <div class="flex items-center gap-3 my-4 muted text-[11px] uppercase tracking-wide font-semibold"><div class="flex-1 h-px bd border-t"></div>more devices<div class="flex-1 h-px bd border-t"></div></div>
+    <div class="card p-4">
+      <div class="text-sm font-semibold mb-1">Use a different device?</div>
+      <p class="text-xs muted leading-relaxed mb-3">Fitbit, Whoop, Garmin, Samsung Health and Oura all let you export your data as a file too. We add them one at a time, just tell your care team which you use and we'll turn yours on.</p>
+      <div class="flex flex-wrap gap-1.5">
+        ${['Fitbit','Whoop','Garmin','Samsung Health','Oura'].map(n=>`<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full surf2 muted">${esc(n)} · soon</span>`).join('')}
+      </div>
     </div>
     <div class="flex items-center gap-2 muted text-[11px] mt-5 leading-snug"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> Encrypted and shared only with your Vitality care team. HIPAA-protected.</div>`;
 
-  $('view').querySelectorAll('#owDevs .tile').forEach(d=>{
-    d.onclick=()=>{ if(d.classList.contains('on'))return; const cta=d.querySelector('.cta'); cta.textContent='Connecting…';
-      setTimeout(()=>{ d.classList.add('on'); d.style.borderColor='var(--accent)'; d.style.background='var(--accent-soft)'; cta.textContent='Connected ✓'; },1100); };
-  });
+  // Other providers are added per-provider as their export parsers land; Apple Health is the live path.
 
   $('owFile').onchange=async()=>{
     const inp=$('owFile'); if(!inp.files.length) return;
