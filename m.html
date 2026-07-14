@@ -815,6 +815,36 @@ async function parseAppleHealth(blob,onProgress){
   const nm=Object.values(nights).map(ms=>ms/60000).filter(m=>m>60&&m<960); const sleep=nm.length?{n:nm.length,avg_total_min:Math.round(nm.reduce((s,x)=>s+x,0)/nm.length)}:null;
   return {span_start:spanMin,span_end:spanMax,total_points:total,devices:[...devices].slice(0,12),summary:{overall,monthly,activity_monthly,sleep,workouts:workouts.slice(0,50)}};
 }
+// Patient-friendly view of their own synced wearable trends (encouraging, not clinical).
+function patientTrends(w){
+  const S=(w&&w.summary)||{}, ov=S.overall||{}, mon=S.monthly||{}, act=S.activity_monthly||{};
+  const nu=(x,d=0)=>(x==null||isNaN(+x))?'—':(+x).toFixed(d);
+  const sp=(vals,color)=>{const ns=(vals||[]).filter(v=>v!=null&&!isNaN(+v)).map(Number);if(ns.length<2)return'<div class="text-xs muted py-1">building…</div>';const W=120,H=32,pad=4,mn=Math.min(...ns),mx=Math.max(...ns),rg=(mx-mn)||1;const xy=ns.map((v,i)=>[(i/(ns.length-1))*W,pad+(H-2*pad)-((v-mn)/rg)*(H-2*pad)]);const line=xy.map(pt=>pt[0].toFixed(1)+','+pt[1].toFixed(1)).join(' ');return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" class="block w-full" style="height:32px"><polyline points="${line}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>`;};
+  const rhrM=(mon.resting_heart_rate||[]), stepsM=(act.steps||[]);
+  const rhrDelta=rhrM.length>=2?(rhrM[rhrM.length-1].avg-rhrM[0].avg):null;
+  const stepsRecent=stepsM.length?stepsM[stepsM.length-1].avg_daily:null;
+  const sleepH=(S.sleep&&S.sleep.avg_total_min)?S.sleep.avg_total_min/60:null;
+  const GRN='#7bb23f';
+  const k=(lab,val,unit,sub,col)=>`<div class="surf2 rounded-xl p-3"><div class="text-[11px] muted">${lab}</div><div class="font-display text-lg font-bold mt-0.5 seg">${val}${unit?`<span class="text-xs muted ml-0.5">${unit}</span>`:''}</div>${sub?`<div class="text-[11px] font-semibold mt-0.5" style="color:${col||'var(--muted)'}">${sub}</div>`:''}</div>`;
+  const kpis=[
+    k('Resting HR',nu(ov.resting_heart_rate&&ov.resting_heart_rate.avg),'bpm',rhrDelta!=null?(rhrDelta<=-2?'▼ '+Math.abs(Math.round(rhrDelta))+' · fitter':(rhrDelta>=2?'▲ '+Math.round(rhrDelta):'steady')):'',rhrDelta!=null&&rhrDelta<=-2?GRN:'var(--muted)'),
+    k('Steps / day',stepsRecent!=null?Math.round(stepsRecent).toLocaleString():'—','','recent avg','var(--muted)'),
+    k('HRV',nu(ov.hrv_sdnn&&ov.hrv_sdnn.avg),'ms','recovery','var(--muted)'),
+    k('Sleep',sleepH!=null?sleepH.toFixed(1):'—','hr',sleepH!=null&&sleepH<7?'aim for 7+':'nightly',sleepH!=null&&sleepH<7?'#f59e0b':'var(--muted)'),
+  ].join('');
+  const bits=[];
+  if(rhrDelta!=null&&rhrDelta<=-3)bits.push('your resting heart rate is trending down (a good sign)');
+  if(stepsRecent!=null&&stepsRecent>=6000)bits.push("you're averaging solid daily steps");
+  if(sleepH!=null&&sleepH<7)bits.push('protecting your sleep, aim for 7 hours, will help the most');
+  const msg=bits.length?(bits.join(', ').replace(/^./,c=>c.toUpperCase())+'.'):'Your health data is syncing. Keep it up.';
+  const span=(w.span_start&&w.span_end)?(String(w.span_start).slice(0,4)+'–'+String(w.span_end).slice(0,4)):'';
+  return `<div class="card p-4 mb-3">
+    <div class="flex items-center justify-between mb-3"><div class="font-display font-semibold text-sm">Your health trends</div><div class="text-[11px] muted">Apple Health${span?' · '+span:''}</div></div>
+    <div class="grid grid-cols-2 gap-2 mb-3">${kpis}</div>
+    <div class="grid grid-cols-2 gap-3 mb-3"><div><div class="text-[11px] muted mb-1">Resting HR</div>${sp(rhrM.map(x=>x.avg),'#3b82f6')}</div><div><div class="text-[11px] muted mb-1">Daily steps</div>${sp(stepsM.map(x=>x.avg_daily),GRN)}</div></div>
+    <div class="text-xs muted leading-snug">${msg}</div>
+  </div>`;
+}
 function viewConnect(){
   const ib=latestScan();
   const bodySynced = ib
@@ -826,6 +856,7 @@ function viewConnect(){
       <div class="muted text-sm mt-0.5 leading-snug">Connect once. Your care team sees your real progress at every 30-day check-in, right next to your InBody.</div>
     </div>
     ${bodySynced}
+    ${(DATA&&DATA.wearable&&DATA.wearable.summary)?patientTrends(DATA.wearable):''}
     <div id="owDone" class="hidden card p-4 mb-3" style="border-color:var(--accent);background:var(--accent-soft)">
       <div class="flex items-center gap-2 font-display font-semibold text-sm accent"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> You're synced</div>
       <div class="font-display text-2xl font-bold mt-2 seg" id="owBig">—</div>
@@ -880,6 +911,7 @@ function viewConnect(){
       lab.textContent='Saving…'; bar.style.width='96%'; pct.textContent='96%';
       const c=await getConvex(); c.setAuth(JWT);
       await c.mutation('wearables:saveSummary', { source:'apple_health', span_start:result.span_start, span_end:result.span_end, total_points:result.total_points, devices:result.devices, summary:result.summary });
+      try{ DATA=await api({action:'load'}); }catch(_){/* trends show on next open */}
       bar.style.width='100%'; pct.textContent='100%';
       prog.classList.add('hidden'); done.classList.remove('hidden');
       $('owBig').textContent=Number(result.total_points).toLocaleString()+' data points';
