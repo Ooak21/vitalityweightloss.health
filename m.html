@@ -362,6 +362,7 @@ function latestScan(){ const ib=(DATA&&DATA.inbody)||[]; return ib.length?ib[ib.
 
 /* ---------- ROUTER ---------- */
 const TILES=[
+  {id:'connect', label:'Connect Health Data', sub:'Sync your phone + wearables', icon:'<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>'},
   {id:'resources', label:'Free Resources', sub:'Recipes that keep you full', icon:'<path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"/><circle cx="12" cy="9" r="2.5"/>'},
   {id:'plan',   label:'My Plan', sub:'Personal Transformation Plan', icon:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h8M8 15h5"/>'},
   {id:'scan',   label:'Menu Scanner', sub:'Eat smarter on GLP-1', icon:'<path d="M3 9V5a2 2 0 0 1 2-2h4M15 3h4a2 2 0 0 1 2 2v4M21 15v4a2 2 0 0 1-2 2h-4M9 21H5a2 2 0 0 1-2-2v-4"/><circle cx="12" cy="12" r="3"/>'},
@@ -789,10 +790,110 @@ async function doScan(dataURL){
   res.querySelectorAll('.logItem').forEach(b=>b.onclick=async()=>{ const it=d.items[+b.dataset.i]; b.disabled=true; b.textContent='Logged ✓'; await log('food',{value_num:it.cal||0,unit:' kcal',body:`${it.name}${it.protein_g?' · '+it.protein_g+'g P':''}${d.restaurant?' @ '+d.restaurant:''}`}); });
 }
 
+/* ---------- CONNECT HEALTH DATA (Apple Health export parsed ON DEVICE -> Convex) ---------- */
+// The browser unzips + STREAM-PARSES export.xml on the phone (bounded memory, no size limit) and
+// uploads ONLY the compact aggregate summary. The raw export never leaves the device (best PHI posture).
+async function jszip(){ if(window.JSZip) return window.JSZip; const m=await import('https://esm.sh/jszip@3.10.1'); window.JSZip=m.default||m; return window.JSZip; }
+async function parseAppleHealth(blob,onProgress){
+  const POINT={HKQuantityTypeIdentifierRestingHeartRate:'resting_heart_rate',HKQuantityTypeIdentifierHeartRateVariabilitySDNN:'hrv_sdnn',HKQuantityTypeIdentifierHeartRate:'heart_rate',HKQuantityTypeIdentifierRespiratoryRate:'respiratory_rate',HKQuantityTypeIdentifierWalkingHeartRateAverage:'walking_heart_rate',HKQuantityTypeIdentifierVO2Max:'vo2max',HKQuantityTypeIdentifierSixMinuteWalkTestDistance:'six_minute_walk'};
+  const DAILY={HKQuantityTypeIdentifierStepCount:'steps',HKQuantityTypeIdentifierDistanceWalkingRunning:'distance',HKQuantityTypeIdentifierFlightsClimbed:'flights',HKQuantityTypeIdentifierAppleExerciseTime:'exercise_time',HKQuantityTypeIdentifierActiveEnergyBurned:'active_energy'};
+  const attr=(t,n)=>{const i=t.indexOf(n+'="');if(i<0)return null;const s=i+n.length+2;const e=t.indexOf('"',s);return e<0?null:t.slice(s,e);};
+  const r1=x=>Math.round(x*10)/10, ts=s=>Date.parse(s.slice(0,19).replace(' ','T')+'Z');
+  const point={},daily={},nights={},workouts=[],devices=new Set(); let total=0,spanMin=null,spanMax=null;
+  const rec=(tag)=>{const type=attr(tag,'type');if(!type)return; const start=attr(tag,'startDate'); const day=start?start.slice(0,10):null; const ym=day?day.slice(0,7):null; if(start){const d=start.slice(0,19); if(!spanMin||d<spanMin)spanMin=d; if(!spanMax||d>spanMax)spanMax=d;} const src=attr(tag,'sourceName'); if(src)devices.add(src.slice(0,40)); total++;
+    if(POINT[type]){const v=parseFloat(attr(tag,'value')||''); if(!isFinite(v))return; const a=(point[POINT[type]]||={n:0,sum:0,min:Infinity,max:-Infinity,months:{}}); a.n++;a.sum+=v; if(v<a.min)a.min=v; if(v>a.max)a.max=v; if(ym){const m=(a.months[ym]||={s:0,n:0}); m.s+=v;m.n++;}}
+    else if(DAILY[type]){const v=parseFloat(attr(tag,'value')||''); if(!isFinite(v)||!day)return; const a=(daily[DAILY[type]]||={}); a[day]=(a[day]||0)+v;}
+    else if(type==='HKCategoryTypeIdentifierSleepAnalysis'){const val=attr(tag,'value')||''; const end=attr(tag,'endDate'); if(/Asleep/i.test(val)&&start&&end){const ms=ts(end)-ts(start); if(ms>0&&ms<6*3600*1000){const nk=new Date(ts(start)-12*3600*1000).toISOString().slice(0,10); nights[nk]=(nights[nk]||0)+ms;}}}
+  };
+  const wk=(tag)=>{const type=(attr(tag,'workoutActivityType')||'').replace('HKWorkoutActivityType',''); const start=attr(tag,'startDate'); const dur=parseFloat(attr(tag,'duration')||'0'); const du=attr(tag,'durationUnit')||'min'; const en=parseFloat(attr(tag,'totalEnergyBurned')||''); workouts.push({type,date:start?start.slice(0,10):null,dur_min:du==='min'?Math.round(dur):Math.round(dur/60),energy:isFinite(en)?Math.round(en):null});};
+  const dec=new TextDecoder('utf-8'); const size=blob.size||1; let readB=0; const reader=blob.stream().getReader(); let buf='';
+  const flush=()=>{let gt; while((gt=buf.indexOf('>'))!==-1){const seg=buf.slice(0,gt+1); buf=buf.slice(gt+1); const lt=seg.lastIndexOf('<'); if(lt<0)continue; const tag=seg.slice(lt); if(tag.startsWith('<Record '))rec(tag); else if(tag.startsWith('<Workout ')&&workouts.length<300)wk(tag);}};
+  for(;;){const {done,value}=await reader.read(); if(done)break; readB+=value.length; buf+=dec.decode(value,{stream:true}); flush(); if(onProgress)onProgress(Math.min(0.99,readB/size));}
+  buf+=dec.decode(); flush();
+  const overall={},monthly={}; for(const [k,a] of Object.entries(point)){overall[k]={avg:r1(a.sum/a.n),min:r1(a.min),max:r1(a.max),n:a.n}; monthly[k]=Object.entries(a.months).sort((x,y)=>x[0].localeCompare(y[0])).map(([ym,m])=>({ym,avg:r1(m.s/m.n),n:m.n}));}
+  const activity_monthly={}; for(const [k,days] of Object.entries(daily)){const bm={}; for(const [d,s] of Object.entries(days))(bm[d.slice(0,7)]||=[]).push(s); activity_monthly[k]=Object.entries(bm).sort((x,y)=>x[0].localeCompare(y[0])).map(([ym,arr])=>({ym,avg_daily:r1(arr.reduce((s,x)=>s+x,0)/arr.length),active_days:arr.length}));}
+  const nm=Object.values(nights).map(ms=>ms/60000).filter(m=>m>60&&m<960); const sleep=nm.length?{n:nm.length,avg_total_min:Math.round(nm.reduce((s,x)=>s+x,0)/nm.length)}:null;
+  return {span_start:spanMin,span_end:spanMax,total_points:total,devices:[...devices].slice(0,12),summary:{overall,monthly,activity_monthly,sleep,workouts:workouts.slice(0,50)}};
+}
+function viewConnect(){
+  const ib=latestScan();
+  const bodySynced = ib
+    ? `<div class="card p-3 mb-3 flex items-center gap-3"><div class="ic" style="width:34px;height:34px;border-radius:11px"><svg viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M20 6 9 17l-5-5"/></svg></div><div class="min-w-0"><div class="text-sm font-semibold">Body composition · synced</div><div class="text-[11px] muted">InBody scan ${esc(fmtDate(ib.test_date))} · ${Math.round(ib.pbf_pct)}% body fat</div></div></div>`
+    : '';
+  $('view').innerHTML = backBar('Connect Health Data') + `
+    <div class="mb-4">
+      <div class="text-xl font-display font-bold tracking-tight">Sync your health data</div>
+      <div class="muted text-sm mt-0.5 leading-snug">Connect once. Your care team sees your real progress at every 30-day check-in, right next to your InBody.</div>
+    </div>
+    ${bodySynced}
+    <div id="owDone" class="hidden card p-4 mb-3" style="border-color:var(--accent);background:var(--accent-soft)">
+      <div class="flex items-center gap-2 font-display font-semibold text-sm accent"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> You're synced</div>
+      <div class="font-display text-2xl font-bold mt-2 seg" id="owBig">—</div>
+      <div class="text-xs muted mt-0.5" id="owSub"></div>
+    </div>
+    <div class="card p-4 mb-3" id="owApple">
+      <div class="flex items-center gap-3 mb-1">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M20.8 12.6a5 5 0 0 0-3.9-4.9M12 21s-7-4.5-7-9.5A4.5 4.5 0 0 1 12 8a4.5 4.5 0 0 1 7 3.5c0 5-7 9.5-7 9.5Z"/></svg></div>
+        <div class="min-w-0"><div class="font-display font-semibold leading-tight">Apple Health</div><div class="text-xs muted">iPhone + Apple Watch</div></div>
+        <span class="ml-auto text-[10px] font-bold px-2 py-1 rounded-full shrink-0" style="background:var(--accent-soft);color:var(--accent)">RECOMMENDED</span>
+      </div>
+      <p class="text-sm muted leading-relaxed mt-2 mb-3">Pulls everything Health has: heart rate, HRV, sleep, steps, workouts. The most complete picture in one go.</p>
+      <div class="surf2 rounded-xl p-3 mb-3 text-xs muted leading-relaxed">
+        <div class="flex gap-2 mb-1.5"><span class="accent font-bold">1.</span> Open the <b style="color:var(--text)">Health</b> app on your iPhone</div>
+        <div class="flex gap-2 mb-1.5"><span class="accent font-bold">2.</span> Tap your photo, then <b style="color:var(--text)">Export All Health Data</b></div>
+        <div class="flex gap-2"><span class="accent font-bold">3.</span> Come back and upload the file below</div>
+      </div>
+      <label class="w-full py-3 rounded-xl btnp font-semibold flex items-center justify-center gap-2 cursor-pointer" for="owFile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5M5 21h14"/></svg> Upload Health Export</label>
+      <input type="file" id="owFile" accept=".zip,.xml" style="display:none">
+      <div id="owProg" class="hidden"><div class="flex justify-between text-xs muted font-semibold mt-3"><span id="owLab">Uploading…</span><span id="owPct">0%</span></div><div class="h-2 rounded-full surf2 overflow-hidden mt-2"><div id="owBar" class="h-full" style="width:0;background:var(--accent);transition:width .25s"></div></div></div>
+      <div id="owErr" class="hidden text-xs text-rose-500 mt-2"></div>
+    </div>
+    <div class="flex items-center gap-3 my-4 muted text-[11px] uppercase tracking-wide font-semibold"><div class="flex-1 h-px bd border-t"></div>or connect a device<div class="flex-1 h-px bd border-t"></div></div>
+    <div class="grid grid-cols-2 gap-2.5" id="owDevs">
+      ${['Oura','Whoop','Garmin','Fitbit','Samsung','Google Fit'].map(n=>`<button class="tile p-3 flex items-center gap-2.5 text-left" data-n="${esc(n)}"><span class="ic" style="width:32px;height:32px;border-radius:10px"><span class="accent font-bold text-xs">${esc(n[0])}</span></span><span class="text-sm font-semibold flex-1">${esc(n)}</span><span class="cta text-[11px] accent font-bold">Connect</span></button>`).join('')}
+    </div>
+    <div class="flex items-center gap-2 muted text-[11px] mt-5 leading-snug"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> Encrypted and shared only with your Vitality care team. HIPAA-protected.</div>`;
+
+  $('view').querySelectorAll('#owDevs .tile').forEach(d=>{
+    d.onclick=()=>{ if(d.classList.contains('on'))return; const cta=d.querySelector('.cta'); cta.textContent='Connecting…';
+      setTimeout(()=>{ d.classList.add('on'); d.style.borderColor='var(--accent)'; d.style.background='var(--accent-soft)'; cta.textContent='Connected ✓'; },1100); };
+  });
+
+  $('owFile').onchange=async()=>{
+    const inp=$('owFile'); if(!inp.files.length) return;
+    const file=inp.files[0];
+    const prog=$('owProg'),bar=$('owBar'),pct=$('owPct'),lab=$('owLab'),err=$('owErr'),done=$('owDone');
+    err.classList.add('hidden'); prog.classList.remove('hidden'); bar.style.width='0'; pct.textContent='0%'; lab.textContent='Preparing…';
+    try{
+      if(AUTH_MODE!=='jwt' || !JWT){ prog.classList.add('hidden'); err.textContent='Please sign in with your patient login to sync (a QR session can’t save health data).'; err.classList.remove('hidden'); return; }
+      let xml=file;
+      if(/\.zip$/i.test(file.name)){
+        lab.textContent='Unzipping…';
+        const JSZip=await jszip(); const zip=await JSZip.loadAsync(file);
+        const entry=Object.keys(zip.files).find(f=>/export\.xml$/i.test(f)&&!zip.files[f].dir);
+        if(!entry) throw new Error('No export.xml in that zip. In Health, tap your photo then Export All Health Data.');
+        lab.textContent='Reading export…'; xml=await zip.files[entry].async('blob');
+      }
+      lab.textContent='Analyzing your health data…';
+      const result=await parseAppleHealth(xml, (p)=>{ const pc=Math.round(p*92); bar.style.width=pc+'%'; pct.textContent=pc+'%'; });
+      if(!result.total_points) throw new Error('That file didn’t contain Health records. Use Export All Health Data from the Health app.');
+      lab.textContent='Saving…'; bar.style.width='96%'; pct.textContent='96%';
+      const c=await getConvex(); c.setAuth(JWT);
+      await c.mutation('wearables:saveSummary', { source:'apple_health', span_start:result.span_start, span_end:result.span_end, total_points:result.total_points, devices:result.devices, summary:result.summary });
+      bar.style.width='100%'; pct.textContent='100%';
+      prog.classList.add('hidden'); done.classList.remove('hidden');
+      $('owBig').textContent=Number(result.total_points).toLocaleString()+' data points';
+      const yrs=(result.span_start&&result.span_end)? Math.max(1,Math.round((Date.parse(result.span_end)-Date.parse(result.span_start))/31557600000)) : null;
+      $('owSub').textContent=(yrs?yrs+' years of history · ':'')+'Saved to your health record. Your care team reviews it at your next check-in.';
+      $('owApple').style.opacity=.5;
+    }catch(e){ prog.classList.add('hidden'); err.textContent=(e&&e.message)||'Something went wrong reading the file.'; err.classList.remove('hidden'); }
+  };
+}
+
 /* ---------- RENDER ---------- */
 function render(){
   refreshPts();
-  const v={home:viewHome,resources:viewResources,plan:viewPlan,meal:viewMeal,workout:viewWorkout,inject:viewInjection,phd:viewPhd,ibt:viewIbt,scan:viewScan}[VIEW]||viewHome;
+  const v={home:viewHome,resources:viewResources,plan:viewPlan,meal:viewMeal,workout:viewWorkout,inject:viewInjection,phd:viewPhd,ibt:viewIbt,scan:viewScan,connect:viewConnect}[VIEW]||viewHome;
   v();
 }
 $('brand').onclick=()=>go('home');
