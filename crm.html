@@ -3507,7 +3507,9 @@ HARD RULES:
       if(wantLogin && j.id){
         const lj=await provisionLogin(j.id);
         loginMsg = lj.ok
-          ? `Portal login created:\nEmail: ${lj.email}\nTemporary password: ${lj.password}\n\nHand these to the patient in person or by text — don't email the password.`
+          ? (lj.sent
+              ? `Portal login created. A set-password link was emailed to ${lj.email}. The patient sets their own password from that link.`
+              : `Portal login created for ${lj.email}, but the setup email could not be sent${lj.detail?': '+lj.detail:'.'} Check the email and resend from the patient's record.`)
           : 'Patient added, but the portal login could not be created: '+(lj.error||'unknown error');
       }
       closeAddPatient();
@@ -3532,12 +3534,14 @@ HARD RULES:
     return r.json();
   }
   window.portalLogin = async function(id, hasLogin){
-    if(hasLogin && !confirm('Reset this patient’s portal password to a new temporary one?')) return;
+    if(hasLogin && !confirm('Resend the set-password link to this patient?')) return;
     try{
       const j=await provisionLogin(id);
       if(!j.ok){ alert(j.error||'Could not create the portal login.'); return; }
       await loadData();
-      alert(`${j.reset?'Portal password reset':'Portal login created'}:\nEmail: ${j.email}\nTemporary password: ${j.password}\n\nHand these to the patient in person or by text — don't email the password. They sign in at the patient portal.`);
+      alert(j.sent
+        ? `Portal login created.\n\nA set-password link was emailed to ${j.email}. The patient sets their own password from that link, then signs in at the patient portal. The link is single-use and expires in 7 days.`
+        : `Portal login created for ${j.email}, but the setup email could not be sent${j.detail?': '+j.detail:'.'}\n\nCheck the email address, then use this button again to resend.`);
     }catch(e){ alert('Network error — please try again.'); }
   };
   async function rxLookup(drug){
