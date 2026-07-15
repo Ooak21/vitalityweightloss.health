@@ -5,23 +5,98 @@
 <link rel="icon" type="image/png" href="../assets/favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Free Resources | Vitality Weight Loss Las Vegas</title>
-<meta name="description" content="Free, physician-reviewed weight-loss resources from Vitality Weight Loss Las Vegas: GLP-1 guides, Medicare coverage, and the Patient Wellness Series. Reviewed by Peter DeBry, MD.">
+<meta name="description" content="Free, physician-reviewed weight-loss resources from Vitality Weight Loss Las Vegas: GLP-1 guides, Medicare coverage, PCOS, 500+ recipes, and the Patient Wellness Series. Reviewed by Peter DeBry, MD.">
 <link rel="canonical" href="https://vitalityweightloss.health/free-resources/">
 <link rel="alternate" type="text/plain" title="llms.txt" href="/llms.txt">
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>body{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#16201d}.font-display{font-family:'Montserrat','Inter',sans-serif}</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Montserrat:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff; --surface:#ffffff; --surface-2:#f7f8fa; --border:#e6e9ee;
+    --text:#16201d; --muted:#6b7280; --accent:#0a6cf5;
+    /* category palette */
+    --c-glp1:#0a6cf5; --c-food:#0f9d6b; --c-cover:#d97706;
+    --c-learn:#7c3aed; --c-women:#e11d48; --c-mag:#4f46e5;
+  }
+  *{scroll-behavior:smooth}
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;color:var(--text);background:var(--bg)}
+  .font-display{font-family:'Montserrat','Inter',sans-serif}
+  .font-serif{font-family:'Playfair Display',Georgia,serif}
+
+  /* ── Reveal on scroll ── */
+  .reveal{opacity:0;transform:translateY(20px);transition:opacity .9s cubic-bezier(.23,1,.32,1),transform .9s cubic-bezier(.23,1,.32,1)}
+  .reveal.in{opacity:1;transform:none}
+
+  /* ── Resource cards (theme via --c) ── */
+  .glass{background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04),0 16px 38px -22px rgba(16,24,40,.14)}
+  .res{position:relative;display:block;border-radius:20px;border:1px solid var(--border);background:#fff;overflow:hidden;transition:transform .35s cubic-bezier(.23,1,.32,1),box-shadow .35s,border-color .35s}
+  .res::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--c);opacity:.9;transform:scaleX(0);transform-origin:left;transition:transform .4s cubic-bezier(.23,1,.32,1)}
+  .res::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 0% 0%,color-mix(in srgb,var(--c) 8%,transparent),transparent 60%);opacity:0;transition:opacity .4s}
+  .res:hover{transform:translateY(-6px);border-color:color-mix(in srgb,var(--c) 45%,var(--border));box-shadow:0 30px 60px -30px color-mix(in srgb,var(--c) 40%,rgba(16,24,40,.3)),0 0 0 1px color-mix(in srgb,var(--c) 22%,transparent)}
+  .res:hover::before{transform:scaleX(1)}
+  .res:hover::after{opacity:1}
+  .res .arrow{transition:transform .3s}
+  .res:hover .arrow{transform:translateX(4px)}
+  .icon-tile{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;color:var(--c);background:color-mix(in srgb,var(--c) 12%,#fff);border:1px solid color-mix(in srgb,var(--c) 22%,transparent)}
+  .chip{display:inline-flex;align-items:center;gap:.4rem;font-size:.66rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--c);background:color-mix(in srgb,var(--c) 10%,#fff);border:1px solid color-mix(in srgb,var(--c) 20%,transparent);padding:.28rem .6rem;border-radius:100px}
+
+  /* ── Tabs ── */
+  .tabbar{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:30px;overflow-x:auto}
+  .tab{position:relative;font-family:'Montserrat',sans-serif;font-size:.95rem;font-weight:600;color:var(--muted);background:none;border:none;padding:12px 18px 15px;cursor:pointer;white-space:nowrap;transition:color .2s;display:inline-flex;align-items:center;gap:8px}
+  .tab:hover{color:var(--text)}
+  .tab.on{color:var(--accent)}
+  .tab::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2.5px;border-radius:3px;background:var(--accent);transform:scaleX(0);transition:transform .3s cubic-bezier(.23,1,.32,1)}
+  .tab.on::after{transform:scaleX(1)}
+  .tab-count{font-size:.7rem;font-weight:700;color:var(--muted);background:var(--surface-2);border-radius:100px;padding:2px 8px;transition:all .2s}
+  .tab.on .tab-count{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,#fff)}
+  .tabpanel{display:none}
+  .tabpanel.on{display:block;animation:panelIn .45s cubic-bezier(.23,1,.32,1)}
+  @keyframes panelIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .ghost{border:1.5px dashed #d5d9e0;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px 24px;color:#9aa0ab;min-height:190px}
+
+  /* ── Featured editorial cards ── */
+  .feat{position:relative;display:flex;flex-direction:column;justify-content:flex-end;min-height:340px;border-radius:24px;overflow:hidden;color:#fff;transition:transform .4s cubic-bezier(.23,1,.32,1),box-shadow .4s}
+  .feat:hover{transform:translateY(-6px);box-shadow:0 40px 80px -34px rgba(16,24,40,.5)}
+  .feat .grain{position:absolute;inset:0;opacity:.5;background-image:radial-gradient(rgba(255,255,255,.14) 1px,transparent 1px);background-size:16px 16px;mix-blend-mode:overlay}
+  .feat-women{background:linear-gradient(150deg,#4c0f2a 0%,#9d174d 46%,#e11d48 100%)}
+  .feat-food{background:linear-gradient(150deg,#053d29 0%,#0f7a52 48%,#12b981 100%)}
+  .feat .glow{position:absolute;width:340px;height:340px;border-radius:50%;filter:blur(50px);opacity:.5}
+  .feat-women .glow{background:#ff5c8a;top:-90px;right:-60px}
+  .feat-food .glow{background:#4be3a8;top:-90px;right:-60px}
+
+  /* ── Colored brand social ── */
+  .soc{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;color:#fff;transition:transform .22s cubic-bezier(.34,1.32,.5,1),box-shadow .22s,filter .22s}
+  .soc svg{width:20px;height:20px}
+  .soc:hover{transform:translateY(-3px) scale(1.05)}
+  .soc-ig{background:radial-gradient(circle at 30% 107%,#fdf497 0%,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285AEB 90%)}
+  .soc-ig:hover{box-shadow:0 12px 26px -8px rgba(214,36,159,.6)}
+  .soc-fb{background:#1877F2}
+  .soc-fb:hover{box-shadow:0 12px 26px -8px rgba(24,119,242,.6)}
+  .soc-yt{background:#FF0000}
+  .soc-yt:hover{box-shadow:0 12px 26px -8px rgba(255,0,0,.55)}
+
+  .grad-ink{background:linear-gradient(96deg,#0a6cf5,#3b5bdb);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hide{display:none !important}
+
+  @media (prefers-reduced-motion:reduce){
+    *{scroll-behavior:auto}
+    .reveal{opacity:1;transform:none;transition:none}
+    .tabpanel.on{animation:none}
+    .res:hover,.feat:hover,.soc:hover{transform:none}
+  }
+</style>
 <script type="application/ld+json">
 {
   "@context":"https://schema.org",
   "@type":"CollectionPage",
   "name":"Vitality Weight Loss Free Resources",
-  "description":"Free, physician-reviewed weight-loss guides and the Patient Wellness Series from Vitality Weight Loss in Las Vegas, Nevada.",
+  "description":"Free, physician-reviewed weight-loss guides, PCOS education, 500+ recipes, and the Patient Wellness Series from Vitality Weight Loss in Las Vegas, Nevada.",
   "publisher":{"@type":"MedicalClinic","name":"Vitality Weight Loss","url":"https://vitalityweightloss.health/"},
   "hasPart":[
     {"@type":"MedicalWebPage","name":"GLP-1 Weight Loss in Las Vegas: The Complete 2026 Guide","url":"https://vitalityweightloss.health/guides/glp-1-weight-loss-las-vegas/"},
     {"@type":"MedicalWebPage","name":"Is Semaglutide Covered by Medicare in Nevada? (2026)","url":"https://vitalityweightloss.health/guides/semaglutide-medicare-nevada/"},
+    {"@type":"MedicalWebPage","name":"PCOS and GLP-1 Weight Loss: Why Your Body Has Been Working Against You","url":"https://vitalityweightloss.health/magazine/pcos-and-glp-1-weight-loss/"},
     {"@type":"MedicalWebPage","name":"The Vitality PhD Reading List: 30 Books That Make You the Expert on Your Body","url":"https://vitalityweightloss.health/guides/vitality-phd-reading-list/"},
     {"@type":"Article","name":"Your Personal Chef Is an AI Chatbot","url":"https://vitalityweightloss.health/magazine/ai-meal-planning/"}
   ]
@@ -31,86 +106,248 @@
 </head>
 <body class="bg-white">
 
-<header class="border-b border-[#e6e9ee]">
-  <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+<header class="sticky top-0 z-40 bg-white/85 backdrop-blur border-b border-[#e6e9ee]">
+  <div class="max-w-5xl mx-auto px-6 py-3.5 flex items-center justify-between">
     <a href="../index.html" class="flex items-center gap-2.5"><img src="../assets/logo-icon.png" alt="Vitality Weight Loss" class="h-8 w-auto"><span class="font-display flex flex-col items-center leading-none"><span class="font-semibold text-lg uppercase tracking-[.15em]">Vitality</span><span class="text-[.46rem] font-medium tracking-[.3em] uppercase text-[#16201d] mt-0.5">Weight Loss</span></span></a>
-    <a href="../intake.html" class="text-sm font-semibold px-4 py-2 rounded-xl bg-[#0a6cf5] text-white hover:bg-[#0856c8]">Start your intake</a>
+    <a href="../intake.html" class="text-sm font-semibold px-4 py-2 rounded-xl bg-[#0a6cf5] text-white hover:bg-[#0856c8] transition-colors">Start your intake</a>
   </div>
 </header>
 
-<section class="max-w-4xl mx-auto px-6 pt-14 pb-6">
-  <div class="text-xs font-semibold tracking-[.18em] text-[#0a6cf5] uppercase mb-3">Free Resources</div>
-  <h1 class="font-display text-4xl md:text-5xl font-semibold tracking-[-1.5px] leading-[1.05] mb-3">Everything you need, reviewed by a physician.</h1>
-  <p class="text-lg text-[#4b5563] max-w-2xl leading-relaxed">Free, factual reading on GLP-1 therapy, cost, Medicare coverage, and the habits that make weight loss stick. Every piece is reviewed by Peter DeBry, MD.</p>
-</section>
+<!-- ══ HERO ══ -->
+<section class="relative overflow-hidden" style="background:radial-gradient(115% 85% at 50% -25%, rgba(10,108,245,.06) 0%, rgba(10,108,245,0) 55%)">
+  <div class="relative z-10 max-w-5xl mx-auto px-6 pt-16 pb-10">
+    <div class="inline-flex items-center gap-2 text-xs font-semibold tracking-[.16em] text-[#0a6cf5] uppercase mb-5 bg-[#0a6cf5]/8 border border-[#0a6cf5]/15 rounded-full px-3.5 py-1.5">
+      <span class="w-1.5 h-1.5 rounded-full bg-[#0a6cf5] animate-pulse"></span> Free · Physician-reviewed
+    </div>
+    <h1 class="font-display text-4xl md:text-6xl font-extrabold tracking-[-2px] leading-[1.02] mb-4 max-w-3xl">Everything you need to succeed, <span class="grad-ink">in one library.</span></h1>
+    <p class="text-lg md:text-xl text-[#4b5563] max-w-2xl leading-relaxed">Honest, factual reading on GLP-1 therapy, cost and Medicare coverage, PCOS, and the habits that make weight loss stick. Plus 500+ recipes built for life on semaglutide and tirzepatide. Every piece is reviewed by <strong class="text-[#16201d] font-semibold">Peter DeBry, MD</strong>.</p>
 
-<!-- RECIPES (featured) -->
-<section class="max-w-4xl mx-auto px-6 pt-6 pb-2">
-  <a href="../recipes/" class="block rounded-2xl border border-[#e6e9ee] bg-[#f7f8fa] p-6 md:p-8 hover:border-[#0a6cf5] hover:shadow-[0_14px_34px_-18px_rgba(16,24,40,.18)] transition">
-    <div class="text-xs font-semibold tracking-[.14em] text-[#0a6cf5] uppercase mb-2">Recipe Library</div>
-    <h2 class="font-display text-2xl md:text-3xl font-semibold tracking-[-.5px] mb-2 leading-snug">GLP-1 recipes that keep you full</h2>
-    <p class="text-sm text-[#6b7280] leading-relaxed max-w-2xl">High-protein, macro-friendly recipes for life on semaglutide or tirzepatide: fast-food copycats, family dinners, quick lunches, and dessert hacks. Reviewed by the Vitality care team.</p>
-    <span class="inline-flex items-center gap-1 text-sm font-semibold text-[#0a6cf5] mt-4">Browse the recipe library &rarr;</span>
-  </a>
-</section>
-
-<!-- GUIDES -->
-<section class="max-w-4xl mx-auto px-6 pt-6 pb-8">
-  <div class="flex items-baseline gap-3 mb-5">
-    <h2 class="font-display text-2xl font-semibold tracking-[-.5px]">Guides &amp; Resources</h2>
-    <span class="text-sm text-[#9aa0ab]">Physician-reviewed</span>
+    <!-- trust stats -->
+    <div class="flex flex-wrap gap-3 mt-8">
+      <div class="glass rounded-2xl px-5 py-3.5 flex items-baseline gap-2.5">
+        <span class="font-display text-2xl font-bold text-[#0f9d6b]">500+</span><span class="text-sm text-[#6b7280]">recipes</span>
+      </div>
+      <div class="glass rounded-2xl px-5 py-3.5 flex items-baseline gap-2.5">
+        <span class="font-display text-2xl font-bold text-[#0a6cf5]">5</span><span class="text-sm text-[#6b7280]">in-depth guides</span>
+      </div>
+      <div class="glass rounded-2xl px-5 py-3.5 flex items-baseline gap-2.5">
+        <span class="font-display text-2xl font-bold text-[#d97706]">MD</span><span class="text-sm text-[#6b7280]">reviewed, every piece</span>
+      </div>
+      <div class="glass rounded-2xl px-5 py-3.5 flex items-baseline gap-2.5">
+        <span class="font-display text-2xl font-bold text-[#4f46e5]">$0</span><span class="text-sm text-[#6b7280]">no login, no catch</span>
+      </div>
+    </div>
   </div>
+</section>
+
+<!-- ══ FEATURED ══ -->
+<section class="max-w-5xl mx-auto px-6 pt-4 pb-2">
   <div class="grid md:grid-cols-2 gap-5">
-    <a href="../guides/glp-1-weight-loss-las-vegas.html" class="block rounded-2xl border border-[#e6e9ee] p-6 hover:border-[#0a6cf5] hover:shadow-[0_14px_34px_-18px_rgba(16,24,40,.18)] transition">
-      <div class="text-xs font-semibold tracking-[.14em] text-[#0a6cf5] uppercase mb-2">GLP-1 Therapy</div>
-      <h3 class="font-display text-xl font-semibold mb-2 leading-snug">GLP-1 Weight Loss in Las Vegas: The Complete 2026 Guide</h3>
-      <p class="text-sm text-[#6b7280] leading-relaxed">Semaglutide vs tirzepatide vs oral, expected results from the clinical trials, cost, and who qualifies. Reviewed by Peter DeBry, MD.</p>
+    <!-- PCOS featured (new blog) -->
+    <a href="../magazine/pcos-and-glp-1-weight-loss.html" class="feat feat-women reveal p-8">
+      <span class="grain" aria-hidden="true"></span><span class="glow" aria-hidden="true"></span>
+      <div class="relative z-10">
+        <span class="inline-flex items-center gap-2 text-[.66rem] font-bold tracking-[.14em] uppercase bg-white/20 border border-white/30 rounded-full px-3 py-1 mb-4">New · Women's Health</span>
+        <h2 class="font-serif text-3xl md:text-[2.1rem] leading-[1.12] font-bold mb-3">Your body isn't broken.<br>It's been working against you.</h2>
+        <p class="text-white/85 text-sm leading-relaxed max-w-md">Why weight loss is harder with PCOS, and why, for the first time, the medical tools exist to genuinely change it.</p>
+        <span class="inline-flex items-center gap-1.5 text-sm font-semibold mt-5">Read the article <span class="arrow">&rarr;</span></span>
+      </div>
     </a>
-    <a href="../guides/semaglutide-medicare-nevada.html" class="block rounded-2xl border border-[#e6e9ee] p-6 hover:border-[#0a6cf5] hover:shadow-[0_14px_34px_-18px_rgba(16,24,40,.18)] transition">
-      <div class="text-xs font-semibold tracking-[.14em] text-[#0a6cf5] uppercase mb-2">Medicare &amp; Coverage</div>
-      <h3 class="font-display text-xl font-semibold mb-2 leading-snug">Is Semaglutide Covered by Medicare in Nevada? (2026)</h3>
-      <p class="text-sm text-[#6b7280] leading-relaxed">What Medicare covers, what is changing, and how the Vitality GLP-1 Bridge gets eligible members brand-name medication for about $50/month.</p>
-    </a>
-    <a href="../guides/vitality-phd-reading-list.html" class="block rounded-2xl border border-[#e6e9ee] p-6 hover:border-[#0a6cf5] hover:shadow-[0_14px_34px_-18px_rgba(16,24,40,.18)] transition">
-      <div class="text-xs font-semibold tracking-[.14em] text-[#0a6cf5] uppercase mb-2">Learning Center</div>
-      <h3 class="font-display text-xl font-semibold mb-2 leading-snug">The Vitality PhD Reading List: 30 Books That Make You the Expert on Your Body</h3>
-      <p class="text-sm text-[#6b7280] leading-relaxed">The Personal Health Doctorate master reading list, 30 physician-curated books on nutrition, habits, mindset, sleep, and longevity. Curated by the Vitality care team.</p>
-    </a>
-  </div>
-</section>
-
-<!-- MAGAZINE -->
-<section class="max-w-4xl mx-auto px-6 pt-6 pb-14">
-  <div class="border-t border-[#f1f3f6] pt-10"></div>
-  <div class="flex items-baseline gap-3 mb-5">
-    <h2 class="font-display text-2xl font-semibold tracking-[-.5px]">The Vitality Magazine</h2>
-    <span class="text-sm text-[#9aa0ab]">Patient Wellness Series</span>
-  </div>
-  <div class="grid md:grid-cols-2 gap-5">
-    <a href="../magazine/ai-meal-planning.html" class="block rounded-2xl border border-[#e6e9ee] p-6 hover:border-[#0a6cf5] hover:shadow-[0_14px_34px_-18px_rgba(16,24,40,.18)] transition">
-      <div class="text-xs font-semibold tracking-[.14em] text-[#0a6cf5] uppercase mb-2">Nutrition &amp; AI Tools</div>
-      <h3 class="font-display text-xl font-semibold mb-2 leading-snug">Your Personal Chef Is an AI Chatbot</h3>
-      <p class="text-sm text-[#6b7280] leading-relaxed">How five minutes with a free AI tool can replace an hour of meal planning, with the exact prompts to use, plus guidance for patients on GLP-1 medications.</p>
+    <!-- Recipes featured -->
+    <a href="../recipes/" class="feat feat-food reveal p-8">
+      <span class="grain" aria-hidden="true"></span><span class="glow" aria-hidden="true"></span>
+      <div class="relative z-10">
+        <span class="inline-flex items-center gap-2 text-[.66rem] font-bold tracking-[.14em] uppercase bg-white/20 border border-white/30 rounded-full px-3 py-1 mb-4">500+ Recipes</span>
+        <h2 class="font-serif text-3xl md:text-[2.1rem] leading-[1.12] font-bold mb-3">GLP-1 recipes that<br>keep you full.</h2>
+        <p class="text-white/85 text-sm leading-relaxed max-w-md">High-protein, macro-friendly meals for life on semaglutide or tirzepatide: fast-food copycats, family dinners, quick lunches, dessert hacks.</p>
+        <span class="inline-flex items-center gap-1.5 text-sm font-semibold mt-5">Browse the library <span class="arrow">&rarr;</span></span>
+      </div>
     </a>
   </div>
 </section>
 
-<footer class="border-t border-[#e6e9ee] py-8">
-  <div class="max-w-4xl mx-auto px-6">
-    <div class="flex items-center gap-2.5 mb-4">
-      <a href="https://www.instagram.com/vitalityweightloss" target="_blank" rel="noopener noreferrer" aria-label="Vitality on Instagram" class="w-9 h-9 grid place-items-center rounded-xl border border-[#e6e9ee] bg-white text-[#6b7280] hover:border-[#0a6cf5]/45 hover:text-[#0a6cf5] hover:bg-[#0a6cf5]/5 active:scale-[0.97] transition-all">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-[18px] h-[18px]"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+<!-- ══ TABBED LIBRARY ══ -->
+<section class="max-w-5xl mx-auto px-6 pt-12 pb-6">
+  <div class="mb-6">
+    <h2 class="font-display text-2xl md:text-3xl font-bold tracking-[-.5px]">The Resource Library</h2>
+    <p class="text-sm text-[#6b7280] mt-1">Physician-reviewed reading, organized by type. Pick a tab.</p>
+  </div>
+
+  <!-- tab bar -->
+  <div class="tabbar" role="tablist" aria-label="Resource types">
+    <button class="tab on" role="tab" aria-selected="true" aria-controls="panel-guides" id="tab-guides" data-panel="guides" tabindex="0">Guides <span class="tab-count">3</span></button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-magazine" id="tab-magazine" data-panel="magazine" tabindex="-1">Magazine <span class="tab-count">1</span></button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-blog" id="tab-blog" data-panel="blog" tabindex="-1">BlogSpot <span class="tab-count">1</span></button>
+  </div>
+
+  <!-- GUIDES -->
+  <div class="tabpanel on" id="panel-guides" role="tabpanel" aria-labelledby="tab-guides">
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <a href="../guides/glp-1-weight-loss-las-vegas.html" class="res p-6" style="--c:var(--c-glp1)">
+        <div class="flex items-start justify-between mb-4">
+          <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M14.5 3.5 20.5 9.5"/><path d="m3.5 20.5 4-1 10-10-3-3-10 10z"/><path d="M12.5 5.5 9 9"/></svg></div>
+          <span class="chip">Guide</span>
+        </div>
+        <div class="text-[.7rem] font-semibold tracking-[.12em] uppercase mb-1.5" style="color:var(--c-glp1)">GLP-1 Therapy</div>
+        <h3 class="font-display text-lg font-bold mb-2 leading-snug">GLP-1 Weight Loss in Las Vegas: The Complete 2026 Guide</h3>
+        <p class="text-sm text-[#6b7280] leading-relaxed">Semaglutide vs tirzepatide vs oral, expected results from the clinical trials, cost, and who qualifies.</p>
+        <span class="inline-flex items-center gap-1.5 text-sm font-semibold mt-4" style="color:var(--c-glp1)">Read guide <span class="arrow">&rarr;</span></span>
       </a>
-      <a href="https://www.facebook.com/share/191EpTu4hF/" target="_blank" rel="noopener noreferrer" aria-label="Vitality on Facebook" class="w-9 h-9 grid place-items-center rounded-xl border border-[#e6e9ee] bg-white text-[#6b7280] hover:border-[#0a6cf5]/45 hover:text-[#0a6cf5] hover:bg-[#0a6cf5]/5 active:scale-[0.97] transition-all">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-[18px] h-[18px]"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+
+      <a href="../guides/semaglutide-medicare-nevada.html" class="res p-6" style="--c:var(--c-cover)">
+        <div class="flex items-start justify-between mb-4">
+          <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+          <span class="chip">Guide</span>
+        </div>
+        <div class="text-[.7rem] font-semibold tracking-[.12em] uppercase mb-1.5" style="color:var(--c-cover)">Cost &amp; Coverage</div>
+        <h3 class="font-display text-lg font-bold mb-2 leading-snug">Is Semaglutide Covered by Medicare in Nevada? (2026)</h3>
+        <p class="text-sm text-[#6b7280] leading-relaxed">What Medicare covers, what is changing, and how the Vitality GLP-1 Bridge gets eligible members brand-name medication for about $50/month.</p>
+        <span class="inline-flex items-center gap-1.5 text-sm font-semibold mt-4" style="color:var(--c-cover)">Read guide <span class="arrow">&rarr;</span></span>
       </a>
-      <a href="https://youtube.com/@vitalityweightloss" target="_blank" rel="noopener noreferrer" aria-label="Vitality on YouTube" class="w-9 h-9 grid place-items-center rounded-xl border border-[#e6e9ee] bg-white text-[#6b7280] hover:border-[#0a6cf5]/45 hover:text-[#0a6cf5] hover:bg-[#0a6cf5]/5 active:scale-[0.97] transition-all">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-[18px] h-[18px]"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
+
+      <a href="../guides/vitality-phd-reading-list.html" class="res p-6" style="--c:var(--c-learn)">
+        <div class="flex items-start justify-between mb-4">
+          <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+          <span class="chip">Reading List</span>
+        </div>
+        <div class="text-[.7rem] font-semibold tracking-[.12em] uppercase mb-1.5" style="color:var(--c-learn)">Learning Center</div>
+        <h3 class="font-display text-lg font-bold mb-2 leading-snug">The Vitality PhD Reading List: 30 Books to Master Your Body</h3>
+        <p class="text-sm text-[#6b7280] leading-relaxed">The Personal Health Doctorate master reading list. 30 physician-curated books on nutrition, habits, mindset, sleep, and longevity.</p>
+        <span class="inline-flex items-center gap-1.5 text-sm font-semibold mt-4" style="color:var(--c-learn)">See the list <span class="arrow">&rarr;</span></span>
       </a>
     </div>
-    <div class="text-xs text-[#9aa0ab]">Vitality Weight Loss · 6140 Brent Thurman Way, Suite 100, Las Vegas, NV 89148 · (702) 602-5002</div>
+  </div>
+
+  <!-- MAGAZINE -->
+  <div class="tabpanel" id="panel-magazine" role="tabpanel" aria-labelledby="tab-magazine" hidden>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <a href="../magazine/ai-meal-planning.html" class="res p-6" style="--c:var(--c-mag)">
+        <div class="flex items-start justify-between mb-4">
+          <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M12 3a3 3 0 0 0-3 3v1a3 3 0 0 0-3 3 3 3 0 0 0 0 6 3 3 0 0 0 3 3 3 3 0 0 0 6 0 3 3 0 0 0 3-3 3 3 0 0 0 0-6 3 3 0 0 0-3-3V6a3 3 0 0 0-3-3z"/></svg></div>
+          <span class="chip">Magazine</span>
+        </div>
+        <div class="text-[.7rem] font-semibold tracking-[.12em] uppercase mb-1.5" style="color:var(--c-mag)">Nutrition &amp; AI Tools</div>
+        <h3 class="font-display text-lg font-bold mb-2 leading-snug">Your Personal Chef Is an AI Chatbot</h3>
+        <p class="text-sm text-[#6b7280] leading-relaxed">How five minutes with a free AI tool can replace an hour of meal planning, with the exact prompts to use, plus guidance for patients on GLP-1 medications.</p>
+        <span class="inline-flex items-center gap-1.5 text-sm font-semibold mt-4" style="color:var(--c-mag)">Read article <span class="arrow">&rarr;</span></span>
+      </a>
+      <div class="ghost">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 mb-3 opacity-70"><path d="M12 8v8M8 12h8"/><circle cx="12" cy="12" r="9"/></svg>
+        <p class="text-sm font-medium text-[#6b7280]">More Patient Wellness Series</p>
+        <p class="text-xs mt-1">New magazine features on the way.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOGSPOT -->
+  <div class="tabpanel" id="panel-blog" role="tabpanel" aria-labelledby="tab-blog" hidden>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <a href="../magazine/pcos-and-glp-1-weight-loss.html" class="res p-6" style="--c:var(--c-women)">
+        <div class="flex items-start justify-between mb-4">
+          <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M12 21.35 4.55 14A5 5 0 1 1 12 7.3 5 5 0 1 1 19.45 14z"/></svg></div>
+          <span class="chip">New</span>
+        </div>
+        <div class="text-[.7rem] font-semibold tracking-[.12em] uppercase mb-1.5" style="color:var(--c-women)">Women's Health</div>
+        <h3 class="font-display text-lg font-bold mb-2 leading-snug">PCOS and Weight Loss: Why Your Body Has Been Working Against You</h3>
+        <p class="text-sm text-[#6b7280] leading-relaxed">The insulin-resistance cycle behind PCOS, why standard diets stall, and how GLP-1 therapy changes the mechanism, not just the outcome.</p>
+        <span class="inline-flex items-center gap-1.5 text-sm font-semibold mt-4" style="color:var(--c-women)">Read article <span class="arrow">&rarr;</span></span>
+      </a>
+      <div class="ghost">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 mb-3 opacity-70"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <p class="text-sm font-medium text-[#6b7280]">Fresh posts monthly</p>
+        <p class="text-xs mt-1">New articles from the Vitality clinical team.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PHYSICIAN CREDIBILITY ══ -->
+<section class="max-w-5xl mx-auto px-6 pt-8 pb-14">
+  <div class="reveal glass rounded-3xl border border-[#e6e9ee] p-6 md:p-8 flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden">
+    <div class="absolute -top-16 -right-10 w-56 h-56 rounded-full bg-[#0a6cf5]/8 blur-3xl" aria-hidden="true"></div>
+    <img src="../assets/dr-debry.jpg" alt="Peter DeBry, MD" class="w-24 h-24 md:w-28 md:h-28 rounded-2xl object-cover object-top flex-shrink-0 ring-1 ring-[#e6e9ee]" onerror="this.style.display='none'">
+    <div class="relative">
+      <div class="inline-flex items-center gap-2 text-xs font-semibold tracking-[.14em] text-[#0a6cf5] uppercase mb-2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M9 12l2 2 4-4"/><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 3v0"/></svg>
+        Every resource, physician-reviewed
+      </div>
+      <p class="font-serif text-xl md:text-2xl leading-snug text-[#16201d]">No marketing claims, no hype. Every resource here is written to be honest, current, and clinically accurate, then reviewed by a physician before it goes live.</p>
+      <p class="text-sm text-[#6b7280] mt-3">Reviewed by <strong class="text-[#16201d] font-semibold">Peter DeBry, MD</strong> · Medical Director, Vitality Weight Loss</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CTA ══ -->
+<section class="max-w-5xl mx-auto px-6 pb-16">
+  <div class="reveal overflow-hidden rounded-3xl grid md:grid-cols-[1.4fr_1fr] items-stretch shadow-[0_30px_70px_-34px_rgba(10,60,168,.5)]">
+    <!-- left: blue message -->
+    <div class="relative flex flex-col justify-center px-8 py-12 md:p-14 text-white" style="background:linear-gradient(120deg,#0a3aa8 0%,#0a6cf5 46%,#4f46e5 100%)">
+      <div class="absolute -bottom-24 -left-16 w-72 h-72 rounded-full bg-white/10 blur-3xl" aria-hidden="true"></div>
+      <div class="relative">
+        <h2 class="font-display text-2xl md:text-4xl font-extrabold tracking-[-1px] leading-tight mb-3">Ready when you are.</h2>
+        <p class="text-white/85 text-base leading-relaxed mb-7 max-w-md">A Vitality physician will review your history and help you understand whether GLP-1 therapy is right for you. No pressure, just clarity.</p>
+        <div class="flex flex-wrap gap-3">
+          <a href="../intake.html" class="inline-flex items-center gap-2 bg-white text-[#0a6cf5] font-semibold text-sm px-6 py-3 rounded-xl hover:bg-white/90 transition">Start your intake <span>&rarr;</span></a>
+          <a href="tel:7026025002" class="inline-flex items-center gap-2 bg-white/15 border border-white/30 text-white font-semibold text-sm px-6 py-3 rounded-xl hover:bg-white/25 transition">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 3.07 9.5 19.79 19.79 0 0 1 .5 4.18 2 2 0 0 1 2.16 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L6.91 9.91a16 16 0 0 0 6.86 6.86l1.27-.64a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            (702) 602-5002
+          </a>
+        </div>
+      </div>
+    </div>
+    <!-- right: light photo panel (fringe disappears on white, like the original card) -->
+    <div class="relative flex items-end justify-center bg-gradient-to-b from-[#eef3fb] to-white pt-8 md:pt-6">
+      <img src="../assets/learning-woman.png" alt="Vitality patient" class="block w-48 md:w-full md:max-w-[300px] object-contain object-bottom select-none pointer-events-none">
+    </div>
+  </div>
+</section>
+
+<footer class="border-t border-[#e6e9ee] py-10 bg-[#f7f8fa]">
+  <div class="max-w-5xl mx-auto px-6">
+    <div class="flex items-center gap-3 mb-5">
+      <a href="https://www.instagram.com/vitalityweightloss" target="_blank" rel="noopener noreferrer" aria-label="Vitality on Instagram" class="soc soc-ig">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+      </a>
+      <a href="https://www.facebook.com/share/191EpTu4hF/" target="_blank" rel="noopener noreferrer" aria-label="Vitality on Facebook" class="soc soc-fb">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+      </a>
+      <a href="https://youtube.com/@vitalityweightloss" target="_blank" rel="noopener noreferrer" aria-label="Vitality on YouTube" class="soc soc-yt">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
+      </a>
+    </div>
+    <div class="text-xs text-[#9aa0ab] leading-relaxed">Vitality Weight Loss · 6140 Brent Thurman Way, Suite 100, Las Vegas, NV 89148 · <a href="tel:7026025002" class="text-[#0a6cf5] font-medium">(702) 602-5002</a></div>
   </div>
 </footer>
+
+<script>
+  // Reveal on scroll
+  (function(){
+    var els=document.querySelectorAll('.reveal');
+    if(!('IntersectionObserver' in window)||matchMedia('(prefers-reduced-motion:reduce)').matches){els.forEach(function(e){e.classList.add('in')});return;}
+    var io=new IntersectionObserver(function(en){en.forEach(function(x){if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target);}});},{rootMargin:'0px 0px -8% 0px'});
+    els.forEach(function(e){io.observe(e);});
+  })();
+
+  // Tabs
+  (function(){
+    var tabs=Array.prototype.slice.call(document.querySelectorAll('.tab'));
+    var panels={guides:document.getElementById('panel-guides'),magazine:document.getElementById('panel-magazine'),blog:document.getElementById('panel-blog')};
+    function activate(name){
+      tabs.forEach(function(t){var on=t.getAttribute('data-panel')===name;t.classList.toggle('on',on);t.setAttribute('aria-selected',on?'true':'false');t.tabIndex=on?0:-1;});
+      Object.keys(panels).forEach(function(k){var on=k===name;var p=panels[k];if(!p)return;p.classList.toggle('on',on);if(on){p.removeAttribute('hidden');}else{p.setAttribute('hidden','');}});
+    }
+    tabs.forEach(function(t,i){
+      t.addEventListener('click',function(){activate(t.getAttribute('data-panel'));});
+      t.addEventListener('keydown',function(e){
+        if(e.key==='ArrowRight'||e.key==='ArrowLeft'){
+          e.preventDefault();
+          var ni=(i+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+          tabs[ni].focus();activate(tabs[ni].getAttribute('data-panel'));
+        }
+      });
+    });
+  })();
+</script>
 <script src="/prelaunch.js" defer></script>
 </body>
 </html>

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="../assets/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCOS and Weight Loss: Why Your Body Has Been Working Against You | Vitality Weight Loss</title>
+<meta name="description" content="Why weight loss is harder with PCOS, the insulin-resistance cycle behind it, and how GLP-1 therapy (semaglutide, tirzepatide) changes the mechanism. Physician-reviewed by Peter DeBry, MD. Vitality Weight Loss, Las Vegas.">
+<link rel="canonical" href="https://vitalityweightloss.health/magazine/pcos-and-glp-1-weight-loss.html">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,500;1,600&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"MedicalWebPage",
+  "name":"PCOS and Weight Loss: Why Your Body Has Been Working Against You",
+  "description":"Why weight loss is harder with PCOS, the insulin-resistance cycle behind it, and how GLP-1 therapy changes the mechanism, not just the outcome.",
+  "url":"https://vitalityweightloss.health/magazine/pcos-and-glp-1-weight-loss.html",
+  "about":{"@type":"MedicalCondition","name":"Polycystic Ovary Syndrome"},
+  "reviewedBy":{"@type":"Physician","name":"Peter DeBry, MD"},
+  "publisher":{"@type":"MedicalClinic","name":"Vitality Weight Loss","url":"https://vitalityweightloss.health/","telephone":"+1-702-602-5002","address":{"@type":"PostalAddress","streetAddress":"6140 Brent Thurman Way, Suite 100","addressLocality":"Las Vegas","addressRegion":"NV","postalCode":"89148","addressCountry":"US"}}
+}
+</script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root{
+    --accent:#0a6cf5; --accent-dk:#0856c8;
+    --ink:#0f1f3d; --text:#16201d; --muted:#5b6472;
+    --border:#e6e9ee; --rose:#be185d; --rose-dk:#9d174d;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f7f8fa;
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Site header (brand chrome) ── */
+  .site-header {
+    position: sticky; top: 0; z-index: 40;
+    background: rgba(255,255,255,.85);
+    backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 13px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .brandlock { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .brandlock img { height: 30px; width: auto; }
+  .brandlock .wm { font-family:'Montserrat',sans-serif; display:flex; flex-direction:column; align-items:center; line-height:1; }
+  .brandlock .wm .v { font-weight:600; font-size:1.05rem; letter-spacing:.15em; text-transform:uppercase; color:var(--ink); }
+  .brandlock .wm .s { font-weight:500; font-size:.42rem; letter-spacing:.3em; text-transform:uppercase; color:var(--ink); margin-top:2px; }
+  .header-cta {
+    font-size: 13px; font-weight: 600; color: #fff; text-decoration: none;
+    background: var(--accent); padding: 8px 16px; border-radius: 11px;
+    transition: background .2s;
+  }
+  .header-cta:hover { background: var(--accent-dk); }
+
+  /* ── Page layout ── */
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 44px 24px 0; position: relative; }
+  .hero-tint {
+    position:absolute; inset:-44px 0 auto 0; height:360px; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(60% 60% at 15% 0%, rgba(10,108,245,.10), transparent 70%),
+      radial-gradient(50% 60% at 90% 5%, rgba(225,29,72,.09), transparent 70%);
+  }
+  article { position: relative; z-index: 1; }
+
+  .crumbs { font-size: 12.5px; color: var(--muted); margin-bottom: 24px; }
+  .crumbs a { color: var(--accent); text-decoration: none; }
+  .crumbs a:hover { text-decoration: underline; }
+
+  /* ── Article head ── */
+  .eyebrow {
+    font-family:'Montserrat',sans-serif;
+    font-size: 11px; font-weight: 700; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 16px;
+  }
+  h1.headline {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 42px; font-weight: 700; line-height: 1.12;
+    color: var(--ink); margin-bottom: 18px; letter-spacing: -.5px;
+  }
+  .subhead {
+    font-size: 18px; color: var(--muted); line-height: 1.6;
+    margin-bottom: 28px; border-bottom: 1px solid var(--border); padding-bottom: 24px;
+  }
+
+  /* ── Byline ── */
+  .byline { display: flex; align-items: center; gap: 12px; margin-bottom: 36px; }
+  .byline-dot {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(140deg,var(--accent),#4f46e5);
+    display: flex; align-items: center; justify-content: center;
+    font-family:'Montserrat',sans-serif; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .byline-text { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .byline-text strong { color: var(--text); font-weight: 600; }
+
+  /* ── Stat row ── */
+  .hero-stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 36px; }
+  .stat-card {
+    background: #fff; border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 14px; text-align: center;
+    box-shadow: 0 1px 2px rgba(16,24,40,.04), 0 14px 30px -22px rgba(16,24,40,.16);
+  }
+  .stat-num { font-family:'Montserrat',sans-serif; font-size: 30px; font-weight: 800; color: var(--accent); line-height: 1; margin-bottom: 6px; }
+  .stat-label { font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+  /* ── Body prose ── */
+  .article-body p { font-size: 16.5px; line-height: 1.8; color: var(--text); margin-bottom: 20px; }
+  .article-body h2 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 26px; font-weight: 700; color: var(--ink);
+    margin: 44px 0 16px; line-height: 1.25;
+  }
+  .divider { height: 1px; background: var(--border); margin: 38px 0; }
+
+  /* ── Pull quote ── */
+  .pull-quote { border-left: 3px solid var(--accent); margin: 32px 0; padding: 6px 0 6px 24px; }
+  .pull-quote p {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 21px !important; line-height: 1.5 !important;
+    color: var(--ink) !important; font-style: italic; margin: 0 !important; font-weight: 500;
+  }
+
+  /* ── Cycle box ── */
+  .cycle-box {
+    border: 1px solid var(--border); border-radius: 16px; padding: 24px 26px; margin: 28px 0;
+    background: #fff; box-shadow: 0 1px 2px rgba(16,24,40,.04), 0 18px 40px -26px rgba(16,24,40,.18);
+  }
+  .cycle-label { font-family:'Montserrat',sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+  .cycle-step { display: flex; gap: 14px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid #f0f2f5; }
+  .cycle-step:last-child { border-bottom: none; padding-bottom: 0; }
+  .cycle-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent); color: #fff; font-family:'Montserrat',sans-serif;
+    font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .cycle-text { font-size: 15px; color: var(--text); line-height: 1.6; }
+
+  /* ── Outcomes grid ── */
+  .outcomes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 24px 0; }
+  .outcome-card { border-radius: 13px; padding: 18px 20px; }
+  .outcome-card.blue { background: #eef4ff; border-left: 3px solid var(--accent); }
+  .outcome-card.rose { background: #fdf2f8; border-left: 3px solid var(--rose); }
+  .outcome-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; line-height: 1.3; }
+  .outcome-title.blue-text { color: var(--accent-dk); }
+  .outcome-title.rose-text { color: var(--rose-dk); }
+  .outcome-body { font-size: 13px; color: var(--muted); line-height: 1.55; }
+
+  /* ── Evidence box ── */
+  .evidence-box { background: #fff; border:1px solid var(--border); border-radius: 16px; padding: 26px; margin: 28px 0; box-shadow: 0 18px 40px -28px rgba(16,24,40,.2); }
+  .evidence-title { font-family:'Montserrat',sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 18px; }
+  .evidence-item { display: flex; gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--border); font-size: 14px; line-height: 1.6; color: var(--text); }
+  .evidence-item:last-child { border: none; padding-bottom: 0; }
+  .ev-pct { font-family:'Montserrat',sans-serif; font-size: 25px; font-weight: 800; color: var(--accent); line-height: 1; min-width: 54px; padding-top: 2px; }
+
+  /* ── CTA box ── */
+  .cta-box { border-radius: 18px; padding: 34px; margin: 40px 0 0; position: relative; overflow: hidden;
+    background: linear-gradient(125deg,#0a3aa8 0%,#0a6cf5 50%,#4f46e5 100%); }
+  .cta-box::after { content:""; position:absolute; width:280px; height:280px; border-radius:50%; background:rgba(255,255,255,.12); filter:blur(40px); bottom:-120px; right:-60px; }
+  .cta-box h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 25px; color: #fff; margin: 0 0 10px; font-weight: 700; position:relative; }
+  .cta-box p { color: rgba(255,255,255,.9); font-size: 15px; margin: 0 0 22px; line-height: 1.7; position:relative; }
+  .cta-contact { display: flex; gap: 12px; flex-wrap: wrap; position:relative; }
+  .cta-pill {
+    background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.32); border-radius: 100px;
+    padding: 10px 22px; font-size: 14px; font-weight: 600; color: #fff;
+    display: flex; align-items: center; gap: 8px; text-decoration: none; transition: background .2s;
+  }
+  .cta-pill:hover { background: rgba(255,255,255,.26); }
+  .cta-pill.solid { background:#fff; color:var(--accent); }
+  .cta-pill.solid:hover { background:rgba(255,255,255,.9); }
+  .cta-pill svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+  .disclaimer { font-size: 12.5px; color: #9aa0ab; line-height: 1.7; margin-top: 34px; padding-top: 20px; border-top: 1px solid var(--border); font-style: italic; }
+
+  /* ── Footer ── */
+  .site-footer { border-top: 1px solid var(--border); padding: 32px 24px; margin-top: 64px; background: #fff; }
+  .footer-inner { max-width: 720px; margin: 0 auto; }
+  .socials { display: flex; gap: 12px; margin-bottom: 18px; }
+  .soc { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; color: #fff; transition: transform .22s cubic-bezier(.34,1.32,.5,1), box-shadow .22s; }
+  .soc svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .soc:hover { transform: translateY(-3px) scale(1.05); }
+  .soc-ig { background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); }
+  .soc-ig:hover { box-shadow: 0 12px 26px -8px rgba(214,36,159,.6); }
+  .soc-fb { background: #1877F2; }
+  .soc-fb:hover { box-shadow: 0 12px 26px -8px rgba(24,119,242,.6); }
+  .soc-yt { background: #FF0000; }
+  .soc-yt:hover { box-shadow: 0 12px 26px -8px rgba(255,0,0,.55); }
+  .foot-meta { font-size: 12.5px; color: var(--muted); line-height: 1.8; }
+  .foot-meta a { color: var(--accent); text-decoration: none; font-weight: 500; }
+
+  /* ── Reveal ── */
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .8s cubic-bezier(.23,1,.32,1), transform .8s cubic-bezier(.23,1,.32,1); }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* ── Responsive ── */
+  @media (max-width: 560px) {
+    h1.headline { font-size: 30px; }
+    .hero-stat-row { grid-template-columns: 1fr 1fr; }
+    .hero-stat-row .stat-card:last-child { grid-column: 1 / -1; }
+    .outcomes-grid { grid-template-columns: 1fr; }
+    .cta-box { padding: 26px 22px; }
+    .brandlock .wm .v { font-size: .95rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .soc:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a href="../index.html" class="brandlock">
+    <img src="../assets/logo-icon.png" alt="Vitality Weight Loss">
+    <span class="wm"><span class="v">Vitality</span><span class="s">Weight Loss</span></span>
+  </a>
+  <a href="../intake.html" class="header-cta">Start your intake</a>
+</header>
+
+<main class="page-wrap">
+  <div class="hero-tint" aria-hidden="true"></div>
+  <article>
+    <nav class="crumbs"><a href="../free-resources/">Free Resources</a> &nbsp;&rsaquo;&nbsp; Women&rsquo;s Health</nav>
+
+    <p class="eyebrow">Women&rsquo;s Health &nbsp;&middot;&nbsp; Vitality Weight Loss</p>
+    <h1 class="headline">Your Body Isn&rsquo;t Broken.<br>It&rsquo;s Been Working Against You.</h1>
+    <p class="subhead">If losing weight with PCOS has always felt harder than it should, there&rsquo;s a reason. Here&rsquo;s what&rsquo;s actually happening inside your body, and why that&rsquo;s finally changed.</p>
+
+    <div class="byline">
+      <div class="byline-dot">VWL</div>
+      <div class="byline-text">
+        <strong>Reviewed by Peter DeBry, MD</strong> &nbsp;&middot;&nbsp; Vitality Weight Loss Clinical Team<br>
+        Las Vegas, Nevada &nbsp;&middot;&nbsp; (702) 602-5002
+      </div>
+    </div>
+
+    <div class="hero-stat-row reveal">
+      <div class="stat-card">
+        <div class="stat-num">1 in 10</div>
+        <div class="stat-label">women of reproductive age has PCOS</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">5%</div>
+        <div class="stat-label">body weight lost can restart your cycle</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">80%</div>
+        <div class="stat-label">of women normalized periods on semaglutide</div>
+      </div>
+    </div>
+
+    <div class="article-body">
+
+      <p>Picture this: you&rsquo;ve tried every diet. You&rsquo;ve eaten less, moved more, cut carbs, cut sugar, started over more times than you can count. And the scale barely moves. Meanwhile, your periods are unpredictable, your skin flares up, you&rsquo;re exhausted, and you feel like you&rsquo;re fighting your own body every single day.</p>
+
+      <p>If that sounds familiar, you probably have PCOS. And what you&rsquo;ve been experiencing is not a personal failing. It is a predictable result of a hormonal system that has been running against you in ways that sheer willpower simply cannot fix.</p>
+
+      <p>Here&rsquo;s what&rsquo;s actually going on, and why right now, for the first time, the medical tools exist to genuinely change it.</p>
+
+      <div class="divider"></div>
+
+      <h2>The real reason weight loss is harder with PCOS</h2>
+
+      <p>Polycystic ovary syndrome is named after the ovaries, but it&rsquo;s much more than a reproductive condition. At its core, PCOS is a metabolic disorder, and its engine is something called insulin resistance.</p>
+
+      <p>Normally, insulin acts like a key that lets your cells absorb glucose for energy. In PCOS, the cells stop responding properly. So the pancreas produces more and more insulin to force the same result, and that flood of excess insulin does something very specific: it tells your body to store fat. Constantly. Even when you&rsquo;re not overeating.</p>
+
+      <div class="pull-quote reveal">
+        <p>&ldquo;You were working hard at the wrong level. Dieting with unmanaged insulin resistance is like bailing out a boat without plugging the hole.&rdquo;</p>
+      </div>
+
+      <p>But it gets more layered than that. High insulin also signals the ovaries to produce excess testosterone and other androgens, the hormones behind irregular periods, acne, hair loss, and unwanted hair growth. And here&rsquo;s the cruel part: those elevated androgens make insulin resistance worse, which makes insulin levels rise further, which produces more androgens, and so the cycle spins.</p>
+
+      <div class="cycle-box reveal">
+        <p class="cycle-label">The PCOS vicious cycle</p>
+        <div class="cycle-step"><span class="cycle-num">1</span><span class="cycle-text">Insulin resistance forces the pancreas to overproduce insulin</span></div>
+        <div class="cycle-step"><span class="cycle-num">2</span><span class="cycle-text">Excess insulin stimulates the ovaries to produce too much testosterone</span></div>
+        <div class="cycle-step"><span class="cycle-num">3</span><span class="cycle-text">High testosterone suppresses ovulation and disrupts your cycle</span></div>
+        <div class="cycle-step"><span class="cycle-num">4</span><span class="cycle-text">Weight gain from insulin-driven fat storage worsens insulin resistance</span></div>
+        <div class="cycle-step"><span class="cycle-num">5</span><span class="cycle-text">The cycle restarts, harder to break each time</span></div>
+      </div>
+
+      <p>A 2025 review in Nature&rsquo;s <em>Scientific Reports</em> calls this the &ldquo;vicious cycle&rdquo; model of PCOS, and notes that it sustains itself regardless of how strictly you diet. That&rsquo;s not an excuse. That&rsquo;s physiology. And it&rsquo;s why the standard advice to simply eat less and move more produces such frustrating results for so many women with PCOS.</p>
+
+      <div class="divider"></div>
+
+      <h2>The thing nobody tells you: a little weight loss goes a long way</h2>
+
+      <p>Here&rsquo;s the good news hiding in all of that: because insulin resistance is the engine of the cycle, losing even a modest amount of weight can break it remarkably quickly. International PCOS clinical guidelines are clear on this, and the numbers are more encouraging than most people expect.</p>
+
+      <div class="outcomes-grid reveal">
+        <div class="outcome-card blue">
+          <p class="outcome-title blue-text">At 5% body weight lost</p>
+          <p class="outcome-body">Insulin resistance begins improving. Testosterone starts coming down. Periods begin to return to regularity.</p>
+        </div>
+        <div class="outcome-card blue">
+          <p class="outcome-title blue-text">At 10% body weight lost</p>
+          <p class="outcome-body">Ovulation is restored in the majority of women. Blood sugar, cholesterol, and blood pressure improve significantly.</p>
+        </div>
+        <div class="outcome-card rose">
+          <p class="outcome-title rose-text">Skin, hair, and acne</p>
+          <p class="outcome-body">As androgen levels fall with weight loss, many women see genuine improvement in hirsutism, acne, and hair thinning.</p>
+        </div>
+        <div class="outcome-card rose">
+          <p class="outcome-title rose-text">Mood and energy</p>
+          <p class="outcome-body">Depression and anxiety are documented complications of PCOS, and they improve measurably alongside metabolic recovery.</p>
+        </div>
+      </div>
+
+      <p>That&rsquo;s not 50 pounds. It&rsquo;s not reaching an ideal body weight. At 5 to 10% of your starting weight, your body starts to rebalance. Weight loss for PCOS isn&rsquo;t cosmetic. It&rsquo;s treating the root cause of nearly every symptom at once.</p>
+
+      <div class="divider"></div>
+
+      <h2>Why GLP-1 medications are a different kind of tool</h2>
+
+      <p>This is where things get genuinely exciting. GLP-1 medications, semaglutide (Wegovy, Ozempic) and tirzepatide (Zepbound, Mounjaro), do something that no diet or exercise program can do on its own: they directly improve insulin sensitivity at the cellular level.</p>
+
+      <p>They suppress appetite through the brain&rsquo;s hunger centers, useful for anyone trying to lose weight, but for women with PCOS specifically, they also improve how cells respond to insulin, which reduces the amount of insulin the pancreas needs to produce, which means less androgen stimulation from the ovaries. They work on the mechanism, not just the outcome.</p>
+
+      <p>The clinical results in PCOS patients have been striking enough that reproductive endocrinologists across the country now consider GLP-1 therapy a standard option. Here&rsquo;s what the research shows:</p>
+
+      <div class="evidence-box reveal">
+        <p class="evidence-title">What studies have found in PCOS patients</p>
+        <div class="evidence-item">
+          <span class="ev-pct">80%</span>
+          <span>of women with PCOS who had already failed a lifestyle program lost at least 5% of body weight on low-dose semaglutide in a 2023 clinical trial, and 80% of those women normalized their menstrual cycles within 6 months.</span>
+        </div>
+        <div class="evidence-item">
+          <span class="ev-pct">75%</span>
+          <span>restoration of ovulation was observed in larger semaglutide trials at higher doses over 6 to 12 months, alongside meaningful reductions in testosterone and insulin resistance.</span>
+        </div>
+        <div class="evidence-item">
+          <span class="ev-pct">~20%</span>
+          <span>mean body weight loss with tirzepatide in real-world clinical settings, exceeding semaglutide&rsquo;s effect and producing the greatest metabolic improvements seen in medical weight loss to date.</span>
+        </div>
+        <div class="evidence-item">
+          <span class="ev-pct">7&times;</span>
+          <span>increase in GLP-1 prescribing for women with PCOS between 2021 and 2025, reflecting a growing medical consensus that these medications belong in the standard of care for PCOS with obesity.</span>
+        </div>
+      </div>
+
+      <div class="pull-quote reveal">
+        <p>&ldquo;The women in that semaglutide study were specifically those who had already failed a lifestyle program. They were exactly like you, and 80% of them got their cycles back.&rdquo;</p>
+      </div>
+
+      <div class="divider"></div>
+
+      <h2>This is not your last try. It&rsquo;s your first fair shot.</h2>
+
+      <p>Every weight loss attempt you&rsquo;ve made before was made without the metabolic support that now exists. You weren&rsquo;t failing the program. The program was failing you, because it wasn&rsquo;t designed for what your body is actually doing.</p>
+
+      <p>Vitality Weight Loss is. We offer physician-supervised GLP-1 therapy paired with a structured behavioral program built around the habits and life skills that compound medication results into lasting change. We understand PCOS at the level of its root cause, and we won&rsquo;t tell you to simply try harder.</p>
+
+      <p>The science is clearer than it has ever been. The tools are more powerful than they have ever been. What happens next is up to you, but you don&rsquo;t have to figure it out alone.</p>
+
+      <div class="cta-box reveal">
+        <h2>Ready to talk? We&rsquo;re here.</h2>
+        <p>A Vitality physician will review your history, discuss your PCOS specifically, and help you understand whether GLP-1 therapy is right for you. No pressure. Just clarity.</p>
+        <div class="cta-contact">
+          <a class="cta-pill solid" href="../intake.html">Start your intake &rarr;</a>
+          <a class="cta-pill" href="tel:7026025002">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.5 19.79 19.79 0 01.5 4.18 2 2 0 012.16 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 9.91a16 16 0 006.86 6.86l1.27-.64a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+            (702) 602-5002
+          </a>
+        </div>
+      </div>
+
+      <p class="disclaimer">This article is provided for educational purposes by Vitality Weight Loss and does not constitute individualized medical advice. Individual outcomes vary. GLP-1 medications are prescribed following clinical evaluation. Always consult your physician regarding your specific diagnosis and treatment plan. Vitality Weight Loss &middot; Las Vegas, Nevada.</p>
+
+    </div>
+  </article>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="socials">
+      <a href="https://www.instagram.com/vitalityweightloss" target="_blank" rel="noopener noreferrer" aria-label="Vitality on Instagram" class="soc soc-ig">
+        <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+      </a>
+      <a href="https://www.facebook.com/share/191EpTu4hF/" target="_blank" rel="noopener noreferrer" aria-label="Vitality on Facebook" class="soc soc-fb">
+        <svg viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+      </a>
+      <a href="https://youtube.com/@vitalityweightloss" target="_blank" rel="noopener noreferrer" aria-label="Vitality on YouTube" class="soc soc-yt">
+        <svg viewBox="0 0 24 24"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
+      </a>
+    </div>
+    <div class="foot-meta">
+      <strong style="color:var(--ink)">Vitality Weight Loss</strong> &nbsp;&middot;&nbsp; 6140 Brent Thurman Way, Suite 100, Las Vegas, NV 89148<br>
+      <a href="tel:7026025002">(702) 602-5002</a> &nbsp;&middot;&nbsp; <a href="../free-resources/">More free resources &rarr;</a><br><br>
+      &copy; 2026 Vitality Weight Loss. All rights reserved.
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    var els=document.querySelectorAll('.reveal');
+    if(!('IntersectionObserver' in window)||matchMedia('(prefers-reduced-motion:reduce)').matches){els.forEach(function(e){e.classList.add('in')});return;}
+    var io=new IntersectionObserver(function(en){en.forEach(function(x){if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target);}});},{rootMargin:'0px 0px -8% 0px'});
+    els.forEach(function(e){io.observe(e);});
+  })();
+</script>
+<script src="/ga.js" defer></script>
+</body>
+</html>
