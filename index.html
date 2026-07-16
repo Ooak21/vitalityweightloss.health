@@ -465,7 +465,7 @@
 </section>
 
 <section id="programs" class="section py-24 bg-[#0089c0] relative overflow-hidden">
-  <img src="assets/start-figure.jpg" alt="" class="absolute inset-0 w-full h-full object-cover pointer-events-none select-none" style="object-position:right bottom;transform:translateX(18%)">
+  <img src="assets/start-figure.jpg" alt="" class="hidden lg:block absolute inset-0 w-full h-full object-cover pointer-events-none select-none" style="object-position:right bottom;transform:translateX(18%)">
   <div class="max-w-7xl mx-auto px-6 md:px-8 relative z-10 lg:pr-[360px]">
     <div class="max-w-2xl mb-14">
       <span class="text-xs font-semibold tracking-[0.18em] text-white/80 uppercase">What's included</span>
@@ -492,6 +492,12 @@
       .pillar-tab .pic{font-size:1.7rem;display:block;margin-bottom:.35rem;}
       .pillar-panel{grid-area:1 / 1;transition:opacity .28s ease;}
       .pillar-panel:not(.on){opacity:0;pointer-events:none;}
+      /* connector from the active tab down to the box */
+      #pillarConnector{display:none;}
+      @media(min-width:1024px){
+        #pillarConnector{display:block;position:absolute;top:-1.25rem;left:0;height:1.25rem;width:3px;border-radius:3px;background:#fff;transform:translateX(-50%);transition:left .34s cubic-bezier(.23,1,.32,1);pointer-events:none;}
+        #pillarConnector::before{content:'';position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:6px solid #fff;}
+      }
     </style>
     <div id="pillarTabs" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5 max-w-3xl">
       <button type="button" data-p="0" class="pillar-tab on"><span class="font-display font-semibold text-[13px] leading-tight">Behavioral Therapy</span></button>
@@ -499,7 +505,8 @@
       <button type="button" data-p="2" class="pillar-tab"><span class="font-display font-semibold text-[13px] leading-tight">Registered Dietitian</span></button>
       <button type="button" data-p="3" class="pillar-tab"><span class="font-display font-semibold text-[13px] leading-tight">Fitness Coordinator</span></button>
     </div>
-    <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl max-w-3xl grid">
+    <div id="pillarBox" class="relative bg-white rounded-3xl p-6 md:p-8 shadow-xl max-w-3xl grid">
+      <span id="pillarConnector" aria-hidden="true"></span>
       <div class="pillar-panel on" data-pp="0">
         <h3 class="font-display text-xl font-semibold mb-1.5 text-[#16201d]">Intensive Behavioral Therapy (IBT)</h3>
         <p class="text-[#4b5563] text-[14px] mb-4">Willpower runs out; habit engineering doesn't. Every Vitality patient gets our structured IBT protocol that rewires triggers, routines, and rewards.</p>
@@ -542,14 +549,30 @@
         </ul>
       </div>
     </div>
+    <!-- mobile: she's off-screen in the desktop cover on small screens, so show her framed here -->
+    <div class="lg:hidden -mx-6 mt-10 overflow-hidden">
+      <img src="assets/start-figure.jpg" alt="" aria-hidden="true" class="w-full h-44 object-cover select-none pointer-events-none" style="object-position:right center">
+    </div>
     <script>
       (function(){
         var tabs=document.querySelectorAll('#pillarTabs .pillar-tab');
         var panels=document.querySelectorAll('.pillar-panel');
+        var box=document.getElementById('pillarBox');
+        var conn=document.getElementById('pillarConnector');
+        function place(t){
+          if(!conn||!box||!t)return;
+          var br=box.getBoundingClientRect(), tr=t.getBoundingClientRect();
+          conn.style.left=(tr.left+tr.width/2-br.left)+'px';
+        }
+        function current(){ return document.querySelector('#pillarTabs .pillar-tab.on')||tabs[0]; }
         tabs.forEach(function(t){ t.addEventListener('click',function(){
           tabs.forEach(function(x){x.classList.remove('on');}); t.classList.add('on');
           panels.forEach(function(pp){ pp.classList.toggle('on', pp.getAttribute('data-pp')===t.getAttribute('data-p')); });
+          place(t);
         }); });
+        window.addEventListener('resize', function(){ place(current()); });
+        window.addEventListener('load', function(){ place(current()); });
+        requestAnimationFrame(function(){ place(current()); });
       })();
     </script>
   </div>
