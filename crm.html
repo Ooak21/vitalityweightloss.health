@@ -1887,13 +1887,23 @@
   addEventListener('keydown', e=>{ if(e.key==='Escape' && boardOpen) toggleBoard(); });
   function boardCard(p){
     const ch = {phone:'📞',web:'🌐',chat:'💬'}[p.channel]||'';
-    const cold = p.last_activity && (Date.now()-p.last_activity > 7*864e5) && stageOf(p)!=='churned';
+    const isNew = stageOf(p)==='new_inquiry';                    // brand-new, not yet worked
+    const dropTs = p.created || p.last_activity;                 // stable drop-in time
+    const actTs  = p.last_activity || p.created;                 // last touch, falls back to drop-in so age is never blank
+    const cold = !isNew && actTs && (Date.now()-actTs > 7*864e5) && stageOf(p)!=='churned';
     const na = p.next_appt ? fmtDT(p.next_appt) : '';
     const nm = ((p.first||'')+' '+(p.last||'')).trim() || (p.display_id||'Patient');
-    return `<div draggable="true" ondragstart="dragCard(event,'${p.id}')" onclick="openFromBoard('${p.id}')" class="bg-white border border-[#e6e9ee] rounded-lg p-2.5 cursor-pointer hover:border-[#0a6cf5]/60 hover:shadow-sm transition">
-      <div class="flex items-center justify-between gap-1"><div class="text-sm font-semibold text-[#16201d] truncate">${esc(nm)}</div>${ch?`<span title="${p.channel} inquiry" class="flex-shrink-0">${ch}</span>`:''}</div>
+    const ageHtml = isNew
+      ? `<span class="text-[#0a7a3d] font-semibold flex-shrink-0" title="Waiting since it dropped in">⏳ ${dropTs?rel(new Date(dropTs).toISOString()):'just now'}</span>`
+      : (cold ? '<span class="text-[#be123c] flex-shrink-0" title="No activity in 7+ days">● cold</span>'
+              : (actTs?`<span class="text-[#9aa0ab] flex-shrink-0">${rel(new Date(actTs).toISOString())}</span>`:''));
+    return `<div draggable="true" ondragstart="dragCard(event,'${p.id}')" onclick="openFromBoard('${p.id}')" class="rounded-lg p-2.5 cursor-pointer hover:shadow-sm transition ${isNew?'bg-[#f0fdf4] border-2 border-[#0a7a3d]/70 hover:border-[#0a7a3d]':'bg-white border border-[#e6e9ee] hover:border-[#0a6cf5]/60'}">
+      <div class="flex items-center justify-between gap-1">
+        <div class="text-sm font-semibold text-[#16201d] truncate">${esc(nm)}</div>
+        <div class="flex items-center gap-1 flex-shrink-0">${isNew?'<span class="text-[9px] font-bold uppercase tracking-wide text-white bg-[#0a7a3d] rounded px-1 py-0.5">New</span>':''}${ch?`<span title="${p.channel} inquiry">${ch}</span>`:''}</div>
+      </div>
       <div class="text-[11px] text-[#6b7280] mt-0.5 truncate">${PROG[p.program]||p.program||'No program'}</div>
-      <div class="flex items-center justify-between mt-1.5 text-[10px] gap-1">${na?`<span class="text-[#0a6cf5] truncate">📅 ${na}</span>`:'<span></span>'}${cold?'<span class="text-[#be123c] flex-shrink-0" title="No activity in 7+ days">● cold</span>':(p.last_activity?`<span class="text-[#9aa0ab] flex-shrink-0">${rel(new Date(p.last_activity).toISOString())}</span>`:'')}</div>
+      <div class="flex items-center justify-between mt-1.5 text-[10px] gap-1">${na?`<span class="text-[#0a6cf5] truncate">📅 ${na}</span>`:'<span></span>'}${ageHtml}</div>
     </div>`;
   }
   function renderBoard(){
