@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+
+# Internal app / auth surfaces (no SEO value, keep crawlers focused on marketing + content)
+Disallow: /crm.html
+Disallow: /admin.html
+Disallow: /portal.html
+Disallow: /portal-login.html
+Disallow: /login.html
+Disallow: /set-password.html
+Disallow: /rewards.html
+Disallow: /m.html
+Disallow: /sequences.html
+Disallow: /templates.html
+Disallow: /checkin.html
+
+Sitemap: https://vitalityweightloss.health/sitemap.xml
