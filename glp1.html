@@ -910,7 +910,7 @@ const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
 function save() {
   // Never persist the government ID image to localStorage — it's PHI and must not sit at
   // rest in the browser. It stays in memory for the session only (used in the /pay payload).
-  const { idImageBase64, ...persist } = state;
+  const { idImageBase64, insuranceCardBase64, ...persist } = state;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(persist));
 }
 
@@ -1643,6 +1643,37 @@ const flow = [
     idWrap.appendChild(h('div', { class:'sig-meta' }, ['Required. Transmitted over TLS and attached to your protected health record for Dr. DeBry to verify. Never sold or used for advertising.']));
     p.appendChild(idWrap);
 
+    // INSURANCE CARD (optional): same HEIC-safe pipeline as the ID; attached to the chart. Optional so
+    // a cash-pay patient without a card is never blocked from submitting.
+    const insWrap = h('div', { style:'margin:14px 0 4px;' });
+    insWrap.appendChild(h('div', { class:'sig-label' }, ['Insurance card (optional)']));
+    const insTile = h('label', { style:'display:flex;gap:12px;align-items:center;padding:14px;border:1.5px dashed var(--line);border-radius:12px;cursor:pointer;background:var(--white);' });
+    const insStatus = h('div', { style:'font-size:13px;line-height:1.4;color:var(--muted);' }, [state.insuranceCardBase64 ? '✓ Insurance card added' : 'Tap to upload or photograph the front of your insurance card']);
+    if (state.insuranceCardBase64) { insStatus.style.color = '#0a7d3a'; insTile.style.borderStyle = 'solid'; }
+    const insInput = h('input', { type:'file', accept:'image/*', capture:'environment', style:'display:none;' });
+    insInput.onchange = async (e) => {
+      const file = e.target.files && e.target.files[0]; if (!file) return;
+      insStatus.textContent = 'Processing photo...'; insStatus.style.color = 'var(--muted)';
+      try {
+        const jpeg = await toUploadableImage(file);          // HEIC-safe + downscaled JPEG
+        if (!jpeg) throw new Error('could not read image');
+        state.insuranceCardBase64 = await fileToBase64(jpeg);
+        save();
+        insStatus.textContent = '✓ Insurance card added'; insStatus.style.color = '#0a7d3a';
+        insTile.style.borderStyle = 'solid';
+      } catch (err) {
+        console.error('Insurance card upload failed', err);
+        insStatus.textContent = 'Could not read that photo. Try again, or use a clear JPEG or PNG.';
+        insStatus.style.color = '#c0392b';
+      }
+    };
+    insTile.appendChild(h('span', { style:'font-size:24px;flex:none;' }, ['💳']));
+    insTile.appendChild(insStatus);
+    insTile.appendChild(insInput);
+    insWrap.appendChild(insTile);
+    insWrap.appendChild(h('div', { class:'sig-meta' }, ['Optional. If you have insurance, a photo of your card helps us check your coverage. Transmitted over TLS and attached to your protected health record.']));
+    p.appendChild(insWrap);
+
     const sig = h('div', { class:'sig-wrap' });
     sig.appendChild(h('div', { class:'sig-label' }, ['Type your full legal name to sign']));
     const sigPrev = h('div', { class:'sig-preview' + (state.sigName ? '' : ' empty') });
@@ -2121,6 +2152,7 @@ function athenaPayload() {
     attestation: state.attestationRecord || null,
     clinical: state.clinicalRecord || null,
     idImageBase64: state.idImageBase64 || undefined,   // front-of-ID JPEG → athena driver's-license upload
+    insuranceCardBase64: state.insuranceCardBase64 || undefined,   // insurance card JPEG → chart Documents
   };
 }
 async function pollPaymentStatus(ref) {
