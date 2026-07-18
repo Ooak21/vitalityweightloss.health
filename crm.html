@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- 3D body viz (same stack as the IBS neuro scanner) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -3708,6 +3708,11 @@ HARD RULES:
       controls.autoRotate=true; controls.autoRotateSpeed=1.15; controls.target.set(0,0,0);
       mounted=true; const ld=document.getElementById('bdLoading'); if(ld)ld.style.display='none';
       this.resize(); loop(); tryGLB();
+      // Robust against mounting before the stage is laid out (tab switch, fresh load, or a different
+      // screen like the clinic TV): observe the container and re-size whenever it gets/changes
+      // dimensions, so the canvas can never stay blank. Plus two frames to catch the immediate layout.
+      try { if(window.ResizeObserver){ const ro=new ResizeObserver(()=>VBODY.resize()); ro.observe(el); } } catch(_){}
+      requestAnimationFrame(()=>{ VBODY.resize(); requestAnimationFrame(()=>VBODY.resize()); });
     },
     bind(p){ patient=p; refresh(); },
     setMode(m){ mode=m; const a=document.getElementById('bdLean'),b=document.getElementById('bdFat');
