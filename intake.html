@@ -198,6 +198,46 @@ const PRICING = {
 const PHARMACY = { name: 'a USA-licensed 503A compounding pharmacy', license: '', city: 'Las Vegas, NV' };
 const CLINICIAN = { name: 'Peter DeBry, MD', npi: '1831137991' };
 
+// --- Robust photo upload (HEIC-safe). iPhones shoot HEIC, which a bare new Image() cannot decode.
+// Convert HEIC to JPEG (heic2any), then downscale via canvas. Ported from portal.html. ---
+let __heicPromise = null;
+function ensureHeic2any(){
+  if (window.heic2any) return Promise.resolve(window.heic2any);
+  if (__heicPromise) return __heicPromise;
+  __heicPromise = new Promise((res)=>{
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+    s.onload=()=>res(window.heic2any||null); s.onerror=()=>res(null);
+    document.head.appendChild(s);
+  });
+  return __heicPromise;
+}
+function reencodeToJpeg(blob, maxPx){
+  return new Promise((resolve)=>{
+    const url=URL.createObjectURL(blob); const img=new Image();
+    img.onload=()=>{
+      let w=img.naturalWidth,h=img.naturalHeight; const scale=Math.min(1,maxPx/Math.max(w,h));
+      w=Math.max(1,Math.round(w*scale)); h=Math.max(1,Math.round(h*scale));
+      const c=document.createElement('canvas'); c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h); URL.revokeObjectURL(url);
+      c.toBlob((bl)=>resolve(bl?new File([bl],'photo.jpg',{type:'image/jpeg'}):null),'image/jpeg',0.88);
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(url); resolve(null); };
+    img.src=url;
+  });
+}
+async function toUploadableImage(file){
+  let working=file;
+  const isHeic=/heic|heif/i.test(file.type||'')||/\.(heic|heif)$/i.test(file.name||'');
+  if (isHeic){
+    const heic=await ensureHeic2any();
+    if (heic){ try{ const out=await heic({ blob:file, toType:'image/jpeg', quality:0.9 }); working=new File([Array.isArray(out)?out[0]:out],'photo.jpg',{type:'image/jpeg'}); }catch(e){ console.warn('HEIC convert failed:', e); } }
+  }
+  try{ const jpeg=await reencodeToJpeg(working, 1600); if (jpeg && jpeg.size>0) return jpeg; }catch(e){}
+  return working;
+}
+function fileToBase64(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=()=>rej(new Error('read failed')); r.readAsDataURL(file); }); }
+
 // ELIGIBILITY (demo scaffold) ------------------------------------------------
 // Medical GLP-1 eligibility = cleared every hard-stop screen above (no disqualify).
 // MEDICARE GLP-1 BRIDGE PLACEHOLDER CRITERIA. Not yet clinician-confirmed.
@@ -266,7 +306,7 @@ function computeMedicareBridge(s) {
 // STATE ----------------------------------------------------------------------
 const STORAGE_KEY = 'vitality_glp1_intake_v1';
 const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function save() { const { idImageBase64, insuranceCardBase64, ...persist } = state; localStorage.setItem(STORAGE_KEY, JSON.stringify(persist)); }
 
 let currentIdx = 0;
 const root = document.getElementById('root');
@@ -973,6 +1013,52 @@ const flow = [
     sig.appendChild(h('div', { class:'sig-meta' }, ['By typing your name you sign under E-SIGN, UETA, and Nevada law. Your typed name has the same legal effect as a handwritten signature. A signed copy will be emailed to you.']));
     p.appendChild(sig);
 
+    // ID + insurance-card capture (both optional, HEIC-safe). Attached to the chart Documents so the
+    // provider can verify identity + coverage. Optional so the general intake funnel is never blocked.
+    const idWrap = h('div', { style:'margin:18px 0 4px;' });
+    idWrap.appendChild(h('div', { class:'sig-label' }, ['Photo of your government-issued ID (optional)']));
+    const idTile = h('label', { style:'display:flex;gap:12px;align-items:center;padding:14px;border:1.5px dashed var(--line);border-radius:12px;cursor:pointer;background:var(--white);' });
+    const idStatus = h('div', { style:'font-size:13px;line-height:1.4;color:var(--muted);' }, [state.idImageBase64 ? '✓ ID photo added' : 'Tap to upload or photograph the front of your ID']);
+    if (state.idImageBase64) { idStatus.style.color = '#0a7d3a'; idTile.style.borderStyle = 'solid'; }
+    const idInput = h('input', { type:'file', accept:'image/*', capture:'environment', style:'display:none;' });
+    idInput.onchange = async (e) => {
+      const file = e.target.files && e.target.files[0]; if (!file) return;
+      idStatus.textContent = 'Processing photo...'; idStatus.style.color = 'var(--muted)';
+      try {
+        const jpeg = await toUploadableImage(file);
+        if (!jpeg) throw new Error('could not read image');
+        state.idImageBase64 = await fileToBase64(jpeg); save();
+        idStatus.textContent = '✓ ID photo added'; idStatus.style.color = '#0a7d3a'; idTile.style.borderStyle = 'solid';
+      } catch (err) { console.error('ID upload failed', err); idStatus.textContent = 'Could not read that photo. Try again, or use a clear JPEG or PNG.'; idStatus.style.color = '#c0392b'; }
+    };
+    idTile.appendChild(h('span', { style:'font-size:24px;flex:none;' }, ['🪪']));
+    idTile.appendChild(idStatus); idTile.appendChild(idInput);
+    idWrap.appendChild(idTile);
+    idWrap.appendChild(h('div', { class:'sig-meta' }, ['Optional. Transmitted over TLS and attached to your protected health record. Never sold or used for advertising.']));
+    p.appendChild(idWrap);
+
+    const insWrap = h('div', { style:'margin:12px 0 4px;' });
+    insWrap.appendChild(h('div', { class:'sig-label' }, ['Insurance card (optional)']));
+    const insTile = h('label', { style:'display:flex;gap:12px;align-items:center;padding:14px;border:1.5px dashed var(--line);border-radius:12px;cursor:pointer;background:var(--white);' });
+    const insStatus = h('div', { style:'font-size:13px;line-height:1.4;color:var(--muted);' }, [state.insuranceCardBase64 ? '✓ Insurance card added' : 'Tap to upload or photograph the front of your insurance card']);
+    if (state.insuranceCardBase64) { insStatus.style.color = '#0a7d3a'; insTile.style.borderStyle = 'solid'; }
+    const insInput = h('input', { type:'file', accept:'image/*', capture:'environment', style:'display:none;' });
+    insInput.onchange = async (e) => {
+      const file = e.target.files && e.target.files[0]; if (!file) return;
+      insStatus.textContent = 'Processing photo...'; insStatus.style.color = 'var(--muted)';
+      try {
+        const jpeg = await toUploadableImage(file);
+        if (!jpeg) throw new Error('could not read image');
+        state.insuranceCardBase64 = await fileToBase64(jpeg); save();
+        insStatus.textContent = '✓ Insurance card added'; insStatus.style.color = '#0a7d3a'; insTile.style.borderStyle = 'solid';
+      } catch (err) { console.error('Insurance card upload failed', err); insStatus.textContent = 'Could not read that photo. Try again, or use a clear JPEG or PNG.'; insStatus.style.color = '#c0392b'; }
+    };
+    insTile.appendChild(h('span', { style:'font-size:24px;flex:none;' }, ['💳']));
+    insTile.appendChild(insStatus); insTile.appendChild(insInput);
+    insWrap.appendChild(insTile);
+    insWrap.appendChild(h('div', { class:'sig-meta' }, ['Optional. If you have insurance, a photo of your card helps us check your coverage.']));
+    p.appendChild(insWrap);
+
     const submit = h('button', { class:'cta cta-green', type:'button', id:'submitBtn', disabled:'true' }, [
       document.createTextNode('Submit & Continue to Payment')
     ]);
@@ -1123,6 +1209,11 @@ async function submitIntake() {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: state.email, first: state.firstName, last: state.lastName, phone: state.phone, tags, requestPortalLogin: true,
+        sex: state.sex || undefined,
+        addr_line1: state.addrLine1 || undefined, addr_line2: state.addrLine2 || undefined,
+        addr_city: state.addrCity || undefined, addr_state: state.addrState || undefined, addr_zip: state.addrZip || undefined,
+        idImageBase64: state.idImageBase64 || undefined,
+        insuranceCardBase64: state.insuranceCardBase64 || undefined,
         prefs: {
           food_allergies: state.foodAllergies || '', diet_style: state.dietStyle || '', dislikes: state.dislikes || '',
           injuries: state.injuries || '', training_location: state.trainingLocation || '', equipment: state.equipment || '', activity: state.activity || '',
