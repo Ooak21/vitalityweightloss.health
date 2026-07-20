@@ -1030,8 +1030,7 @@
       const r=await fetch(`${CONVEX_URL}/gcal-freebusy`,{ method:'POST', headers: await convexHeaders(), body: JSON.stringify({ providers: provs, timeMin, timeMax }) });
       const j=await r.json();
       schedBusy=(j.ok && j.configured)?(j.busy||{}):{};
-      console.info('[sched busy]', schedView, 'providers=', provs, 'configured=', j.configured, 'busyKeys=', Object.keys(schedBusy), 'raw=', j);
-    }catch(e){ schedBusy={}; console.warn('[sched busy] fetch failed', e); }
+    }catch(e){ schedBusy={}; }
     renderSchedule();
   }
   function schedBusyOn(day){
