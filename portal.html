@@ -126,6 +126,8 @@ async function api(payload){
       if (a.action === 'load')       return await convex.query('portal:loadPortal', {});
       if (a.action === 'add_log')    return await convex.mutation('portal:addLog', { kind:a.kind, value_num:a.value_num, unit:a.unit, body:a.body });
       if (a.action === 'photo_upload_url') return await convex.mutation('portal:photoUploadUrl', {});
+      if (a.action === 'lab_upload_url') return await convex.mutation('portal:labUploadUrl', {});
+      if (a.action === 'record_lab') return await convex.mutation('portal:recordLab', { storage_id:a.storage_id, filename:a.filename, content_type:a.content_type, size:a.size });
       if (a.action === 'send_message') return await convex.mutation('portal:sendMessage', { body:a.body });
       if (a.action === 'mark_messages_read') return await convex.mutation('portal:markMessagesRead', {});
       if (a.action === 'mint_token') return await convex.mutation('portal:mintToken', {});
@@ -669,6 +671,22 @@ function render(){
     <p id="phMsg" class="text-[11px] text-[#9aa0ab] mt-2 text-center">Stored privately · visible only to you and your care team</p>
   </div></details>`;
 
+  // Lab results: labs aren't required for async GLP-1 care, but patients may upload prior results (or
+  // results they obtain). Anything uploaded opens a review task for Dr. DeBry and lands on the chart
+  // Documents tab. Files stay private (Convex storage), surfaced only inside this patient's authed payload.
+  const labList=(DATA.labs||[]);
+  const labRows=labList.length?labList.map(l=>{
+    const dt=l.created_at?new Date(l.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
+    return '<div class="flex items-center justify-between gap-2 py-2 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm font-medium truncate">'+esc(l.filename||'Lab result')+'</div><div class="text-[11px] text-[#9aa0ab]">Uploaded '+esc(dt)+' · under review</div></div>'+(l.url?'<a href="'+l.url+'" target="_blank" rel="noopener" class="text-xs font-semibold text-[#0a6cf5] shrink-0">View</a>':'')+'</div>';
+  }).join(''):'';
+  const labs=`<details class="card overflow-hidden"><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Lab results</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
+    <p class="text-sm text-[#6b7280] mb-3">Labs aren't required for your program, but they help us care for you. If you've had blood work in the last 6 months, upload it here and Dr. DeBry will review it. No recent labs? Message us and we'll point you to where you can get them.</p>
+    ${labRows?`<div class="mb-3">${labRows}</div>`:''}
+    <input id="labFile" type="file" accept="application/pdf,image/*,.heic,.heif" class="hidden">
+    <button id="labBtn" class="w-full px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Upload lab results</button>
+    <p id="labMsg" class="text-[11px] text-[#9aa0ab] mt-2 text-center">PDF or photo · stored privately, reviewed by your provider</p>
+  </div></details>`;
+
   const TEAM=[{n:'Dr. Peter DeBry, MD',r:'Medical Director · Obesity Medicine',img:'assets/debry.jpg'},{n:'Richard DeVera, NP',r:'Nurse Practitioner',img:'assets/devera.jpg',pos:'object-top'},{n:'Ana Trujillo',r:'Fitness Coordinator',img:'assets/ana-trujillo.jpg',pos:'object-[50%_50%]'}];
   const team=`<section class="card p-6"><h2 class="font-display text-lg font-semibold mb-3">Your care team</h2><div class="grid grid-cols-3 gap-4">${TEAM.map(t=>`<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-4 text-center"><img src="${t.img}" alt="${esc(t.n)}" loading="lazy" class="h-16 w-16 rounded-full object-cover ${t.pos||''} mx-auto mb-2 border border-[#e6e9ee]"><div class="text-sm font-semibold leading-tight">${esc(t.n)}</div><div class="text-xs text-[#6b7280] mt-1 leading-tight">${esc(t.r)}</div></div>`).join('')}</div></section>`;
 
@@ -719,7 +737,7 @@ function render(){
     <p class="text-sm text-[#6b7280] mt-1">${PROGRAMS[p.program]||'Your program'} · <span class="capitalize">${esc((p.status||'').replace('_',' '))}</span></p></div>
     <div class="grid lg:grid-cols-3 gap-6 items-start">
       <div class="lg:col-span-2 space-y-6">${approved}${team}${progress}${inbodyReport}${scanHistory}<section class="card p-6 flex items-center justify-between gap-3"><div><h2 class="font-display text-lg font-semibold">Your Personal Transformation Plan</h2><p class="text-sm text-[#6b7280] mt-0.5">Your complete Personal Transformation Plan: InBody breakdown, every metric decoded, nutrition, workouts, and habits.</p></div><button onclick="openMyHandbook()" class="shrink-0 px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">📖 Open</button></section></div>
-      <div class="space-y-6">${appt}${messages}${injection}${refill}${sideEffects}${checkin}${measurements}${progressPhotos}${logging}${rewards}${companion}</div>
+      <div class="space-y-6">${appt}${messages}${injection}${refill}${labs}${sideEffects}${checkin}${measurements}${progressPhotos}${logging}${rewards}${companion}</div>
     </div>`;
   document.querySelectorAll('.reqBtn').forEach(b=>b.onclick=async()=>{
     b.disabled=true; b.textContent='Sending to Dr. DeBry…';
@@ -797,6 +815,30 @@ function render(){
           await refresh();
         }catch(e){ _pb.disabled=false; _pb.textContent='Add a progress photo'; if(_pm) _pm.textContent='Upload failed. Please try again.'; }
         finally{ try{ _pf.value=''; }catch(_){} }
+      };
+    } }
+  // Lab upload: PDFs upload raw (readable); photos convert HEIC->JPEG for viewability. Records to the
+  // chart + opens a Dr. DeBry review task via portal:recordLab.
+  { const _lf=document.getElementById('labFile'), _lb=document.getElementById('labBtn'), _lm=document.getElementById('labMsg');
+    if(_lb&&_lf){
+      _lb.onclick=()=>_lf.click();
+      _lf.onchange=async()=>{
+        const f=_lf.files&&_lf.files[0]; if(!f) return;
+        const okType=/^(application\/pdf|image\/)/.test(f.type||'')||/\.(pdf|heic|heif|jpe?g|png|webp|tiff?)$/i.test(f.name||'');
+        if(!okType){ if(_lm) _lm.textContent='Please choose a PDF or photo of your labs.'; return; }
+        if(f.size>30*1024*1024){ if(_lm) _lm.textContent='That file is too large (30MB max).'; return; }
+        _lb.disabled=true; _lb.textContent='Uploading…'; if(_lm) _lm.textContent='Uploading securely…';
+        try{
+          const upFile=(await toUploadableImage(f))||f;   // PDF passes through raw; HEIC/large photo -> viewable JPEG
+          const up=await api({action:'lab_upload_url'});
+          const url=up&&(up.uploadUrl||up.url); if(!url) throw new Error('no upload url');
+          const res=await fetch(url,{method:'POST',headers:{'Content-Type':upFile.type||'application/octet-stream'},body:upFile});
+          const j=await res.json(); if(!res.ok||!j.storageId) throw new Error('upload failed');
+          await api({action:'record_lab',storage_id:j.storageId,filename:f.name,content_type:upFile.type,size:upFile.size});
+          if(_lm) _lm.textContent='Uploaded ✓ Your provider will review it.';
+          await refresh();
+        }catch(e){ _lb.disabled=false; _lb.textContent='Upload lab results'; if(_lm) _lm.textContent='Upload failed. Please try again.'; }
+        finally{ try{ _lf.value=''; }catch(_){} }
       };
     } }
   // food search (USDA FoodData Central, no PHI) -> log macros against plan target
