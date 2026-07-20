@@ -1001,9 +1001,12 @@
       <div class="text-[10px] font-semibold text-[#16201d] truncate leading-tight">${time} ${esc(a.name)}</div>
       <div class="text-[9px] text-[#6b7280] truncate leading-tight">${esc(a.type||'')}${withProv&&a.provider?' · '+esc(a.provider):''}</div></div>`;
   }
+  // Column sizing: Week view has exactly 7 columns so they flex to fill the overlay width (no dead
+  // space on the right); Day view keeps a fixed width since the number of provider columns varies.
+  let schedColCls='shrink-0', schedColStyle='width:182px';
   function schedColumnHtml(items,withProv,extra,dayMs,provider){
     const blocks=schedLanes(items).map(o=>schedBlockHtml(o,withProv)).join('');
-    return `<div onclick="schedSlotClick(event,${dayMs},'${(provider||'').replace(/'/g,'')}')" title="Click an open slot to book" class="relative shrink-0 border-r border-[#f1f3f7] cursor-pointer" style="width:182px;height:${schedH}px;background:repeating-linear-gradient(to bottom,transparent,transparent ${SCHED_PXH-1}px,#eef1f6 ${SCHED_PXH-1}px,#eef1f6 ${SCHED_PXH}px)">${extra||''}${blocks}</div>`;
+    return `<div onclick="schedSlotClick(event,${dayMs},'${(provider||'').replace(/'/g,'')}')" title="Click an open slot to book" class="relative ${schedColCls} border-r border-[#f1f3f7] cursor-pointer" style="${schedColStyle};height:${schedH}px;background:repeating-linear-gradient(to bottom,transparent,transparent ${SCHED_PXH-1}px,#eef1f6 ${SCHED_PXH-1}px,#eef1f6 ${SCHED_PXH}px)">${extra||''}${blocks}</div>`;
   }
   function schedNowLine(dayDate){
     const now=new Date(); if(!calSameDay(dayDate,now)||now.getHours()<SCHED_START||now.getHours()>=SCHED_END) return '';
@@ -1066,18 +1069,20 @@
     const provs=[...new Set(all.map(a=>a.provider).filter(Boolean))].sort();
     schedFetchBusy(provs);   // load Google Calendar busy for this view's range (re-renders when it lands)
     let label, colHead='', cols='';
+    schedColCls = schedView==='week' ? 'flex-1' : 'shrink-0';
+    schedColStyle = schedView==='week' ? 'min-width:120px' : 'width:182px';
     if(schedView==='day'){
       label=schedCursor.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
       const dayAppts=all.filter(a=>calSameDay(a.dt,schedCursor));
       const dayBusy=schedBusyOn(schedCursor);
       const show=provs.length?provs:['Unassigned'];
-      colHead=show.map(p=>`<div class="shrink-0 border-r border-[#f1f3f7] text-center py-2" style="width:182px"><span class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#16201d]"><span class="w-2 h-2 rounded-full" style="background:${provColor(p)}"></span>${esc(p)}</span></div>`).join('');
+      colHead=show.map(p=>`<div class="${schedColCls} border-r border-[#f1f3f7] text-center py-2" style="${schedColStyle}"><span class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#16201d]"><span class="w-2 h-2 rounded-full" style="background:${provColor(p)}"></span>${esc(p)}</span></div>`).join('');
       cols=show.map(p=>schedColumnHtml(dayAppts.filter(a=>(a.provider||'Unassigned')===p),false,schedNowLine(schedCursor)+schedBusyHtml(dayBusy.filter(x=>x.provider===p),schedCursor,false),new Date(schedCursor.getFullYear(),schedCursor.getMonth(),schedCursor.getDate()).getTime(),p)).join('');
     } else {
       const ws=calStartOfWeek(schedCursor), we=new Date(ws); we.setDate(ws.getDate()+6);
       label=`${ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})} to ${we.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
       const days=[]; for(let i=0;i<7;i++){ const d=new Date(ws); d.setDate(ws.getDate()+i); days.push(d); }
-      colHead=days.map(d=>{ const t=calSameDay(d,new Date()); return `<div class="shrink-0 border-r border-[#f1f3f7] text-center py-2 ${t?'bg-[#eef4ff]':''}" style="width:182px"><div class="text-[12px] font-semibold ${t?'text-[#0a6cf5]':'text-[#16201d]'}">${d.toLocaleDateString('en-US',{weekday:'short'})}</div><div class="text-[11px] text-[#6b7280]">${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div></div>`; }).join('');
+      colHead=days.map(d=>{ const t=calSameDay(d,new Date()); return `<div class="${schedColCls} border-r border-[#f1f3f7] text-center py-2 ${t?'bg-[#eef4ff]':''}" style="${schedColStyle}"><div class="text-[12px] font-semibold ${t?'text-[#0a6cf5]':'text-[#16201d]'}">${d.toLocaleDateString('en-US',{weekday:'short'})}</div><div class="text-[11px] text-[#6b7280]">${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div></div>`; }).join('');
       cols=days.map(d=>schedColumnHtml(all.filter(a=>calSameDay(a.dt,d)),true,schedNowLine(d)+schedBusyHtml(schedBusyOn(d),d,true),new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime(),'')).join('');
     }
     let gutter=''; for(let h=SCHED_START;h<SCHED_END;h++) gutter+=`<div style="height:${SCHED_PXH}px" class="relative"><span class="absolute -top-2 right-1.5 text-[10px] text-[#9aa0ab]">${schedFmtHour(h)}</span></div>`;
