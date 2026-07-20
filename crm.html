@@ -716,7 +716,10 @@
 
   // ---------------- helpers ----------------
   const $ = s=>document.querySelector(s);
-  const PROG = {glp1:'GLP-1',metabolic:'Metabolic',coaching:'Coaching',unsure:'Undecided'};
+  // Program labels. The async GLP-1 flow stores the specific drug code (sema/tirz/oral) in `program`,
+  // and other funnels use medicare_glp1 / bloom / total_male — all were missing here, so those patients
+  // rendered as "-". Keep every real program value mapped so the field shows what a patient is actually on.
+  const PROG = {glp1:'GLP-1',sema:'GLP-1 · Semaglutide',tirz:'GLP-1 · Tirzepatide',oral:'GLP-1 · Oral semaglutide',medicare_glp1:'Medicare GLP-1 Bridge',bloom:'Bloom · Hair loss',total_male:'Total Male · TRT',metabolic:'Metabolic',coaching:'Coaching',unsure:'Undecided'};
   const STAT = {lead:'Lead',new_patient:'New Patient',active:'Active',inactive:'Inactive',rx_written:'Rx written',rx_declined:'Rx declined'};
   function isProvider(){
     const r = (window.__vca && window.__vca.role) || (window.__vitUser && window.__vitUser.app_metadata && window.__vitUser.app_metadata.role) || '';
