@@ -1798,14 +1798,35 @@
     // feed, if the Tasks tab is the active one
     if(window.__actFilter==='task'){ const f=document.getElementById('actFeed'); if(f) f.innerHTML=renderTaskFeed(tasks); }
   }
+  const TASK_GROUPS = ['All staff','Providers','Front desk','Billing','Admin'];
   window.addTask = async function(pid){
     const p = patients.find(x=>x.id===pid); if(!p) return;
-    const title = prompt('New task for '+(p.first||'')+' '+(p.last||'')+':'); if(!title||!title.trim()) return;
-    try{
-      const r = await fetch(CONVEX_URL+'/tasks-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'create',title:title.trim(),patient_id:pid,patient_ref:`${p.first||''} ${p.last||''}`.trim()})});
-      const j = await r.json(); if(!j.ok){ alert('Could not add task'); return; }
-      loadPatientTasks(pid);
-    }catch(e){ console.warn('addTask',e); alert('Could not add task'); }
+    // Staff list for the assignee dropdown (cached after first open). tasks-data 'load' returns `assignees`.
+    if(!window.__assignees){
+      try{ const r=await fetch(CONVEX_URL+'/tasks-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'load'})}); const j=await r.json(); window.__assignees=(j&&j.assignees)||['Front Desk']; }
+      catch(e){ window.__assignees=['Front Desk']; }
+    }
+    const glow = TASK_GROUPS.map(g=>g.toLowerCase());
+    const staff = (window.__assignees||[]).filter(a=>!glow.includes(String(a).toLowerCase()));
+    const assigneeOpts = [{v:'',t:'Unassigned'}]
+      .concat(TASK_GROUPS.map(g=>({v:g,t:'Group · '+g})))
+      .concat(staff.map(s=>({v:s,t:s})));
+    openFormModal({
+      title:'New task', subtitle:`${p.first||''} ${p.last||''}`.trim(),
+      fields:[
+        {key:'title',label:'Task',required:true,placeholder:'What needs to be done?'},
+        {key:'notes',label:'Details',type:'textarea',rows:6,placeholder:'Add any detail, context, or instructions for whoever picks this up.'},
+        {key:'assignee',label:'Assign to (employee or group)',type:'select',options:assigneeOpts},
+        {key:'priority',label:'Priority',type:'select',value:'normal',options:[{v:'normal',t:'Normal'},{v:'high',t:'High'},{v:'low',t:'Low'}]},
+        {key:'due_date',label:'Due date',type:'date'},
+      ],
+      submitLabel:'Create task',
+      onSubmit: async (v)=>{
+        const r = await fetch(CONVEX_URL+'/tasks-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'create',title:v.title,notes:v.notes||undefined,assignee:v.assignee||undefined,priority:v.priority||'normal',due_date:v.due_date||undefined,patient_id:pid,patient_ref:`${p.first||''} ${p.last||''}`.trim()})});
+        const j = await r.json(); if(!j.ok) throw new Error(j.error||'create failed');
+        loadPatientTasks(pid);
+      }
+    });
   };
   window.toggleTask = async function(id, done){
     try{
@@ -2183,7 +2204,7 @@
     wrap.innerHTML=(opts.fields||[]).map(f=>{
       const id='fm_'+f.key;
       if(f.type==='select') return `<div><label class="text-xs font-semibold text-[#6b7280]">${f.label}</label><select id="${id}" class="field w-full mt-1">${(f.options||[]).map(o=>`<option value="${o.v}" ${o.v===(f.value||'')?'selected':''}>${esc(o.t)}</option>`).join('')}</select></div>`;
-      if(f.type==='textarea') return `<div><label class="text-xs font-semibold text-[#6b7280]">${f.label}${f.required?' *':''}</label><textarea id="${id}" rows="3" class="field w-full mt-1" placeholder="${esc(f.placeholder||'')}">${esc(f.value||'')}</textarea></div>`;
+      if(f.type==='textarea') return `<div><label class="text-xs font-semibold text-[#6b7280]">${f.label}${f.required?' *':''}</label><textarea id="${id}" rows="${f.rows||3}" class="field w-full mt-1" placeholder="${esc(f.placeholder||'')}">${esc(f.value||'')}</textarea></div>`;
       if(f.type==='checkbox') return `<label class="flex items-center gap-2 text-sm text-[#16201d] cursor-pointer pt-1"><input type="checkbox" id="${id}" ${f.value?'checked':''} class="accent-[#0a6cf5] w-4 h-4">${f.label}</label>`;
       return `<div><label class="text-xs font-semibold text-[#6b7280]">${f.label}${f.required?' *':''}</label><input id="${id}" type="${f.type||'text'}" value="${esc(f.value||'')}" placeholder="${esc(f.placeholder||'')}" class="field w-full mt-1"></div>`;
     }).join('');
