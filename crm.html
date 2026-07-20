@@ -155,6 +155,8 @@
 <!-- PIPELINE BOARD (overlay; toggled by 🗂 Board) -->
 <div id="boardPane" class="hidden fixed left-0 right-0 top-16 bottom-0 bg-[#fbfcfd] z-30 overflow-hidden"></div>
 <button id="boardClose" onclick="toggleBoard()" title="Close board (Esc)" class="hidden fixed top-[72px] right-4 z-40 items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold shadow-sm hover:bg-[#f1f3f7] hover:text-[#16201d]">✕ Close board</button>
+<!-- Board card hover: quick contact popover (email / phone / referred-by) without opening the record -->
+<div id="boardHover" onmouseenter="boardHoverKeep()" onmouseleave="boardHoverHide()" class="hidden fixed z-[60] w-56 bg-white rounded-xl border border-[#e6e9ee] shadow-lg p-3"></div>
 
 <!-- Referred-by picker (tag which partner practice/doctor sent a patient) -->
 <div id="referModal" class="hidden fixed inset-0 bg-black/40 z-40 items-center justify-center p-4">
@@ -2078,26 +2080,40 @@
     if(boardOpen) renderBoard();
   };
   addEventListener('keydown', e=>{ if(e.key==='Escape' && boardOpen) toggleBoard(); });
+  // Early funnel lanes where "new" (green) and "touched but not moved" (yellow) are meaningful. In late
+  // lanes (rx/active/refill/at_risk/churned) neither flag applies, so opening an active patient never
+  // strands a yellow card on them.
+  const BOARD_EARLY = new Set(['new_inquiry','lead','consult_booked','intake','provider_review']);
   function boardCard(p){
     const ch = {phone:'📞',web:'🌐',chat:'💬'}[p.channel]||'';
     const dropTs = p.created || p.last_activity;                 // stable drop-in time
     const actTs  = p.last_activity || p.created;                 // last touch, falls back to drop-in so age is never blank
-    // "New" = anything freshly dropped into the CRM and not yet worked. Green in ANY early lane, not just
-    // New Inquiry - a submitted intake lands under Intake/Labs and would otherwise blend in and get lost.
     const _stg = stageOf(p);
-    const _worked = _stg==='rx_written' || _stg==='active' || _stg==='refill_due' || _stg==='at_risk' || _stg==='churned';
-    const isNew = _stg==='new_inquiry' || (dropTs && (Date.now()-dropTs) < 4*864e5 && !_worked);
-    const cold = !isNew && actTs && (Date.now()-actTs > 7*864e5) && _stg!=='churned';
+    const early = BOARD_EARLY.has(_stg);
+    // Yellow = a rep opened this card but did not advance it (getting stalled). Overrides green.
+    const touched = early && !!p.touched_by;
+    // Green = freshly dropped in and not yet touched. Any early lane, not just New Inquiry, so a submitted
+    // intake under Intake/Labs still stands out instead of getting lost.
+    const isNew = !touched && early && (_stg==='new_inquiry' || (dropTs && (Date.now()-dropTs) < 4*864e5));
+    const cold = !isNew && !touched && actTs && (Date.now()-actTs > 7*864e5) && _stg!=='churned';
     const na = p.next_appt ? fmtDT(p.next_appt) : '';
     const nm = ((p.first||'')+' '+(p.last||'')).trim() || (p.display_id||'Patient');
-    const ageHtml = isNew
+    const touchFirst = touched ? (String(p.touched_by).trim().split(/\s+/)[0]||'staff') : '';
+    const cardCls = touched ? 'bg-[#fffbeb] border-2 border-[#f0b429]/70 hover:border-[#f0b429]'
+                  : isNew    ? 'bg-[#f0fdf4] border-2 border-[#0a7a3d]/70 hover:border-[#0a7a3d]'
+                  :            'bg-white border border-[#e6e9ee] hover:border-[#0a6cf5]/60';
+    const badge = touched ? `<span class="text-[9px] font-bold uppercase tracking-wide text-[#92400e] bg-[#fde68a] rounded px-1 py-0.5" title="Opened by ${esc(p.touched_by)} but not moved">👁 ${esc(touchFirst)}</span>`
+                : isNew ? '<span class="text-[9px] font-bold uppercase tracking-wide text-white bg-[#0a7a3d] rounded px-1 py-0.5">New</span>' : '';
+    const ageHtml = touched
+      ? `<span class="text-[#92400e] font-semibold flex-shrink-0" title="Opened by ${esc(p.touched_by)}, not moved">👁 ${p.touched_at?rel(new Date(p.touched_at).toISOString()):'seen'}</span>`
+      : isNew
       ? `<span class="text-[#0a7a3d] font-semibold flex-shrink-0" title="Waiting since it dropped in">⏳ ${dropTs?rel(new Date(dropTs).toISOString()):'just now'}</span>`
       : (cold ? '<span class="text-[#be123c] flex-shrink-0" title="No activity in 7+ days">● cold</span>'
               : (actTs?`<span class="text-[#9aa0ab] flex-shrink-0">${rel(new Date(actTs).toISOString())}</span>`:''));
-    return `<div draggable="true" ondragstart="dragCard(event,'${p.id}')" onclick="openFromBoard('${p.id}')" class="rounded-lg p-2.5 cursor-pointer hover:shadow-sm transition ${isNew?'bg-[#f0fdf4] border-2 border-[#0a7a3d]/70 hover:border-[#0a7a3d]':'bg-white border border-[#e6e9ee] hover:border-[#0a6cf5]/60'}">
+    return `<div draggable="true" ondragstart="dragCard(event,'${p.id}')" onclick="openFromBoard('${p.id}')" onmouseenter="boardHoverShow(event,'${p.id}')" onmouseleave="boardHoverHide()" class="rounded-lg p-2.5 cursor-pointer hover:shadow-sm transition ${cardCls}">
       <div class="flex items-center justify-between gap-1">
         <div class="text-sm font-semibold text-[#16201d] truncate">${esc(nm)}</div>
-        <div class="flex items-center gap-1 flex-shrink-0">${isNew?'<span class="text-[9px] font-bold uppercase tracking-wide text-white bg-[#0a7a3d] rounded px-1 py-0.5">New</span>':''}${ch?`<span title="${p.channel} inquiry">${ch}</span>`:''}</div>
+        <div class="flex items-center gap-1 flex-shrink-0">${badge}${ch?`<span title="${p.channel} inquiry">${ch}</span>`:''}</div>
       </div>
       <div class="text-[11px] text-[#6b7280] mt-0.5 truncate">${PROG[p.program]||p.program||'No program'}</div>
       <div class="flex items-center justify-between mt-1.5 text-[10px] gap-1">${na?`<span class="text-[#0a6cf5] truncate">📅 ${na}</span>`:'<span></span>'}${ageHtml}</div>
@@ -2133,15 +2149,51 @@
       return;
     }
     const p=patients.find(x=>x.id===id); if(!p||stageOf(p)===stage)return;
-    const prev=p.pipeline_stage; p.pipeline_stage=stage; renderBoard(); updateInquiryBadge(); // optimistic
+    const prev=p.pipeline_stage, prevTb=p.touched_by, prevTa=p.touched_at;
+    p.pipeline_stage=stage; p.touched_by=null; p.touched_at=null; renderBoard(); updateInquiryBadge(); // optimistic (moving clears the yellow touched flag)
     try{ const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'set_stage',patient_id:id,stage})}); const j=await r.json(); if(!j.ok)throw new Error(j.error||'failed'); }
-    catch(err){ console.warn('set_stage',err); p.pipeline_stage=prev; renderBoard(); updateInquiryBadge(); alert('Could not move card'); }
+    catch(err){ console.warn('set_stage',err); p.pipeline_stage=prev; p.touched_by=prevTb; p.touched_at=prevTa; renderBoard(); updateInquiryBadge(); alert('Could not move card'); }
   };
-  window.openFromBoard=function(id){
-    boardOpen=false; document.getElementById('boardPane').classList.add('hidden');
+  window.openFromBoard=async function(id){
+    boardOpen=false;
+    const pane=document.getElementById('boardPane'); if(pane) pane.classList.add('hidden');
+    const close=document.getElementById('boardClose'); if(close){ close.classList.add('hidden'); close.classList.remove('flex'); } // fix: Close-board button used to strand when a card opened
     const btn=document.getElementById('boardToggle'); if(btn){ btn.classList.remove('bg-[#0a6cf5]','text-white'); btn.childNodes[0].nodeValue='🗂 Board'; }
+    boardHoverHide();
+    // Record the touch (opened but not advanced) so early-lane cards flag yellow with who looked at them.
+    const p=patients.find(x=>x.id===id);
+    if(p && BOARD_EARLY.has(stageOf(p))){
+      try{ const h=await convexHeaders(); fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:h,body:JSON.stringify({action:'touch_record',patient_id:id})}).then(r=>r.json()).then(j=>{ if(j&&j.ok){ p.touched_by=j.touched_by; p.touched_at=j.touched_at; } }).catch(()=>{}); }catch(_){}
+    }
     setViewMode('crm'); select(id);
   };
+  // Board card hover: a small contact card next to the record (email, phone, referred-by) without opening it.
+  let _boardHoverTimer=null;
+  window.boardHoverShow=function(e,id){
+    if(_boardHoverTimer){ clearTimeout(_boardHoverTimer); _boardHoverTimer=null; }
+    const p=patients.find(x=>x.id===id); const pop=document.getElementById('boardHover'); if(!p||!pop) return;
+    const nm=((p.first||'')+' '+(p.last||'')).trim()||p.display_id||'Patient';
+    const emailBlock=p.email
+      ? `<div class="text-[12px] text-[#16201d] truncate" title="${esc(p.email)}">${esc(p.email)}</div>
+         <button type="button" onclick="event.stopPropagation();boardEmail('${p.id}')" class="w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">✉ Compose email</button>`
+      : '<span class="text-[11px] text-[#9aa0ab]">No email on file</span>';
+    const phone=p.phone
+      ? `<a href="tel:${esc(p.phone)}" onclick="event.stopPropagation()" class="text-[13px] text-[#16201d] hover:text-[#0a6cf5]">📞 ${esc(p.phone)}</a>`
+      : '<span class="text-[11px] text-[#9aa0ab]">No phone on file</span>';
+    const ref=p.referred_by
+      ? `<div class="mt-2 pt-2 border-t border-[#eef1f4] text-[11px] text-[#6b7280]">Referred by <span class="text-[#0a6cf5] font-medium">${esc(p.referred_by.practice_name)}${p.referred_by.provider_name?' · '+esc(p.referred_by.provider_name):''}</span></div>`
+      : '';
+    pop.innerHTML=`<div class="text-sm font-semibold text-[#16201d] truncate mb-2">${esc(nm)}</div><div class="flex flex-col gap-1.5">${emailBlock}${phone}</div>${ref}`;
+    const r=e.currentTarget.getBoundingClientRect();
+    let left=r.right+8; if(left+240>window.innerWidth) left=r.left-248;
+    pop.style.left=Math.max(8,left)+'px';
+    pop.style.top=Math.max(8,Math.min(r.top, window.innerHeight-170))+'px';
+    pop.classList.remove('hidden');
+  };
+  window.boardHoverKeep=function(){ if(_boardHoverTimer){ clearTimeout(_boardHoverTimer); _boardHoverTimer=null; } };
+  window.boardHoverHide=function(){ _boardHoverTimer=setTimeout(()=>{ const pop=document.getElementById('boardHover'); if(pop) pop.classList.add('hidden'); }, 220); };
+  // Hover "Compose email" -> open the branded/templated email composer for this patient (over the board).
+  window.boardEmail=function(id){ boardHoverKeep(); const pop=document.getElementById('boardHover'); if(pop) pop.classList.add('hidden'); selId=id; openEmail(); };
   function updateInquiryBadge(){
     const n=patients.filter(p=>stageOf(p)==='new_inquiry').length;
     [document.getElementById('inqBadge'), document.getElementById('inqBadgeRail'), document.getElementById('inqBadgeExpand')].forEach(b=>{
@@ -2843,7 +2895,7 @@
     </div>`;
   }
   function emailContent(tpl,p){
-    const appt = p.appts.find(a=>new Date(a.when)>now) || p.appts.slice(-1)[0];
+    const appt = (p.appts||[]).find(a=>new Date(a.when)>now) || (p.appts||[]).slice(-1)[0];
     const when = appt? fmtDT(appt.when):'your upcoming visit';
     if(tpl==='confirm') return {h:`You're confirmed, ${p.first}.`, b:`This confirms your ${appt?appt.type:'appointment'} at Vitality Weight Loss on <b>${when}</b>${appt?` with ${appt.provider}`:''}. We look forward to seeing you.`, cta:'Add to calendar'};
     if(tpl==='reminder') return {h:`See you soon, ${p.first}.`, b:`A friendly reminder of your ${appt?appt.type:'appointment'} on <b>${when}</b>${appt?` with ${appt.provider}`:''}. Need to reschedule? Just reply or call us.`, cta:'Confirm appointment'};
