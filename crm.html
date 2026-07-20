@@ -1069,8 +1069,12 @@
     const provs=[...new Set(all.map(a=>a.provider).filter(Boolean))].sort();
     schedFetchBusy(provs);   // load Google Calendar busy for this view's range (re-renders when it lands)
     let label, colHead='', cols='';
-    schedColCls = schedView==='week' ? 'flex-1' : 'shrink-0';
-    schedColStyle = schedView==='week' ? 'min-width:120px' : 'width:182px';
+    const isWeek = schedView==='week';
+    // Week: 7 columns flex to fill the overlay. Day: comfortable fixed columns, grid centered so the
+    // leftover space is balanced on both sides instead of a big empty gap on the right.
+    schedColCls = isWeek ? 'flex-1' : 'shrink-0';
+    schedColStyle = isWeek ? 'min-width:120px' : 'width:240px';
+    const schedWrapCls = isWeek ? 'inline-flex flex-col min-w-full' : 'flex flex-col w-max mx-auto';
     if(schedView==='day'){
       label=schedCursor.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
       const dayAppts=all.filter(a=>calSameDay(a.dt,schedCursor));
@@ -1091,7 +1095,7 @@
     ov.querySelector('#schedDayBtn').className=schedBtnCls('day');
     ov.querySelector('#schedWeekBtn').className=schedBtnCls('week');
     ov.querySelector('#schedLegend').innerHTML=legend;
-    ov.querySelector('#schedScroll').innerHTML=`<div class="inline-flex flex-col min-w-full">
+    ov.querySelector('#schedScroll').innerHTML=`<div class="${schedWrapCls}">
       <div class="flex sticky top-0 z-20 bg-[#fbfcfe] border-b border-[#eef1f6]"><div class="shrink-0 w-12 border-r border-[#eef1f6] sticky left-0 z-10 bg-[#fbfcfe]"></div>${colHead}</div>
       <div class="flex"><div class="shrink-0 w-12 border-r border-[#eef1f6] sticky left-0 z-10 bg-white pt-1">${gutter}</div>${cols}</div>
     </div>`;
