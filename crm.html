@@ -1095,6 +1095,21 @@
     ov.querySelector('#schedDayBtn').className=schedBtnCls('day');
     ov.querySelector('#schedWeekBtn').className=schedBtnCls('week');
     ov.querySelector('#schedLegend').innerHTML=legend;
+    // Panel sizing: Week fills the screen (7 columns); Day shrinks to fit its provider columns and
+    // centers, so a 1–3 provider day isn't a near-fullscreen box with a sliver of content.
+    const panel=ov.querySelector('#schedPanel');
+    if(panel){
+      if(isWeek){
+        panel.className='absolute inset-2 md:inset-6 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden';
+        panel.style.width=panel.style.maxWidth=panel.style.maxHeight='';
+      } else {
+        const gridW=48+(provs.length||1)*240+2;   // time gutter + provider columns
+        panel.className='relative bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden';
+        panel.style.width=Math.max(gridW,640)+'px';
+        panel.style.maxWidth='calc(100vw - 1.5rem)';
+        panel.style.maxHeight='calc(100vh - 1.5rem)';
+      }
+    }
     ov.querySelector('#schedScroll').innerHTML=`<div class="${schedWrapCls}">
       <div class="flex sticky top-0 z-20 bg-[#fbfcfe] border-b border-[#eef1f6]"><div class="shrink-0 w-12 border-r border-[#eef1f6] sticky left-0 z-10 bg-[#fbfcfe]"></div>${colHead}</div>
       <div class="flex"><div class="shrink-0 w-12 border-r border-[#eef1f6] sticky left-0 z-10 bg-white pt-1">${gutter}</div>${cols}</div>
@@ -1110,7 +1125,7 @@
     if(!ov){
       ov=document.createElement('div'); ov.id='schedOverlay';
       ov.className='hidden fixed inset-0 z-50 bg-[#0b1220]/45 items-center justify-center';
-      ov.innerHTML=`<div class="absolute inset-2 md:inset-6 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden" onclick="event.stopPropagation()">
+      ov.innerHTML=`<div id="schedPanel" class="absolute inset-2 md:inset-6 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden" onclick="event.stopPropagation()">
         <div class="flex items-center justify-between gap-2 px-4 py-3 border-b border-[#eef1f6]">
           <div class="flex items-center gap-2 min-w-0">
             <span class="font-display font-semibold text-[15px] text-[#16201d] shrink-0">Clinic schedule</span>
