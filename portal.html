@@ -128,6 +128,9 @@ async function api(payload){
       if (a.action === 'photo_upload_url') return await convex.mutation('portal:photoUploadUrl', {});
       if (a.action === 'lab_upload_url') return await convex.mutation('portal:labUploadUrl', {});
       if (a.action === 'record_lab') return await convex.mutation('portal:recordLab', { storage_id:a.storage_id, filename:a.filename, content_type:a.content_type, size:a.size });
+      if (a.action === 'inj_start_bottle') return await convex.mutation('portal:injStartBottle', { lot:a.lot, medication:a.medication, strength_mg_ml:a.strength_mg_ml, volume_ml:a.volume_ml });
+      if (a.action === 'inj_log_dose') return await convex.mutation('portal:injLogDose', { site:a.site });
+      if (a.action === 'inj_checkin') return await convex.mutation('portal:injCheckIn', { side_effects:a.side_effects, titration_pref:a.titration_pref, needs_refill:a.needs_refill, needs_consult:a.needs_consult });
       if (a.action === 'send_message') return await convex.mutation('portal:sendMessage', { body:a.body });
       if (a.action === 'mark_messages_read') return await convex.mutation('portal:markMessagesRead', {});
       if (a.action === 'mint_token') return await convex.mutation('portal:mintToken', {});
@@ -541,37 +544,45 @@ function render(){
   const daysToNext=nextDue!=null?Math.ceil((nextDue-Date.now())/86400000):null;
   const nextDueTxt=nextDue!=null?new Date(nextDue).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
   const injStatus=daysToNext==null?'':(daysToNext<=0?'Due now':'in '+daysToNext+' day'+(daysToNext===1?'':'s'));
+  // DeBry's guided injection flow: provider-set dose (never guessed) + bottle/lot tracking + dose N/6.
+  const injCfg=DATA.injection||{}; const injBottle=injCfg.bottle||null; const injRxSet=injCfg.rx_dose_mg!=null;
+  const injRx=injCfg.rx_dose_mg; const injPer=injCfg.doses_per_bottle||6; const injVol=injCfg.scheduled_volume_ml;
+  const injUsedNext=injBottle?Math.min((injBottle.doses_used||0)+1,injPer):1;
   const injection=`<details class="card overflow-hidden" open><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Injection tracker</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
     ${lastInj?`<div class="grid grid-cols-2 gap-2 mb-3">
       <div class="rounded-xl bg-[#eaf2ff] border border-[#d6e6ff] p-3"><div class="text-[10px] uppercase tracking-wide text-[#0a3d7a] font-semibold">Last injection</div><div class="text-sm font-semibold mt-.5">${fmtAgo(lastInj.logged_at)}</div><div class="text-xs text-[#6b7280]">${esc(lastInj.body||'')}${lastInj.value_num!=null?' · '+esc(lastInj.value_num)+' mg':''}</div></div>
       <div class="rounded-xl ${daysToNext<=0?'bg-[#fff4ed] border-[#ffe2cf]':'bg-[#eafaf0] border-[#cdeedd]'} border p-3"><div class="text-[10px] uppercase tracking-wide ${daysToNext<=0?'text-[#9a5a00]':'text-[#0a7a3d]'} font-semibold">Next dose</div><div class="text-sm font-semibold mt-.5">${injStatus}</div><div class="text-xs text-[#6b7280]">${nextDueTxt}</div></div>
     </div>`:`<p class="text-sm text-[#6b7280] mb-3">Log each weekly GLP-1 injection to track your dose, rotate injection sites, and see when your next dose is due.</p>`}
-    ${(()=>{ pPresetInj(); if(!pSite) pSite=nextSite; return ''; })()}
-    <div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3">
-      <div class="flex gap-1.5 mb-3">${P_MEDS.map(m=>`<button data-pmed="${m}" class="pim flex-1 py-2 rounded-lg text-xs font-semibold ${m===pMed?'bg-[#0a6cf5] text-white':'bg-white border border-[#e6e9ee] text-[#6b7280]'}">${m}</button>`).join('')}</div>
-      <svg id="pInjSyr" viewBox="0 0 300 92" style="width:100%;touch-action:none;user-select:none;display:block">
-        <line x1="3" y1="48" x2="18" y2="48" stroke="#9aa0ab" stroke-width="2.5" stroke-linecap="round"/>
-        <rect x="20" y="30" width="260" height="36" rx="9" fill="#eef1f5" stroke="#dfe3e9" stroke-width="1.5"/>
-        <clipPath id="pInjClip"><rect x="20" y="30" width="260" height="36" rx="9"/></clipPath>
-        <rect id="pInjFill" x="20" y="30" width="${pxU(pUnits)-20}" height="36" clip-path="url(#pInjClip)" fill="#0a6cf5" opacity="0.85"/>
-        ${[0,10,20,30,40,50].map(u=>`<line x1="${pxU(u)}" y1="21" x2="${pxU(u)}" y2="30" stroke="#9aa0ab" stroke-width="1.4"/><text x="${pxU(u)}" y="15" text-anchor="middle" font-size="9" fill="#9aa0ab">${u}</text>`).join('')}
-        <rect x="279" y="23" width="7" height="50" rx="2" fill="#9aa0ab"/>
-        <line id="pInjPl" x1="${pxU(pUnits)}" y1="25" x2="${pxU(pUnits)}" y2="71" stroke="#0a6cf5" stroke-width="3"/>
-        <circle id="pInjKnob" cx="${pxU(pUnits)}" cy="48" r="12" fill="#0a6cf5" stroke="#fff" stroke-width="3"/>
-      </svg>
-      <div id="pInjRead" class="text-center mt-1 mb-3"><span class="font-display text-2xl font-bold seg">${pUnits}</span><span class="text-[#9aa0ab] text-sm ml-1">units</span><span class="text-[#9aa0ab] text-sm ml-2">&asymp; ${pmgU(pUnits)} mg</span></div>
-      <div class="flex items-center justify-center gap-2 mb-3">
-        <button data-pstep="-1" class="pist w-10 h-10 rounded-full bg-white border border-[#e6e9ee] font-bold text-lg leading-none">&minus;</button>
-        <div class="flex gap-1.5">${[0.25,0.5,1,1.7,2.4].map(mg=>`<button data-pmg="${mg}" class="piq px-2.5 py-1.5 rounded-lg bg-white border border-[#e6e9ee] text-xs font-semibold">${mg}mg</button>`).join('')}</div>
-        <button data-pstep="1" class="pist w-10 h-10 rounded-full bg-white border border-[#e6e9ee] font-bold text-lg leading-none">+</button>
+    ${!injRxSet?`<div class="rounded-xl bg-[#fff7ed] border border-[#ffe2cf] p-3 text-sm text-[#9a5a00]">Your provider is setting your dose. Check back shortly, or send a check-in below and your care team will follow up.</div>`:`
+    ${injBottle?`<p class="text-sm font-medium mb-2">Are you using your current bottle (lot <b>${esc(injBottle.lot)}</b>), or a new one?</p>
+    <div class="flex gap-2 mb-3"><button id="injSameBtn" class="flex-1 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold">Same bottle</button><button id="injNewBtn" class="flex-1 py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-sm font-semibold">New bottle</button></div>`:`<p class="text-sm text-[#6b7280] mb-2">Let's set up your bottle so we can guide every dose.</p>`}
+    <div id="injSameBox" class="${injBottle?'':'hidden'}">
+      <div class="rounded-xl bg-[#eaf2ff] border border-[#d6e6ff] p-3 mb-3">
+        <div class="text-sm text-[#0a3d7a]">According to your schedule you should be injecting <b>${injRx} mg</b>${injVol!=null?`, which is <b>${injVol} mL</b> of solution`:''}.</div>
+        ${injBottle?`<div class="text-sm text-[#0a3d7a] mt-1">This will be dose <b>${injUsedNext}/${injPer}</b> of this bottle.</div>`:''}
       </div>
-      <div class="flex items-center gap-2 mb-3">
-        <label class="text-[11px] font-semibold text-[#6b7280] whitespace-nowrap">Vial</label>
-        <select id="pInjConc" class="field py-2 text-sm flex-1">${[1,2,2.5,5,10,20].map(c=>`<option value="${c}" ${c===pConc?'selected':''}>${c} mg/mL</option>`).join('')}</select>
-        <select id="injSite" class="field py-2 text-sm flex-1">${INJ_SITES.map(s=>`<option ${s===pSite?'selected':''}>${esc(s)}</option>`).join('')}</select>
+      <button id="injLogBtn" class="w-full py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Log this injection</button>
+    </div>
+    <div id="injNewBox" class="${injBottle?'hidden':''}">
+      <div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 space-y-2">
+        <p class="text-[11px] text-[#6b7280]">Please enter the details from your new bottle:</p>
+        <div><label class="text-[11px] font-semibold text-[#6b7280]">Lot number</label><input id="nbLot" class="field mt-1 w-full" placeholder="e.g. 62763472"></div>
+        <div><label class="text-[11px] font-semibold text-[#6b7280]">Type of medication</label><input id="nbMed" class="field mt-1 w-full" placeholder="e.g. Semaglutide/B12"></div>
+        <div class="flex gap-2"><div class="flex-1"><label class="text-[11px] font-semibold text-[#6b7280]">Strength (mg/mL)</label><input id="nbStr" type="number" step="0.1" min="0" class="field mt-1 w-full" placeholder="2.5"></div><div class="flex-1"><label class="text-[11px] font-semibold text-[#6b7280]">Volume (mL)</label><input id="nbVol" type="number" step="0.1" min="0" class="field mt-1 w-full" placeholder="1.0"></div></div>
+        <button id="nbBtn" class="w-full py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold">Save this bottle</button>
+        <p id="nbMsg" class="text-[11px] text-[#9aa0ab] text-center"></p>
       </div>
-      <button id="injBtn" class="w-full py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Log this injection</button>
-      <p class="text-[11px] text-[#9aa0ab] mt-2 text-center">Your provider sets your dose and vial strength. Confirm against your prescription, and rotate sites.</p>
+    </div>`}
+    <div class="mt-4 pt-3 border-t border-[#f1f3f7]">
+      <p class="text-sm font-medium mb-2">Quick check-in for Dr. DeBry</p>
+      <div class="space-y-2 rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3">
+        <div><label class="text-[11px] font-semibold text-[#6b7280]">Any side effects or concerns?</label><input id="ciSide" class="field mt-1 w-full" placeholder="Leave blank if none"></div>
+        <div><label class="text-[11px] font-semibold text-[#6b7280]">Your dose plan</label><div class="flex gap-2 mt-1"><button type="button" data-tit="continue" class="ci-tit flex-1 py-2 rounded-xl border text-xs font-semibold bg-[#0a6cf5] text-white border-[#0a6cf5]">Continue my schedule</button><button type="button" data-tit="hold" class="ci-tit flex-1 py-2 rounded-xl border text-xs font-semibold bg-white text-[#6b7280] border-[#e6e9ee]">Hold at this dose</button></div></div>
+        <label class="flex items-center gap-2 text-sm text-[#16201d] pt-1"><input type="checkbox" id="ciRefill" class="accent-[#0a6cf5] w-4 h-4">I need a refill</label>
+        <button id="ciBtn" class="w-full py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Send check-in to Dr. DeBry</button>
+        <button id="ciConsultBtn" class="w-full py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-sm font-semibold hover:bg-[#0a6cf5]/10">Request a consult with the doctor</button>
+        <p id="ciMsg" class="text-[11px] text-[#9aa0ab] text-center"></p>
+      </div>
     </div>
     ${injLogs.length?`<div class="mt-3"><div class="text-[11px] font-semibold text-[#6b7280] mb-1">Recent injections</div>${injLogs.slice(0,6).map(l=>`<div class="flex items-center justify-between py-1.5 border-b border-[#f1f3f7] last:border-0"><span class="text-sm">${esc(l.body||'')}</span><span class="text-xs text-[#9aa0ab]">${l.value_num!=null?esc(l.value_num)+' mg · ':''}${fmtAgo(l.logged_at)}</span></div>`).join('')}</div>`:''}
   </div></details>`;
@@ -769,7 +780,16 @@ function render(){
       const _pc=document.getElementById('pInjConc'); if(_pc)_pc.onchange=e=>{ pConc=+e.target.value; pSyrRefresh(); };
       const _psel=document.getElementById('injSite'); if(_psel)_psel.onchange=e=>{ pSite=e.target.value; };
     }
-    const _ib=document.getElementById('injBtn'); if(_ib) _ib.onclick=async()=>{ const mg=pmgU(pUnits); pRemember(); _ib.disabled=true; _ib.textContent='Logging…'; await api({action:'add_log',kind:'injection',value_num:mg,unit:'mg',body:pMed+' · '+pUnits+' units · '+pConc+' mg/mL · '+pSite}); await refresh(); }; }
+    // DeBry guided injection tracker handlers (same/new bottle, log dose, start bottle, check-in, consult)
+    const _sb=document.getElementById('injSameBtn'), _nb=document.getElementById('injNewBtn'), _sbox=document.getElementById('injSameBox'), _nbox=document.getElementById('injNewBox');
+    if(_sb&&_sbox&&_nbox) _sb.onclick=()=>{ _sbox.classList.remove('hidden'); _nbox.classList.add('hidden'); };
+    if(_nb&&_sbox&&_nbox) _nb.onclick=()=>{ _nbox.classList.remove('hidden'); _sbox.classList.add('hidden'); };
+    const _lb=document.getElementById('injLogBtn'); if(_lb) _lb.onclick=async()=>{ _lb.disabled=true; _lb.textContent='Logging…'; try{ await api({action:'inj_log_dose'}); await refresh(); }catch(e){ _lb.disabled=false; _lb.textContent='Log this injection'; alert('Could not log that injection. '+((e&&e.message)||'')); } };
+    const _nbb=document.getElementById('nbBtn'); if(_nbb) _nbb.onclick=async()=>{ const lot=($('nbLot').value||'').trim(), med=($('nbMed').value||'').trim(), str=parseFloat($('nbStr').value), vol=parseFloat($('nbVol').value); const _m=document.getElementById('nbMsg'); if(!lot||!med||!(str>0)){ if(_m) _m.textContent='Please enter the lot number, medication, and strength.'; return; } _nbb.disabled=true; _nbb.textContent='Saving…'; try{ await api({action:'inj_start_bottle',lot,medication:med,strength_mg_ml:str,volume_ml:isNaN(vol)?undefined:vol}); await refresh(); }catch(e){ _nbb.disabled=false; _nbb.textContent='Save this bottle'; if(_m) _m.textContent='Could not save. Please try again.'; } };
+    let _tit='continue';
+    document.querySelectorAll('.ci-tit').forEach(b=>{ b.onclick=()=>{ _tit=b.dataset.tit; document.querySelectorAll('.ci-tit').forEach(x=>{ const on=x===b; x.classList.toggle('bg-[#0a6cf5]',on); x.classList.toggle('text-white',on); x.classList.toggle('border-[#0a6cf5]',on); x.classList.toggle('bg-white',!on); x.classList.toggle('text-[#6b7280]',!on); x.classList.toggle('border-[#e6e9ee]',!on); }); }; });
+    const _ci=document.getElementById('ciBtn'); if(_ci) _ci.onclick=async()=>{ const side=($('ciSide').value||'').trim(), refill=$('ciRefill').checked; const _m=document.getElementById('ciMsg'); _ci.disabled=true; _ci.textContent='Sending…'; try{ const r=await api({action:'inj_checkin',side_effects:side||undefined,titration_pref:_tit,needs_refill:refill}); if(_m) _m.textContent=(r&&r.flagged)?'Sent to Dr. DeBry, he will follow up.':'Thanks, your check-in was recorded.'; await refresh(); }catch(e){ _ci.disabled=false; _ci.textContent='Send check-in to Dr. DeBry'; if(_m) _m.textContent='Could not send. Please try again.'; } };
+    const _cc=document.getElementById('ciConsultBtn'); if(_cc) _cc.onclick=async()=>{ _cc.disabled=true; _cc.textContent='Requesting…'; try{ await api({action:'inj_checkin',needs_consult:true}); const _m=document.getElementById('ciMsg'); if(_m) _m.textContent='Consult requested, Dr. DeBry will reach out.'; await refresh(); }catch(e){ _cc.disabled=false; _cc.textContent='Request a consult with the doctor'; } }; }
   { const _rf=document.getElementById('rfBtn'); if(_rf) _rf.onclick=async()=>{ const med=$('rfMed').value, wk=parseInt($('rfWeeks').value,10); if(isNaN(wk)||wk<1) return; _rf.disabled=true; _rf.textContent='Saving…'; await api({action:'add_log',kind:'refill',value_num:wk,unit:'weeks',body:med}); await refresh(); }; }
   { const _rr=document.getElementById('rrBtn'); if(_rr) _rr.onclick=async()=>{ _rr.disabled=true; _rr.textContent='Sending…'; const m=document.getElementById('rfMed'); await api({action:'add_log',kind:'refill_request',body:(m&&m.value)||'medication'}); await refresh(); }; }
   // secure messaging: send to care team; auto-scroll to latest; mark care-team messages read on view

@@ -1219,6 +1219,17 @@
     inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();finish(true);} else if(e.key==='Escape')finish(false); });
     inp.addEventListener('blur',()=>finish(true));
   };
+  window.saveInjectionRx = async function(id){
+    const dose=parseFloat(document.getElementById('rxDoseInput').value);
+    const per=parseInt(document.getElementById('rxPerInput').value,10);
+    const msg=document.getElementById('rxSaveMsg');
+    const body={action:'set_injection_rx',patient_id:id};
+    if(!isNaN(dose)) body.rx_dose_mg=dose;
+    if(!isNaN(per)&&per>0) body.doses_per_bottle=per;
+    if(msg){ msg.style.color='#6b7280'; msg.textContent='Saving…'; }
+    try{ const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify(body)}); const j=await r.json(); if(!j.ok) throw new Error(j.error||'failed'); const p=patients.find(x=>x.id===id); if(p){ if(!isNaN(dose))p.rx_dose_mg=dose; if(!isNaN(per))p.doses_per_bottle=per; } if(msg){ msg.style.color='#0a7a3d'; msg.textContent='Saved ✓'; } }
+    catch(e){ if(msg){ msg.style.color='#b3261e'; msg.textContent='Could not save ('+((e&&e.message)||'error')+')'; } }
+  };
   window.saveInfo = async function(id,field,v){
     const p=patients.find(x=>x.id===id); if(!p)return; p[field]=v;
     const col={first:'first_name',last:'last_name'}[field]||field;
@@ -1442,6 +1453,18 @@
         </div>`:''}
 
         ${isProvider() ? '<div id="clinicalReviewPanel" class="mb-6"></div>' : ''}
+
+        ${isProvider() ? `<div class="rounded-2xl border border-[#e6e9ee] p-5 mb-6">
+          <div class="sect-h flex items-center gap-1.5">💉 Injection schedule</div>
+          <p class="text-xs text-[#6b7280] mt-1 mb-3">Sets what the patient's injection tracker tells them to inject. Provider-only.</p>
+          <div class="flex gap-3 items-end flex-wrap">
+            <div><label class="text-[11px] font-semibold text-[#6b7280]">Scheduled dose (mg)</label><input id="rxDoseInput" type="number" step="0.05" min="0" class="field mt-1" style="width:130px" value="${p.rx_dose_mg!=null?p.rx_dose_mg:''}" placeholder="0.50"></div>
+            <div><label class="text-[11px] font-semibold text-[#6b7280]">Doses per bottle</label><input id="rxPerInput" type="number" step="1" min="1" class="field mt-1" style="width:130px" value="${p.doses_per_bottle!=null?p.doses_per_bottle:6}" placeholder="6"></div>
+            <button onclick="saveInjectionRx('${p.id}')" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold">Save</button>
+            <span id="rxSaveMsg" class="text-xs"></span>
+          </div>
+          ${p.injection_bottle?`<div class="text-xs text-[#6b7280] mt-3">Patient's current bottle: <b>${esc(p.injection_bottle.medication||'')}</b> ${p.injection_bottle.strength_mg_ml||''} mg/mL, lot ${esc(p.injection_bottle.lot||'')} · ${(p.injection_bottle.doses_used||0)}/${p.doses_per_bottle||6} doses used</div>`:'<div class="text-xs text-[#9aa0ab] mt-3">Patient has not logged a bottle yet.</div>'}
+        </div>` : ''}
 
         <div class="space-y-3 mb-2">
           <!-- Communicate -->
