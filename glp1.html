@@ -1381,6 +1381,16 @@ const flow = [
     ctaBtn(p, { disabled: true });
   }, canContinue:(s) => (s.allergies||'').trim().length >= 2 },
 
+  // PRIMARY CARE DOCTOR (optional care-coordination capture) ------------------
+  { id:'pcp', section:'Your care team', view:(p) => {
+    p.appendChild(h('h1', {}, ['Who is your primary care doctor?']));
+    p.appendChild(h('p', { class:'lede' }, ['Optional. With your OK we\'ll send them a short note that you\'ve started care with us, so everything stays coordinated. Leave it blank if you don\'t have one or would rather we didn\'t.']));
+    textInput(p, 'pcpName', 'Doctor\'s name', 'Dr. Jane Smith', 'text');
+    textInput(p, 'pcpPractice', 'Practice or clinic', 'Desert Valley Family Medicine', 'text');
+    textInput(p, 'pcpPhone', 'Their phone or fax', '(702) 555-1234', 'tel');
+    ctaBtn(p, { disabled:false });
+  }, canContinue:(s) => true },
+
   // MEDICARE SCREEN (placeholder criteria) -----------------------------------
   { id:'medicare', section:'Insurance', view:(p) => {
     p.appendChild(h('h1', {}, ['Are you enrolled in Medicare?']));
@@ -2163,6 +2173,7 @@ function athenaPayload() {
     email: state.email, mobilePhone: (state.phone || '').replace(/\D/g, ''),
     address1: state.addrLine1, city: state.addrCity, state: state.addrState || 'NV', zip: state.addrZip,
     program: state.drug,
+    pcp: (state.pcpName || state.pcpPractice || state.pcpPhone) ? { name: state.pcpName || '', practice: state.pcpPractice || '', phone: state.pcpPhone || '' } : undefined,
     attestation: state.attestationRecord || null,
     clinical: state.clinicalRecord || null,
     idImageBase64: state.idImageBase64 || undefined,   // front-of-ID JPEG → athena driver's-license upload

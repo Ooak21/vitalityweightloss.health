@@ -832,6 +832,16 @@ const flow = [
     wrap.appendChild(sel); p.appendChild(wrap); ctaBtn(p, { disabled: false });
   }, canContinue:(s) => true },
 
+  // PRIMARY CARE DOCTOR (optional care-coordination capture) ------------------
+  { id:'pcp', section:'Your care team', view:(p) => {
+    p.appendChild(h('h1', {}, ['Who is your primary care doctor?']));
+    p.appendChild(h('p', { class:'lede' }, ['Optional. With your OK we\'ll send them a short note that you\'ve started care with us, so everything stays coordinated. Leave it blank if you don\'t have one or would rather we didn\'t.']));
+    textInput(p, 'pcpName', 'Doctor\'s name', 'Dr. Jane Smith', 'text');
+    textInput(p, 'pcpPractice', 'Practice or clinic', 'Desert Valley Family Medicine', 'text');
+    textInput(p, 'pcpPhone', 'Their phone or fax', '(702) 555-1234', 'tel');
+    ctaBtn(p, { disabled:false });
+  }, canContinue:(s) => true },
+
   // MEDICARE SCREEN (placeholder criteria) -----------------------------------
   { id:'medicare', section:'Insurance', view:(p) => {
     p.appendChild(h('h1', {}, ['Are you enrolled in Medicare?']));
@@ -1230,6 +1240,7 @@ async function submitIntake() {
         prefs: {
           food_allergies: state.foodAllergies || '', diet_style: state.dietStyle || '', dislikes: state.dislikes || '',
           injuries: state.injuries || '', training_location: state.trainingLocation || '', equipment: state.equipment || '', activity: state.activity || '',
+          ...(state.pcpName || state.pcpPractice || state.pcpPhone ? { pcp: { name: state.pcpName || '', practice: state.pcpPractice || '', phone: state.pcpPhone || '' } } : {}),
           ...(state.medicare === 'yes' ? { medicare_bridge: {
             enrolled: true,
             mbi: state.bridge_mbi || '',
