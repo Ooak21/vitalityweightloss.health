@@ -906,13 +906,27 @@ function computeMedicareBridge(s) {
 
 // STATE ----------------------------------------------------------------------
 const STORAGE_KEY = 'vitality_glp1_intake_v1';
-const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+// A saved draft is a per-visit convenience, NOT a cross-visit record. On a shared or clinic browser it
+// must never prefill the PREVIOUS person's info: drop any draft that is legacy (no timestamp) or has sat
+// idle past the TTL, and clear it outright on completion (clearDraft, called on the confirmation screen).
+const DRAFT_TTL_MS = 30 * 60 * 1000; // 30 minutes idle
+function loadDraft() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    if (raw && raw._savedAt && (Date.now() - raw._savedAt) <= DRAFT_TTL_MS) { delete raw._savedAt; return raw; }
+  } catch (e) {}
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  return {};
+}
+const state = loadDraft();
 function save() {
   // Never persist the government ID image to localStorage — it's PHI and must not sit at
   // rest in the browser. It stays in memory for the session only (used in the /pay payload).
   const { idImageBase64, insuranceCardBase64, ...persist } = state;
+  persist._savedAt = Date.now();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(persist));
 }
+function clearDraft() { try { localStorage.removeItem(STORAGE_KEY); } catch (e) {} }
 
 let currentIdx = 0;
 const root = document.getElementById('root');
@@ -2181,6 +2195,7 @@ function finalizeAfterPayment(info) {
   setProgress(1);
 }
 function viewPaid(p, info) {
+  clearDraft();   // enrollment complete — wipe the saved draft so a shared browser never prefills this person next
   const fn = state.firstName || 'there';
   const ref = new URLSearchParams(location.search).get('ref') || state.orderRef;
   const intro = (info && info.introCents != null) ? (info.introCents / 100) : (PRICING[state.drug] ? PRICING[state.drug].intro : 149);

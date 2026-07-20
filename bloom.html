@@ -726,11 +726,25 @@ const US_STATES = [
 
 // STATE ----------------------------------------------------------------------
 const STORAGE_KEY = 'vitality_bloom_intake_v1';
-const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+// A saved draft is a per-visit convenience, NOT a cross-visit record. On a shared or clinic browser it must
+// never prefill the PREVIOUS person's info: drop any legacy/untimestamped or idle-expired draft, and clear it
+// outright on completion (clearDraft, called on the submitted screen).
+const DRAFT_TTL_MS = 30 * 60 * 1000; // 30 minutes idle
+function loadDraft() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    if (raw && raw._savedAt && (Date.now() - raw._savedAt) <= DRAFT_TTL_MS) { delete raw._savedAt; return raw; }
+  } catch (e) {}
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  return {};
+}
+const state = loadDraft();
 function save() {
   const { photoPreviews, ...persist } = state;
+  persist._savedAt = Date.now();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(persist));
 }
+function clearDraft() { try { localStorage.removeItem(STORAGE_KEY); } catch (e) {} }
 
 // Make sure heic2any is available even if the <head> CDN script hasn't loaded yet (race-safe).
 var __heicPromise = null;
@@ -1010,6 +1024,7 @@ function viewNonNV(p) {
 }
 
 function viewSubmitted(p) {
+  clearDraft();   // submitted — wipe the saved draft so a shared browser never prefills this person next
   const card = h('div', { class: 'center-card' });
   card.innerHTML = `
     <div class="icon-wrap">

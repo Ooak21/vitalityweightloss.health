@@ -304,9 +304,22 @@ function computeMedicareBridge(s) {
 }
 
 // STATE ----------------------------------------------------------------------
-const STORAGE_KEY = 'vitality_glp1_intake_v1';
-const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-function save() { const { idImageBase64, insuranceCardBase64, ...persist } = state; localStorage.setItem(STORAGE_KEY, JSON.stringify(persist)); }
+const STORAGE_KEY = 'vitality_intake_v1';   // own key — must NOT share the GLP-1 async draft (cross-flow prefill leak)
+// A saved draft is a per-visit convenience, NOT a cross-visit record. On a shared or clinic browser it must
+// never prefill the PREVIOUS person's info: drop any legacy/untimestamped or idle-expired draft, and clear it
+// outright on completion (clearDraft, called after the intake is submitted).
+const DRAFT_TTL_MS = 30 * 60 * 1000; // 30 minutes idle
+function loadDraft() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    if (raw && raw._savedAt && (Date.now() - raw._savedAt) <= DRAFT_TTL_MS) { delete raw._savedAt; return raw; }
+  } catch (e) {}
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  return {};
+}
+const state = loadDraft();
+function save() { const { idImageBase64, insuranceCardBase64, ...persist } = state; persist._savedAt = Date.now(); localStorage.setItem(STORAGE_KEY, JSON.stringify(persist)); }
+function clearDraft() { try { localStorage.removeItem(STORAGE_KEY); } catch (e) {} }
 
 let currentIdx = 0;
 const root = document.getElementById('root');
@@ -1234,7 +1247,7 @@ async function submitIntake() {
       })
     });
   } catch (e) { console.warn('prefs bridge (continues):', e); }
-  delete state.password; delete state.password2; save();
+  delete state.password; delete state.password2; clearDraft();
   render({ id:'submitted', section:'Submitted', view: viewSubmitted });
   setProgress(1);
 }
