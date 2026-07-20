@@ -2243,7 +2243,7 @@
     try{ const r=await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'practice',practice_id:pid})}); j=await r.json(); }
     catch(e){ $('#detailMain').innerHTML='<div class="p-6 text-[#be123c]">Could not load practice.</div>'; return; }
     if(!j||!j.ok){ $('#detailMain').innerHTML=`<div class="p-6 text-[#be123c]">${esc((j&&j.error)||'Could not load')}</div>`; return; }
-    const p=j.practice; window._curProviders=j.providers;
+    const p=j.practice; window._curProviders=j.providers; window._curPractice=p;
     const touchBtn=(k,icon,label)=>`<button onclick="logTouch('${p.id}','${k}')" class="px-3 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">${icon} ${label}</button>`;
     $('#detailMain').innerHTML = `
       <div class="p-6 max-w-3xl mx-auto">
@@ -2277,9 +2277,25 @@
             : `<button onclick="toggleNurture('${p.id}',true)" class="shrink-0 px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">${nu.done?'Restart':'Start nurture'}</button>`}
         </div>`; })()}
 
+        ${p.critical_note?`
+        <div class="border-2 border-[#f0b429] bg-[#fffaf0] rounded-2xl px-4 py-3 mb-6">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-xs font-semibold tracking-[.12em] text-[#9a5a00] uppercase mb-1">⚠ Critical directive</div>
+              <div class="text-sm text-[#16201d] whitespace-pre-wrap">${esc(p.critical_note)}</div>
+              <div class="text-[11px] text-[#9a5a00] mt-1.5">Carries onto every patient this practice refers.</div>
+            </div>
+            <button onclick="editCriticalNote('${p.id}')" class="shrink-0 text-xs text-[#9a5a00] font-semibold hover:underline">Edit</button>
+          </div>
+        </div>`:`
+        <div class="flex items-center justify-between gap-3 border border-dashed border-[#e6e9ee] rounded-2xl px-4 py-3 mb-6">
+          <div class="text-sm text-[#9aa0ab]">No critical directive set (e.g. do not offer GLP-1).</div>
+          <button onclick="editCriticalNote('${p.id}')" class="shrink-0 text-xs text-[#0a6cf5] font-semibold hover:underline">+ Add directive</button>
+        </div>`}
+
         <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-2">Contact</div>
         <div class="border border-[#e6e9ee] rounded-2xl mb-6 divide-y divide-[#eef1f4]">
-          ${prRow(p,'phone','Phone')}${prRow(p,'website','Website')}${prRow(p,'address','Address')}${prRow(p,'type','Type / specialty')}${prRow(p,'city','City')}${prRow(p,'owner','Relationship owner')}
+          ${prRow(p,'phone','Phone')}${prRow(p,'fax','Fax')}${prRow(p,'website','Website')}${prRow(p,'address','Address')}${prRow(p,'type','Type / specialty')}${prRow(p,'city','City')}${prRow(p,'owner','Sales rep / owner')}
           <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Last touch</span><span class="text-sm text-[#16201d]">${p.last_touch_at?rel(new Date(p.last_touch_at).toISOString()):'—'}</span></div>
           <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Next check-in</span><span class="text-sm ${p.next_checkin_at&&p.next_checkin_at<Date.now()?'text-[#be123c] font-semibold':'text-[#16201d]'}">${p.next_checkin_at?fmtDate(p.next_checkin_at):'—'}</span></div>
         </div>
@@ -2335,17 +2351,29 @@
   window.closeFormModal=function(){ const m=document.getElementById('formModal'); m.classList.add('hidden'); m.classList.remove('flex'); };
 
   // ---- referral writes (modal-card driven) ----
+  const SALES_REPS=['Delinah Gaitan','Fred Corona','Dr. DeBry','Richard DeVera','Ana Trujillo'];
   window.addPractice=function(){
     openFormModal({ title:'Add referral partner', subtitle:'A clinic or practice that refers patients to Vitality.',
       fields:[
         {key:'name',label:'Practice / clinic name',required:true},
         {key:'type',label:'Type / specialty',placeholder:'e.g. Primary care'},
         {key:'doctor',label:'Referring doctor',placeholder:'e.g. Dr. Jane Smith'},
+        {key:'sales_rep',label:'Sales rep (who is adding this)',type:'select',value:'',options:[{v:'',t:'Select rep…'}].concat(SALES_REPS.map(n=>({v:n,t:n})))},
         {key:'city',label:'City'},
         {key:'phone',label:'Phone',type:'tel'},
+        {key:'fax',label:'Fax',type:'tel'},
         {key:'stage',label:'Stage',type:'select',value:'prospect',options:REF_STAGES.map(s=>({v:s.k,t:s.label}))},
+        {key:'critical_note',label:'Critical note (partner directives)',type:'textarea',rows:2,placeholder:'e.g. Does NOT want Vitality recommending or selling GLP-1. This carries onto every patient they refer.'},
       ], submitLabel:'Add partner',
-      onSubmit: async (v)=>{ const r=await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'add_practice',name:v.name,type:v.type,city:v.city,phone:v.phone,stage:v.stage})}); const j=await r.json(); if(!j.ok)throw new Error(); if(v.doctor){ try{ await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'add_provider',practice_id:j.id,name:v.doctor,is_primary:true})}); }catch(e){console.warn('addPractice: doctor add failed',e);} } await loadReferrals(); if(j.id) select(j.id); }
+      onSubmit: async (v)=>{ const r=await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'add_practice',name:v.name,type:v.type,city:v.city,phone:v.phone,fax:v.fax,stage:v.stage,owner:v.sales_rep||undefined,critical_note:v.critical_note||undefined})}); const j=await r.json(); if(!j.ok)throw new Error(); if(v.doctor){ try{ await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'add_provider',practice_id:j.id,name:v.doctor,is_primary:true})}); }catch(e){console.warn('addPractice: doctor add failed',e);} } await loadReferrals(); if(j.id) select(j.id); }
+    });
+  };
+  // Edit the practice's critical directive (partner rules that must follow every referral, e.g. no GLP-1).
+  window.editCriticalNote=function(pid){
+    const cur=(window._curPractice&&window._curPractice.critical_note)||'';
+    openFormModal({ title:'Critical directive', subtitle:'Partner rules that must follow every referral (e.g. do NOT offer GLP-1). This carries onto their referred patients notes automatically.',
+      fields:[{key:'critical_note',label:'Critical note',type:'textarea',rows:3,value:cur,placeholder:'e.g. Does NOT want Vitality recommending or selling GLP-1.'}], submitLabel:'Save directive',
+      onSubmit: async (v)=>{ await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'update_practice',practice_id:pid,field:'critical_note',value:v.critical_note})}); await loadReferrals(); renderPracticeView(pid); }
     });
   };
   window.setPracticeStage=async function(pid,stage){
