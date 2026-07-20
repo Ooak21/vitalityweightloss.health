@@ -2013,9 +2013,17 @@ function viewPay(p) {
   const card = h('div', { class:'center-card notrans' });
   card.innerHTML = `
     <h1>Secure payment</h1>
-    <p class="lede" style="margin:0 auto 18px;max-width:460px;">Enter your card to complete enrollment. Payment is processed securely by Clover &mdash; your card details never touch our servers.</p>
-    <div class="info" style="text-align:left;margin:0 auto 16px;max-width:420px;"><strong>Today: ${amountLabel}</strong>, then <strong>${recurLabel}/mo</strong> <span style="color:var(--muted)">&mdash; billed monthly to this card until you cancel. Cancel anytime by calling (702)&nbsp;602-5002.</span></div>
-    <div style="max-width:420px;margin:0 auto;text-align:left;">
+    <p class="lede" style="margin:0 auto 18px;max-width:460px;">Enter your card to complete enrollment. Payment is processed securely by Clover, and your card details never touch our servers.</p>
+    <div class="info" id="priceInfo" style="text-align:left;margin:0 auto 16px;max-width:420px;"><strong>Today: ${amountLabel}</strong>, then <strong>${recurLabel}/mo</strong> <span style="color:var(--muted)">billed monthly to this card until you cancel. Cancel anytime by calling (702)&nbsp;602-5002.</span></div>
+    <div style="max-width:420px;margin:0 auto 16px;text-align:left;">
+      <label class="sig-label">Discount code (optional)</label>
+      <div style="display:flex;gap:8px;align-items:stretch;">
+        <input id="couponInput" type="text" autocomplete="off" placeholder="Enter code" value="${state.couponCode||''}" style="flex:1;min-width:0;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;font-family:inherit;">
+        <button id="couponApply" type="button" style="padding:0 16px;border:0;border-radius:10px;background:var(--ink);color:#fff;font-weight:700;font-size:14px;cursor:pointer;">Apply</button>
+      </div>
+      <div id="couponMsg" style="font-size:12px;margin-top:6px;color:var(--muted);"></div>
+    </div>
+    <div id="cardFields" style="max-width:420px;margin:0 auto;text-align:left;">
       <label class="sig-label">Card number</label>
       <div id="card-number" class="clv-field"></div>
       <div class="card-row" style="display:flex;gap:10px;">
@@ -2037,9 +2045,49 @@ function viewPay(p) {
   const payErr = card.querySelector('#payErr');
   const showErr = (m) => { payErr.textContent = m; payErr.style.display = 'block'; };
 
+  // COUPON: an optional discount/comp code. We validate + preview via /coupon-check (display only);
+  // the server re-validates on /pay and computes the real charge, so the client price is never trusted.
+  const couponInput = card.querySelector('#couponInput');
+  const couponApply = card.querySelector('#couponApply');
+  const couponMsg   = card.querySelector('#couponMsg');
+  const priceInfo   = card.querySelector('#priceInfo');
+  const cardFields  = card.querySelector('#cardFields');
+  function effAmounts() {
+    if (state.couponCode && state.couponIntroCents != null) return { intro: state.couponIntroCents, recur: (state.couponRecurringCents != null ? state.couponRecurringCents : recurCents), comped: !!state.couponComped };
+    return { intro: amountCents, recur: recurCents, comped: false };
+  }
+  function renderPrice() {
+    const e = effAmounts();
+    if (e.comped) {
+      priceInfo.innerHTML = '<strong>Today: $0.00 &middot; covered</strong> <span style="color:var(--muted)">Your code covers this enrollment. No card needed, and no charge today.</span>';
+      if (cardFields) cardFields.style.display = 'none';
+      payBtn.textContent = 'Complete enrollment';
+    } else {
+      const iL = '$' + (e.intro/100).toFixed(2), rL = '$' + Math.round(e.recur/100);
+      priceInfo.innerHTML = '<strong>Today: ' + iL + '</strong>, then <strong>' + rL + '/mo</strong> <span style="color:var(--muted)">billed monthly to this card until you cancel. Cancel anytime by calling (702)&nbsp;602-5002.</span>';
+      if (cardFields) cardFields.style.display = '';
+      payBtn.textContent = 'Pay ' + iL;
+    }
+  }
+  async function applyCoupon() {
+    const code = (couponInput.value || '').trim();
+    if (!code) { state.couponCode=''; state.couponComped=false; state.couponIntroCents=null; state.couponRecurringCents=null; save(); couponMsg.textContent=''; renderPrice(); return; }
+    couponApply.disabled = true; couponMsg.style.color='var(--muted)'; couponMsg.textContent='Checking…';
+    try {
+      const r = await fetch(ATHENA_MIDDLEWARE_URL + '/coupon-check', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ code, amountCents, recurringCents: recurCents }) });
+      const j = await r.json().catch(()=>({}));
+      if (!j.valid) { state.couponCode=''; state.couponComped=false; state.couponIntroCents=null; state.couponRecurringCents=null; save(); couponMsg.style.color='#c0392b'; couponMsg.textContent='That code is not valid.'; renderPrice(); }
+      else { state.couponCode=code; state.couponComped=!!j.comped; state.couponIntroCents=j.discountedIntroCents; state.couponRecurringCents=j.discountedRecurringCents; save(); couponMsg.style.color='#1a7a3d'; couponMsg.textContent=(j.label?j.label+' applied. ':'Code applied. ')+(j.comped?'Fully covered, no charge today.':'New price shown above.'); renderPrice(); }
+    } catch(e){ couponMsg.style.color='#c0392b'; couponMsg.textContent='Could not check that code. Please try again.'; }
+    finally { couponApply.disabled = false; }
+  }
+  if (couponApply) couponApply.onclick = applyCoupon;
+  if (state.couponCode) renderPrice();   // reflect a code carried in the draft on re-render
+
   payBtn.onclick = async () => {
     const orig = payBtn.textContent;
-    if (!__cloverInst) {
+    const comped = !!(state.couponComped && state.couponCode);   // fully covered by a code → no card, no charge
+    if (!comped && !__cloverInst) {
       // iframe not ready — offer the webview-safe hosted path
       hideProcessingOverlay();
       payBtn.disabled = false; payBtn.textContent = orig || 'Pay ' + amountLabel;
@@ -2048,10 +2096,14 @@ function viewPay(p) {
     payErr.style.display = 'none';
     payBtn.disabled = true; payBtn.textContent = 'Processing…';
     try {
-      const res = await __cloverInst.createToken();
-      if (res && res.errors) { payBtn.disabled = false; payBtn.textContent = orig; return showErr(Object.values(res.errors).map(x => (x && x.message) || x).join(' ')); }
+      let source;
+      if (!comped) {
+        const res = await __cloverInst.createToken();
+        if (res && res.errors) { payBtn.disabled = false; payBtn.textContent = orig; return showErr(Object.values(res.errors).map(x => (x && x.message) || x).join(' ')); }
+        source = res.token;
+      }
       if (!__payIdemKey) __newPayIdemKey();
-      const body = Object.assign({}, athenaPayload(), { source: res.token, amountCents, fulfillment: 'pickup', subscribe: true, recurringCents: recurCents, testMode: TEST_DOLLAR, idempotencyKey: __payIdemKey });
+      const body = Object.assign({}, athenaPayload(), { source: source || undefined, amountCents, fulfillment: 'pickup', subscribe: true, recurringCents: recurCents, testMode: TEST_DOLLAR, idempotencyKey: __payIdemKey, couponCode: state.couponCode || undefined });
       showProcessingOverlay();   // prominent full-screen wait — the athena chart build runs ~60-90s
       const r = await fetch(CLOVER_PAY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const j = await r.json().catch(() => ({}));
