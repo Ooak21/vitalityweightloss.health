@@ -1508,11 +1508,24 @@
             <div class="text-[10px] font-semibold tracking-[.14em] text-[#9aa0ab] uppercase mb-1.5">Voice</div>
             <div class="inline-flex items-center rounded-xl border border-[#0a6cf5]/40 overflow-hidden">
               <button id="veeBtn" onclick="veeToggle('${p.id}','provider')" class="px-4 py-2.5 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10 flex items-center gap-2 border-r border-[#0a6cf5]/40"><span id="veeDot" class="w-2 h-2 rounded-full bg-[#0a6cf5]"></span>🎙 Discuss with Vee</button>
-              <button onclick="veeToggle('${p.id}','patient')" class="px-4 py-2.5 text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7] flex items-center gap-2">👤 Patient review</button>
+              <button onclick="veeToggle('${p.id}','patient')" class="px-4 py-2.5 text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7] flex items-center gap-2 border-r border-[#0a6cf5]/40">👤 Patient review</button>
+              <button id="veeConsultBtn" onclick="veeToggle('${p.id}','consult')" class="px-4 py-2.5 text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7] flex items-center gap-2">🩺 Dictate Consult</button>
             </div>
           </div>
         </div>
         <div id="veeStatus" class="text-xs text-[#6b7280] mb-6"></div>
+        <div id="veeTranscriptPanel" class="hidden glass border border-[#e6e9ee] rounded-2xl overflow-hidden mb-6 -mt-4">
+          <div class="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-[#eef1f4]">
+            <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Consult transcript</div>
+            <div id="veeTranscriptMeta" class="text-xs text-[#6b7280]"></div>
+          </div>
+          <div id="veeTranscriptBody" class="p-4 max-h-64 overflow-y-auto space-y-2 text-sm text-[#16201d]"></div>
+          <div id="veeTranscriptActions" class="hidden px-4 py-2.5 border-t border-[#eef1f4] flex items-center gap-3 flex-wrap">
+            <button type="button" id="veeGenNoteBtn" onclick="veeGenerateNote()" class="px-3 py-1.5 rounded-lg bg-[#0a6cf5] text-white font-semibold text-xs hover:bg-[#0856c8]">✨ Generate chart note</button>
+            <button type="button" onclick="veeCopyTranscript()" class="px-3 py-1.5 rounded-lg border border-[#e6e9ee] text-[#16201d] font-semibold text-xs hover:bg-[#f1f3f7]">Copy transcript</button>
+            <span id="veeTranscriptConfirm" class="text-xs text-[#6b7280]"></span>
+          </div>
+        </div>
 
         <div class="glass border border-[#e6e9ee] rounded-2xl overflow-hidden mb-6" id="chartCard">
           <div class="flex items-center gap-1 px-4 pt-2.5 border-b border-[#eef1f4]">
@@ -2834,9 +2847,82 @@
   // ---------------- Vee voice (xAI Realtime) ----------------
   const VEE_TOKEN_URL = `${CONVEX_URL}/voice-token`;
   let veeWs=null, veeActive=false, veeCtx=null, veeMic=null, veeProc=null, veeQ=[], veePlaying=false;
+  let veeTranscript=[], veeMode=null, veeSeenEvTypes=new Set(), veeUserTurns={}, veeAsstTurns={};
+  window.__veeTranscript = veeTranscript;
+  function veeTurns(){ return veeTranscript.filter(t=>t.text&&t.text.trim()); }
   function veeSetStatus(t){ const e=document.getElementById('veeStatus'); if(e) e.textContent=t; }
-  function veeUI(on){ const b=document.getElementById('veeBtn'), d=document.getElementById('veeDot'); if(!b)return;
-    b.classList.toggle('bg-[#0a6cf5]/10', on); if(d) d.classList.toggle('animate-pulse', on); }
+  function veeUI(on){
+    const b=document.getElementById('veeBtn'), d=document.getElementById('veeDot'), c=document.getElementById('veeConsultBtn');
+    // "Discuss with Vee" active-state only when actually in a conversational (non-consult) session.
+    if(b) b.classList.toggle('bg-[#0a6cf5]/10', on && veeMode!=='consult');
+    if(d) d.classList.toggle('animate-pulse', on && veeMode!=='consult');
+    // Dictate Consult button becomes a red "recording" toggle while a consult is live.
+    if(c){
+      const rec = on && veeMode==='consult';
+      c.classList.toggle('bg-[#fdecec]', rec);
+      c.classList.toggle('text-[#c0392b]', rec);
+      c.innerHTML = rec ? '<span class="w-2 h-2 rounded-full bg-[#e11d48] animate-pulse"></span> End consult' : '🩺 Dictate Consult';
+    }
+  }
+  function veeRenderTranscript(){
+    const body=document.getElementById('veeTranscriptBody'); if(!body) return;
+    const turns=veeTurns(); const rows=[];
+    for(const t of turns){
+      const who=t.role==='provider'?'Dr. DeBry':'Vee';
+      rows.push('<div class="leading-relaxed"><span class="font-semibold text-[#16201d]">'+who+':</span> <span class="text-[#3d4a45]">'+esc(t.text)+'</span></div>');
+    }
+    body.innerHTML=rows.length?rows.join(''):'<div class="text-xs text-[#9aa0ab] italic">Listening for dictation…</div>';
+    body.scrollTop=body.scrollHeight;
+    const meta=document.getElementById('veeTranscriptMeta');
+    if(meta) meta.textContent=turns.length?(turns.length+' turn'+(turns.length===1?'':'s')):'';
+  }
+  function veeShowTranscriptPanel(show){
+    const panel=document.getElementById('veeTranscriptPanel');
+    if(panel) panel.classList.toggle('hidden', !show);
+  }
+  function veeShowEndConsult(){
+    veeShowTranscriptPanel(true);
+    const actions=document.getElementById('veeTranscriptActions');
+    const confirm=document.getElementById('veeTranscriptConfirm');
+    if(actions) actions.classList.remove('hidden');
+    if(confirm) confirm.textContent='Transcript captured - '+veeTurns().length+' turns';
+    veeRenderTranscript();
+    window.__veeTranscript=veeTranscript;
+  }
+  window.veeCopyTranscript=function(){
+    const text=veeTurns().map(t=>(t.role==='provider'?'Dr. DeBry':'Vee')+': '+t.text).join('\n');
+    const done=()=>{ const c=document.getElementById('veeTranscriptConfirm'); if(c) c.textContent='Copied to clipboard - '+veeTurns().length+' turns'; };
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(()=>alert('Could not copy transcript'));
+    } else {
+      const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); done(); }catch(e){ alert('Could not copy transcript'); }
+      document.body.removeChild(ta);
+    }
+  };
+  // Slice 2: structure the dictated transcript into a 99204-style SOAP draft and drop it in the chart.
+  window.veeGenerateNote=async function(){
+    const turns=veeTurns(); if(!turns.length){ alert('No transcript to structure yet.'); return; }
+    const pid=selId; if(!pid){ alert('Open a patient first.'); return; }
+    const transcript=turns.map(t=>(t.role==='provider'?'Dr. DeBry':'Vee')+': '+t.text).join('\n');
+    const btn=document.getElementById('veeGenNoteBtn'), conf=document.getElementById('veeTranscriptConfirm');
+    if(btn){ btn.disabled=true; btn.textContent='Structuring note…'; }
+    if(conf) conf.textContent='';
+    try{
+      const r=await fetch(CONVEX_URL+'/consult-note',{ method:'POST', headers:await convexHeaders(), body:JSON.stringify({patient_id:pid, transcript}) });
+      const j=await r.json();
+      if(j.ok){
+        if(conf) conf.textContent='Draft note added to the chart below - review and sign it.';
+        await loadChartNotes(pid);
+        const nt=document.querySelector('.chart-tab[data-ct="notes"]'); if(nt&&window.chartTab) window.chartTab('notes', nt);
+      } else {
+        const msg=j.error||'Could not generate note';
+        alert(/provider/i.test(msg) ? ('A provider account is required to write a chart note.\n\n'+msg) : ('Could not generate note: '+msg));
+      }
+    }catch(e){ alert('Could not generate note: '+e.message); }
+    finally{ if(btn){ btn.disabled=false; btn.textContent='✨ Generate chart note'; } }
+  };
   function buildVeeInstructions(p, mode){
     const ib=p.inbody, age=p.dob?(new Date().getFullYear()-new Date(p.dob).getFullYear()):'unknown';
     const stats = ib ? [
@@ -2870,6 +2956,23 @@ NEXT-STEP RECOMMENDATIONS (staff mode, this is expected of you): proactively rec
 - Concrete clinic actions: book the next consult or InBody rescan, create the portal login if it is not created, send a branded email.
 - If a review flag (needs-review or any review: tag) is present, the next step is provider review before any program offer.
 Base every recommendation only on what is on file. If there is not enough to recommend confidently, say what to gather first (e.g., a callback, missing email, an InBody scan).`;
+    // Slice 3: chart-grounded Q&A. Provider mode gets the patient's REAL chart (active problems, meds +
+    // doses, latest vitals, last encounter) already loaded for this record, so Vee answers from the record
+    // and never invents a clinical value. Patient mode never receives the clinical chart.
+    const clinical = mode==='patient' ? '' : (function(){
+      const probs=(window.__chartProblems||[]).filter(x=>x&&x.status!=='resolved').map(x=>((x.code?x.code+' ':'')+(x.label||''))).filter(Boolean).join('; ')||'none recorded';
+      const meds=(window.__chartMeds||[]).filter(x=>x&&x.status!=='discontinued').map(x=>x.name+(x.dose?' '+x.dose:'')+(x.sig?' ('+x.sig+')':'')).join('; ')||'none recorded';
+      const v=(window.__chartVitals||[])[0];
+      const vitals=(v?[['weight',v.weight_lb,'lb'],['BMI',v.bmi,''],['BP',(v.bp_systolic&&v.bp_diastolic)?v.bp_systolic+'/'+v.bp_diastolic:null,''],['HR',v.heart_rate,'bpm'],['temp',v.temp_f,'F'],['waist',v.waist_in,'in']].filter(a=>a[1]!=null&&a[1]!=='').map(a=>a[0]+' '+a[1]+(a[2]?' '+a[2]:'')).join(', '):'')||'none recorded';
+      const ln=(window.__chartNotes||[])[0];
+      const lastNote=ln?('Last encounter ('+((typeof NOTE_TYPE_LABELS!=='undefined'&&NOTE_TYPE_LABELS[ln.encounter_type])||'note')+(ln.status==='signed'?', signed':', draft')+'): assessment - '+String(ln.assessment||'').replace(/\s+/g,' ').slice(0,280)+'; plan - '+String(ln.plan||'').replace(/\s+/g,' ').slice(0,280)):'no prior encounter notes on file';
+      return `\n\nCURRENT CHART for ${p.first} (authoritative - use ONLY this plus the InBody scan for any clinical fact):
+- Active problems: ${probs}.
+- Active medications: ${meds}.
+- Latest recorded vitals: ${vitals}.
+- ${lastNote}.
+CLINICAL Q&A RULE: when the provider asks about a diagnosis, medication, dose, vital, lab, or a prior visit, answer ONLY from the CURRENT CHART or the InBody scan above. If it is not in these records, say plainly it is not in the chart and offer to add it. Never guess or estimate a clinical value.`;
+    })();
     const opening = mode==='patient'
       ? `\nSTART the call by giving ${p.first} a brief, warm overview of their key numbers in UNDER 90 SECONDS: weight, body fat percent, skeletal muscle mass, BMI, visceral fat level, and basal metabolic rate. Touch the key points only, do not read every metric. Where useful, mention InBody's published range as a fact. Then say you're happy to answer any questions, and STOP talking and listen.`
       : `\nSTART by giving the staff member a 20 to 30 second read on ${p.first}: where they are in the journey, then your single best recommended next action, then one or two more next steps. Be specific and actionable. Then stop and take questions.`;
@@ -2883,6 +2986,7 @@ ${engagementSignals}
 
 INBODY PUBLISHED REFERENCE RANGES (these are printed facts from InBody, cite them as "InBody's published range", never as a verdict on this person): visceral fat level healthy under 10; ECW to TBW ratio healthy between 0.36 and 0.39; BMI normal 18.5 to 25.
 ${staffGuidance}
+${clinical}
 ${opening}
 HARD RULES:
 - You are NOT a clinician. NEVER diagnose, NEVER say this person is healthy or unhealthy, NEVER recommend medication, a dose, a clinical diet, or treatment. Report recorded numbers and InBody's published ranges only. (Operational and outreach next steps in staff mode ARE allowed and expected, framed as what to do or discuss, never as a prescription.)
@@ -2894,6 +2998,23 @@ HARD RULES:
   window.veeToggle = function(id, mode){ if(veeActive){ veeStop(); return; } veeStart(id, mode||'provider'); };
   async function veeStart(id, mode){
     const p=patients.find(x=>x.id===id); if(!p) return;
+    mode=mode||'provider';
+    veeMode=mode;
+    veeSeenEvTypes=new Set();
+    veeUserTurns={}; veeAsstTurns={};
+    // Clear buffer only when a new consult starts (keep prior consult for next slice / copy).
+    if(mode==='consult'){
+      veeTranscript=[];
+      window.__veeTranscript=veeTranscript;
+      veeShowTranscriptPanel(true);
+      const actions=document.getElementById('veeTranscriptActions');
+      if(actions) actions.classList.add('hidden');
+      const confirm=document.getElementById('veeTranscriptConfirm');
+      if(confirm) confirm.textContent='';
+      veeRenderTranscript();
+    } else {
+      veeShowTranscriptPanel(false);
+    }
     veeSetStatus('Connecting to Vee…');
     try{
       const tr=await fetch(VEE_TOKEN_URL,{method:'POST',headers:await convexHeaders()});
@@ -2902,8 +3023,11 @@ HARD RULES:
       veeCtx=new AudioContext({sampleRate:24000});
       veeWs=new WebSocket('wss://api.x.ai/v1/realtime',[`xai-client-secret.${td.token}`]);
       veeWs.onopen=()=>{ veeActive=true; veeUI(true);
-        veeSetStatus(mode==='patient' ? 'Vee is reviewing '+p.first+"'s results…" : 'Vee is listening · ask about '+p.first+"'s stats");
-        veeWs.send(JSON.stringify({type:'session.update',session:{voice:'ara',instructions:buildVeeInstructions(p,mode),turn_detection:{type:'server_vad',threshold:0.8,silence_duration_ms:800},audio:{input:{format:{type:'audio/pcm',rate:24000}},output:{format:{type:'audio/pcm',rate:24000}}}}}));
+        veeSetStatus(mode==='patient' ? 'Vee is reviewing '+p.first+"'s results…" : mode==='consult' ? 'Consult mode · dictating for '+p.first : 'Vee is listening · ask about '+p.first+"'s stats");
+        // In consult mode Vee stays SILENT and only transcribes (create_response:false), so dictation is not
+        // interrupted by spoken replies. Provider/patient modes keep the conversational default.
+        const veeTurnDet=Object.assign({type:'server_vad',threshold:0.8,silence_duration_ms:800}, mode==='consult'?{create_response:false,interrupt_response:false}:{});
+        veeWs.send(JSON.stringify({type:'session.update',session:{voice:'ara',instructions:buildVeeInstructions(p,mode),turn_detection:veeTurnDet,audio:{input:{format:{type:'audio/pcm',rate:24000},transcription:{model:'grok-transcribe'}},output:{format:{type:'audio/pcm',rate:24000}}}}}));
         if(mode==='patient'){ veeWs.send(JSON.stringify({type:'conversation.item.create',item:{type:'message',role:'user',content:[{type:'input_text',text:'Please give me a brief overview of my results.'}]}})); veeWs.send(JSON.stringify({type:'response.create'})); }
         const src=veeCtx.createMediaStreamSource(veeMic); veeProc=veeCtx.createScriptProcessor(4096,1,1);
         src.connect(veeProc); veeProc.connect(veeCtx.destination);
@@ -2913,15 +3037,54 @@ HARD RULES:
           veeWs.send(JSON.stringify({type:'input_audio_buffer.append',audio:btoa(String.fromCharCode(...new Uint8Array(pcm.buffer)))})); };
       };
       veeWs.onmessage=(m)=>{ const ev=JSON.parse(m.data);
-        if(ev.type==='response.output_audio.delta'&&ev.delta) veePlay(ev.delta);
-        if(ev.type==='error'){ console.error('[vee]',ev.error); veeSetStatus('Error: '+(ev.error?.message||'unknown')); } };
+        // In consult (dictation) mode Vee never speaks: suppress audio playback and cancel any response
+        // she starts (create_response:false is not always honored, so we cancel as a hard backstop).
+        if(ev.type==='response.output_audio.delta'&&ev.delta){ if(veeMode!=='consult') veePlay(ev.delta); return; }
+        if(veeMode==='consult'&&ev.type==='response.created'){ try{ veeWs.send(JSON.stringify({type:'response.cancel'})); }catch(e){} return; }
+        if(ev.type==='error'){ const msg=ev.error?.message||'unknown'; console.error('[vee]',ev.error); if(veeMode!=='consult'||!/cancel/i.test(msg)) veeSetStatus('Error: '+msg); return; }
+        // Provider dictation (user input transcription). xAI emits these CUMULATIVELY (each event carries
+        // the full transcript so far), so we key one turn per item_id and update it in place instead of
+        // pushing every snapshot as a new line.
+        if(ev.type==='conversation.item.input_audio_transcription.updated'
+         ||ev.type==='conversation.item.input_audio_transcription.completed'
+         ||ev.type==='conversation.item.input_audio_transcription.delta'){
+          if(veeMode==='consult'){
+            const id=ev.item_id||(ev.item&&ev.item.id)||'user-current';
+            let turn=veeUserTurns[id];
+            if(!turn){ turn={role:'provider',item_id:id,text:'',ts:Date.now()}; veeUserTurns[id]=turn; veeTranscript.push(turn); }
+            if(ev.transcript!=null) turn.text=String(ev.transcript);        // cumulative -> replace
+            else if(ev.delta) turn.text=(turn.text||'')+ev.delta;           // incremental -> append
+            window.__veeTranscript=veeTranscript;
+            veeRenderTranscript();
+          }
+          return;
+        }
+        // Vee spoken reply transcript. In consult (dictation) mode we intentionally do NOT record Vee -
+        // the note must be provider dictation only; she is cancelled + muted above. (Vee Q&A is a later slice.)
+        if(ev.type==='response.output_audio_transcript.delta'||ev.type==='response.audio_transcript.delta'
+         ||ev.type==='response.output_audio_transcript.done'||ev.type==='response.audio_transcript.done'){
+          return;
+        }
+        // Unknown event types: log once per type so live testing can confirm real names
+        if(ev.type&&!veeSeenEvTypes.has(ev.type)){
+          veeSeenEvTypes.add(ev.type);
+          console.debug('[vee ev]', ev.type);
+        }
+      };
       veeWs.onerror=()=>{ veeSetStatus('Connection error'); veeStop(); };
       veeWs.onclose=()=>{ if(veeActive){ veeStop(); } };
     }catch(e){ veeSetStatus('Mic/voice error: '+e.message); }
   }
-  function veeStop(){ veeActive=false; veeUI(false); veeSetStatus('');
+  function veeStop(){
+    const wasConsult=veeMode==='consult';
+    veeActive=false; veeUI(false);
+    // Turns are already captured in veeTranscript (updated in place), so nothing to finalize here.
+    if(wasConsult) window.__veeTranscript=veeTranscript;
     if(veeProc){veeProc.disconnect();veeProc=null;} if(veeMic){veeMic.getTracks().forEach(t=>t.stop());veeMic=null;}
-    if(veeCtx){veeCtx.close();veeCtx=null;} if(veeWs){veeWs.close();veeWs=null;} veeQ=[];veePlaying=false; }
+    if(veeCtx){veeCtx.close();veeCtx=null;} if(veeWs){veeWs.close();veeWs=null;} veeQ=[];veePlaying=false;
+    if(wasConsult){ veeSetStatus(''); veeShowEndConsult(); }
+    else { veeSetStatus(''); }
+  }
   function veePlay(b64){ veeQ.push(b64); if(!veePlaying) veeDrain(); }
   function veeDrain(){ if(!veeQ.length){veePlaying=false;return;} veePlaying=true;
     const bin=atob(veeQ.shift()); const by=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)by[i]=bin.charCodeAt(i);
@@ -3246,6 +3409,7 @@ HARD RULES:
     else acts.push(`<button onclick="openNote('${n.id}')" class="text-[#0a6cf5] text-xs font-semibold hover:underline">View</button>`);
     if(n.canSign) acts.push(`<button onclick="signNote('${n.id}')" class="text-[#0a7a3d] text-xs font-semibold hover:underline">Sign</button>`);
     if(n.canDelete) acts.push(`<button onclick="deleteNoteDraft('${n.id}')" class="text-[#be123c] text-xs font-semibold hover:underline">Delete</button>`);
+    acts.push(`<button onclick="printChartNote('${n.id}')" class="text-[#6b7280] text-xs font-semibold hover:underline">🖨 Print / PDF</button>`);
     return `<div class="border border-[#e6e9ee] rounded-xl p-3.5">
       <div class="flex items-start justify-between gap-2">
         <div class="min-w-0"><div class="text-sm font-semibold text-[#16201d]">${NOTE_TYPE_LABELS[n.encounter_type]||'Clinical note'} · ${fmtNoteDate(n)}</div>
@@ -3255,6 +3419,56 @@ HARD RULES:
       <div class="flex gap-3 mt-2">${acts.join('')}</div>
     </div>`;
   }
+  // Slice 5: export a chart note as a print / PDF document. Signed notes are billing-ready; drafts print
+  // clearly marked DRAFT. Reuses the existing __printEl print-window helper.
+  window.printChartNote = async function(noteId){
+    const n=(window.__chartNotes||[]).find(x=>x.id===noteId); if(!n){ alert('Note not found - reload the record.'); return; }
+    const p=(patients||[]).find(x=>x.id===n.patient_id)||{};
+    const nm=((p.first||'')+' '+(p.last||'')).trim()||p.name||'Patient';
+    const dob=p.dob?new Date(p.dob).toLocaleDateString('en-US'):'n/a';
+    const dos=(typeof fmtNoteDate==='function')?fmtNoteDate(n):(n.encounter_date||'');
+    const typeLabel=(typeof NOTE_TYPE_LABELS!=='undefined'&&NOTE_TYPE_LABELS[n.encounter_type])||'Clinical note';
+    const signed=n.status==='signed';
+    const dx=(n.diagnoses||[]).map(d=>esc((d.code?d.code+' ':'')+(d.label||''))).join(' · ');
+    const vit=(n.vitals&&typeof n.vitals==='object'&&!Array.isArray(n.vitals))?Object.entries(n.vitals).filter(([k,val])=>val!=null&&val!=='').map(([k,val])=>esc(k.replace(/_/g,' '))+': '+esc(String(val))).join(' · '):'';
+    const addenda=(n.addenda||[]).map(a=>'<div style="margin-top:8px;font-size:13px"><b>Addendum</b> ('+esc(a.author||'')+(a.at?' · '+new Date(a.at).toLocaleString('en-US'):'')+'): '+esc(a.text||'')+'</div>').join('');
+    const sig=signed?('Electronically signed by '+esc(n.signed_by||n.author||'')+(n.signed_at?' on '+new Date(n.signed_at).toLocaleString('en-US'):'')):'DRAFT - not yet signed. Not valid for billing until signed.';
+    const sec=(h,b)=> (b&&String(b).trim())?('<h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#0a6cf5;margin:16px 0 3px">'+h+'</h3><div style="white-space:pre-wrap;line-height:1.5;font-size:14px">'+esc(b)+'</div>'):'';
+    // Brand lockup: logo icon + Montserrat wordmark (matches the live site header). Logo embedded as a
+    // data URI so it renders in the print/PDF window (relative asset paths do not resolve there).
+    let logo='';
+    try{
+      const resp=await fetch(new URL('assets/logo-icon.png', location.href).href);
+      const blob=await resp.blob();
+      logo=await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=()=>res(''); fr.readAsDataURL(blob); });
+    }catch(e){ logo=''; }
+    const brandHead=''
+      +'<div style="display:flex;align-items:center;gap:12px;border-bottom:2px solid #0a6cf5;padding-bottom:12px;margin-bottom:16px">'
+      +(logo?'<img src="'+logo+'" alt="Vitality Weight Loss" style="height:38px;width:auto;border-radius:0">':'')
+      +'<div style="line-height:1.05">'
+      +'<div style="font-family:Montserrat,Inter,sans-serif;text-transform:uppercase;letter-spacing:.15em;font-weight:600;font-size:19px;color:#16201d">Vitality</div>'
+      +'<div style="font-family:Montserrat,Inter,sans-serif;text-transform:uppercase;letter-spacing:.30em;font-weight:500;font-size:8.5px;color:#16201d;margin-top:3px">Weight Loss</div>'
+      +'</div>'
+      +'<div style="margin-left:auto;text-align:right;font-size:11px;color:#6b7280;line-height:1.45">Encounter note<br>'+esc(typeLabel)+(signed?'':' · DRAFT')+'</div>'
+      +'</div>';
+    const html=''
+      +brandHead
+      +'<table style="width:100%;font-size:13px;border-collapse:collapse;margin-bottom:6px">'
+      +'<tr><td style="padding:2px 0"><b>Patient:</b> '+esc(nm)+'</td><td><b>DOB:</b> '+esc(dob)+'</td><td><b>Date of service:</b> '+esc(dos)+'</td></tr>'
+      +'<tr><td style="padding:2px 0"><b>Provider:</b> '+esc(n.author||'')+'</td><td colspan="2"><b>Status:</b> '+(signed?'Signed':'Draft')+'</td></tr></table>'
+      +(dx?'<div style="font-size:13px;margin:6px 0"><b>Diagnoses:</b> '+dx+'</div>':'')
+      +sec('Subjective',n.subjective)
+      +sec('Objective',n.objective)
+      +(vit?'<div style="font-size:13px;margin-top:4px"><b>Vitals:</b> '+vit+'</div>':'')
+      +sec('Assessment',n.assessment)
+      +sec('Plan',n.plan)
+      +addenda
+      +'<div style="margin-top:22px;padding-top:10px;border-top:1px solid #e6e9ee;font-size:12px;color:#374151">'+sig+'</div>';
+    let holder=document.getElementById('noteprintBody');
+    if(!holder){ holder=document.createElement('div'); holder.id='noteprintBody'; holder.style.display='none'; document.body.appendChild(holder); }
+    holder.innerHTML=html;
+    window.__printEl('noteprintBody', 'Encounter Note - '+nm);
+  };
   async function loadChartNotes(pid){
     const box=document.getElementById('chartNotesPanel'); if(!box) return;
     box.innerHTML=chartShell('<div class="text-sm text-[#9aa0ab]">Loading notes…</div>');
