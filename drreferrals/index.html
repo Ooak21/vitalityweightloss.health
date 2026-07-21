@@ -22,9 +22,12 @@
     - Jotform HIPAA, Formstack, Foxit/PDF, Paperform HIPAA, or a custom
       backend on HIPAA-eligible infrastructure (AWS/GCP/Azure under a BAA).
 
-  INTEGRATION POINT: search for  ===> WEB DEV: WIRE SUBMIT HERE  below.
-  The current handler ONLY shows the confirmation screen client-side so the
-  page can be demoed. It does NOT send data anywhere yet.
+  WIRED (LIVE): this form POSTs to the Convex HTTP action /referral-intake
+  (https://quixotic-cat-492.convex.site/referral-intake). On submit it creates a
+  lead in the Vitality CRM (source: physician_referral), matches-or-creates the
+  referring practice + doctor in the Partner directory and links them as the
+  patient's Referral Source, and emails an alert to the team. PHI is POSTed in the
+  request body, never in the URL. Endpoint config lives in the submit handler below.
 
   Serve this page over HTTPS only.
   ============================================================================
@@ -414,8 +417,16 @@
           <legend>Referring Provider</legend>
           <div class="grid">
             <div class="field full">
+              <label for="rPractice">Practice / Clinic Name <span class="req">*</span></label>
+              <input id="rPractice" name="practice_name" type="text" placeholder="e.g., Spring Valley Medical Group" required>
+            </div>
+            <div class="field">
               <label for="rName">Referring Provider Name <span class="req">*</span></label>
               <input id="rName" name="provider_name" type="text" placeholder="Dr. Jane Smith" required>
+            </div>
+            <div class="field">
+              <label for="rNpi">Provider NPI</label>
+              <input id="rNpi" name="npi" type="text" inputmode="numeric" placeholder="10-digit NPI (optional)">
             </div>
             <div class="field">
               <label for="rPhone">Referring Office Phone <span class="req">*</span></label>
@@ -424,6 +435,36 @@
             <div class="field">
               <label for="rEmail">Referring Office Email <span class="req">*</span></label>
               <input id="rEmail" name="office_email" type="email" placeholder="office@clinic.com" required>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- HOW DID YOU HEAR ABOUT US -->
+        <fieldset>
+          <legend>How did you hear about us?</legend>
+          <div class="grid">
+            <div class="field">
+              <label for="rHeard">How did you hear about Vitality?</label>
+              <select id="rHeard" name="heard_via">
+                <option value="" selected>Select one…</option>
+                <option>Vitality sales rep</option>
+                <option>Referred by a colleague</option>
+                <option>Conference or event</option>
+                <option>Online search</option>
+                <option>Existing partnership</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="rRep">Vitality rep (if a rep set this up)</label>
+              <select id="rRep" name="sales_rep">
+                <option value="" selected>Not sure / none</option>
+                <option>Delinah Gaitan</option>
+                <option>Fred Corona</option>
+                <option>Dr. DeBry</option>
+                <option>Richard DeVera</option>
+                <option>Ana Trujillo</option>
+              </select>
             </div>
           </div>
         </fieldset>
