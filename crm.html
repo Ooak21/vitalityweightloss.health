@@ -2791,8 +2791,16 @@
   function changeStatus(id,val){ const p=patients.find(x=>x.id===id); const old=p.status; p.status=val;
     p.notes.push({type:'system',author:'Front Desk',auto:true,ts:new Date().toISOString(),body:`Status changed: ${STAT[old]} → ${STAT[val]}.`});
     kpis(); renderList(); renderDetail(); }
-  function addNote(id){ const v=$('#noteInput').value.trim(); if(!v)return; const p=patients.find(x=>x.id===id);
-    p.notes.push({type:'staff',author:'Front Desk',auto:false,ts:new Date().toISOString(),body:v}); renderDetail(); renderList(); }
+  async function addNote(id){ const el=$('#noteInput'); const v=(el?el.value:'').trim(); if(!v)return; const p=patients.find(x=>x.id===id); if(!p)return;
+    if(el) el.disabled=true;
+    try{
+      const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'add_note',patient_id:id,body:v})});
+      const j=await r.json(); if(!j||!j.ok) throw new Error((j&&j.error)||'failed');
+      p.notes=p.notes||[]; p.notes.push({type:'staff',author:j.author,auto:false,ts:j.ts||Date.now(),body:v}); // real author (logged-in staff), now persisted server-side
+      if(el){ el.value=''; el.disabled=false; }
+      renderDetail(); renderList();
+    }catch(e){ console.warn('add_note',e); if(el) el.disabled=false; alert('Could not save the note. Please try again.'); }
+  }
   // ---- appointments (book / reschedule / change / cancel) — persisted on Convex ----
   let apptEdit=null;
   function openApptModal(p){
