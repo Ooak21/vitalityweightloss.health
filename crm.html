@@ -2143,9 +2143,9 @@
     e.preventDefault(); const id=_dragId||(e.dataTransfer&&e.dataTransfer.getData('text/plain')); _dragId=null; if(!id)return;
     if(section==='referrals'){
       const pr=practices.find(x=>x.id===id); if(!pr||pr.stage===stage)return;
-      const prev=pr.stage; pr.stage=stage; renderReferralBoard(); // optimistic
+      const prev=pr.stage, prevTb=pr.touched_by, prevTa=pr.touched_at; pr.stage=stage; pr.touched_by=null; pr.touched_at=null; renderReferralBoard(); // optimistic (moving clears the yellow touched flag)
       try{ const r=await fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'set_stage',practice_id:id,stage})}); const j=await r.json(); if(!j.ok)throw new Error(j.error||'failed'); }
-      catch(err){ console.warn('ref set_stage',err); pr.stage=prev; renderReferralBoard(); alert('Could not move card'); }
+      catch(err){ console.warn('ref set_stage',err); pr.stage=prev; pr.touched_by=prevTb; pr.touched_at=prevTa; renderReferralBoard(); alert('Could not move card'); }
       return;
     }
     const p=patients.find(x=>x.id===id); if(!p||stageOf(p)===stage)return;
@@ -2281,13 +2281,38 @@
   }
   function refCard(p){
     const overdue=p.next_checkin_at && p.next_checkin_at<Date.now();
-    return `<div draggable="true" ondragstart="dragCard(event,'${p.id}')" onclick="openRefFromBoard('${p.id}')" class="bg-white border border-[#e6e9ee] rounded-lg p-2.5 cursor-pointer hover:border-[#0a6cf5]/60 hover:shadow-sm transition">
-      <div class="text-sm font-semibold text-[#16201d] truncate">${invMark(p)}${esc(p.name)}</div>
+    // Same freshness treatment as the patient board: green = newly added partner (not yet opened),
+    // yellow = a rep opened the card but hasn't moved it (shows who). Moving a card clears yellow.
+    const touched=!!p.touched_by;
+    const dropTs=p.created;                                   // when the practice was added
+    const isNew=!touched && p.stage!=='dormant' && dropTs && (Date.now()-dropTs)<4*864e5;
+    const touchFirst=touched?(String(p.touched_by).trim().split(/\s+/)[0]||'staff'):'';
+    const cardCls=touched ? 'bg-[#fffbeb] border-2 border-[#f0b429]/70 hover:border-[#f0b429]'
+                : isNew    ? 'bg-[#f0fdf4] border-2 border-[#0a7a3d]/70 hover:border-[#0a7a3d]'
+                :            'bg-white border border-[#e6e9ee] hover:border-[#0a6cf5]/60';
+    const badge=touched ? `<span class="text-[9px] font-bold uppercase tracking-wide text-[#92400e] bg-[#fde68a] rounded px-1 py-0.5" title="Opened by ${esc(p.touched_by)} but not moved">👁 ${esc(touchFirst)}</span>`
+              : isNew ? '<span class="text-[9px] font-bold uppercase tracking-wide text-white bg-[#0a7a3d] rounded px-1 py-0.5">New</span>' : '';
+    const ageHtml=touched
+      ? `<span class="text-[#92400e] font-semibold flex-shrink-0" title="Opened by ${esc(p.touched_by)}, not moved">👁 ${p.touched_at?rel(new Date(p.touched_at).toISOString()):'seen'}</span>`
+      : overdue ? '<span class="text-[#be123c] flex-shrink-0" title="Overdue for a check-in">● check in</span>'
+      : isNew ? `<span class="text-[#0a7a3d] font-semibold flex-shrink-0" title="Newly added partner">⏳ ${dropTs?rel(new Date(dropTs).toISOString()):'just now'}</span>`
+      : (p.last_touch_at?`<span class="text-[#9aa0ab] flex-shrink-0">${rel(new Date(p.last_touch_at).toISOString())}</span>`:'');
+    return `<div draggable="true" ondragstart="dragCard(event,'${p.id}')" onclick="openRefFromBoard('${p.id}')" class="rounded-lg p-2.5 cursor-pointer hover:shadow-sm transition ${cardCls}">
+      <div class="flex items-center justify-between gap-1">
+        <div class="text-sm font-semibold text-[#16201d] truncate">${invMark(p)}${esc(p.name)}</div>
+        <div class="flex-shrink-0">${badge}</div>
+      </div>
       <div class="text-[11px] text-[#6b7280] mt-0.5 truncate">${[ptypeLabel(p),p.city].filter(Boolean).join(' · ')||'—'}</div>
-      <div class="flex items-center justify-between mt-1.5 text-[10px] gap-1">${p.referral_count?`<span class="text-[#0a7a3d]">${p.referral_count} referred</span>`:'<span></span>'}${overdue?'<span class="text-[#be123c] flex-shrink-0" title="Overdue for a check-in">● check in</span>':(p.last_touch_at?`<span class="text-[#9aa0ab] flex-shrink-0">${rel(new Date(p.last_touch_at).toISOString())}</span>`:'')}</div>
+      <div class="flex items-center justify-between mt-1.5 text-[10px] gap-1">${p.referral_count?`<span class="text-[#0a7a3d]">${p.referral_count} referred</span>`:'<span></span>'}${ageHtml}</div>
     </div>`;
   }
-  window.openRefFromBoard=function(id){ boardOpen=false; document.getElementById('boardPane').classList.add('hidden'); const bt=document.getElementById('boardToggle'); if(bt){ bt.classList.remove('bg-[#0a6cf5]','text-white'); bt.childNodes[0].nodeValue='🗂 Board'; } select(id); };
+  window.openRefFromBoard=async function(id){ boardOpen=false; document.getElementById('boardPane').classList.add('hidden'); const bt=document.getElementById('boardToggle'); if(bt){ bt.classList.remove('bg-[#0a6cf5]','text-white'); bt.childNodes[0].nodeValue='🗂 Board'; }
+    // record the touch (opened but not moved) so the card flags yellow with who looked
+    const pr=practices.find(x=>x.id===id);
+    if(pr && pr.stage!=='dormant'){
+      try{ const h=await convexHeaders(); fetch(CONVEX_URL+'/referral-data',{method:'POST',headers:h,body:JSON.stringify({action:'touch_record',practice_id:id})}).then(r=>r.json()).then(j=>{ if(j&&j.ok){ pr.touched_by=j.touched_by; pr.touched_at=j.touched_at; } }).catch(()=>{}); }catch(_){}
+    }
+    select(id); };
 
   function prRow(p,field,label){ const v=p[field]; const disp=v?esc(String(v)):'<span class="text-[#9aa0ab] italic">add…</span>'; return `<div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">${label}</span><span class="text-sm text-[#16201d] cursor-text hover:bg-[#f4f6f8] rounded px-1.5 py-0.5 -mr-1" title="Click to edit" data-val="${esc(v?String(v):'')}" onclick="prEdit(this,'${p.id}','${field}')">${disp}</span></div>`; }
   function refNoteRow(n){ return `<div class="flex gap-3 pb-4"><div class="flex flex-col items-center"><div class="w-2 h-2 rounded-full bg-[#0a6cf5] mt-1.5"></div><div class="w-px flex-1 bg-[#e6e9ee] mt-1"></div></div><div class="flex-1 -mt-0.5"><div class="flex items-center gap-2 text-xs text-[#6b7280]"><span>${REF_KIND[n.kind]||'📝'}</span><span class="font-semibold text-[#3d4a45] capitalize">${n.kind}</span>${n.author?`<span>· ${esc(n.author)}</span>`:''}<span>· ${rel(new Date(n.ts).toISOString())}</span></div><div class="text-sm text-[#16201d] mt-1 leading-relaxed">${esc(n.body)}</div></div></div>`; }
