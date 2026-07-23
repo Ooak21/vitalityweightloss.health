@@ -824,14 +824,20 @@
   function ibSegLean(mass, pct){
     const labels={right_arm:'R Arm',left_arm:'L Arm',trunk:'Trunk',right_leg:'R Leg',left_leg:'L Leg'};
     mass=mass||{}; pct=pct||{};
+    const mvals=Object.values(mass).map(Number).filter(v=>!isNaN(v));
+    const hasPct=Object.values(pct).some(v=>v!=null&&!isNaN(+v));  // only LookinBody API scans carry %-of-ideal
+    const hasMass=mvals.length>0;
+    if(!hasPct&&!hasMass) return '<div class="text-[11px] text-[#9aa0ab] mb-1.5">Not included on this scan.</div>';
+    const mmax=Math.max(1,...mvals);
     return Object.keys(labels).map(k=>{
       const m=mass[k], pv=pct[k];
-      const w=(pv!=null&&!isNaN(+pv))?Math.max(3,Math.min(100,(+pv/150)*100)):0;
+      // bar tracks %-of-ideal (150% = full) when present, else scales lean mass to the group max
+      const w=(pv!=null&&!isNaN(+pv))?Math.min(100,(+pv/150)*100):(m!=null&&!isNaN(+m)?(+m/mmax*100):0);
       return `<div class="flex items-center gap-2 mb-1.5">
         <span class="text-[11px] text-[#6b7280] w-12">${labels[k]}</span>
-        <div class="flex-1 h-2 rounded-full bg-[#f1f3f7] overflow-hidden"><div style="width:${w.toFixed(0)}%;height:100%;background:#10b981"></div></div>
+        <div class="flex-1 h-2 rounded-full bg-[#f1f3f7] overflow-hidden"><div style="width:${Math.max(3,w).toFixed(0)}%;height:100%;background:#10b981"></div></div>
         <span class="text-[11px] text-[#3d4a45] w-14 text-right">${m!=null?m+' lb':'—'}</span>
-        <span class="text-[11px] font-semibold text-[#0a6cf5] w-16 text-right">${pv!=null?pv+'% ideal':'—'}</span>
+        ${hasPct?`<span class="text-[11px] font-semibold text-[#0a6cf5] w-16 text-right">${pv!=null?pv+'% ideal':'—'}</span>`:''}
       </div>`;
     }).join('');
   }
@@ -1664,7 +1670,7 @@
             </div>
             <div>
               <div class="text-[11px] font-semibold tracking-wide text-[#6b7280] uppercase mb-1">Segmental Lean Analysis</div>
-              <div class="text-[10px] text-[#9aa0ab] mb-3">Lean mass &amp; % of ideal · 5 segments (10 outputs)</div>
+              <div class="text-[10px] text-[#9aa0ab] mb-3">${(p.inbody.segmental_lean_pct_ideal&&Object.values(p.inbody.segmental_lean_pct_ideal).some(v=>v!=null&&!isNaN(+v)))?'Lean mass &amp; % of ideal · 5 segments (10 outputs)':'Lean mass by segment'}</div>
               ${ibSegLean(p.inbody.segmental_lean_lb, p.inbody.segmental_lean_pct_ideal)}
               <div class="text-[11px] font-semibold tracking-wide text-[#6b7280] uppercase mt-4 mb-3">Segmental fat mass</div>
               ${ibSeg(p.inbody.segmental_fat_lb, '#f43f5e')}
