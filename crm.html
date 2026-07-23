@@ -819,6 +819,22 @@
         <span class="text-[11px] text-[#3d4a45] w-12 text-right">${v} lb</span>
       </div>`).join('');
   }
+  // Segmental Lean Analysis = per segment, lean mass (lb) + % of ideal — the 10 InBody outputs.
+  // Bar is scaled to % of ideal (150% = full) so 100% = "at ideal" reads as a strong bar.
+  function ibSegLean(mass, pct){
+    const labels={right_arm:'R Arm',left_arm:'L Arm',trunk:'Trunk',right_leg:'R Leg',left_leg:'L Leg'};
+    mass=mass||{}; pct=pct||{};
+    return Object.keys(labels).map(k=>{
+      const m=mass[k], pv=pct[k];
+      const w=(pv!=null&&!isNaN(+pv))?Math.max(3,Math.min(100,(+pv/150)*100)):0;
+      return `<div class="flex items-center gap-2 mb-1.5">
+        <span class="text-[11px] text-[#6b7280] w-12">${labels[k]}</span>
+        <div class="flex-1 h-2 rounded-full bg-[#f1f3f7] overflow-hidden"><div style="width:${w.toFixed(0)}%;height:100%;background:#10b981"></div></div>
+        <span class="text-[11px] text-[#3d4a45] w-14 text-right">${m!=null?m+' lb':'—'}</span>
+        <span class="text-[11px] font-semibold text-[#0a6cf5] w-16 text-right">${pv!=null?pv+'% ideal':'—'}</span>
+      </div>`;
+    }).join('');
+  }
 
   function lastActivity(p){
     const all=[...p.notes.map(n=>n.ts),...p.calls.map(c=>c.ts)]; return all.length?all.sort().slice(-1)[0]:p.created;
@@ -1620,12 +1636,23 @@
 
         ${p.inbody ? `
         <div class="glass border border-[#e6e9ee] rounded-2xl p-5 mb-6">
-          <div class="flex items-center justify-between mb-4">
-            <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">InBody · Body Composition</div>
-            <div class="text-xs text-[#6b7280]">${p.inbody.model} · ${fmtDate(p.inbody.test_date)} · <span class="text-[#0a6cf5]">imported from scan</span></div>
+          <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <div class="flex items-center gap-2.5 flex-wrap">
+              <span class="inline-flex items-center gap-1.5">
+                <img src="assets/logo-icon.png" class="h-6 w-auto" alt="Vitality Weight Loss">
+                <span style="font-family:Montserrat,Inter,sans-serif;font-weight:700;font-size:13px;letter-spacing:.01em;color:#16201d">Vitality Weight Loss</span>
+              </span>
+              <span class="text-[#d1d5db]">·</span>
+              <span class="inline-flex items-center gap-1.5" title="InBody · LookinBody Web API">
+                <svg viewBox="0 0 34 34" width="19" height="19" aria-hidden="true"><circle cx="17" cy="17" r="14.5" fill="none" stroke="#0a6cf5" stroke-width="2.4"/><path d="M17 2.5 A14.5 14.5 0 0 1 31.5 17 L17 17 Z" fill="#0a6cf5"/><path d="M17 17 L17 31.5 A14.5 14.5 0 0 1 2.5 17 Z" fill="#0a6cf5" opacity=".5"/></svg>
+                <span style="font-family:Montserrat,Inter,sans-serif;font-weight:700;font-size:15px;color:#1C1D21;letter-spacing:-.02em">InBody</span>
+              </span>
+              <span class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase ml-1">Body Composition</span>
+            </div>
+            <div class="text-xs text-[#6b7280]">${p.inbody.model} · ${fmtDate(p.inbody.test_date)} · <span class="text-[#0a6cf5]">${p.inbody.source==='lookinbody'?'via LookinBody Web API':'imported from scan'}</span></div>
           </div>
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-            ${[['Weight',p.inbody.weight_lb+' lb'],['Body Fat',p.inbody.pbf_pct+'%'],['Skeletal Muscle',p.inbody.smm_lb+' lb'],['BMI',p.inbody.bmi],['Body Fat Mass',p.inbody.body_fat_mass_lb+' lb'],['Lean Body Mass',p.inbody.lean_body_mass_lb+' lb'],['Visceral Fat','Lvl '+p.inbody.visceral_fat_level],['BMR',p.inbody.bmr_kcal+' kcal']].map(m=>`<div class="bg-[#f7f8fa] border border-[#e6e9ee] rounded-xl p-3"><div class="text-[11px] text-[#6b7280]">${m[0]}</div><div class="font-display text-lg font-semibold mt-0.5">${m[1]}</div></div>`).join('')}
+            ${(()=>{const ib=p.inbody;const g=[['Weight',ib.weight_lb!=null?ib.weight_lb+' lb':null],['Total Body Water',ib.total_body_water_lb!=null?ib.total_body_water_lb+' lb':null],['Dry Lean Mass',ib.dry_lean_mass_lb!=null?ib.dry_lean_mass_lb+' lb':null],['Skeletal Muscle Mass',ib.smm_lb!=null?ib.smm_lb+' lb':null],['Body Fat Mass',ib.body_fat_mass_lb!=null?ib.body_fat_mass_lb+' lb':null],['Percent Body Fat',ib.pbf_pct!=null?ib.pbf_pct+'%':null],['BMI',ib.bmi!=null?ib.bmi:null],['Lean Body Mass',ib.lean_body_mass_lb!=null?ib.lean_body_mass_lb+' lb':null],['Visceral Fat',ib.visceral_fat_level!=null?'Lvl '+ib.visceral_fat_level:null],['BMR',ib.bmr_kcal!=null?ib.bmr_kcal+' kcal':null]];return g.filter(m=>m[1]!=null).map(m=>`<div class="bg-[#f7f8fa] border border-[#e6e9ee] rounded-xl p-3"><div class="text-[11px] text-[#6b7280]">${m[0]}</div><div class="font-display text-lg font-semibold mt-0.5">${m[1]}</div></div>`).join('');})()}
           </div>
           <div class="grid md:grid-cols-2 gap-x-8 gap-y-1">
             <div>
@@ -1636,14 +1663,15 @@
               ${ibBar('ECW/TBW (water balance)', p.inbody.ecw_tbw, 0.34, 0.40, [{w:.04,c:'#10b981'},{w:.02,c:'#f59e0b'}], '')}
             </div>
             <div>
-              <div class="text-[11px] font-semibold tracking-wide text-[#6b7280] uppercase mb-3">Segmental lean mass</div>
-              ${ibSeg(p.inbody.segmental_lean_lb, '#10b981')}
+              <div class="text-[11px] font-semibold tracking-wide text-[#6b7280] uppercase mb-1">Segmental Lean Analysis</div>
+              <div class="text-[10px] text-[#9aa0ab] mb-3">Lean mass &amp; % of ideal · 5 segments (10 outputs)</div>
+              ${ibSegLean(p.inbody.segmental_lean_lb, p.inbody.segmental_lean_pct_ideal)}
               <div class="text-[11px] font-semibold tracking-wide text-[#6b7280] uppercase mt-4 mb-3">Segmental fat mass</div>
               ${ibSeg(p.inbody.segmental_fat_lb, '#f43f5e')}
             </div>
           </div>
           <div class="flex items-center justify-between mt-5 pt-4 border-t border-[#e6e9ee]">
-            <div class="text-xs text-[#6b7280]">Fat-lean control: <b class="text-[#be123c]">${p.inbody.target_fat_change_lb} lb fat</b> · <b class="text-[#0a6cf5]">0.0 lb lean</b> · TBW <b class="text-[#3d4a45]">${p.inbody.total_body_water_lb} lb</b></div>
+            <div class="text-xs text-[#6b7280]">Fat-lean control: <b class="text-[#be123c]">${p.inbody.target_fat_change_lb!=null?p.inbody.target_fat_change_lb+' lb fat':'target n/a'}</b> · <b class="text-[#0a6cf5]">0.0 lb lean</b> · TBW <b class="text-[#3d4a45]">${p.inbody.total_body_water_lb!=null?p.inbody.total_body_water_lb+' lb':'—'}</b></div>
             <a href="${p.inbody.pdf||'#'}" ${p.inbody.pdf?'target="_blank"':''} class="text-xs text-[#0a6cf5] font-semibold">↧ View original scan (PDF)</a>
           </div>
         </div>` : ''}
