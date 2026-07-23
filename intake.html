@@ -1232,7 +1232,7 @@ async function submitIntake() {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: state.email, first: state.firstName, last: state.lastName, phone: state.phone, tags, requestPortalLogin: true,
-        sex: state.sex || undefined,
+        dob: state.dob || undefined, sex: state.sex || undefined,
         addr_line1: state.addrLine1 || undefined, addr_line2: state.addrLine2 || undefined,
         addr_city: state.addrCity || undefined, addr_state: state.addrState || undefined, addr_zip: state.addrZip || undefined,
         idImageBase64: state.idImageBase64 || undefined,
