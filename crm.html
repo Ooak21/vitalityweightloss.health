@@ -511,6 +511,18 @@
     }catch(e){ alert('Error: '+e.message); }
     finally{ if(btn){ btn.disabled=false; btn.textContent=o; } }
   };
+  // Publish the latest generated plan to the patient's Thrive app (vit_patient_plan). New generations
+  // auto-publish; this covers plans generated earlier and re-publishing on demand.
+  window.publishPlan = async function(pid, btn){
+    if(btn){ btn.disabled=true; }
+    try{
+      const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'publish_plan',patient_id:pid})});
+      const j=await r.json();
+      if(!j||!j.ok) throw new Error((j&&j.error)||'failed');
+      alert("Published. The patient's Transformation Plan now shows in their Thrive app.");
+    }catch(e){ alert('Could not publish: '+((e&&e.message)?e.message:'error')); }
+    finally{ if(btn){ btn.disabled=false; } }
+  };
 
   // ---- lightweight split-button dropdown (used by the Plans cluster) ----
   window.menuToggle=function(btn){
@@ -1587,8 +1599,9 @@
                   <button onclick="genVbisHandbook('${p.id}', this)" ${p.inbody?'':'title="Import an InBody scan first"'} class="px-4 py-2.5 text-[#0a6cf5] font-semibold text-sm hover:bg-[#0a6cf5]/10">✨ Generate Transformation Plan</button>
                   <button onclick="menuToggle(this)" aria-label="More transformation plan actions" class="px-2.5 py-2.5 text-[#0a6cf5] text-xs hover:bg-[#0a6cf5]/10 border-l border-[#0a6cf5]/40">▾</button>
                 </span>
-                <div class="menu-pop hidden absolute left-0 z-30 mt-1 w-60 bg-white rounded-xl border border-[#e6e9ee] shadow-lg p-1">
+                <div class="menu-pop hidden absolute left-0 z-30 mt-1 w-64 bg-white rounded-xl border border-[#e6e9ee] shadow-lg p-1">
                   <button onclick="menuClose(this);openVbisHandbook('${p.id}')" class="w-full text-left px-3 py-2 rounded-lg text-sm text-[#16201d] hover:bg-[#f1f3f7]">📋 View Transformation Plan</button>
+                  <button onclick="menuClose(this);publishPlan('${p.id}', this)" title="Send the latest generated plan to the patient's Thrive app" class="w-full text-left px-3 py-2 rounded-lg text-sm text-[#16201d] hover:bg-[#f1f3f7]">📤 Publish to patient's app</button>
                 </div>
               </div>
               <label id="hbGlp1Wrap" class="px-3 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm flex items-center gap-2 cursor-pointer hover:bg-[#f1f3f7]" title="Checked: the handbook includes GLP-1 medication guidance. Unchecked: lifestyle-only handbook (no GLP-1/semaglutide/tirzepatide mentions). Defaults from the patient's program.">
@@ -2054,6 +2067,17 @@
           <div class="w-12 h-12 rounded-full bg-[#0a6cf5] text-white flex items-center justify-center font-display text-lg font-semibold">${esc((pt.first||'?')[0]+(pt.last||'')[0]||'?')}</div>
           <div><div class="font-display text-xl font-semibold">Welcome back, ${esc(pt.first||'')}</div><div class="text-sm text-[#6b7280]">${PROG[pt.program]||pt.program||''} program</div></div>
         </div>
+        <div class="glass border border-[#0a6cf5]/25 bg-[#f5f9ff] rounded-2xl p-5 mb-6">
+          <div class="flex items-start gap-5 flex-wrap">
+            <div id="thriveQr" class="bg-white rounded-xl p-2 border border-[#e6e9ee] shrink-0" style="width:148px;height:148px;display:flex;align-items:center;justify-content:center"><div class="text-[11px] text-[#9aa0ab] text-center">Loading QR…</div></div>
+            <div class="flex-1" style="min-width:220px">
+              <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-1">📱 Set up the Thrive app</div>
+              <div class="font-display text-lg font-semibold mb-1">Have ${esc(pt.first||'the patient')} scan this now</div>
+              <div class="text-sm text-[#6b7280] leading-snug mb-2">Point their phone camera at the code. Vitality Thrive opens and links to their account, no password needed. On the phone, tap "Add to Home Screen" to install it.</div>
+              <a id="thriveLink" href="#" target="_blank" rel="noopener" class="text-xs text-[#0a6cf5] font-semibold hover:underline">Open the link instead →</a>
+            </div>
+          </div>
+        </div>
         <div class="grid sm:grid-cols-2 gap-4 mb-6">
           <div class="glass border border-[#e6e9ee] rounded-2xl p-5">
             <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-3">Next appointment</div>
@@ -2082,7 +2106,23 @@
                      : '<div class="text-sm text-[#9aa0ab] py-2">No activity logged yet.</div>'}
         </div>
       </div>`;
+      renderThriveQr(p.id);
     }catch(e){ console.warn('renderPortalView',e); const body=document.getElementById('portalBody'); if(body) body.innerHTML='<div class="text-sm text-[#be123c] py-8 text-center">Could not load portal.</div>'; }
+  }
+  // Mint a companion token for this patient and draw the Thrive-app setup QR client-side (the token
+  // grants portal access, so it is NEVER sent to a 3rd-party QR service — QRCode renders it locally).
+  async function renderThriveQr(pid){
+    const box=document.getElementById('thriveQr'); if(!box) return;
+    try{
+      const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'thrive_token',patient_id:pid})});
+      const j=await r.json();
+      if(!j||!j.ok||!j.token){ box.innerHTML='<div class="text-[11px] text-[#be123c] text-center px-1">QR unavailable</div>'; return; }
+      const url='https://vitalityweightloss.health/m.html#t='+j.token;
+      const link=document.getElementById('thriveLink'); if(link) link.href=url;
+      box.innerHTML='';
+      if(typeof QRCode==='undefined'){ box.innerHTML='<div class="text-[11px] text-[#9aa0ab] text-center px-1">Reload to load QR</div>'; return; }
+      new QRCode(box,{text:url,width:130,height:130,colorDark:'#0b1220',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+    }catch(e){ box.innerHTML='<div class="text-[11px] text-[#be123c] text-center px-1">QR error</div>'; }
   }
 
   const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -4116,6 +4156,7 @@ HARD RULES:
     }catch(e){ body.innerHTML='<div class="text-rose-600 py-8 text-center">Lookup failed. Try again.</div>'; }
   }
 </script>
+<script src="assets/qrcode.min.js"></script>
 <script src="handbook-render.js?v=20260711a"></script>
 <!-- ===================== 3D BODY COMPOSITION MAP =====================
   Same stack as the IBS neuro scanner (three@0.128 + GLTFLoader + OrbitControls).
