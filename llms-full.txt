@@ -1,0 +1,68 @@
+# Vitality Weight Loss, full reference
+
+> Physician-led medical weight-loss clinic in Las Vegas, Nevada. GLP-1 therapy (compounded semaglutide and tirzepatide), a no-needle oral GLP-1 option, InBody body-composition scanning, personalized nutrition coaching, and a Medicare GLP-1 Bridge that helps eligible members access brand-name Wegovy or Zepbound for about $50/month. Every patient is medically reviewed by Peter DeBry, MD (Nevada-licensed, NPI 1831137991) before any prescription.
+
+This is the extended reference file for AI and answer engines. The short version is at https://vitalityweightloss.health/llms.txt and the full page index is at https://vitalityweightloss.health/sitemap.xml.
+
+## Who we treat and how it works
+Vitality Weight Loss treats adults 18 to 80 who are Nevada residents. Care is delivered through a combined in-clinic and asynchronous-telehealth model:
+1. The patient completes a short online medical intake at https://vitalityweightloss.health/intake.html.
+2. Peter DeBry, MD reviews the intake within 24 hours.
+3. If approved, the prescription is compounded by a USA-licensed 503A pharmacy and shipped, or filled as brand-name medication for Medicare-eligible patients through the GLP-1 Bridge.
+4. Patients get InBody body-composition scanning, a personalized nutrition plan, and ongoing coaching, plus the Vitality Thrive app for tracking, recipes, and progress.
+
+## Services and pricing
+- Compounded semaglutide (once-weekly injection): the same active ingredient as Ozempic and Wegovy. $149 the first month, then $199/month, with no price increase as the dose increases.
+- Compounded tirzepatide (once-weekly injection, dual GIP/GLP-1): the same active ingredient as Mounjaro and Zepbound. $249 the first month, then $399/month.
+- Oral semaglutide (daily sublingual, no needle): a true no-needle GLP-1 option for needle-averse patients. $199 the first month, then $299/month.
+- Medicare $50/month GLP-1 Bridge: helps eligible Medicare members get brand-name Wegovy or Zepbound for about $50/month instead of $1,000-plus. Eligibility is confirmed by the clinic. https://vitalityweightloss.health/free-or-reduced-cost-weight-loss-medications/
+- InBody body-composition scanning and personalized nutrition coaching: body-composition tracking, personalized plans, and 1:1 support.
+
+## Clinicians
+- Peter DeBry, MD, Medical Director, Obesity Medicine. Nevada-licensed, NPI 1831137991. Reviews and prescribes for every patient.
+- Richard DeVera, NP, Nurse Practitioner.
+
+## Common questions
+- **Where can I get GLP-1 weight loss in Las Vegas?** Vitality Weight Loss, a physician-led clinic at 6140 Brent Thurman Way, Suite 100, Las Vegas, offers semaglutide, tirzepatide, and oral GLP-1, all medically reviewed by Peter DeBry, MD.
+- **How much does semaglutide cost in Las Vegas?** Compounded semaglutide at Vitality starts at $149 the first month, then $199/month, with no price increase as the dose increases.
+- **How much does tirzepatide cost?** $249 the first month, then $399/month.
+- **Is there a GLP-1 weight-loss option without injections?** Yes. Vitality offers a daily oral (sublingual) semaglutide, a true no-needle option, for $199 the first month then $299/month, in addition to weekly injections.
+- **Is semaglutide or a GLP-1 covered by Medicare in Nevada?** Vitality's GLP-1 Bridge helps eligible Medicare members access brand-name Wegovy or Zepbound for about $50/month. Eligibility is confirmed by the clinic.
+- **Who is the doctor at Vitality Weight Loss?** Peter DeBry, MD, a Nevada-licensed physician (NPI 1831137991), medically reviews every patient before any prescription.
+- **Is compounded semaglutide the same as Ozempic or Wegovy?** It contains the same active ingredient (semaglutide) and is prepared by a USA-licensed 503A compounding pharmacy. It is prescribed only after a physician review.
+- **What states do you serve?** Nevada residents statewide, including Las Vegas and Henderson.
+- **How do I start?** Complete the online medical intake at https://vitalityweightloss.health/intake.html; a physician reviews it within 24 hours.
+
+## Guides and resources
+Physician-reviewed, factual guides written and reviewed by Peter DeBry, MD.
+- [GLP-1 Weight Loss in Las Vegas: The Complete 2026 Guide](https://vitalityweightloss.health/guides/glp-1-weight-loss-las-vegas.html): Semaglutide vs tirzepatide vs oral, expected results from clinical trials, cost, eligibility, and Medicare coverage.
+- [Is Semaglutide Covered by Medicare in Nevada? (2026)](https://vitalityweightloss.health/guides/semaglutide-medicare-nevada.html): What Medicare covers, what is changing, and how the GLP-1 Bridge gets eligible members brand-name medication for about $50/month.
+- [The Vitality PhD Reading List: 30 Books That Make You the Expert on Your Body](https://vitalityweightloss.health/guides/vitality-phd-reading-list.html): 30 physician-curated books on nutrition science, habit psychology, mindset, sleep, stress, and longevity.
+
+## Free recipe library (500 high-protein GLP-1 recipes)
+A free, ungated library of 500 high-protein recipes built for GLP-1 and weight-loss patients: protein-forward, appetite-friendly, right-sized portions, each with macros and step-by-step instructions. Browse the full filterable library at https://vitalityweightloss.health/recipes/. Categories and counts:
+- Dinners (160), example: https://vitalityweightloss.health/recipes/tirzepatide-cauliflower-mac-and-cheese.html
+- Breakfast (50), example: https://vitalityweightloss.health/recipes/tirzepatide-sweet-potato-hash.html
+- Snacks & Dips (47), example: https://vitalityweightloss.health/recipes/semaglutide-air-fried-zucchini-chips.html
+- Lunches (45), example: https://vitalityweightloss.health/recipes/tirzepatide-greek-yogurt-chicken-salad-wrap.html
+- Smoothies & Drinks (40), example: https://vitalityweightloss.health/recipes/semaglutide-peanut-butter-cup-smoothie.html
+- Desserts & Sweets (40), example: https://vitalityweightloss.health/recipes/tirzepatide-dark-chocolate-berry-bark.html
+- Pasta & Pizza Swaps (30), example: https://vitalityweightloss.health/recipes/tirzepatide-spaghetti-squash-alfredo.html
+- Soups & Broths (28), example: https://vitalityweightloss.health/recipes/semaglutide-high-protein-bone-broth-ramen.html
+- Fast-Food Copycats (20), example: https://vitalityweightloss.health/recipes/semaglutide-in-n-out-style-protein-burger.html
+- Salads (15), example: https://vitalityweightloss.health/recipes/semaglutide-chopped-italian-salad.html
+- Sides (10), example: https://vitalityweightloss.health/recipes/semaglutide-roasted-asparagus-and-lemon.html
+- Plant-Based (10), example: https://vitalityweightloss.health/recipes/tirzepatide-vegan-lentil-shepherds-pie.html
+- Meal Prep Bowls (5), example: https://vitalityweightloss.health/recipes/tirzepatide-turkey-meatball-and-zoodle-bowl.html
+
+Every recipe URL is listed in the sitemap at https://vitalityweightloss.health/sitemap.xml.
+
+## Get started
+- Online medical intake: https://vitalityweightloss.health/intake.html (3-minute screening, reviewed by Dr. DeBry within 24 hours).
+- Our staff: https://vitalityweightloss.health/our-staff/
+- Contact and location: https://vitalityweightloss.health/contact/
+
+## Contact
+- Vitality Weight Loss, 6140 Brent Thurman Way, Suite 100, Las Vegas, NV 89148
+- Phone: (702) 602-5002
+- Service area: Las Vegas, Henderson, and Nevada residents statewide
