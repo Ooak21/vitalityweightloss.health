@@ -167,6 +167,21 @@ async function api(a, payload){
     if(AUTH_MODE==='token' && QR_TOKEN) return await c.mutation('portal:addLogByToken', { token:QR_TOKEN, kind:p.kind, value_num:p.value_num, unit:p.unit, body:p.body });
     return { ok:false, error:'not signed in' };
   }
+  if(p.action==='complete_task'){
+    if(AUTH_MODE==='jwt') return await c.mutation('portal:completeTrainerTask', { task_id:p.task_id });
+    if(AUTH_MODE==='token' && QR_TOKEN) return await c.mutation('portal:completeTrainerTaskByToken', { token:QR_TOKEN, task_id:p.task_id });
+    return { ok:false, error:'not signed in' };
+  }
+  if(p.action==='send_message'){
+    if(AUTH_MODE==='jwt') return await c.mutation('portal:sendMessage', { body:p.body });
+    if(AUTH_MODE==='token' && QR_TOKEN) return await c.mutation('portal:sendMessageByToken', { token:QR_TOKEN, body:p.body });
+    return { ok:false, error:'not signed in' };
+  }
+  if(p.action==='mark_messages_read'){
+    if(AUTH_MODE==='jwt') return await c.mutation('portal:markMessagesRead', {});
+    if(AUTH_MODE==='token' && QR_TOKEN) return await c.mutation('portal:markMessagesReadByToken', { token:QR_TOKEN });
+    return { ok:true };
+  }
   if(fn==='vit-menu-scan'){
     // /menu-scan is still QR-token-gated server-side; JWT sessions mint a companion token once.
     if(!SCAN_TOKEN && AUTH_MODE==='jwt' && JWT){
@@ -362,6 +377,8 @@ function latestScan(){ const ib=(DATA&&DATA.inbody)||[]; return ib.length?ib[ib.
 
 /* ---------- ROUTER ---------- */
 const TILES=[
+  {id:'tasks',   label:'My Tasks', sub:'From your trainer', icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'},
+  {id:'messages',label:'Messages', sub:'Chat with your care team', icon:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'},
   {id:'connect', label:'Connect Health Data', sub:'Sync your phone + wearables', icon:'<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>'},
   {id:'resources', label:'Free Resources', sub:'Recipes that keep you full', icon:'<path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"/><circle cx="12" cy="9" r="2.5"/>'},
   {id:'plan',   label:'My Plan', sub:'Personal Transformation Plan', icon:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h8M8 15h5"/>'},
@@ -413,6 +430,28 @@ function viewHome(){
       }).join('')}
     </div>
     ${!DATA||!DATA.patient?`<div class="mt-4">${needPlan('Sign in with your portal email and password to load biometrics and your plan. You can still explore the app shell.')}</div>`:''}`;
+}
+
+/* ---------- MY TASKS (trainer-assigned; complete -> points via the one engine) ---------- */
+function viewTasks(){
+  if(!DATA||!DATA.patient){ $('view').innerHTML=backBar('My Tasks')+needPlan(); return; }
+  const tt=(DATA.trainer_tasks||[]); const open=tt.filter(t=>!t.done), done=tt.filter(t=>t.done);
+  const row=t=>`<div class="card p-4 mb-2 flex items-center justify-between gap-3"><div class="min-w-0"><div class="font-display font-semibold ${t.done?'muted line-through':''}">${esc(t.title)}</div>${t.detail?`<div class="text-xs muted mt-0.5">${esc(t.detail)}</div>`:''}<div class="text-[11px] muted mt-1">From ${esc(t.from||'your trainer')}${t.recurrence&&t.recurrence!=='once'?' · '+esc(t.recurrence):''} · +${t.points} pts</div></div>${t.done?`<span class="text-[#5f9127] font-semibold text-sm shrink-0">Done ✓</span>`:`<button class="tt-done px-3 py-2 rounded-xl btnp text-xs font-semibold shrink-0" data-tt="${t.id}">Complete</button>`}</div>`;
+  $('view').innerHTML=backBar('My Tasks')+(tt.length?[...open,...done].map(row).join(''):`<div class="card p-6 text-center muted text-sm">No tasks yet. Your trainer will assign tasks here.</div>`);
+  document.querySelectorAll('.tt-done').forEach(b=>{ b.onclick=async()=>{ b.disabled=true; b.textContent='…'; try{ await api({action:'complete_task',task_id:b.dataset.tt}); DATA=await api({action:'load'}); refreshPts(); }catch(e){} viewTasks(); }; });
+}
+
+/* ---------- MESSAGES (care team, both directions, in Thrive) ---------- */
+function viewMessages(){
+  if(!DATA||!DATA.patient){ $('view').innerHTML=backBar('Messages')+needPlan(); return; }
+  const msgs=(DATA.messages||[]);
+  const thread=msgs.length?msgs.map(m=>{ const mine=m.sender==='patient'; return `<div class="flex ${mine?'justify-end':'justify-start'} mb-2"><div class="max-w-[80%] rounded-2xl px-3.5 py-2 ${mine?'btnp':'card'}"><div class="text-sm whitespace-pre-wrap break-words">${esc(m.body)}</div><div class="text-[10px] mt-0.5 ${mine?'':'muted'} opacity-70">${mine?'You':'Care team'}</div></div></div>`; }).join(''):`<div class="card p-6 text-center muted text-sm">Message your care team anytime. Questions about your plan, side effects, refills, or scheduling.</div>`;
+  $('view').innerHTML=backBar('Messages')+`<div id="mThread" class="mb-3 max-h-[60vh] overflow-y-auto">${thread}</div><div class="flex items-end gap-2"><textarea id="mIn" rows="1" class="flex-1 rounded-xl border p-2.5 text-sm" style="background:var(--surface);border-color:var(--border);color:inherit" placeholder="Message your care team…"></textarea><button id="mSend" class="px-4 py-2.5 rounded-xl btnp text-sm font-semibold shrink-0">Send</button></div><p class="text-[11px] muted mt-2">Private · not for emergencies. If urgent, call the clinic or 911.</p>`;
+  const th=document.getElementById('mThread'); if(th) th.scrollTop=th.scrollHeight;
+  if((DATA.unreadForPatient||0)>0){ api({action:'mark_messages_read'}).catch(()=>{}); }
+  const send=async()=>{ const inp=document.getElementById('mIn'); const v=(inp.value||'').trim(); if(!v) return; const b=document.getElementById('mSend'); b.disabled=true; try{ await api({action:'send_message',body:v}); inp.value=''; DATA=await api({action:'load'}); viewMessages(); }catch(e){ b.disabled=false; } };
+  document.getElementById('mSend').onclick=send;
+  document.getElementById('mIn').onkeydown=(e)=>{ if((e.metaKey||e.ctrlKey)&&e.key==='Enter'){ e.preventDefault(); send(); } };
 }
 
 /* ---------- MEAL TRACKER (plan + today + intake + shopping) ---------- */
@@ -926,7 +965,7 @@ function viewConnect(){
 /* ---------- RENDER ---------- */
 function render(){
   refreshPts();
-  const v={home:viewHome,resources:viewResources,plan:viewPlan,meal:viewMeal,workout:viewWorkout,inject:viewInjection,phd:viewPhd,ibt:viewIbt,scan:viewScan,connect:viewConnect}[VIEW]||viewHome;
+  const v={home:viewHome,resources:viewResources,plan:viewPlan,meal:viewMeal,workout:viewWorkout,inject:viewInjection,phd:viewPhd,ibt:viewIbt,scan:viewScan,connect:viewConnect,tasks:viewTasks,messages:viewMessages}[VIEW]||viewHome;
   v();
 }
 $('brand').onclick=()=>go('home');

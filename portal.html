@@ -134,6 +134,7 @@ async function api(payload){
       if (a.action === 'send_message') return await convex.mutation('portal:sendMessage', { body:a.body });
       if (a.action === 'mark_messages_read') return await convex.mutation('portal:markMessagesRead', {});
       if (a.action === 'mint_token') return await convex.mutation('portal:mintToken', {});
+      if (a.action === 'complete_task') return await convex.mutation('portal:completeTrainerTask', { task_id:a.task_id });
       return { ok:false, error:'unknown action' };
     }
     const r = await fetch(FN, { method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':ANON, 'Authorization':'Bearer '+TOKEN }, body: JSON.stringify(payload||{}) });
@@ -535,6 +536,11 @@ function render(){
     <p class="text-[11px] text-[#9aa0ab] mt-2">Private and secure · not for emergencies. If this is urgent, call the clinic or 911.</p>
   </div></details>`;
 
+  // Trainer-assigned tasks (portal + Thrive). Complete -> logs kind=task -> points via the one engine.
+  const _tt=(DATA.trainer_tasks||[]); const _ttOpen=_tt.filter(t=>!t.done), _ttDone=_tt.filter(t=>t.done);
+  const _ttRow=t=>`<div class="flex items-center justify-between gap-3 rounded-xl border border-[#eef0f4] ${t.done?'bg-[#f0fdf4]':'bg-[#f7f8fa]'} p-3"><div class="min-w-0"><div class="text-sm font-semibold ${t.done?'line-through text-[#9aa0ab]':''}">${esc(t.title)}</div>${t.detail?`<div class="text-xs text-[#6b7280] mt-0.5">${esc(t.detail)}</div>`:''}<div class="text-[11px] text-[#9aa0ab] mt-1">From ${esc(t.from||'your trainer')}${t.recurrence&&t.recurrence!=='once'?' · '+esc(t.recurrence):''} · +${t.points} pts</div></div>${t.done?`<span class="shrink-0 text-[#16a34a] text-sm font-semibold">Done ✓</span>`:`<button data-tt="${t.id}" class="ttBtn shrink-0 px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">Mark complete</button>`}</div>`;
+  const trainerTasks=_tt.length?`<details class="card overflow-hidden" open><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">From your trainer${_ttOpen.length?` <span class="ml-1 inline-flex items-center justify-center text-[10px] font-bold bg-[#0a6cf5] text-white rounded-full h-5 min-w-[20px] px-1.5 align-middle">${_ttOpen.length}</span>`:''}</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5 space-y-2">${[..._ttOpen,..._ttDone].map(_ttRow).join('')}</div></details>`:'';
+
   const injLogs=logs.filter(l=>l.kind==='injection');
   const lastInj=injLogs[0];
   const INJ_SITES=['Left abdomen','Right abdomen','Left thigh','Right thigh','Left arm','Right arm'];
@@ -748,7 +754,7 @@ function render(){
     <p class="text-sm text-[#6b7280] mt-1">${PROGRAMS[p.program]||'Your program'} · <span class="capitalize">${esc((p.status||'').replace('_',' '))}</span></p></div>
     <div class="grid lg:grid-cols-3 gap-6 items-start">
       <div class="lg:col-span-2 space-y-6">${approved}${team}${progress}${inbodyReport}${scanHistory}<section class="card p-6 flex items-center justify-between gap-3"><div><h2 class="font-display text-lg font-semibold">Your Personal Transformation Plan</h2><p class="text-sm text-[#6b7280] mt-0.5">Your complete Personal Transformation Plan: InBody breakdown, every metric decoded, nutrition, workouts, and habits.</p></div><button onclick="openMyHandbook()" class="shrink-0 px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">📖 Open</button></section></div>
-      <div class="space-y-6">${appt}${messages}${injection}${refill}${labs}${sideEffects}${checkin}${measurements}${progressPhotos}${logging}${rewards}${companion}</div>
+      <div class="space-y-6">${appt}${messages}${trainerTasks}${injection}${refill}${labs}${sideEffects}${checkin}${measurements}${progressPhotos}${logging}${rewards}${companion}</div>
     </div>`;
   document.querySelectorAll('.reqBtn').forEach(b=>b.onclick=async()=>{
     b.disabled=true; b.textContent='Sending to Dr. DeBry…';
@@ -768,6 +774,7 @@ function render(){
   }
   // logging wire
   const refresh=async()=>{ DATA=await api({action:'load'}); render(); };
+  document.querySelectorAll('.ttBtn').forEach(b=>{ b.onclick=async()=>{ b.disabled=true; b.textContent='…'; try{ await api({action:'complete_task', task_id:b.dataset.tt}); await refresh(); }catch(e){ b.disabled=false; b.textContent='Mark complete'; } }; });
   $('wBtn').onclick=async()=>{ const v=parseFloat($('wIn').value); if(isNaN(v))return; $('wBtn').disabled=true; await api({action:'add_log',kind:'weigh_in',value_num:v,unit:' lb'}); await refresh(); };
   $('jBtn').onclick=async()=>{ const t=$('jIn').value.trim(); if(!t)return; $('jBtn').disabled=true; await api({action:'add_log',kind:'journal',body:t}); await refresh(); };
   { const _svr=document.getElementById('pInjSyr'); if(_svr){ const _toU=(e)=>{ const r=_svr.getBoundingClientRect(); const cx=(e.clientX!=null)?e.clientX:0; return puX((cx-r.left)/r.width*300); };
