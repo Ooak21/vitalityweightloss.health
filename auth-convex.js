@@ -54,6 +54,30 @@ export async function signUp(email, password, storeKey){
   return t.token;
 }
 
+// Self-service password reset (patients AND staff/providers, same Password provider).
+// Step 1: email a one-time code. We do not reveal whether the account exists.
+export async function requestPasswordReset(email){
+  const c = await newClient();
+  try {
+    await c.action('auth:signIn', { provider:'password', params:{ email, flow:'reset' } });
+  } catch(e){
+    // InvalidAccountId means no account for that email — swallow so we don't leak account existence.
+    if(!/InvalidAccountId/i.test((e && e.message) || '')) throw e;
+  }
+  return true;
+}
+
+// Step 2: verify the emailed code + set a new password. On success the user is signed in;
+// stores the session under storeKey. Throws on a bad/expired code.
+export async function confirmPasswordReset(email, code, newPassword, storeKey){
+  const c = await newClient();
+  const res = await c.action('auth:signIn', { provider:'password', params:{ email, code, newPassword, flow:'reset-verification' } });
+  const t = res && res.tokens;
+  if(!t || !t.token) throw new Error('That code was not valid. Request a new one and try again.');
+  if(storeKey) write(storeKey, t);
+  return t.token;
+}
+
 // Return a valid access token, refreshing if near expiry. Null if no/expired session that can't refresh.
 export async function getToken(storeKey){
   const stored = read(storeKey);

@@ -104,6 +104,19 @@
       </div>
       <button type="submit" id="loginBtn" class="w-full py-3 rounded-xl btnp font-semibold">Sign in</button>
       <div id="loginErr" class="hidden text-sm text-rose-500"></div>
+      <button type="button" id="forgotLink" class="w-full text-center text-sm font-semibold" style="color:var(--accent)">Forgot password?</button>
+    </form>
+    <form id="resetForm" class="card p-5 space-y-3 hidden">
+      <div class="font-display font-semibold">Reset password</div>
+      <p class="text-sm muted" id="resetHint">Enter your email and we will send a reset code.</p>
+      <input id="resetEmail" type="email" class="field" autocomplete="username" placeholder="you@email.com">
+      <div id="resetStep2" class="hidden space-y-3">
+        <input id="resetCode" type="text" inputmode="numeric" class="field" autocomplete="one-time-code" placeholder="8-digit code from your email">
+        <input id="resetNewPw" type="password" class="field" autocomplete="new-password" placeholder="New password (8+ characters)">
+      </div>
+      <button type="submit" id="resetBtn" class="w-full py-3 rounded-xl btnp font-semibold">Send reset code</button>
+      <div id="resetErr" class="hidden text-sm text-rose-500"></div>
+      <button type="button" id="backToLogin" class="w-full text-center text-sm muted font-semibold">Back to sign in</button>
     </form>
     <p class="text-center text-xs muted mt-5 leading-relaxed">Need access? Ask the clinic front desk to provision your portal login.<br>Or open the QR from your web portal once to link this phone.</p>
   </div>
@@ -357,6 +370,35 @@ $('loginForm').addEventListener('submit', async (e)=>{
     err.classList.remove('hidden');
   }finally{
     btn.disabled=false; btn.textContent='Sign in';
+  }
+});
+
+// ---- self-service password reset (Thrive) ----
+$('forgotLink').addEventListener('click', ()=>{ $('loginForm').classList.add('hidden'); $('resetForm').classList.remove('hidden'); $('resetEmail').value=($('loginEmail').value||'').trim(); });
+$('backToLogin').addEventListener('click', ()=>{ $('resetForm').classList.add('hidden'); $('loginForm').classList.remove('hidden'); });
+let _resetStage=1;
+$('resetForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const err=$('resetErr'), btn=$('resetBtn'); err.classList.add('hidden');
+  const auth=await loadAuth();
+  if(_resetStage===1){
+    const email=($('resetEmail').value||'').trim().toLowerCase(); if(!email){ err.textContent='Enter your email.'; err.classList.remove('hidden'); return; }
+    btn.disabled=true; btn.textContent='Sending…';
+    try{ await auth.requestPasswordReset(email); }catch(_){}
+    _resetStage=2; $('resetStep2').classList.remove('hidden'); $('resetEmail').setAttribute('readonly','readonly');
+    $('resetHint').textContent='If an account exists for that email, a code is on the way. Enter it below with a new password.';
+    btn.textContent='Reset password'; btn.disabled=false; $('resetCode').focus();
+  } else {
+    const email=($('resetEmail').value||'').trim().toLowerCase(), code=($('resetCode').value||'').trim(), pw=$('resetNewPw').value||'';
+    if(!code || pw.length<8){ err.textContent='Enter the code and a new password (8+ characters).'; err.classList.remove('hidden'); return; }
+    btn.disabled=true; btn.textContent='Resetting…';
+    try{
+      JWT=await auth.confirmPasswordReset(email, code, pw, auth.STORE_PATIENT);
+      AUTH_MODE='jwt';
+      const r=await ensurePatientData();
+      if(!r.ok){ await auth.signOut(auth.STORE_PATIENT); JWT=null; AUTH_MODE=null; throw new Error(r.error||'Reset failed'); }
+      showApp(); render(); showInstallBanner();
+    }catch(ex){ err.textContent=(ex&&ex.message)||'That code was not valid. Try again.'; err.classList.remove('hidden'); btn.disabled=false; btn.textContent='Reset password'; }
   }
 });
 $('acctBtn').onclick=async()=>{

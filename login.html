@@ -35,7 +35,23 @@
     <input id="password" type="password" class="field mt-1 mb-5" placeholder="••••••••" autocomplete="current-password" required>
     <button type="submit" id="btn" class="w-full px-6 py-3 rounded-2xl bg-[#0a6cf5] text-white font-semibold hover:bg-[#0856c8] transition active:scale-[0.99]">Sign in</button>
     <div id="err" class="text-sm text-rose-600 mt-3 hidden"></div>
+    <button type="button" id="forgotLink" class="w-full text-center text-sm text-[#0a6cf5] font-semibold mt-3 hover:underline">Forgot password?</button>
   </form>
+  <div id="resetPanel" class="hidden bg-white shadow-[0_18px_44px_-22px_rgba(16,24,40,0.18)] border border-[#e6e9ee] rounded-3xl p-7">
+    <h1 class="font-display text-xl font-semibold mb-1">Reset password</h1>
+    <p class="text-sm text-[#6b7280] mb-5" id="resetHint">Enter your email and we will send you a reset code.</p>
+    <label class="text-xs font-semibold text-[#3d4a45]">Email</label>
+    <input id="resetEmail" type="email" class="field mt-1 mb-4" placeholder="you@vitalityweightloss.health" autocomplete="username">
+    <div id="resetStep2" class="hidden">
+      <label class="text-xs font-semibold text-[#3d4a45]">Reset code (from your email)</label>
+      <input id="resetCode" type="text" inputmode="numeric" class="field mt-1 mb-4" placeholder="8-digit code" autocomplete="one-time-code">
+      <label class="text-xs font-semibold text-[#3d4a45]">New password</label>
+      <input id="resetNewPw" type="password" class="field mt-1 mb-5" placeholder="At least 8 characters" autocomplete="new-password">
+    </div>
+    <button type="button" id="resetBtn" class="w-full px-6 py-3 rounded-2xl bg-[#0a6cf5] text-white font-semibold hover:bg-[#0856c8] transition active:scale-[0.99]">Send reset code</button>
+    <div id="resetErr" class="text-sm text-rose-600 mt-3 hidden"></div>
+    <button type="button" id="backToLogin" class="w-full text-center text-sm text-[#9aa0ab] font-semibold mt-3 hover:underline">Back to sign in</button>
+  </div>
   <p class="text-center text-xs text-[#9aa0ab] mt-6">Vitality Weight Loss · Las Vegas</p>
 </div>
 <script type="module">
@@ -67,6 +83,31 @@
       const isAuth = /invalidaccountid|invalidsecret|invalid|account|secret|password|credential|unauthor|401/i.test(raw);
       err.textContent = isAuth ? 'Invalid email or password.' : 'Sign in failed. Please try again.';
       err.classList.remove('hidden'); btn.textContent='Sign in'; btn.disabled=false;
+    }
+  });
+
+  // ---- self-service password reset ----
+  const resetPanel=document.getElementById('resetPanel'), forgotLink=document.getElementById('forgotLink'), backToLogin=document.getElementById('backToLogin');
+  const resetEmail=document.getElementById('resetEmail'), resetStep2=document.getElementById('resetStep2'), resetCode=document.getElementById('resetCode'), resetNewPw=document.getElementById('resetNewPw'), resetBtn=document.getElementById('resetBtn'), resetErr=document.getElementById('resetErr'), resetHint=document.getElementById('resetHint');
+  let resetStage=1;
+  forgotLink.addEventListener('click', ()=>{ f.classList.add('hidden'); resetPanel.classList.remove('hidden'); resetEmail.value=(document.getElementById('email').value||'').trim(); });
+  backToLogin.addEventListener('click', ()=>{ resetPanel.classList.add('hidden'); f.classList.remove('hidden'); });
+  resetBtn.addEventListener('click', async ()=>{
+    resetErr.classList.add('hidden');
+    const mod = await import('./auth-convex.js');
+    if(resetStage===1){
+      const email=(resetEmail.value||'').trim().toLowerCase(); if(!email){ resetErr.textContent='Enter your email.'; resetErr.classList.remove('hidden'); return; }
+      resetBtn.disabled=true; resetBtn.textContent='Sending…';
+      try{ await mod.requestPasswordReset(email); }catch(_){}
+      resetStage=2; resetStep2.classList.remove('hidden'); resetEmail.setAttribute('readonly','readonly');
+      resetHint.textContent='If an account exists for that email, a code is on the way. Enter it below with a new password.';
+      resetBtn.textContent='Reset password'; resetBtn.disabled=false; resetCode.focus();
+    } else {
+      const email=(resetEmail.value||'').trim().toLowerCase(), code=(resetCode.value||'').trim(), pw=resetNewPw.value||'';
+      if(!code || pw.length<8){ resetErr.textContent='Enter the code and a new password (at least 8 characters).'; resetErr.classList.remove('hidden'); return; }
+      resetBtn.disabled=true; resetBtn.textContent='Resetting…';
+      try{ const { STORE_STAFF } = mod; await mod.confirmPasswordReset(email, code, pw, STORE_STAFF); location.replace('crm.html'); }
+      catch(e){ resetErr.textContent=(e&&e.message)||'That code was not valid. Try again.'; resetErr.classList.remove('hidden'); resetBtn.disabled=false; resetBtn.textContent='Reset password'; }
     }
   });
 </script>
