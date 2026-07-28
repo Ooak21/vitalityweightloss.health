@@ -1108,12 +1108,39 @@ function playVwl(){
   function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
   function bubble(t,who){var m=document.getElementById('veeMsgs');var w=document.createElement('div');w.className=who==='user'?'flex justify-end':'flex justify-start';w.innerHTML='<div class="'+(who==='user'?'bg-[#0a6cf5] text-white':'bg-white text-[#16201d] border border-[#e6e9ee]')+' rounded-2xl px-3.5 py-2 text-sm max-w-[82%] leading-relaxed">'+esc(t)+'</div>';m.appendChild(w);m.scrollTop=m.scrollHeight;return w;}
   function ctaBubble(c){var m=document.getElementById('veeMsgs');var w=document.createElement('div');w.className='flex justify-start';w.innerHTML='<a href="'+esc(c.url)+'" class="inline-flex items-center gap-1.5 bg-[#0a6cf5] text-white rounded-2xl px-4 py-2 text-sm font-semibold hover:bg-[#0856c8]" style="text-decoration:none">'+esc(c.label)+' <span>&rarr;</span></a>';m.appendChild(w);m.scrollTop=m.scrollHeight;}
+  // Real open times from the clinic's live schedule, as tappable chips. The visitor picks a slot
+  // instead of typing one back for Vee to re-parse, which is where a wrong time would creep in.
+  // Tapping sends the exact wording Vee offered, so the slot_id it books is the one shown here.
+  function slotChips(slots){
+    var m=document.getElementById('veeMsgs');
+    var w=document.createElement('div');w.className='flex justify-start flex-wrap gap-1.5 px-1';
+    slots.slice(0,6).forEach(function(s){
+      var b=document.createElement('button');
+      b.className='vee-slot bg-white border border-[#0a6cf5]/40 text-[#0a6cf5] rounded-xl px-3 py-1.5 text-[13px] font-semibold hover:bg-[#0a6cf5]/10 transition';
+      b.textContent=s.label;
+      b.title=s.provider?('with '+s.provider):'';
+      b.onclick=function(){
+        if(busy)return;
+        w.querySelectorAll('button').forEach(function(x){x.disabled=true;x.classList.add('opacity-40');});
+        var inp=document.getElementById('veeInput');
+        inp.value="Yes, book me for "+(s.when||s.label)+".";
+        window.veeSend();
+      };
+      w.appendChild(b);
+    });
+    m.appendChild(w);m.scrollTop=m.scrollHeight;
+  }
+  function bookedBubble(b){
+    var m=document.getElementById('veeMsgs');var w=document.createElement('div');w.className='flex justify-start';
+    w.innerHTML='<div class="bg-[#f0faf2] text-[#0a3d22] border border-[#cfe6d4] rounded-2xl px-3.5 py-2.5 text-sm max-w-[88%] leading-relaxed">✅ <b>You’re on the schedule</b><br>'+esc(b.when||'')+(b.provider?'<br><span class="text-[#3d6b4f]">with '+esc(b.provider)+'</span>':'')+'<br><span class="text-[12px] text-[#3d6b4f]">6140 Brent Thurman Way, Suite 100 · please arrive 10 minutes early. A confirmation is on its way by email.</span></div>';
+    m.appendChild(w);m.scrollTop=m.scrollHeight;
+  }
   window.veeToggleChat=function(){opened=!opened;var p=document.getElementById('veePanel');p.classList.toggle('hidden',!opened);if(opened){var _first=!document.getElementById('veeMsgs').children.length;if(_first){bubble("Hey there! \uD83D\uDC4B I'm Vee, the Vitality front desk. I can help with programs, pricing, hours, or getting you booked. What can I help you with?",'bot');if(webinarLive())webinarBubble();}hideTeaser();document.getElementById('veeInput').focus();}};
   window.veeSend=async function(){if(busy)return;var inp=document.getElementById('veeInput');var t=inp.value.trim();if(!t)return;inp.value='';bubble(t,'user');convo.push({role:'user',content:t});busy=true;var typing=bubble('…','bot');
     try{var d;
       if(USE_CONVEX_VEE){var c=await getVeeConvex();d=await c.action('vee:chat',{messages:convo,session_id:SID});}
       else{var r=await fetch(SB+'/functions/v1/vit-chat',{method:'POST',headers:{'content-type':'application/json','apikey':ANON,'authorization':'Bearer '+ANON},body:JSON.stringify({messages:convo,session_id:SID})});d=await r.json();}
-      typing.remove();var reply=(d&&d.reply)||"Sorry, I had trouble there. You can reach us at (702) 602-5002.";bubble(reply,'bot');if(d&&d.cta&&d.cta.url)ctaBubble(d.cta);convo.push({role:'assistant',content:reply});}
+      typing.remove();var reply=(d&&d.reply)||"Sorry, I had trouble there. You can reach us at (702) 602-5002.";bubble(reply,'bot');if(d&&d.cta&&d.cta.url)ctaBubble(d.cta);if(d&&d.booked&&d.booking)bookedBubble(d.booking);else if(d&&d.slots&&d.slots.length)slotChips(d.slots);convo.push({role:'assistant',content:reply});}
     catch(e){typing.remove();bubble("Sorry, I had trouble connecting. Please call (702) 602-5002.",'bot');}
     busy=false;inp.focus();
   };

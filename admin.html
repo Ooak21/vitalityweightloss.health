@@ -55,6 +55,7 @@ let EMAIL=null, EMAIL_DAYS=30, EMAIL_CAT='all';
 const CONTRACT_START=new Date('2026-06-18T00:00:00').getTime();
 const COVER_DAYS=30;
 let BILL_FROM=CONTRACT_START, BILL_TO=Date.now();
+let PRODUCTION=null, PROD_FROM=Date.now()-30*86400000, PROD_TO=Date.now();
 
 // code shield: neutral codes in the DB/log; human labels decoded ONLY here in the admin UI
 const CODES={'S-001':'Role changed','S-002':'Staff added','S-003':'Access deactivated','S-004':'Access reactivated','A-001':'Chart accessed','M-001':'Record modified','M-002':'Note added','D-001':'Disclosure / sent','V-001':'Vendor risk reviewed','100-001':'Record created'};
@@ -254,6 +255,62 @@ function viewReports(){
   </section>`;
 }
 
+// Team production — who is actually moving records, over a date range.
+// Reads the audit trail, which every write path already stamps. Rows written before the
+// attribution fix carry an opaque session id instead of a name; those are shown honestly as
+// unattributed rather than being guessed at or quietly dropped.
+function viewProduction(){
+  if(!PRODUCTION){ (async()=>{ PRODUCTION=await api({action:'production',from:PROD_FROM,to:PROD_TO}); render(); })(); return '<div class="card p-8 text-center text-[#9aa0ab] text-sm">Loading team production…</div>'; }
+  const P=PRODUCTION;
+  if(!P.ok){ return '<div class="card p-8 text-center text-rose-600 text-sm">Team production is admin-only. '+esc(P.error||'')+'</div>'; }
+  const dISO=(t)=>new Date(t).toISOString().slice(0,10);
+  const METRICS=[['patients_added','Added'],['stages_advanced','Advanced'],['appts_booked','Booked'],['chart_notes','Notes'],['portals_provisioned','Portals'],['checkins','Check-ins'],['status_changes','Status'],['archived','Archived']];
+  const people=P.people||[];
+  const staff=people.filter(p=>p.kind==='staff');
+  const machines=people.filter(p=>p.kind==='agent'||p.kind==='system');
+  const unattr=people.find(p=>p.kind==='unattributed');
+  const KIND={staff:'',agent:'<span class="pill bg-[#eef2ff] text-[#4338ca] text-[10px]">agent</span>',system:'<span class="pill bg-[#f1f3f7] text-[#6b7280] text-[10px]">system</span>'};
+  const row=(p)=>`<tr class="border-b border-[#f5f6f8]">
+    <td class="py-2 pr-3 font-medium">${esc(p.actor)} ${KIND[p.kind]||''}${p.role?`<span class="pill bg-[#eef2f7] text-[#4b5563] text-[10px] ml-1">${esc(p.role)}</span>`:''}</td>
+    ${METRICS.map(([k])=>`<td class="py-2 pr-3 seg ${p.counts[k]?'':'text-[#c8ccd4]'}">${p.counts[k]||'·'}</td>`).join('')}
+    <td class="py-2 seg font-semibold text-right">${p.total}</td></tr>`;
+  const ch=P.booking_channels||{};
+  const CHAN={crm:'Front desk (CRM)',phone:'Vee — phone',web_chat:'Vee — website chat',portal:'Patient portal',kiosk:'Check-in kiosk',gcal:'Google Calendar'};
+  const chanRows=Object.keys(ch).length
+    ? Object.entries(ch).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<tr class="border-b border-[#f5f6f8]"><td class="py-2 pr-3">${CHAN[k]||esc(k)}</td><td class="py-2 seg font-semibold text-right">${n}</td></tr>`).join('')
+    : '<tr><td colspan="2" class="py-6 text-center text-[#9aa0ab]">No appointments booked in this period.</td></tr>';
+  const openTouch=staff.filter(p=>p.open_touches>0);
+  return `<section class="space-y-4">
+    ${unattr?`<div class="rounded-xl border border-[#f0d9a0] bg-[#fdf6e8] p-4 text-sm"><span class="font-semibold text-[#9a6a00]">${unattr.total} action${unattr.total===1?'':'s'} in this period can't be attributed to a person.</span> Those were recorded before the attribution fix, when writes stored an opaque session id instead of a staff name. Everything from here forward is attributed; this number will stop growing and age out of the window.</div>`:''}
+    <div class="card p-6">
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div><h2 class="font-display text-lg font-semibold">Team production</h2><p class="text-[11px] text-[#9aa0ab] mt-.5">Records moved, by person. Counts real work on the board, not logins or time spent.</p></div>
+        <div class="flex items-center gap-2 text-xs">
+          <label class="text-[#9aa0ab]">From</label><input id="pFrom" type="date" value="${dISO(P.from)}" class="border border-[#e6e9ee] rounded-lg px-2 py-1">
+          <label class="text-[#9aa0ab]">To</label><input id="pTo" type="date" value="${dISO(P.to)}" class="border border-[#e6e9ee] rounded-lg px-2 py-1">
+          <button id="prodcsv" class="px-3 py-1.5 rounded-lg border border-[#e6e9ee] font-semibold hover:bg-[#f1f3f7]">⬇ CSV</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-[10px] uppercase tracking-wide text-[#9aa0ab] text-left border-b border-[#eef0f4]">
+        <th class="py-2 pr-3">Person</th>${METRICS.map(([,l])=>`<th class="py-2 pr-3">${l}</th>`).join('')}<th class="py-2 text-right">Total</th>
+      </tr></thead><tbody>${staff.length?staff.map(row).join(''):`<tr><td colspan="${METRICS.length+2}" class="py-6 text-center text-[#9aa0ab]">No attributed staff activity in this period yet.</td></tr>`}</tbody></table></div>
+      ${machines.length?`<div class="mt-5 pt-4 border-t border-[#eef0f4]"><div class="text-[11px] uppercase tracking-wide text-[#9aa0ab] font-semibold mb-2">Automated</div>
+      <div class="overflow-x-auto"><table class="w-full text-sm"><tbody>${machines.map(row).join('')}</tbody></table></div></div>`:''}
+    </div>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="card p-6">
+        <h3 class="font-display font-semibold mb-3">Where bookings came from</h3>
+        <div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-[10px] uppercase tracking-wide text-[#9aa0ab] text-left border-b border-[#eef0f4]"><th class="py-2 pr-3">Channel</th><th class="py-2 text-right">Appointments</th></tr></thead><tbody>${chanRows}</tbody></table></div>
+      </div>
+      <div class="card p-6">
+        <h3 class="font-display font-semibold mb-3">Cards opened, not advanced</h3>
+        <p class="text-[11px] text-[#9aa0ab] mb-3">Records someone opened on the board and left where they were. Current state, not the date range.</p>
+        <div class="overflow-x-auto"><table class="w-full text-sm"><tbody>${openTouch.length?openTouch.sort((a,b)=>b.open_touches-a.open_touches).map(p=>`<tr class="border-b border-[#f5f6f8]"><td class="py-2 pr-3 font-medium">${esc(p.actor)}</td><td class="py-2 seg font-semibold text-right">${p.open_touches}</td></tr>`).join(''):'<tr><td class="py-6 text-center text-[#9aa0ab]">Nothing sitting opened-but-not-advanced.</td></tr>'}</tbody></table></div>
+      </div>
+    </div>
+  </section>`;
+}
+
 function viewBilling(){
   if(!BILLING){ (async()=>{ BILLING=await api({action:'billing',from:BILL_FROM,to:BILL_TO}); render(); })(); return '<div class="card p-8 text-center text-[#9aa0ab] text-sm">Loading billing…</div>'; }
   const B=BILLING;
@@ -388,7 +445,7 @@ function render(){
   // plus the support ticket queue. No Systems/Access/Reporting/Billing/Vendor/Audit.
   const TABS = PROVIDER_MODE
     ? [['tasks','My queue'],['tickets','Tickets']]
-    : [['systems','Systems'],['access','Access control'],['tasks','Tasks'],['tickets','Tickets'],['reports','Reporting'],['email','Email metrics'],['billing','Billing'],['vendors','Vendor risk'],['audit','Audit log']];
+    : [['systems','Systems'],['access','Access control'],['tasks','Tasks'],['tickets','Tickets'],['reports','Reporting'],['email','Email metrics'],['billing','Billing'],['production','Team'],['vendors','Vendor risk'],['audit','Audit log']];
   const head = PROVIDER_MODE
     ? '<div><h1 class="font-display text-2xl font-semibold tracking-[-.5px]">Provider workspace</h1><p class="text-sm text-[#6b7280] mt-1">Your Rx review queue and support tickets.</p></div>'
     : '<div><h1 class="font-display text-2xl font-semibold tracking-[-.5px]">Operations</h1><p class="text-sm text-[#6b7280] mt-1">Access control, the task board, and the compliance audit trail.</p></div>';
@@ -397,7 +454,7 @@ function render(){
     <div class="flex gap-2 flex-wrap">
       ${TABS.map(([k,label])=>`<span class="tab ${TAB===k?'on':''}" data-t="${k}">${label}</span>`).join('')}
     </div>
-    ${TAB==='systems'?viewSystems():TAB==='access'?viewAccess():TAB==='tasks'?viewTasks():TAB==='tickets'?viewTickets():TAB==='reports'?viewReports():TAB==='email'?viewEmail():TAB==='billing'?viewBilling():TAB==='vendors'?viewVendors():viewAudit()}`;
+    ${TAB==='systems'?viewSystems():TAB==='access'?viewAccess():TAB==='tasks'?viewTasks():TAB==='tickets'?viewTickets():TAB==='reports'?viewReports():TAB==='email'?viewEmail():TAB==='billing'?viewBilling():TAB==='production'?viewProduction():TAB==='vendors'?viewVendors():viewAudit()}`;
   document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{ TAB=t.dataset.t; render(); });
   if(TAB==='systems' && SYS){
     const rc=$('runChk'); if(rc) rc.onclick=async()=>{ rc.disabled=true; rc.textContent='Running…'; await sysApi({action:'run'}); SYS=await sysApi({action:'load'}); render(); };
@@ -421,6 +478,15 @@ function render(){
     const apply=()=>{ if(bf&&bf.value) BILL_FROM=new Date(bf.value+'T00:00:00').getTime(); if(bt&&bt.value) BILL_TO=new Date(bt.value+'T23:59:59').getTime(); BILLING=null; render(); };
     if(bf) bf.onchange=apply; if(bt) bt.onchange=apply;
     const bc=$('billcsv'); if(bc) bc.onclick=()=>{ const rows=[['when','provider','feature','user','role','input_tokens','output_tokens','usd']].concat((BILLING.recent||[]).map(r=>[new Date(r.ts).toISOString(),r.provider,r.surface,(r.actor||''),r.role,r.in,r.out,(r.micros/1e6).toFixed(6)])); const csv=rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='vitality-api-billing-'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); };
+  } else if(TAB==='production' && PRODUCTION){
+    const pf=$('pFrom'), pt=$('pTo');
+    const applyP=()=>{ if(pf&&pf.value) PROD_FROM=new Date(pf.value+'T00:00:00').getTime(); if(pt&&pt.value) PROD_TO=new Date(pt.value+'T23:59:59').getTime(); PRODUCTION=null; render(); };
+    if(pf) pf.onchange=applyP; if(pt) pt.onchange=applyP;
+    const pc=$('prodcsv'); if(pc) pc.onclick=()=>{
+      const M=['patients_added','stages_advanced','appts_booked','chart_notes','portals_provisioned','checkins','status_changes','archived'];
+      const rows=[['person','kind','role',...M,'total']].concat((PRODUCTION.people||[]).map(p=>[p.actor,p.kind,p.role||'',...M.map(k=>p.counts[k]||0),p.total]));
+      const csv=rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')).join('\n');
+      const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='vitality-team-production-'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); };
   } else if(TAB==='vendors'){
     const vr=$('vrev'); if(vr) vr.onclick=async()=>{ vr.disabled=true; vr.textContent='Logging…'; DATA=await api({action:'vendor_review'}); render(); };
     const vc=$('vcsv'); if(vc) vc.onclick=()=>{ const lastRev=(DATA.audit||[]).find(a=>a.code==='V-001'); const revStamp=lastRev?(fmtTs(lastRev.ts)+(lastRev.actor?' by '+lastRev.actor:'')):'never'; const rows=[['side','vendor','category','use','data_class','baa','risk','flag','mitigation','last_reviewed','note']].concat(VENDORS.map(v=>[v.side==='them'?'clinic':'ours',v.name,v.cat,v.use,v.data,v.baa,v.risk,vFlag(v)?'flag':'',v.mit,revStamp,v.note])); const csv=rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='vitality-vendor-risk-'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); };
