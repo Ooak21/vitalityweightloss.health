@@ -141,6 +141,7 @@
       <button onclick="setViewMode('portal')" data-mode="portal" class="vm-btn px-3 py-2 text-[#4b5563] border-l border-[#e6e9ee]">Patient Portal</button>
     </div>
     <div class="flex items-center gap-4 pl-4 ml-1 border-l border-[#e6e9ee]">
+      <button onclick="openSchedule()" class="text-xs font-medium text-[#6b7280] hover:text-[#0a6cf5] transition-colors" title="Set the clinic's bookable hours, closures, and appointment lengths — what the front desk, the website chat, and Vee on the phone all book against">Hours</button>
       <a href="templates.html" class="text-xs font-medium text-[#6b7280] hover:text-[#0a6cf5] transition-colors" title="Email Template Library">Templates</a>
       <a href="sequences.html" class="text-xs font-medium text-[#6b7280] hover:text-[#0a6cf5] transition-colors" title="Sequences">Sequences</a>
       <a href="admin.html" class="text-xs font-medium text-[#6b7280] hover:text-[#0a6cf5] transition-colors" title="Admin & Operations (admins only)">Admin</a>
@@ -2954,6 +2955,166 @@
       renderDetail(); renderList(); if(boardOpen) renderBoard(); updateInquiryBadge(); kpis();
       alert(`${nm} archived.` + (j.sequences_stopped?` ${j.sequences_stopped} active email sequence(s) stopped.`:''));
     }catch(e){ console.warn('archive_patient',e); alert('Could not archive that record. Please try again.'); }
+  };
+
+  // ---- Hours & availability ---------------------------------------------------------------
+  // The clinic owns its own bookable hours. Until now these only existed as a seeded default
+  // (Mon-Fri 9-5, lunch 12-1) that could only be changed from the command line, which meant the
+  // schedule Vee books against was whatever a developer last typed. This is the editor for it.
+  // One source of truth: the same hours drive the phone receptionist, the website chat and the CRM.
+  let SCHED=null, schedSel=null;
+  const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const m2t=(m)=>{const h=Math.floor(m/60),mm=m%60;return String(h).padStart(2,'0')+':'+String(mm).padStart(2,'0');};
+  const t2m=(t)=>{const p=String(t||'').split(':');const h=parseInt(p[0],10),mm=parseInt(p[1],10);return (isNaN(h)||isNaN(mm))?null:h*60+mm;};
+  async function schedPost(body){
+    const r=await fetch(CONVEX_URL+'/schedule-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify(body)});
+    const j=await r.json(); if(!j||!j.ok) throw new Error((j&&j.error)||'failed'); return j;
+  }
+  window.openSchedule=async function(){
+    let ov=document.getElementById('schedOverlay');
+    if(!ov){ ov=document.createElement('div'); ov.id='schedOverlay';
+      ov.className='fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4';
+      ov.onclick=(e)=>{ if(e.target===ov) ov.remove(); };
+      document.body.appendChild(ov); }
+    ov.innerHTML=`<div class="bg-white rounded-2xl border border-[#e6e9ee] shadow-xl w-full max-w-4xl max-h-[86vh] flex flex-col">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-[#eef1f4]">
+        <div><h3 class="font-display text-lg font-semibold">Hours &amp; availability</h3>
+        <div class="text-xs text-[#6b7280] mt-0.5">These hours are what the front desk, the website chat, and Vee on the phone all book against. Google Calendar busy is subtracted on top.</div></div>
+        <button onclick="document.getElementById('schedOverlay').remove()" class="text-[#9aa0ab] hover:text-[#16201d] text-lg leading-none">✕</button>
+      </div>
+      <div id="schedBody" class="p-5 overflow-y-auto text-sm text-[#6b7280]">Loading…</div>
+    </div>`;
+    try{ SCHED=await schedPost({action:'board'}); if(!schedSel||!SCHED.schedulables.some(s=>s.id===schedSel)) schedSel=(SCHED.schedulables[0]||{}).id||null; renderSchedule(); }
+    catch(e){ console.warn('schedule',e); const b=document.getElementById('schedBody'); if(b) b.textContent='Could not load the schedule settings.'; }
+  };
+  function renderSchedule(){
+    const b=document.getElementById('schedBody'); if(!b||!SCHED) return;
+    const people=SCHED.schedulables||[], types=SCHED.types||[], exc=SCHED.exceptions||[];
+    const p=people.find(x=>x.id===schedSel)||people[0];
+    const roster=people.map(s=>`<button onclick="schedPick('${s.id}')" class="w-full text-left px-3 py-2 rounded-lg text-sm ${p&&s.id===p.id?'bg-[#0a6cf5]/10 text-[#0a6cf5] font-semibold':'hover:bg-[#f1f3f7] text-[#16201d]'}">
+      ${esc(s.display_name)}<div class="text-[10px] ${s.active?'text-[#9aa0ab]':'text-[#be123c]'}">${s.kind}${s.active?'':' · inactive'}${s.bookable_by_agent?' · Vee can book':''}${s.gcal?' · gcal':''}</div></button>`).join('');
+    const rowsFor=(wd)=>((p&&p.hours)||[]).filter(h=>h.weekday===wd);
+    const week=DAYS.map((d,wd)=>{
+      const rs=rowsFor(wd);
+      return `<div class="flex items-start gap-2 py-1.5 border-b border-[#f5f6f8] last:border-0">
+        <div class="w-10 pt-1.5 text-[11px] font-semibold uppercase tracking-wide ${rs.length?'text-[#16201d]':'text-[#c8ccd4]'}">${d}</div>
+        <div class="flex-1 space-y-1.5" data-wd="${wd}">
+          ${rs.length?rs.map((h,i)=>`<div class="flex items-center gap-1.5 sched-row" data-wd="${wd}">
+            <select class="sr-block field text-xs px-2 py-1 rounded-lg border border-[#e6e9ee]">
+              ${['open','lunch','admin','closed'].map(k=>`<option value="${k}" ${h.block===k?'selected':''}>${k}</option>`).join('')}
+            </select>
+            <input type="time" value="${m2t(h.start_min)}" class="sr-start text-xs px-2 py-1 rounded-lg border border-[#e6e9ee]">
+            <span class="text-[#c8ccd4] text-xs">to</span>
+            <input type="time" value="${m2t(h.end_min)}" class="sr-end text-xs px-2 py-1 rounded-lg border border-[#e6e9ee]">
+            <button onclick="this.closest('.sched-row').remove()" title="Remove this block" class="text-[#be123c] text-xs px-1.5 hover:underline">remove</button>
+          </div>`).join(''):'<div class="text-[11px] text-[#c8ccd4] py-1.5">Closed</div>'}
+        </div>
+        <button onclick="schedAddRow(${wd})" class="text-[11px] text-[#0a6cf5] font-semibold hover:underline pt-1.5 flex-shrink-0">+ add</button>
+      </div>`;}).join('');
+    const excRows=exc.length?exc.map(e=>{
+      const who=e.schedulable_id?(people.find(x=>x.id===e.schedulable_id)||{}).display_name||'someone':'Whole clinic';
+      const span=(e.start_min!=null&&e.end_min!=null)?`${m2t(e.start_min)}–${m2t(e.end_min)}`:'all day';
+      return `<div class="flex items-center justify-between gap-2 py-1.5 border-b border-[#f5f6f8] last:border-0">
+        <div><span class="font-semibold text-[#16201d]">${esc(e.date)}</span> <span class="text-[11px] text-[#6b7280]">${esc(who)} · ${span} · ${e.block==='open'?'extra hours':'closed'}${e.reason?' · '+esc(e.reason):''}</span></div>
+        <button onclick="schedRmException('${e.id}')" class="text-[11px] text-[#be123c] hover:underline">remove</button></div>`;}).join('')
+      :'<div class="text-[11px] text-[#c8ccd4] py-2">No upcoming closures or one-off changes.</div>';
+    b.innerHTML=`<div class="grid md:grid-cols-[200px_1fr] gap-5">
+      <div><div class="text-[10px] font-semibold tracking-[.14em] text-[#9aa0ab] uppercase mb-2">Who / what</div>
+        <div class="space-y-1">${roster}</div></div>
+      <div>
+        ${p?`<div class="flex items-center justify-between gap-3 mb-2 flex-wrap">
+          <div class="text-[10px] font-semibold tracking-[.14em] text-[#9aa0ab] uppercase">Weekly hours · ${esc(p.display_name)}</div>
+          <label class="flex items-center gap-2 text-[11px] text-[#3d4a45] cursor-pointer" title="When off, Vee will not book this person on the phone or in the website chat. Staff can still book them here.">
+            <input type="checkbox" id="schedAgent" ${p.bookable_by_agent?'checked':''} class="accent-[#0a6cf5] w-3.5 h-3.5"> Vee may book
+          </label>
+        </div>
+        <div class="rounded-xl border border-[#eef1f4] px-3">${week}</div>
+        <div class="flex items-center gap-2 mt-3">
+          <button onclick="schedSaveHours()" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Save hours</button>
+          <span id="schedMsg" class="text-xs text-[#6b7280]"></span>
+        </div>`:'<div class="text-[#9aa0ab]">No bookable people or resources yet.</div>'}
+        <div class="mt-6">
+          <div class="text-[10px] font-semibold tracking-[.14em] text-[#9aa0ab] uppercase mb-2">Closures &amp; one-off changes</div>
+          <div class="rounded-xl border border-[#eef1f4] px-3">${excRows}</div>
+          <div class="flex items-end gap-2 mt-2 flex-wrap">
+            <div><div class="text-[10px] text-[#9aa0ab] mb-1">Date</div><input type="date" id="excDate" class="text-xs px-2 py-1.5 rounded-lg border border-[#e6e9ee]"></div>
+            <div><div class="text-[10px] text-[#9aa0ab] mb-1">Who</div><select id="excWho" class="text-xs px-2 py-1.5 rounded-lg border border-[#e6e9ee]"><option value="">Whole clinic</option>${people.map(s=>`<option value="${s.id}">${esc(s.display_name)}</option>`).join('')}</select></div>
+            <div><div class="text-[10px] text-[#9aa0ab] mb-1">Reason</div><input id="excReason" placeholder="Holiday, PTO…" class="text-xs px-2 py-1.5 rounded-lg border border-[#e6e9ee]"></div>
+            <button onclick="schedAddException()" class="px-3 py-1.5 rounded-lg border border-[#e6e9ee] text-xs font-semibold hover:bg-[#f1f3f7]">+ Close that day</button>
+          </div>
+        </div>
+        <div class="mt-6">
+          <div class="text-[10px] font-semibold tracking-[.14em] text-[#9aa0ab] uppercase mb-2">Appointment types</div>
+          <div class="rounded-xl border border-[#eef1f4] px-3">
+            ${types.map(t=>`<div class="flex items-center justify-between gap-2 py-1.5 border-b border-[#f5f6f8] last:border-0">
+              <div><span class="font-semibold text-[#16201d]">${esc(t.label)}</span> <span class="text-[11px] text-[#9aa0ab]">${esc(t.key)}${t.agent_bookable?' · Vee may book':''}</span></div>
+              <div class="flex items-center gap-1.5"><input type="number" min="5" max="240" step="5" value="${t.duration_min}" data-tk="${t.id}" class="ty-dur w-16 text-xs px-2 py-1 rounded-lg border border-[#e6e9ee]"><span class="text-[11px] text-[#9aa0ab]">min</span></div>
+            </div>`).join('')||'<div class="text-[11px] text-[#c8ccd4] py-2">No appointment types configured.</div>'}
+          </div>
+          ${types.length?'<button onclick="schedSaveTypes()" class="mt-2 px-3 py-1.5 rounded-lg border border-[#e6e9ee] text-xs font-semibold hover:bg-[#f1f3f7]">Save durations</button>':''}
+        </div>
+      </div></div>`;
+  }
+  window.schedPick=function(id){ schedSel=id; renderSchedule(); };
+  window.schedAddRow=function(wd){
+    const host=document.querySelector(`#schedBody [data-wd="${wd}"]`); if(!host) return;
+    const empty=host.querySelector('div.text-\\[11px\\]'); if(empty&&/Closed/.test(empty.textContent)) empty.remove();
+    const d=document.createElement('div'); d.className='flex items-center gap-1.5 sched-row'; d.dataset.wd=String(wd);
+    d.innerHTML=`<select class="sr-block field text-xs px-2 py-1 rounded-lg border border-[#e6e9ee]">${['open','lunch','admin','closed'].map(k=>`<option value="${k}">${k}</option>`).join('')}</select>
+      <input type="time" value="09:00" class="sr-start text-xs px-2 py-1 rounded-lg border border-[#e6e9ee]">
+      <span class="text-[#c8ccd4] text-xs">to</span>
+      <input type="time" value="17:00" class="sr-end text-xs px-2 py-1 rounded-lg border border-[#e6e9ee]">
+      <button onclick="this.closest('.sched-row').remove()" class="text-[#be123c] text-xs px-1.5 hover:underline">remove</button>`;
+    host.appendChild(d);
+  };
+  window.schedSaveHours=async function(){
+    if(!schedSel) return;
+    const msg=document.getElementById('schedMsg'); if(msg){ msg.style.color='#6b7280'; msg.textContent='Saving…'; }
+    const rows=[]; let bad=false;
+    document.querySelectorAll('#schedBody .sched-row').forEach(r=>{
+      const wd=Number(r.dataset.wd);
+      const block=r.querySelector('.sr-block').value;
+      const s=t2m(r.querySelector('.sr-start').value), e=t2m(r.querySelector('.sr-end').value);
+      if(s==null||e==null){ bad=true; return; }
+      if(e<=s){ bad=true; return; }
+      rows.push({weekday:wd,start_min:s,end_min:e,block});
+    });
+    if(bad){ if(msg){ msg.style.color='#be123c'; msg.textContent='Every block needs a start before its end.'; } return; }
+    try{
+      await schedPost({action:'set_hours',schedulable_id:schedSel,rows});
+      const agent=document.getElementById('schedAgent');
+      const p=(SCHED.schedulables||[]).find(x=>x.id===schedSel);
+      if(agent&&p&&agent.checked!==p.bookable_by_agent){
+        await schedPost({action:'upsert_schedulable',schedulable:{id:schedSel,name:p.name,display_name:p.display_name,kind:p.kind,bookable_by_agent:agent.checked,active:p.active}});
+      }
+      SCHED=await schedPost({action:'board'}); renderSchedule();
+      const m2=document.getElementById('schedMsg'); if(m2){ m2.style.color='#0a7a3d'; m2.textContent='Saved ✓'; }
+    }catch(e){ console.warn('set_hours',e); const m2=document.getElementById('schedMsg'); if(m2){ m2.style.color='#be123c'; m2.textContent='Could not save.'; } }
+  };
+  window.schedAddException=async function(){
+    const date=(document.getElementById('excDate')||{}).value;
+    if(!date){ alert('Pick a date to close.'); return; }
+    const who=(document.getElementById('excWho')||{}).value||undefined;
+    const reason=((document.getElementById('excReason')||{}).value||'').trim()||undefined;
+    try{ await schedPost({action:'add_exception',exception:{date,schedulable_id:who,block:'closed',reason}});
+      SCHED=await schedPost({action:'board'}); renderSchedule();
+    }catch(e){ console.warn('add_exception',e); alert('Could not add that closure.'); }
+  };
+  window.schedRmException=async function(id){
+    try{ await schedPost({action:'remove_exception',id}); SCHED=await schedPost({action:'board'}); renderSchedule(); }
+    catch(e){ console.warn('remove_exception',e); alert('Could not remove that.'); }
+  };
+  window.schedSaveTypes=async function(){
+    const types=SCHED.types||[];
+    try{
+      for(const el of document.querySelectorAll('#schedBody .ty-dur')){
+        const t=types.find(x=>x.id===el.dataset.tk); if(!t) continue;
+        const dur=Math.max(5,Math.min(240,parseInt(el.value,10)||t.duration_min));
+        if(dur===t.duration_min) continue;
+        await schedPost({action:'upsert_type',type:{id:t.id,key:t.key,label:t.label,duration_min:dur,buffer_min:t.buffer_min,lead_time_min:t.lead_time_min,horizon_days:t.horizon_days,schedulables:t.schedulables||undefined,agent_bookable:t.agent_bookable,active:t.active}});
+      }
+      SCHED=await schedPost({action:'board'}); renderSchedule();
+    }catch(e){ console.warn('upsert_type',e); alert('Could not save durations.'); }
   };
 
   window.openArchived=async function(){
