@@ -1616,6 +1616,13 @@
               <button onclick="openRx()" title="GLP-1 medication reference (FDA) for patient questions" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">℞ Med reference</button>
             </div>
           </div>
+          <!-- Record -->
+          <div>
+            <div class="text-[10px] font-semibold tracking-[.14em] text-[#9aa0ab] uppercase mb-1.5">Record</div>
+            <div class="flex gap-2 flex-wrap">
+              <button onclick="archivePatient('${p.id}')" title="Takes this record off the board and stops every automated email. Nothing is deleted — the full chart stays retrievable for audits, and you can restore it any time." class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7]">🗄 Archive record</button>
+            </div>
+          </div>
           <!-- Voice -->
           <div>
             <div class="text-[10px] font-semibold tracking-[.14em] text-[#9aa0ab] uppercase mb-1.5">Voice</div>
@@ -2233,7 +2240,10 @@
         <div class="flex-1 space-y-2 overflow-y-auto rounded-xl border ${isInq?'border-[#ffd9a8]':'border-[#eef1f4]'} p-2" style="background:${s.tint}">
           ${cards.map(boardCard).join('')||'<div class="text-[11px] text-[#c0c5cd] text-center py-4">empty</div>'}
         </div>
-      </div>`;}).join('')}</div>`;
+      </div>`;}).join('')}
+      <div class="flex-shrink-0 w-44 flex flex-col h-full justify-start pt-6">
+        <button onclick="openArchived()" title="Records taken off the board. Nothing is deleted — kept in full for audits." class="rounded-xl border border-dashed border-[#e6e9ee] text-[#9aa0ab] text-[11px] font-semibold uppercase tracking-wide py-3 hover:border-[#0a6cf5]/40 hover:text-[#0a6cf5] transition">🗄 Archived</button>
+      </div></div>`;
   }
   let _dragId=null;
   window.dragCard=function(e,id){ _dragId=id; try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',id); }catch(_){} };
@@ -2924,6 +2934,71 @@
       renderDetail(); renderList();
     }catch(e){ console.warn('add_note',e); if(el) el.disabled=false; alert('Could not save the note. Please try again.'); }
   }
+
+  // ---- Archive / restore ------------------------------------------------------------------
+  // Archiving takes a record off the board and stops every automated email, but deletes NOTHING:
+  // the clinic keeps dead leads and departed patients in full, retrievable if an audit ever asks.
+  // The clinical status and pipeline lane are left untouched, so a restored card comes back to
+  // exactly where it was.
+  window.archivePatient=async function(id){
+    const p=patients.find(x=>x.id===id); if(!p) return;
+    const nm=`${p.first||''} ${p.last||''}`.trim()||'this record';
+    const reason=prompt(`Archive ${nm}?\n\nThe record comes off the board and all automated emails stop. Nothing is deleted — the full chart stays retrievable, and you can restore it any time.\n\nReason (required):`,'');
+    if(reason===null) return;
+    if(!reason.trim()){ alert('A reason is required so the archive is explainable later.'); return; }
+    try{
+      const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'archive_patient',patient_id:id,reason:reason.trim()})});
+      const j=await r.json(); if(!j||!j.ok) throw new Error((j&&j.error)||'failed');
+      selId=null;
+      await loadData();
+      renderDetail(); renderList(); if(boardOpen) renderBoard(); updateInquiryBadge(); kpis();
+      alert(`${nm} archived.` + (j.sequences_stopped?` ${j.sequences_stopped} active email sequence(s) stopped.`:''));
+    }catch(e){ console.warn('archive_patient',e); alert('Could not archive that record. Please try again.'); }
+  };
+
+  window.openArchived=async function(){
+    let ov=document.getElementById('archOverlay');
+    if(!ov){
+      ov=document.createElement('div');
+      ov.id='archOverlay';
+      ov.className='fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4';
+      ov.onclick=(e)=>{ if(e.target===ov) ov.remove(); };
+      document.body.appendChild(ov);
+    }
+    ov.innerHTML=`<div class="bg-white rounded-2xl border border-[#e6e9ee] shadow-xl w-full max-w-3xl max-h-[80vh] flex flex-col">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-[#eef1f4]">
+        <div><h3 class="font-display text-lg font-semibold">Archived records</h3>
+        <div class="text-xs text-[#6b7280] mt-0.5">Off the board, retained in full for audits. Restoring returns the card to its original lane.</div></div>
+        <button onclick="document.getElementById('archOverlay').remove()" class="text-[#9aa0ab] hover:text-[#16201d] text-lg leading-none">✕</button>
+      </div>
+      <div id="archBody" class="p-5 overflow-y-auto text-sm text-[#6b7280]">Loading…</div>
+    </div>`;
+    try{
+      const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'list_archived'})});
+      const j=await r.json(); if(!j||!j.ok) throw new Error((j&&j.error)||'failed');
+      const body=document.getElementById('archBody'); if(!body) return;
+      body.innerHTML = j.patients.length ? j.patients.map(a=>`
+        <div class="flex items-start justify-between gap-3 py-3 border-b border-[#f1f3f7] last:border-0">
+          <div class="min-w-0">
+            <div class="text-sm font-semibold text-[#16201d]">${esc(`${a.first||''} ${a.last||''}`.trim()||'(no name)')}</div>
+            <div class="text-[11px] text-[#6b7280] mt-0.5">${esc(a.email||a.phone||'no contact on file')} · status kept: ${esc(a.status||'—')}</div>
+            <div class="text-[11px] text-[#9aa0ab] mt-0.5">Archived ${new Date(a.archived_at).toLocaleDateString()} by ${esc(a.archived_by||'unknown')} — ${esc(a.archived_reason||'no reason given')}</div>
+          </div>
+          <button onclick="restoreArchived('${a.id}')" class="flex-shrink-0 px-3 py-1.5 rounded-lg border border-[#e6e9ee] text-xs font-semibold text-[#16201d] hover:border-[#0a6cf5]/40 hover:text-[#0a6cf5]">Restore</button>
+        </div>`).join('')
+        : '<div class="text-center py-6 text-[#9aa0ab]">Nothing archived yet.</div>';
+    }catch(e){ console.warn('list_archived',e); const body=document.getElementById('archBody'); if(body) body.textContent='Could not load archived records.'; }
+  };
+
+  window.restoreArchived=async function(id){
+    try{
+      const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'restore_patient',patient_id:id})});
+      const j=await r.json(); if(!j||!j.ok) throw new Error((j&&j.error)||'failed');
+      await loadData();
+      renderList(); if(boardOpen) renderBoard(); updateInquiryBadge(); kpis();
+      openArchived();
+    }catch(e){ console.warn('restore_patient',e); alert('Could not restore that record. Please try again.'); }
+  };
   // ---- appointments (book / reschedule / change / cancel) — persisted on Convex ----
   let apptEdit=null;
   function openApptModal(p){
