@@ -1653,11 +1653,13 @@
             <button class="chart-tab px-3.5 py-2.5 text-sm font-semibold text-[#0a6cf5] border-b-2 border-[#0a6cf5] -mb-px" data-ct="summary" onclick="chartTab('summary',this)">Summary</button>
             <button class="chart-tab px-3.5 py-2.5 text-sm font-semibold text-[#6b7280] border-b-2 border-transparent -mb-px" data-ct="notes" onclick="chartTab('notes',this)">Notes</button>
             <button class="chart-tab px-3.5 py-2.5 text-sm font-semibold text-[#6b7280] border-b-2 border-transparent -mb-px" data-ct="docs" onclick="chartTab('docs',this)">Documents</button>
+            <button class="chart-tab px-3.5 py-2.5 text-sm font-semibold text-[#6b7280] border-b-2 border-transparent -mb-px" data-ct="billing" onclick="chartTab('billing',this)">Billing</button>
           </div>
           <div class="p-5">
             <div id="chartTabSummary"><div id="chartListsPanel"></div></div>
             <div id="chartTabNotes" class="hidden"><div id="chartNotesPanel"></div></div>
             <div id="chartTabDocs" class="hidden"><div id="chartDocsPanel"></div></div>
+            <div id="chartTabBilling" class="hidden"><div id="chartBillingPanel"></div></div>
           </div>
         </div>
 
@@ -1739,6 +1741,7 @@
     loadChartLists(p.id);
     loadChartNotes(p.id);
     loadChartDocs(p.id);
+    loadChartBilling(p.id);
   }
 
   // ============ CRM (operational) view ============
@@ -3936,6 +3939,9 @@ HARD RULES:
     else acts.push(`<button onclick="openNote('${n.id}')" class="text-[#0a6cf5] text-xs font-semibold hover:underline">View</button>`);
     if(n.canSign) acts.push(`<button onclick="signNote('${n.id}')" class="text-[#0a7a3d] text-xs font-semibold hover:underline">Sign</button>`);
     if(n.canDelete) acts.push(`<button onclick="deleteNoteDraft('${n.id}')" class="text-[#be123c] text-xs font-semibold hover:underline">Delete</button>`);
+    // Coding is offered only on a SIGNED note (canAmend == clinician && signed). Billing an unsigned
+    // encounter is exactly the thing you do not want to make easy.
+    if(n.canAmend) acts.push(`<button onclick="codeVisitFromNote('${n.id}')" class="text-[#0a6cf5] text-xs font-semibold hover:underline">Code visit</button>`);
     acts.push(`<button onclick="printChartNote('${n.id}')" class="text-[#6b7280] text-xs font-semibold hover:underline">🖨 Print / PDF</button>`);
     return `<div class="border border-[#e6e9ee] rounded-xl p-3.5">
       <div class="flex items-start justify-between gap-2">
@@ -4086,22 +4092,34 @@ HARD RULES:
   function noteRefStrip(){
     const probs=(window.__chartProblems||[]).filter(p=>p.status==='active');
     const meds=(window.__chartMeds||[]).filter(m=>m.status==='active');
-    if(!probs.length && !meds.length) return '';
+    const allAll=(window.__chartAllergies||[]).filter(a=>a.status==='active');
+    const allergies=allAll.filter(a=>a.allergy_type!=='none');
+    const nka=allAll.some(a=>a.allergy_type==='none');
+    if(!probs.length && !meds.length && !allAll.length) return '';
     const chip=(t)=>`<span class="inline-block bg-white border border-[#e6eef7] text-[#3d4a45] rounded-full px-2 py-0.5 text-[11px] mr-1 mb-1">${esc(t)}</span>`;
+    // Allergies render in red and go FIRST: the point of the strip is that nothing gets prescribed
+    // without them in view.
+    const aChip=(a)=>`<span class="inline-block bg-[#fef2f2] border border-[#f5c2c7] text-[#be123c] rounded-full px-2 py-0.5 text-[11px] font-semibold mr-1 mb-1">${esc(a.allergen+(a.reaction?' · '+a.reaction:''))}</span>`;
+    const aHtml=allergies.length
+      ? `<div class="mb-1"><span class="text-[10px] uppercase tracking-wide text-[#be123c] font-semibold mr-1">⚠ Allergies</span>${allergies.map(aChip).join('')}</div>`
+      : (nka?`<div class="mb-1"><span class="text-[10px] uppercase tracking-wide text-[#0a7a3d] font-semibold mr-1">Allergies</span><span class="text-[11px] text-[#0a7a3d]">No known allergies</span></div>`:'');
     const pHtml=probs.length?`<div class="mb-1"><span class="text-[10px] uppercase tracking-wide text-[#0a6cf5] font-semibold mr-1">Active problems</span>${probs.map(p=>chip((p.code?p.code+' ':'')+p.label)).join('')}</div>`:'';
     const mHtml=meds.length?`<div><span class="text-[10px] uppercase tracking-wide text-[#0a6cf5] font-semibold mr-1">Active meds</span>${meds.map(m=>chip(m.name+(m.dose?' '+m.dose:''))).join('')}</div>`:'';
-    return `<div class="bg-[#f7fafd] border border-[#e6eef7] rounded-xl p-3">${pHtml}${mHtml}</div>`;
+    return `<div class="bg-[#f7fafd] border border-[#e6eef7] rounded-xl p-3">${aHtml}${pHtml}${mHtml}</div>`;
   }
   async function loadChartLists(pid){
     const box=document.getElementById('chartListsPanel'); if(!box) return;
     let j; try{ j=await postLists({action:'list',patient_id:pid}); }catch(e){ box.innerHTML=''; return; }
     if(!j || j.ok===false){ box.innerHTML=''; return; }   // non-clinical staff: hidden (notes tab carries the message)
     window.__chartProblems=j.problems||[]; window.__chartMeds=j.meds||[]; window.__chartVitals=j.vitals||[]; window.__chartListsWrite=!!j.canWrite;
-    box.innerHTML = vitalsCard(j)+problemsCard(j)+medsCard(j);
+    window.__chartAllergies=j.allergies||[]; window.__chartSurgeries=j.surgeries||[]; window.__chartFamily=j.family||[];
+    // Allergies sit directly under vitals, above the problem list: it is the one list read for safety
+    // before anything is prescribed, so it gets the position every EHR gives it.
+    box.innerHTML = vitalsCard(j)+allergiesCard(j)+problemsCard(j)+medsCard(j)+surgeriesCard(j)+familyCard(j);
   }
   // Tab switch for the unified Clinical Chart card.
   window.chartTab=function(name, el){
-    ['summary','notes','docs'].forEach(n=>{ const c=document.getElementById('chartTab'+n.charAt(0).toUpperCase()+n.slice(1)); if(c) c.classList.toggle('hidden', n!==name); });
+    ['summary','notes','docs','billing'].forEach(n=>{ const c=document.getElementById('chartTab'+n.charAt(0).toUpperCase()+n.slice(1)); if(c) c.classList.toggle('hidden', n!==name); });
     document.querySelectorAll('#chartCard .chart-tab').forEach(b=>{ const on=(b===el)||(b.dataset.ct===name); b.classList.toggle('text-[#0a6cf5]',on); b.classList.toggle('border-[#0a6cf5]',on); b.classList.toggle('text-[#6b7280]',!on); b.classList.toggle('border-transparent',!on); });
   };
   // One consistent section wrapper inside the chart card (replaces the old separate glass boxes).
@@ -4133,10 +4151,10 @@ HARD RULES:
     const acts=window.__chartListsWrite?`<button onclick="openMedModal('${m.id}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="setMedStatus('${m.id}','${dc?'active':'discontinued'}')" class="text-[#6b7280] hover:underline">${dc?'reactivate':'discontinue'}</button> · <button onclick="deleteMed('${m.id}')" class="text-[#be123c] hover:underline">delete</button>`:'';
     return `<div class="flex items-start justify-between gap-3 py-2 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm ${dc?'line-through text-[#9aa0ab]':'text-[#16201d] font-medium'}">${line}</div><div class="text-[11px] text-[#9aa0ab]">${meta}${m.note?' · '+esc(m.note):''}</div></div><div class="text-[11px] whitespace-nowrap pt-0.5">${acts}</div></div>`;
   }
-  function listModalShell(title, bodyHtml, footerHtml){
+  function listModalShell(title, bodyHtml, footerHtml, maxW){
     let ov=document.getElementById('listOverlay'); if(ov) ov.remove();
     ov=document.createElement('div'); ov.id='listOverlay'; ov.className='fixed inset-0 z-[85] bg-black/40 flex items-start justify-center overflow-y-auto p-4'; ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
-    ov.innerHTML=`<div class="bg-white rounded-2xl shadow-2xl w-full max-w-md my-8"><div class="flex items-center justify-between p-4 border-b border-[#e6e9ee]"><div class="font-display text-lg font-semibold">${title}</div><button onclick="document.getElementById('listOverlay').remove()" class="text-[#9aa0ab] hover:text-[#16201d] text-2xl leading-none">×</button></div><div class="p-5 space-y-3">${bodyHtml}</div><div class="flex justify-end gap-2 p-4 border-t border-[#e6e9ee]">${footerHtml}</div></div>`;
+    ov.innerHTML=`<div class="bg-white rounded-2xl shadow-2xl w-full ${maxW||'max-w-md'} my-8"><div class="flex items-center justify-between p-4 border-b border-[#e6e9ee]"><div class="font-display text-lg font-semibold">${title}</div><button onclick="document.getElementById('listOverlay').remove()" class="text-[#9aa0ab] hover:text-[#16201d] text-2xl leading-none">×</button></div><div class="p-5 space-y-3">${bodyHtml}</div><div class="flex justify-end gap-2 p-4 border-t border-[#e6e9ee]">${footerHtml}</div></div>`;
     document.body.appendChild(ov);
   }
   const _lf=(id,label,val,ph,type)=>`<label class="block text-xs font-semibold text-[#3d4a45]">${label}<input id="${id}" type="${type||'text'}" value="${esc(val||'')}" placeholder="${esc(ph||'')}" class="field mt-1 block w-full"></label>`;
@@ -4175,6 +4193,126 @@ HARD RULES:
   };
   window.setMedStatus=async function(id,status){ try{ const r=await postLists({action:'med_update',med_id:id,status}); if(!r.ok) throw new Error(r.error||'failed'); await loadChartLists(selId);}catch(e){ alert('Could not update: '+e.message);} };
   window.deleteMed=async function(id){ if(!confirm('Remove this medication from the list?')) return; try{ const r=await postLists({action:'med_delete',med_id:id}); if(!r.ok) throw new Error(r.error||'failed'); document.getElementById('listOverlay')?.remove(); await loadChartLists(selId);}catch(e){ alert('Could not delete: '+e.message);} };
+
+  // ================= Allergies =================
+  const ALLERGY_TYPES={ drug:'Drug', food:'Food', environmental:'Environmental', other:'Other' };
+  const SEVERITY_COLOR={ severe:['#fef2f2','#be123c'], moderate:['#fff7ed','#b45309'], mild:['#f1f3f7','#3d4a45'] };
+  // Type-ahead suggestions, not a closed list — free text always wins.
+  const COMMON_ALLERGENS=['Penicillin','Amoxicillin','Sulfa (sulfonamides)','Cephalosporins','NSAIDs','Aspirin','Ibuprofen','Codeine','Morphine','Erythromycin','Tetracycline','Iodinated contrast','Latex','Shellfish','Peanuts','Tree nuts','Eggs','Milk','Soy','Wheat / gluten','Fish','Sesame','Bee stings','Pollen','Dust mites','Cats','Dogs','Mold'];
+  function allergiesCard(j){
+    const list=j.allergies||[];
+    const nka=list.find(a=>a.allergy_type==='none');
+    const real=list.filter(a=>a.allergy_type!=='none');
+    const nkaBtn=(j.canWrite && !real.length && !nka)?`<button onclick="markNoKnownAllergies()" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">No known allergies</button>`:'';
+    const add=j.canWrite?`<div class="flex gap-2">${nkaBtn}<button onclick="openAllergyModal()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add allergy</button></div>`:'';
+    let body;
+    if(nka && !real.length){
+      const when=nka.created_at?new Date(nka.created_at).toLocaleDateString('en-US'):'';
+      body=`<div class="flex items-center justify-between gap-3 rounded-xl bg-[#eaf7ef] border border-[#cbead8] px-3 py-2.5"><div><div class="text-sm font-semibold text-[#0a7a3d]">No known allergies</div><div class="text-[11px] text-[#6b7280]">Recorded by ${esc(nka.added_by||'')}${when?' · '+when:''}</div></div>${j.canWrite?`<button onclick="deleteAllergy('${nka.id}')" class="text-[11px] text-[#6b7280] hover:underline">clear</button>`:''}</div>`;
+    } else if(!real.length){
+      // Deliberately not "None." An empty allergy list means nobody asked, and saying otherwise is a lie.
+      body='<div class="text-sm text-[#9aa0ab]">Not recorded. Add an allergy, or mark no known allergies.</div>';
+    } else {
+      body=`<div>${real.map(renderAllergyRow).join('')}</div>`;
+    }
+    return chartSection('Allergies', add, body);
+  }
+  function renderAllergyRow(a){
+    const inactive=a.status==='inactive';
+    const sc=SEVERITY_COLOR[a.severity];
+    const sev=(a.severity&&sc)?`<span class="ml-1.5 inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold align-middle" style="background:${sc[0]};color:${sc[1]}">${esc(a.severity)}</span>`:'';
+    const meta=[ALLERGY_TYPES[a.allergy_type]||a.allergy_type, a.reaction?('reaction: '+a.reaction):'', inactive?'inactive':'', a.onset_date?('onset '+a.onset_date):''].filter(Boolean).join(' · ');
+    const acts=window.__chartListsWrite?`<button onclick="openAllergyModal('${a.id}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="setAllergyStatus('${a.id}','${inactive?'active':'inactive'}')" class="text-[#6b7280] hover:underline">${inactive?'reactivate':'inactivate'}</button> · <button onclick="deleteAllergy('${a.id}')" class="text-[#be123c] hover:underline">delete</button>`:'';
+    return `<div class="flex items-start justify-between gap-3 py-2 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm ${inactive?'line-through text-[#9aa0ab]':'text-[#16201d] font-medium'}">${esc(a.allergen)}${inactive?'':sev}</div><div class="text-[11px] text-[#9aa0ab]">${esc(meta)}${a.note?' · '+esc(a.note):''}</div></div><div class="text-[11px] whitespace-nowrap pt-0.5">${acts}</div></div>`;
+  }
+  window.markNoKnownAllergies=async function(){
+    try{ const r=await postLists({action:'allergy_add',patient_id:selId,allergy_type:'none'}); if(!r.ok) throw new Error(r.error||'failed'); await loadChartLists(selId); }
+    catch(e){ alert('Could not record: '+e.message); }
+  };
+  window.openAllergyModal=function(allergyId){
+    const a=allergyId?(window.__chartAllergies||[]).find(x=>x.id===allergyId):null;
+    const typeSel=`<label class="block text-xs font-semibold text-[#3d4a45]">Type<select id="agType" class="field mt-1 block w-full">${Object.entries(ALLERGY_TYPES).map(([k,vv])=>`<option value="${k}" ${(a&&a.allergy_type===k)||(!a&&k==='drug')?'selected':''}>${vv}</option>`).join('')}</select></label>`;
+    const allergenField=`<label class="block text-xs font-semibold text-[#3d4a45]">Allergen<input id="agName" list="agNameList" type="text" value="${esc(a?a.allergen:'')}" placeholder="e.g., Penicillin" class="field mt-1 block w-full"><datalist id="agNameList">${COMMON_ALLERGENS.map(x=>`<option value="${esc(x)}"></option>`).join('')}</datalist></label>`;
+    const sevSel=`<label class="block text-xs font-semibold text-[#3d4a45]">Severity<select id="agSev" class="field mt-1 block w-full"><option value="">Not recorded</option>${['mild','moderate','severe'].map(s=>`<option value="${s}" ${a&&a.severity===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}</select></label>`;
+    const statusSel=`<label class="block text-xs font-semibold text-[#3d4a45]">Status<select id="agStatus" class="field mt-1 block w-full"><option value="active" ${(!a||a.status==='active')?'selected':''}>Active</option><option value="inactive" ${a&&a.status==='inactive'?'selected':''}>Inactive</option></select></label>`;
+    const body=typeSel+allergenField+_lf('agReaction','Reaction (optional)',a?a.reaction:'','e.g., hives, anaphylaxis')+sevSel+_lf('agOnset','Onset date (optional)',a?a.onset_date:'','','date')+statusSel+`<label class="block text-xs font-semibold text-[#3d4a45]">Note (optional)<textarea id="agNote" rows="2" class="field mt-1 block w-full resize-none">${esc(a?a.note:'')}</textarea></label>`;
+    const footer=`${a?`<button onclick="deleteAllergy('${a.id}')" class="mr-auto px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#be123c] text-sm font-semibold hover:bg-[#fef2f2]">Delete</button>`:''}<button onclick="document.getElementById('listOverlay').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-sm font-semibold hover:bg-[#f1f3f7]">Cancel</button><button id="agSave" onclick="saveAllergy('${allergyId||''}')" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Save</button>`;
+    listModalShell(allergyId?'Edit allergy':'Add allergy', body, footer);
+  };
+  window.saveAllergy=async function(allergyId){
+    const gv=(id)=>{const e=document.getElementById(id);return e?e.value:undefined;};
+    const allergen=(gv('agName')||'').trim(); if(!allergen){ alert('Enter an allergen.'); return; }
+    const btn=document.getElementById('agSave'); if(btn){btn.disabled=true;btn.textContent='Saving…';}
+    const payload={ allergen, allergy_type:gv('agType'), reaction:gv('agReaction'), severity:gv('agSev'), onset_date:gv('agOnset'), status:gv('agStatus'), note:gv('agNote') };
+    try{ const r=allergyId?await postLists({action:'allergy_update',allergy_id:allergyId,...payload}):await postLists({action:'allergy_add',patient_id:selId,...payload}); if(!r.ok) throw new Error(r.error||'save failed'); document.getElementById('listOverlay')?.remove(); await loadChartLists(selId); }
+    catch(e){ alert('Could not save: '+e.message); if(btn){btn.disabled=false;btn.textContent='Save';} }
+  };
+  window.setAllergyStatus=async function(id,status){ try{ const r=await postLists({action:'allergy_update',allergy_id:id,status}); if(!r.ok) throw new Error(r.error||'failed'); await loadChartLists(selId);}catch(e){ alert('Could not update: '+e.message);} };
+  window.deleteAllergy=async function(id){ if(!confirm('Remove this entry from the allergy list?')) return; try{ const r=await postLists({action:'allergy_delete',allergy_id:id}); if(!r.ok) throw new Error(r.error||'failed'); document.getElementById('listOverlay')?.remove(); await loadChartLists(selId);}catch(e){ alert('Could not delete: '+e.message);} };
+
+  // ================= Surgical history =================
+  const COMMON_PROCEDURES=['Sleeve gastrectomy','Roux-en-Y gastric bypass','Gastric band (LAP-BAND)','Duodenal switch','Cholecystectomy','Appendectomy','Hysterectomy','Cesarean section','Thyroidectomy','Tonsillectomy','Hernia repair','Coronary artery bypass (CABG)','Cardiac stent / PCI','Knee replacement','Hip replacement','Spinal fusion','Bariatric revision','Colonoscopy with polypectomy'];
+  function surgeriesCard(j){
+    const rows=(j.surgeries||[]).length?j.surgeries.map(renderSurgeryRow).join(''):'<div class="text-sm text-[#9aa0ab]">No surgical history recorded.</div>';
+    const add=j.canWrite?`<button onclick="openSurgeryModal()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add procedure</button>`:'';
+    return chartSection('Surgical history', add, `<div>${rows}</div>`);
+  }
+  function renderSurgeryRow(s){
+    const meta=[s.performed_on, s.facility, s.surgeon, s.indication?('for '+s.indication):'', s.complications?('complications: '+s.complications):''].filter(Boolean).join(' · ');
+    const acts=window.__chartListsWrite?`<button onclick="openSurgeryModal('${s.id}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="deleteSurgery('${s.id}')" class="text-[#be123c] hover:underline">delete</button>`:'';
+    return `<div class="flex items-start justify-between gap-3 py-2 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm text-[#16201d] font-medium">${esc(s.procedure)}</div><div class="text-[11px] text-[#9aa0ab]">${esc(meta)||'no detail recorded'}${s.note?' · '+esc(s.note):''}</div></div><div class="text-[11px] whitespace-nowrap pt-0.5">${acts}</div></div>`;
+  }
+  window.openSurgeryModal=function(surgeryId){
+    const s=surgeryId?(window.__chartSurgeries||[]).find(x=>x.id===surgeryId):null;
+    const procField=`<label class="block text-xs font-semibold text-[#3d4a45]">Procedure<input id="sgProc" list="sgProcList" type="text" value="${esc(s?s.procedure:'')}" placeholder="e.g., Sleeve gastrectomy" class="field mt-1 block w-full"><datalist id="sgProcList">${COMMON_PROCEDURES.map(x=>`<option value="${esc(x)}"></option>`).join('')}</datalist></label>`;
+    // Free text, not a date picker: patients report the year, and a picker would force a made-up day.
+    const whenField=_lf('sgWhen','Date or year',s?s.performed_on:'','e.g., 2015 or March 2018');
+    const body=procField+whenField+_lf('sgFacility','Facility (optional)',s?s.facility:'','e.g., Sunrise Hospital')+_lf('sgSurgeon','Surgeon (optional)',s?s.surgeon:'')+_lf('sgIndication','Indication (optional)',s?s.indication:'','why it was done')+_lf('sgComplications','Complications (optional)',s?s.complications:'','none reported, or describe')+`<label class="block text-xs font-semibold text-[#3d4a45]">Note (optional)<textarea id="sgNote" rows="2" class="field mt-1 block w-full resize-none">${esc(s?s.note:'')}</textarea></label>`;
+    const footer=`${s?`<button onclick="deleteSurgery('${s.id}')" class="mr-auto px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#be123c] text-sm font-semibold hover:bg-[#fef2f2]">Delete</button>`:''}<button onclick="document.getElementById('listOverlay').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-sm font-semibold hover:bg-[#f1f3f7]">Cancel</button><button id="sgSave" onclick="saveSurgery('${surgeryId||''}')" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Save</button>`;
+    listModalShell(surgeryId?'Edit procedure':'Add procedure', body, footer);
+  };
+  window.saveSurgery=async function(surgeryId){
+    const gv=(id)=>{const e=document.getElementById(id);return e?e.value:undefined;};
+    const procedure=(gv('sgProc')||'').trim(); if(!procedure){ alert('Enter a procedure.'); return; }
+    const btn=document.getElementById('sgSave'); if(btn){btn.disabled=true;btn.textContent='Saving…';}
+    const payload={ procedure, performed_on:gv('sgWhen'), facility:gv('sgFacility'), surgeon:gv('sgSurgeon'), indication:gv('sgIndication'), complications:gv('sgComplications'), note:gv('sgNote') };
+    try{ const r=surgeryId?await postLists({action:'surgery_update',surgery_id:surgeryId,...payload}):await postLists({action:'surgery_add',patient_id:selId,...payload}); if(!r.ok) throw new Error(r.error||'save failed'); document.getElementById('listOverlay')?.remove(); await loadChartLists(selId); }
+    catch(e){ alert('Could not save: '+e.message); if(btn){btn.disabled=false;btn.textContent='Save';} }
+  };
+  window.deleteSurgery=async function(id){ if(!confirm('Remove this procedure from the surgical history?')) return; try{ const r=await postLists({action:'surgery_delete',surgery_id:id}); if(!r.ok) throw new Error(r.error||'failed'); document.getElementById('listOverlay')?.remove(); await loadChartLists(selId);}catch(e){ alert('Could not delete: '+e.message);} };
+
+  // ================= Family history =================
+  const RELATIONS={ mother:'Mother', father:'Father', sister:'Sister', brother:'Brother', daughter:'Daughter', son:'Son', maternal_grandmother:'Maternal grandmother', maternal_grandfather:'Maternal grandfather', paternal_grandmother:'Paternal grandmother', paternal_grandfather:'Paternal grandfather', aunt:'Aunt', uncle:'Uncle', other:'Other relative' };
+  const COMMON_FAM_CONDITIONS=['Type 2 diabetes','Type 1 diabetes','Obesity','Hypertension','High cholesterol','Coronary artery disease','Heart attack','Stroke','Thyroid disease','Hypothyroidism','Sleep apnea','Fatty liver disease','Breast cancer','Colon cancer','Thyroid cancer','Medullary thyroid carcinoma','MEN 2 syndrome','Pancreatitis','Gallbladder disease','Depression','Anxiety','Alzheimer disease'];
+  function familyCard(j){
+    const rows=(j.family||[]).length?j.family.map(renderFamilyRow).join(''):'<div class="text-sm text-[#9aa0ab]">No family history recorded.</div>';
+    const add=j.canWrite?`<button onclick="openFamilyModal()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add family history</button>`:'';
+    return chartSection('Family history', add, `<div>${rows}</div>`);
+  }
+  function renderFamilyRow(f){
+    const meta=[f.age_at_onset!=null?('onset age '+f.age_at_onset):'', f.relative_status?f.relative_status:''].filter(Boolean).join(' · ');
+    const acts=window.__chartListsWrite?`<button onclick="openFamilyModal('${f.id}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="deleteFamily('${f.id}')" class="text-[#be123c] hover:underline">delete</button>`:'';
+    return `<div class="flex items-start justify-between gap-3 py-2 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm text-[#16201d]"><span class="font-medium">${esc(RELATIONS[f.relation]||f.relation)}</span> · ${esc(f.condition)}</div><div class="text-[11px] text-[#9aa0ab]">${esc(meta)}${f.note?(meta?' · ':'')+esc(f.note):''}</div></div><div class="text-[11px] whitespace-nowrap pt-0.5">${acts}</div></div>`;
+  }
+  window.openFamilyModal=function(familyId){
+    const f=familyId?(window.__chartFamily||[]).find(x=>x.id===familyId):null;
+    const relSel=`<label class="block text-xs font-semibold text-[#3d4a45]">Relation<select id="fhRel" class="field mt-1 block w-full">${Object.entries(RELATIONS).map(([k,vv])=>`<option value="${k}" ${f&&f.relation===k?'selected':''}>${vv}</option>`).join('')}</select></label>`;
+    const condField=`<label class="block text-xs font-semibold text-[#3d4a45]">Condition<input id="fhCond" list="fhCondList" type="text" value="${esc(f?f.condition:'')}" placeholder="e.g., Type 2 diabetes" class="field mt-1 block w-full"><datalist id="fhCondList">${COMMON_FAM_CONDITIONS.map(x=>`<option value="${esc(x)}"></option>`).join('')}</datalist></label>`;
+    const statusSel=`<label class="block text-xs font-semibold text-[#3d4a45]">Relative status<select id="fhStatus" class="field mt-1 block w-full"><option value="">Not recorded</option>${['living','deceased','unknown'].map(s=>`<option value="${s}" ${f&&f.relative_status===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}</select></label>`;
+    const body=relSel+condField+_lf('fhAge','Age at onset (optional)',f&&f.age_at_onset!=null?f.age_at_onset:'','','number')+statusSel+`<label class="block text-xs font-semibold text-[#3d4a45]">Note (optional)<textarea id="fhNote" rows="2" class="field mt-1 block w-full resize-none">${esc(f?f.note:'')}</textarea></label>`;
+    const footer=`${f?`<button onclick="deleteFamily('${f.id}')" class="mr-auto px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#be123c] text-sm font-semibold hover:bg-[#fef2f2]">Delete</button>`:''}<button onclick="document.getElementById('listOverlay').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-sm font-semibold hover:bg-[#f1f3f7]">Cancel</button><button id="fhSave" onclick="saveFamily('${familyId||''}')" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Save</button>`;
+    listModalShell(familyId?'Edit family history':'Add family history', body, footer);
+  };
+  window.saveFamily=async function(familyId){
+    const gv=(id)=>{const e=document.getElementById(id);return e?e.value:undefined;};
+    const condition=(gv('fhCond')||'').trim(); if(!condition){ alert('Enter a condition.'); return; }
+    const ageRaw=(gv('fhAge')||'').trim();
+    const btn=document.getElementById('fhSave'); if(btn){btn.disabled=true;btn.textContent='Saving…';}
+    const payload={ relation:gv('fhRel'), condition, age_at_onset:ageRaw===''?undefined:Number(ageRaw), relative_status:gv('fhStatus'), note:gv('fhNote') };
+    try{ const r=familyId?await postLists({action:'family_update',family_id:familyId,...payload}):await postLists({action:'family_add',patient_id:selId,...payload}); if(!r.ok) throw new Error(r.error||'save failed'); document.getElementById('listOverlay')?.remove(); await loadChartLists(selId); }
+    catch(e){ alert('Could not save: '+e.message); if(btn){btn.disabled=false;btn.textContent='Save';} }
+  };
+  window.deleteFamily=async function(id){ if(!confirm('Remove this entry from the family history?')) return; try{ const r=await postLists({action:'family_delete',family_id:id}); if(!r.ok) throw new Error(r.error||'failed'); document.getElementById('listOverlay')?.remove(); await loadChartLists(selId);}catch(e){ alert('Could not delete: '+e.message);} };
 
   // ================= Vitals flowsheet =================
   function vitalsCard(j){
@@ -4296,6 +4434,238 @@ HARD RULES:
         : isImg ? `<img src="${d.url}" alt="${esc(d.filename)}" style="max-width:100%;max-height:100%;object-fit:contain">`
         : `<div class="text-white/80 text-sm p-6 text-center">Preview couldn’t load inline. Use “Open in new tab” above.</div>`;
     }
+  };
+
+  // ================= Billing: insurance coverage + superbills =================
+  // The two things a claim is built from. Insurance is front-desk work (any staff); coding a visit is
+  // provider-or-admin. Member ids are shown masked; "reveal" is a separate audited call.
+  const PLAN_TYPES={ ppo:'PPO', hmo:'HMO', epo:'EPO', pos:'POS', commercial:'Commercial', medicare_advantage:'Medicare Advantage', medicare:'Medicare', medicaid:'Medicaid', other:'Other' };
+  const RANKS={ primary:'Primary', secondary:'Secondary', tertiary:'Tertiary' };
+  const RELATIONSHIPS={ self:'Self', spouse:'Spouse', child:'Child', other:'Other' };
+  const PLACES_OF_SERVICE={ '11':'11 · Office', '02':'02 · Telehealth (not home)', '10':'10 · Telehealth (patient home)', '12':'12 · Home', '19':'19 · Off-campus outpatient', '22':'22 · On-campus outpatient', '49':'49 · Independent clinic' };
+  const SUPERBILL_STATUS={ draft:['#f1f3f7','#3d4a45','Draft'], ready:['#eaf7ef','#0a7a3d','Ready to bill'], submitted:['#eef4ff','#0a6cf5','Submitted'], paid:['#eaf7ef','#0a7a3d','Paid'], void:['#fef2f2','#be123c','Void'] };
+  // Codes this clinic actually uses. Not a fee schedule — charges come from Netty, per payer contract.
+  const COMMON_CPT=[
+    ['99202','New patient office visit, straightforward (15-29 min)'],['99203','New patient office visit, low complexity (30-44 min)'],
+    ['99204','New patient office visit, moderate complexity (45-59 min)'],['99205','New patient office visit, high complexity (60-74 min)'],
+    ['99212','Established patient, straightforward (10-19 min)'],['99213','Established patient, low complexity (20-29 min)'],
+    ['99214','Established patient, moderate complexity (30-39 min)'],['99215','Established patient, high complexity (40-54 min)'],
+    ['99401','Preventive counseling, 15 min'],['99402','Preventive counseling, 30 min'],
+    ['G0447','Behavioral counseling for obesity, 15 min'],['G0473','Behavioral counseling for obesity, group'],
+    ['99406','Smoking cessation counseling, 3-10 min'],['96127','Brief emotional / behavioral assessment'],
+    ['36415','Collection of venous blood by venipuncture'],['93000','Electrocardiogram, complete'],
+    ['99457','Remote physiologic monitoring, first 20 min'],['98960','Self-management education, individual'],
+  ];
+  const CPT_DESC=Object.fromEntries(COMMON_CPT);
+  const money=(cents)=>'$'+((Number(cents)||0)/100).toFixed(2);
+  async function postBilling(payload){ const r=await fetch(CONVEX_URL+'/chart-billing',{ method:'POST', headers:await convexHeaders(), body:JSON.stringify(payload) }); return await r.json().catch(()=>({ ok:false, error:'bad response' })); }
+
+  async function loadChartBilling(pid){
+    const box=document.getElementById('chartBillingPanel'); if(!box) return;
+    box.innerHTML=chartSection('Insurance', '', '<div class="text-sm text-[#9aa0ab]">Loading…</div>');
+    let j; try{ j=await postBilling({action:'list',patient_id:pid}); }catch(e){ box.innerHTML=chartSection('Insurance','','<div class="text-sm text-[#be123c]">Could not load billing.</div>'); return; }
+    if(!j || j.ok===false){ box.innerHTML=chartSection('Insurance','','<div class="text-sm text-[#9aa0ab]">Billing is available to clinical and admin staff.</div>'); return; }
+    window.__coverages=j.coverages||[]; window.__superbills=j.superbills||[]; window.__canCode=!!j.canCode; window.__canWriteIns=!!j.canWriteInsurance;
+    box.innerHTML = insuranceCard(j) + superbillCard(j);
+  }
+  function insuranceCard(j){
+    const rows=(j.coverages||[]).length?j.coverages.map(renderCoverageRow).join(''):'<div class="text-sm text-[#9aa0ab]">No insurance on file. Self-pay until a card is added.</div>';
+    const add=j.canWriteInsurance?`<button onclick="openCoverageModal()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add coverage</button>`:'';
+    return chartSection('Insurance', add, `<div>${rows}</div>`);
+  }
+  function renderCoverageRow(c){
+    const inactive=c.status==='inactive';
+    const line=[c.payer_name, c.plan_name, PLAN_TYPES[c.plan_type]||''].filter(Boolean).join(' · ');
+    const sub=c.subscriber_relationship&&c.subscriber_relationship!=='self'?`subscriber: ${esc((c.subscriber_first||'')+' '+(c.subscriber_last||''))} (${RELATIONSHIPS[c.subscriber_relationship]||c.subscriber_relationship})`:'subscriber: self';
+    const meta=[RANKS[c.rank]||c.rank, c.group_number?('group '+c.group_number):'', sub, c.payer_id?('payer id '+c.payer_id):'', inactive?'inactive':''].filter(Boolean).join(' · ');
+    const memberEl=`<span id="mem-${c.id}" class="font-mono text-[11px] text-[#3d4a45]">${esc(c.member_id_masked||'')}</span> <button onclick="revealMemberId('${c.id}')" class="text-[10px] text-[#0a6cf5] hover:underline">reveal</button>`;
+    const acts=j_canWriteIns()?`<button onclick="openCoverageModal('${c.id}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="deleteCoverage('${c.id}')" class="text-[#be123c] hover:underline">delete</button>`:'';
+    return `<div class="flex items-start justify-between gap-3 py-2 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm ${inactive?'text-[#9aa0ab]':'text-[#16201d] font-medium'}">${esc(line)}</div><div class="text-[11px] text-[#9aa0ab] mt-0.5">Member ${memberEl}</div><div class="text-[11px] text-[#9aa0ab]">${esc(meta)}</div></div><div class="text-[11px] whitespace-nowrap pt-0.5">${acts}</div></div>`;
+  }
+  function j_canWriteIns(){ return !!window.__canWriteIns; }
+  // Revealing a member id writes its own audit row server-side, so it is a click, not a render.
+  window.revealMemberId=async function(id){
+    try{ const r=await postBilling({action:'insurance_reveal',insurance_id:id}); if(!r.ok) throw new Error(r.error||'failed');
+      const el=document.getElementById('mem-'+id); if(el) el.textContent=r.member_id;
+    }catch(e){ alert('Could not reveal: '+e.message); }
+  };
+  window.openCoverageModal=function(insId){
+    const c=insId?(window.__coverages||[]).find(x=>x.id===insId):null;
+    const sel=(id,label,map,cur,blank)=>`<label class="block text-xs font-semibold text-[#3d4a45]">${label}<select id="${id}" class="field mt-1 block w-full">${blank?`<option value="">${blank}</option>`:''}${Object.entries(map).map(([k,vv])=>`<option value="${k}" ${cur===k?'selected':''}>${vv}</option>`).join('')}</select></label>`;
+    const half='grid grid-cols-2 gap-3';
+    const body=`<div class="${half}">${sel('inRank','Rank',RANKS,c?c.rank:'primary')}${sel('inPlanType','Plan type',PLAN_TYPES,c?c.plan_type:'','Not recorded')}</div>`
+      +_lf('inPayer','Payer',c?c.payer_name:'','e.g., Sierra Health and Life')
+      +`<div class="${half}">${_lf('inMember','Member ID','',c?'leave blank to keep current':'as printed on the card')}${_lf('inGroup','Group number (optional)',c?c.group_number:'')}</div>`
+      +(c?`<div class="text-[11px] text-[#9aa0ab] -mt-1">Member ID on file: <span class="font-mono">${esc(c.member_id_masked||'')}</span>. Typing a new one replaces it.</div>`:'')
+      +_lf('inPlanName','Plan name (optional)',c?c.plan_name:'','e.g., Sierra PPO Select')
+      +_lf('inPayerId','Payer ID (optional)',c?c.payer_id:'','clearinghouse trading partner id')
+      +sel('inRel','Patient is the',RELATIONSHIPS,c?c.subscriber_relationship:'self')
+      +`<div id="subFields" class="${half} ${(!c||c.subscriber_relationship==='self')?'hidden':''}">${_lf('inSubFirst','Subscriber first',c?c.subscriber_first:'')}${_lf('inSubLast','Subscriber last',c?c.subscriber_last:'')}</div>`
+      +`<div id="subFields2" class="${half} ${(!c||c.subscriber_relationship==='self')?'hidden':''}">${_lf('inSubDob','Subscriber DOB',c?c.subscriber_dob:'','','date')}${sel('inSubSex','Subscriber sex',{F:'Female',M:'Male'},c?c.subscriber_sex:'','Not recorded')}</div>`
+      +`<div class="${half}">${_lf('inEff','Effective date (optional)',c?c.effective_date:'','','date')}${_lf('inTerm','Term date (optional)',c?c.term_date:'','','date')}</div>`
+      +sel('inStatus','Status',{active:'Active',inactive:'Inactive'},c?c.status:'active')
+      +`<label class="block text-xs font-semibold text-[#3d4a45]">Note (optional)<textarea id="inNote" rows="2" class="field mt-1 block w-full resize-none">${esc(c?c.note:'')}</textarea></label>`;
+    const footer=`${c?`<button onclick="deleteCoverage('${c.id}')" class="mr-auto px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#be123c] text-sm font-semibold hover:bg-[#fef2f2]">Delete</button>`:''}<button onclick="document.getElementById('listOverlay').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-sm font-semibold hover:bg-[#f1f3f7]">Cancel</button><button id="inSave" onclick="saveCoverage('${insId||''}')" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Save</button>`;
+    listModalShell(insId?'Edit coverage':'Add coverage', body, footer, 'max-w-lg');
+    const rel=document.getElementById('inRel');
+    if(rel) rel.onchange=()=>{ const hide=rel.value==='self'; ['subFields','subFields2'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle('hidden',hide); }); };
+  };
+  window.saveCoverage=async function(insId){
+    const gv=(id)=>{const e=document.getElementById(id);return e?e.value:undefined;};
+    const payer=(gv('inPayer')||'').trim(); if(!payer){ alert('Enter the payer name.'); return; }
+    const member=(gv('inMember')||'').trim();
+    if(!insId && !member){ alert('Enter the member ID. A claim cannot be built without it.'); return; }
+    const btn=document.getElementById('inSave'); if(btn){btn.disabled=true;btn.textContent='Saving…';}
+    const payload={ rank:gv('inRank'), payer_name:payer, payer_id:gv('inPayerId'), group_number:gv('inGroup'), plan_name:gv('inPlanName'), plan_type:gv('inPlanType'), subscriber_relationship:gv('inRel'), subscriber_first:gv('inSubFirst'), subscriber_last:gv('inSubLast'), subscriber_dob:gv('inSubDob'), subscriber_sex:gv('inSubSex'), effective_date:gv('inEff'), term_date:gv('inTerm'), status:gv('inStatus'), note:gv('inNote') };
+    if(member) payload.member_id=member;   // blank on edit = keep the stored id
+    try{ const r=insId?await postBilling({action:'insurance_update',insurance_id:insId,...payload}):await postBilling({action:'insurance_add',patient_id:selId,...payload}); if(!r.ok) throw new Error(r.error||'save failed'); document.getElementById('listOverlay')?.remove(); await loadChartBilling(selId); }
+    catch(e){ alert('Could not save: '+e.message); if(btn){btn.disabled=false;btn.textContent='Save';} }
+  };
+  window.deleteCoverage=async function(id){ if(!confirm('Remove this coverage?')) return; try{ const r=await postBilling({action:'insurance_delete',insurance_id:id}); if(!r.ok) throw new Error(r.error||'failed'); document.getElementById('listOverlay')?.remove(); await loadChartBilling(selId);}catch(e){ alert('Could not delete: '+e.message);} };
+
+  // ---- Superbills ----
+  function superbillCard(j){
+    // Front desk can take an insurance card but cannot see clinical coding. Say so, rather than showing
+    // an empty list that reads as "this patient has never been billed".
+    if(j.clinicalOk===false) return chartSection('Coded visits (superbills)', '', '<div class="text-sm text-[#9aa0ab]">Coded visits are visible to clinical and admin staff.</div>');
+    const rows=(j.superbills||[]).length?j.superbills.map(renderSuperbillRow).join(''):'<div class="text-sm text-[#9aa0ab]">No coded visits yet. Code a visit from a signed note, or start one here.</div>';
+    const add=j.canCode?`<button onclick="openSuperbillModal()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Code a visit</button>`:'';
+    return chartSection('Coded visits (superbills)', add, `<div class="space-y-2">${rows}</div>`);
+  }
+  function renderSuperbillRow(s){
+    const st=SUPERBILL_STATUS[s.status]||SUPERBILL_STATUS.draft;
+    const dx=(s.diagnoses||[]).map((d,i)=>`<span class="inline-block bg-[#f7fafd] border border-[#e6eef7] rounded px-1.5 py-0.5 text-[10px] font-mono mr-1">${i+1}. ${esc(d.code)}</span>`).join('');
+    const lines=(s.lines||[]).map(l=>`<div class="flex justify-between gap-2 text-[11px] text-[#3d4a45] py-0.5"><span><span class="font-mono">${esc(l.cpt)}</span>${(l.modifiers&&l.modifiers.length)?'<span class="font-mono text-[#0a6cf5]">-'+l.modifiers.map(esc).join('-')+'</span>':''} ${esc(l.description||CPT_DESC[l.cpt]||'')} <span class="text-[#9aa0ab]">×${l.units} · dx ${(l.dx_pointers||[]).join(',')}</span></span><span class="font-medium whitespace-nowrap">${money(l.charge_cents)}</span></div>`).join('');
+    const locked=s.status==='submitted'||s.status==='paid';
+    const acts=(window.__canCode&&!locked)?`<button onclick="openSuperbillModal('${s.id}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="setSuperbillStatus('${s.id}','${s.status==='ready'?'draft':'ready'}')" class="text-[#6b7280] hover:underline">${s.status==='ready'?'back to draft':'mark ready'}</button> · <button onclick="setSuperbillStatus('${s.id}','void')" class="text-[#6b7280] hover:underline">void</button> · <button onclick="deleteSuperbill('${s.id}')" class="text-[#be123c] hover:underline">delete</button>`:'';
+    return `<div class="border border-[#e6e9ee] rounded-xl p-3">
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0"><div class="text-sm font-semibold text-[#16201d]">${esc(s.date_of_service)} · ${esc(PLACES_OF_SERVICE[s.place_of_service]||('POS '+s.place_of_service))}</div>
+        <div class="text-[11px] text-[#6b7280] mt-0.5">${esc(s.rendering_provider||s.added_by||'')}${s.rendering_npi?' · NPI '+esc(s.rendering_npi):''}</div></div>
+        <span class="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap" style="background:${st[0]};color:${st[1]}">${st[2]}</span>
+      </div>
+      <div class="mt-2">${dx}</div>
+      <div class="mt-1.5 border-t border-[#f1f3f7] pt-1.5">${lines}</div>
+      <div class="flex items-center justify-between mt-2 pt-2 border-t border-[#f1f3f7]"><div class="text-[11px]">${acts}</div><div class="text-sm font-semibold">${money(s.total_cents)}</div></div>
+    </div>`;
+  }
+  window.setSuperbillStatus=async function(id,status){
+    if(status==='void' && !confirm('Void this superbill? It stays on the chart but will not be billed.')) return;
+    try{ const r=await postBilling({action:'superbill_status',superbill_id:id,status}); if(!r.ok) throw new Error(r.error||'failed'); await loadChartBilling(selId);}catch(e){ alert('Could not update: '+e.message);} };
+  window.deleteSuperbill=async function(id){ if(!confirm('Delete this superbill?')) return; try{ const r=await postBilling({action:'superbill_delete',superbill_id:id}); if(!r.ok) throw new Error(r.error||'failed'); document.getElementById('listOverlay')?.remove(); await loadChartBilling(selId);}catch(e){ alert('Could not delete: '+e.message);} };
+
+  // The superbill editor. Diagnoses are NUMBERED and lines point at those numbers — the same mechanic as
+  // box 24E on a CMS-1500 and diagnosisCodePointers on an 837P, so what gets entered here is what gets
+  // transmitted later. Rows are rebuilt from a working array so pointer numbers stay honest after a delete.
+  let sbDx=[], sbLines=[];
+  function sbRenderDx(){
+    const box=document.getElementById('sbDxRows'); if(!box) return;
+    box.innerHTML=sbDx.map((d,i)=>`<div class="flex items-center gap-2 mb-1.5">
+      <span class="w-5 shrink-0 text-[11px] font-semibold text-[#0a6cf5] text-right">${i+1}.</span>
+      <input value="${esc(d.code||'')}" oninput="sbSetDx(${i},'code',this.value)" placeholder="E66.811" class="field font-mono" style="width:110px">
+      <input value="${esc(d.label||'')}" oninput="sbSetDx(${i},'label',this.value)" placeholder="description (optional)" class="field flex-1">
+      <button type="button" onclick="sbDelDx(${i})" class="text-[#be123c] text-xs px-1">×</button></div>`).join('')
+      +`<button type="button" onclick="sbAddDx()" class="text-[#0a6cf5] text-xs font-semibold mt-1">+ Add diagnosis</button>`;
+  }
+  function sbRenderLines(){
+    const box=document.getElementById('sbLineRows'); if(!box) return;
+    box.innerHTML=sbLines.map((l,i)=>`<div class="grid gap-2 mb-1.5 items-center" style="grid-template-columns:92px 1fr 74px 54px 96px 24px">
+      <input value="${esc(l.cpt||'')}" list="sbCptList" oninput="sbSetLine(${i},'cpt',this.value)" placeholder="99214" class="field font-mono">
+      <input id="sbL${i}Desc" value="${esc(l.description||'')}" oninput="sbSetLine(${i},'description',this.value)" placeholder="description" class="field">
+      <input value="${esc((l.modifiers||[]).join(','))}" oninput="sbSetLine(${i},'modifiers',this.value)" placeholder="mods" title="Modifiers, comma separated (e.g. 25,95)" class="field font-mono">
+      <input value="${esc(String(l.units==null?1:l.units))}" oninput="sbSetLine(${i},'units',this.value)" type="number" min="1" step="1" title="Units" class="field">
+      <div class="flex items-center gap-1"><span class="text-[11px] text-[#9aa0ab]">$</span><input value="${esc(l.charge||'')}" oninput="sbSetLine(${i},'charge',this.value)" type="number" min="0" step="0.01" placeholder="0.00" class="field"></div>
+      <button type="button" onclick="sbDelLine(${i})" class="text-[#be123c] text-xs">×</button>
+      <div style="grid-column:1 / -1" class="flex items-center gap-2 pl-1"><span class="text-[10px] text-[#6b7280] uppercase tracking-wide">Dx ref</span><input value="${esc((l.dx_pointers||[]).join(','))}" oninput="sbSetLine(${i},'dx_pointers',this.value)" placeholder="1,2" class="field font-mono" style="width:80px"><span class="text-[10px] text-[#9aa0ab]">which numbered diagnoses this code is for</span></div>
+    </div>`).join('')
+      +`<button type="button" onclick="sbAddLine()" class="text-[#0a6cf5] text-xs font-semibold mt-1">+ Add service line</button>
+        <datalist id="sbCptList">${COMMON_CPT.map(([c,d])=>`<option value="${c}">${esc(d)}</option>`).join('')}</datalist>`;
+    sbTotal();
+  }
+  function sbTotal(){
+    const cents=sbLines.reduce((s,l)=>s+Math.round((parseFloat(l.charge)||0)*100),0);
+    const el=document.getElementById('sbTotal'); if(el) el.textContent=money(cents);
+  }
+  window.sbAddDx=function(){ if(sbDx.length>=12){ alert('A claim carries at most 12 diagnoses.'); return; } sbDx.push({code:'',label:''}); sbRenderDx(); };
+  window.sbSetDx=function(i,k,v){ if(sbDx[i]) sbDx[i][k]=v; };
+  // Deleting a diagnosis renumbers every one after it, so every line pointing past it has to move with
+  // it. Without this the pointers silently point at the wrong diagnosis, which is a mis-coded claim.
+  window.sbDelDx=function(i){
+    const removed=i+1;
+    sbDx.splice(i,1);
+    sbLines.forEach(l=>{ l.dx_pointers=(l.dx_pointers||[]).filter(p=>p!==removed).map(p=>p>removed?p-1:p); });
+    sbRenderDx(); sbRenderLines();
+  };
+  window.sbAddLine=function(){ sbLines.push({cpt:'',description:'',modifiers:[],units:1,charge:'',dx_pointers:sbDx.length?[1]:[]}); sbRenderLines(); };
+  window.sbDelLine=function(i){ sbLines.splice(i,1); sbRenderLines(); };
+  window.sbSetLine=function(i,k,v){
+    const l=sbLines[i]; if(!l) return;
+    if(k==='modifiers'||k==='dx_pointers') l[k]=String(v).split(',').map(s=>s.trim()).filter(Boolean).map(s=>k==='dx_pointers'?Number(s):s.toUpperCase());
+    else if(k==='units') l.units=Number(v)||1;
+    // Autofill the description in place rather than re-rendering: a full rebuild here would steal focus
+    // out of the field the coder is still typing in.
+    else { l[k]=v; if(k==='cpt'){ const d=CPT_DESC[String(v).trim().toUpperCase()]; if(d && !l.description){ l.description=d; const el=document.getElementById('sbL'+i+'Desc'); if(el) el.value=d; } } }
+    if(k==='charge') sbTotal();
+  };
+  /**
+   * Open the coder. `noteId` prefills from a signed encounter note: the note's date of service and its
+   * ICD-10 diagnoses carry straight over, so coding a visit the provider just signed is a few clicks
+   * rather than re-keying the chart.
+   */
+  window.openSuperbillModal=function(superbillId, noteId){
+    const s=superbillId?(window.__superbills||[]).find(x=>x.id===superbillId):null;
+    const note=noteId?(window.__chartNotes||[]).find(x=>x.id===noteId):null;
+    sbDx = s?(s.diagnoses||[]).map(d=>({code:d.code,label:d.label||''}))
+         : note?(note.diagnoses||[]).map(d=>({code:d.code,label:d.label||''}))
+         : [{code:'',label:''}];
+    if(!sbDx.length) sbDx=[{code:'',label:''}];
+    sbLines = s?(s.lines||[]).map(l=>({cpt:l.cpt,description:l.description||'',modifiers:l.modifiers||[],units:l.units,charge:((l.charge_cents||0)/100).toFixed(2),dx_pointers:l.dx_pointers||[]}))
+            : [{cpt:'',description:'',modifiers:[],units:1,charge:'',dx_pointers:[1]}];
+    const dos=s?s.date_of_service:(note?(note.encounter_date||new Date().toISOString().slice(0,10)):new Date().toISOString().slice(0,10));
+    const covOpts=['<option value="">Self-pay (no claim)</option>'].concat((window.__coverages||[]).filter(c=>c.status==='active').map(c=>`<option value="${c.id}" ${s&&s.insurance_id===c.id?'selected':''}>${esc(c.payer_name)} · ${RANKS[c.rank]||c.rank} · ${esc(c.member_id_masked||'')}</option>`)).join('');
+    const posOpts=Object.entries(PLACES_OF_SERVICE).map(([k,vv])=>`<option value="${k}" ${(s?s.place_of_service===k:k==='11')?'selected':''}>${vv}</option>`).join('');
+    const stOpts=['draft','ready','void'].map(k=>`<option value="${k}" ${(s?s.status===k:k==='draft')?'selected':''}>${SUPERBILL_STATUS[k][2]}</option>`).join('');
+    const body=`
+      <div class="grid grid-cols-3 gap-3">
+        <label class="block text-xs font-semibold text-[#3d4a45]">Date of service<input id="sbDos" type="date" value="${esc(dos)}" class="field mt-1 block w-full"></label>
+        <label class="block text-xs font-semibold text-[#3d4a45]">Place of service<select id="sbPos" class="field mt-1 block w-full">${posOpts}</select></label>
+        <label class="block text-xs font-semibold text-[#3d4a45]">Status<select id="sbStatus" class="field mt-1 block w-full">${stOpts}</select></label>
+      </div>
+      <label class="block text-xs font-semibold text-[#3d4a45]">Bill to<select id="sbCoverage" class="field mt-1 block w-full">${covOpts}</select></label>
+      <div class="grid grid-cols-2 gap-3">
+        ${_lf('sbProvider','Rendering provider',s?s.rendering_provider:(note?note.author:''),'e.g., Peter DeBry, MD')}
+        ${_lf('sbNpi','Rendering NPI',s?s.rendering_npi:'','10 digits')}
+      </div>
+      <div class="pt-1"><div class="text-[11px] font-semibold uppercase tracking-wide text-[#0a6cf5] mb-1.5">Diagnoses (ICD-10)</div><div id="sbDxRows"></div></div>
+      <div class="pt-2"><div class="text-[11px] font-semibold uppercase tracking-wide text-[#0a6cf5] mb-1.5">Service lines (CPT / HCPCS)</div><div id="sbLineRows"></div></div>
+      <div class="flex justify-end items-baseline gap-2 pt-2 border-t border-[#eef1f4]"><span class="text-xs text-[#6b7280]">Total charge</span><span id="sbTotal" class="font-display text-lg font-semibold">$0.00</span></div>
+      <label class="block text-xs font-semibold text-[#3d4a45]">Billing note (optional)<textarea id="sbNote" rows="2" class="field mt-1 block w-full resize-none">${esc(s?s.note:'')}</textarea></label>
+      <div class="text-[11px] text-[#9aa0ab]">Nothing here is transmitted to a payer. Coding a visit records what would be billed; claim submission is a separate step that is not wired yet.</div>`;
+    const footer=`${s?`<button onclick="deleteSuperbill('${s.id}')" class="mr-auto px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#be123c] text-sm font-semibold hover:bg-[#fef2f2]">Delete</button>`:''}<button onclick="document.getElementById('listOverlay').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-sm font-semibold hover:bg-[#f1f3f7]">Cancel</button><button id="sbSave" onclick="saveSuperbill('${superbillId||''}','${noteId||''}')" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Save</button>`;
+    listModalShell(superbillId?'Edit coded visit':'Code a visit', body, footer, 'max-w-3xl');
+    sbRenderDx(); sbRenderLines();
+  };
+  window.saveSuperbill=async function(superbillId, noteId){
+    const gv=(id)=>{const e=document.getElementById(id);return e?e.value:undefined;};
+    const btn=document.getElementById('sbSave'); if(btn){btn.disabled=true;btn.textContent='Saving…';}
+    const payload={
+      date_of_service:gv('sbDos'), place_of_service:gv('sbPos'), status:gv('sbStatus'),
+      insurance_id:gv('sbCoverage')||undefined,
+      rendering_provider:gv('sbProvider'), rendering_npi:gv('sbNpi'), note:gv('sbNote'),
+      diagnoses:sbDx.filter(d=>(d.code||'').trim()).map(d=>({code:d.code.trim(),label:(d.label||'').trim()||undefined})),
+      lines:sbLines.filter(l=>(l.cpt||'').trim()).map(l=>({ cpt:l.cpt.trim(), description:(l.description||'').trim()||undefined, modifiers:l.modifiers||[], units:Number(l.units)||1, charge_cents:Math.round((parseFloat(l.charge)||0)*100), dx_pointers:(l.dx_pointers||[]).map(Number) })),
+    };
+    if(superbillId) payload.superbill_id=superbillId; else { payload.patient_id=selId; if(noteId) payload.note_id=noteId; }
+    try{ const r=await postBilling({action:'superbill_save',...payload}); if(!r.ok) throw new Error(r.error||'save failed'); document.getElementById('listOverlay')?.remove(); await loadChartBilling(selId); const bt=document.querySelector('#chartCard .chart-tab[data-ct="billing"]'); if(bt&&window.chartTab) window.chartTab('billing',bt); }
+    catch(e){ alert('Could not save: '+e.message); if(btn){btn.disabled=false;btn.textContent='Save';} }
+  };
+  // Entry point from a signed encounter note: load coverages first so "Bill to" is populated.
+  window.codeVisitFromNote=async function(noteId){
+    // Load billing FIRST. Checking for an existing superbill against an unloaded list would miss it and
+    // silently create a second bill for the same encounter.
+    if(!window.__superbills) await loadChartBilling(selId);
+    const existing=(window.__superbills||[]).find(s=>s.note_id===noteId);
+    openSuperbillModal(existing?existing.id:'', existing?'':noteId);
   };
 
   // ---------------- generate starting plan from InBody ----------------
