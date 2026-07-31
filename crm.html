@@ -678,10 +678,12 @@
   };
 
   // ---- Print helper: clean window with the rendered content, force-open <details>, print ----
-  window.__printEl = function(elId, title){
+  // extraCss lets a caller add document-specific print rules (e.g. the chart packet's per-page
+  // running header) without every print surface inheriting them.
+  window.__printEl = function(elId, title, extraCss){
     const el=document.getElementById(elId); if(!el) return;
     const w=window.open('','_blank','width=900,height=1000'); if(!w){ alert('Allow pop-ups to print this.'); return; }
-    w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+title+'</title><scr'+'ipt src="https://cdn.tailwindcss.com"></scr'+'ipt><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700&display=swap" rel="stylesheet"><style>body{font-family:Inter,system-ui,sans-serif;color:#16201d;padding:24px;max-width:820px;margin:0 auto}.font-display{font-family:Montserrat,Inter,sans-serif}img{max-width:120px;border-radius:8px}.hb-logo{border-radius:0!important}summary{cursor:default}@media print{details{break-inside:avoid}}</style></head><body>'+el.innerHTML+'</body></html>');
+    w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+title+'</title><scr'+'ipt src="https://cdn.tailwindcss.com"></scr'+'ipt><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700&display=swap" rel="stylesheet"><style>body{font-family:Inter,system-ui,sans-serif;color:#16201d;padding:24px;max-width:820px;margin:0 auto}.font-display{font-family:Montserrat,Inter,sans-serif}img{max-width:120px;border-radius:8px}.hb-logo{border-radius:0!important}summary{cursor:default}@media print{details{break-inside:avoid}}'+(extraCss||'')+'</style></head><body>'+el.innerHTML+'</body></html>');
     w.document.close();
     setTimeout(()=>{ try{ w.document.querySelectorAll('details').forEach(d=>d.open=true); w.focus(); w.print(); }catch(e){} }, 900);
   };
@@ -3932,6 +3934,9 @@ HARD RULES:
     const signed = n.status==='signed';
     const badge = signed ? '<span class="badge b-active" style="background:#eaf7ef;color:#0a7a3d">🔒 Signed</span>' : '<span class="badge b-active" style="background:#fff7ed;color:#b45309">Draft</span>';
     const who = signed ? (n.signed_by||n.author) : n.author;
+    // The code the documentation supports, visible without opening the note. This is what the biller
+    // is scanning the list for.
+    const cptBadge = (n.mdm&&n.mdm.cpt_suggested) ? `<span class="badge" style="background:#f7fafd;color:#0a6cf5;border:1px solid #e6eef7">${esc(n.mdm.cpt_suggested)}</span>` : '';
     const preview = esc(((n.assessment||n.subjective||n.plan||'').replace(/\s+/g,' ')).slice(0,110));
     const adn = (n.addenda&&n.addenda.length) ? ` · ${n.addenda.length} addend${n.addenda.length===1?'um':'a'}` : '';
     const acts = [];
@@ -3942,11 +3947,14 @@ HARD RULES:
     // Coding is offered only on a SIGNED note (canAmend == clinician && signed). Billing an unsigned
     // encounter is exactly the thing you do not want to make easy.
     if(n.canAmend) acts.push(`<button onclick="codeVisitFromNote('${n.id}')" class="text-[#0a6cf5] text-xs font-semibold hover:underline">Code visit</button>`);
-    acts.push(`<button onclick="printChartNote('${n.id}')" class="text-[#6b7280] text-xs font-semibold hover:underline">🖨 Print / PDF</button>`);
+    acts.push(`<button onclick="printChartNote('${n.id}')" class="text-[#6b7280] text-xs font-semibold hover:underline">🖨 Note</button>`);
+    // The packet is what a prior authorization or a payer audit asks for: the note PLUS the chart
+    // context that establishes medical necessity. Netty attaches this to a PA submission.
+    acts.push(`<button onclick="printChartPacket('${n.id}')" class="text-[#0a6cf5] text-xs font-semibold hover:underline">📄 Chart packet</button>`);
     return `<div class="border border-[#e6e9ee] rounded-xl p-3.5">
       <div class="flex items-start justify-between gap-2">
         <div class="min-w-0"><div class="text-sm font-semibold text-[#16201d]">${NOTE_TYPE_LABELS[n.encounter_type]||'Clinical note'} · ${fmtNoteDate(n)}</div>
-        <div class="text-[11px] text-[#6b7280]">${esc(who)}${adn}</div></div>${badge}
+        <div class="text-[11px] text-[#6b7280]">${esc(who)}${adn}</div></div><div class="flex items-center gap-1.5 shrink-0">${cptBadge}${badge}</div>
       </div>
       ${preview?`<div class="text-xs text-[#6b7280] mt-1.5">${preview}…</div>`:''}
       <div class="flex gap-3 mt-2">${acts.join('')}</div>
@@ -4002,6 +4010,170 @@ HARD RULES:
     holder.innerHTML=html;
     window.__printEl('noteprintBody', 'Encounter Note - '+nm);
   };
+  // ---- Chart packet: the PA / audit-facing document ------------------------------------------
+  // A signed note alone does not carry medical necessity. This assembles the note together with the
+  // chart context a payer expects behind a billed E/M visit or a prior authorization: who the billing
+  // and rendering providers are (with NPIs), the coverage, the safety and history lists, the vitals
+  // trend, and the signature attestation, with the patient identified on every printed page.
+  const PRACTICE = {
+    name: 'Vitality Weight Loss',
+    billing_entity: 'DeBry Vitality Academies PC',
+    billing_npi: '1699635946',
+    address: '6140 Brent Thurman Way, Suite 100, Las Vegas, NV 89148',
+    phone: '(702) 602-5002',
+  };
+  // Rendering NPIs by provider. Keyed on a lowercase surname fragment because the note stores the
+  // author's DISPLAY NAME, not a staff id. Replace this with a field on the staff record once the
+  // remaining NPIs are collected; an unknown author simply prints without an NPI line rather than
+  // guessing one.
+  const RENDERING_NPI = {
+    'debry': { name: 'Peter W. DeBry, MD', npi: '1831137991', taxonomy: 'General Practice 208D00000X' },
+    'de vera': { name: 'Richard Del Fierro De Vera, FNP-C', npi: '1801466016', taxonomy: 'Nurse Practitioner - Family 363LF0000X' },
+    'devera': { name: 'Richard Del Fierro De Vera, FNP-C', npi: '1801466016', taxonomy: 'Nurse Practitioner - Family 363LF0000X' },
+  };
+  function renderingFor(authorName){
+    const a=(authorName||'').toLowerCase();
+    for(const k in RENDERING_NPI) if(a.indexOf(k)>=0) return RENDERING_NPI[k];
+    return null;
+  }
+  /** Stable, human-readable record number derived from the patient id. A display encoding of the real
+   *  record key, not a second identifier. The chart has never had an MRN and a payer packet needs one. */
+  function mrnFor(pid){ return 'VWL-'+String(pid||'').slice(-8).toUpperCase(); }
+
+  window.printChartPacket = async function(noteId){
+    const n=(window.__chartNotes||[]).find(x=>x.id===noteId); if(!n){ alert('Note not found - reload the record.'); return; }
+    const pid=n.patient_id;
+    const p=(patients||[]).find(x=>x.id===pid)||{};
+    const nm=((p.first||'')+' '+(p.last||'')).trim()||p.name||'Patient';
+    const dob=p.dob?new Date(p.dob).toLocaleDateString('en-US'):'Not recorded';
+    // Make sure the chart context is loaded even when the packet is printed straight off the Notes tab.
+    if(!window.__chartProblems) { try{ await loadChartLists(pid); }catch(e){} }
+    let coverages=window.__coverages;
+    if(!coverages){ try{ const b=await postBilling({action:'list',patient_id:pid}); coverages=(b&&b.coverages)||[]; }catch(e){ coverages=[]; } }
+
+    const esc2=s=>esc(s==null?'':String(s));
+    const sysLabel=k=>(BODY_SYSTEMS.find(s=>s[0]===k)||[,k])[1];
+    const H=(t)=>`<h3 style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#0a6cf5;margin:14px 0 3px;border-bottom:1px solid #e6e9ee;padding-bottom:2px">${t}</h3>`;
+    const sec=(t,b)=>(b&&String(b).trim())?H(t)+`<div style="font-size:13px;line-height:1.5;white-space:pre-wrap">${b}</div>`:'';
+    const rowsOf=(arr,fn)=>arr.length?('<ul style="margin:2px 0 0 16px;padding:0;font-size:13px;line-height:1.5">'+arr.map(x=>'<li>'+fn(x)+'</li>').join('')+'</ul>'):'';
+
+    // --- chart context ---
+    const allAll=(window.__chartAllergies||[]).filter(a=>a.status==='active');
+    const realAllergies=allAll.filter(a=>a.allergy_type!=='none');
+    const allergyHtml = realAllergies.length
+      ? rowsOf(realAllergies, a=>`<b>${esc2(a.allergen)}</b>${a.reaction?': '+esc2(a.reaction):''}${a.severity?' ('+esc2(a.severity)+')':''}`)
+      : (allAll.length?'<div style="font-size:13px">No known allergies</div>':'<div style="font-size:13px;color:#6b7280">Not documented</div>');
+    const probs=(window.__chartProblems||[]).filter(x=>x.status==='active');
+    const meds=(window.__chartMeds||[]).filter(x=>x.status==='active');
+    const surg=(window.__chartSurgeries||[]);
+    const fam=(window.__chartFamily||[]);
+    const soc=window.__chartSocial;
+    const vits=(window.__chartVitals||[]).slice(0,4);
+
+    // Medications print with dose AND directions: this is the specific gap Netty named, because a
+    // payer will not review a prior authorization without the medication order on file.
+    const medsHtml=rowsOf(meds, m=>`<b>${esc2(m.name)}</b>${m.dose?' '+esc2(m.dose):''}${m.sig?', '+esc2(m.sig):''}${m.source?' <span style="color:#6b7280">('+esc2(MED_SOURCES[m.source]||m.source)+')</span>':''}`);
+    const socHtml=soc?SOCIAL_FIELDS.filter(([k])=>(soc[k]||'').trim()).map(([k,l])=>`<b>${l}:</b> ${esc2(soc[k])}`).join(' &nbsp;·&nbsp; ')+(soc.note?'<br>'+esc2(soc.note):''):'';
+    const vitalsHtml=vits.length?('<table style="width:100%;border-collapse:collapse;font-size:12px"><tr style="color:#6b7280;text-align:left">'
+      +['Date','Wt (lb)','BMI','BP','HR','RR','Temp','SpO2','Pain'].map(h=>`<th style="padding:2px 6px 2px 0;font-weight:600">${h}</th>`).join('')+'</tr>'
+      +vits.map(v=>`<tr>${[v.measured_at,v.weight_lb,v.bmi,(v.bp_systolic&&v.bp_diastolic)?v.bp_systolic+'/'+v.bp_diastolic:'',v.heart_rate,v.respirations,v.temp_f,v.o2_sat!=null?v.o2_sat+'%':'',v.pain_score].map(c=>`<td style="padding:2px 6px 2px 0">${esc2(c==null?'':c)}</td>`).join('')}</tr>`).join('')+'</table>'):'';
+
+    // --- the note itself ---
+    const dx=(n.diagnoses||[]).map((d,i)=>`${i+1}. ${esc2((d.code?d.code+' ':'')+(d.label||''))}`).join('<br>');
+    const rosTxt=(()=>{ if(!n.ros) return '';
+      const pos=(n.ros.systems||[]).filter(s=>s.status==='pos'), neg=(n.ros.systems||[]).filter(s=>s.status==='neg');
+      const parts=[];
+      if(pos.length) parts.push('<b>Positive:</b> '+pos.map(s=>esc2(sysLabel(s.key))+(s.findings?' ('+esc2(s.findings)+')':'')).join(', ')+'.');
+      if(neg.length) parts.push('<b>Negative:</b> '+neg.map(s=>esc2(sysLabel(s.key))).join(', ')+'.');
+      if(n.ros.comment) parts.push(esc2(n.ros.comment));
+      return parts.join(' '); })();
+    const peTxt=n.physical_exam?((n.physical_exam.systems||[]).map(s=>`<b>${esc2(sysLabel(s.key))}:</b> ${esc2(s.findings)}`).join(' ')+(n.physical_exam.comment?' '+esc2(n.physical_exam.comment):'')):'';
+    const ordTxt=(n.orders||[]).length?rowsOf(n.orders,o=>{ const l=(ORDER_KINDS.find(k=>k[0]===o.kind)||[,o.kind])[1]; return `<b>${esc2(l)}:</b> ${esc2(o.detail)}`; }):'';
+    const mdmTxt=(()=>{ if(!n.mdm) return '';
+      const bits=[];
+      if(n.mdm.rationale) bits.push(esc2(n.mdm.rationale));
+      if(n.mdm.basis) bits.push(esc2(n.mdm.basis));
+      if(n.mdm.total_time_min) bits.push('Total time on the date of the encounter: '+esc2(n.mdm.total_time_min)+' minutes.'+(n.mdm.time_alternative?' Time supports CPT '+esc2(n.mdm.time_alternative)+'.':''));
+      return bits.join('<br><br>'); })();
+    const addenda=(n.addenda||[]).map(a=>`<div style="margin-top:8px;font-size:13px"><b>Addendum</b> (${esc2(a.author)}${a.at?' · '+new Date(a.at).toLocaleString('en-US'):''}): ${esc2(a.text)}</div>`).join('');
+    const signed=n.status==='signed';
+    const rend=renderingFor(n.author);
+    const cov=(coverages||[])[0];
+    const dos=fmtNoteDate(n);
+    const sig=signed
+      ? `Electronically signed by ${esc2(n.signed_by||n.author)}${rend?', '+esc2(rend.taxonomy):''} on ${n.signed_at?new Date(n.signed_at).toLocaleString('en-US'):''}.<br>This entry is locked; subsequent changes appear as addenda above.`
+      : '<b>DRAFT. NOT SIGNED.</b> Not valid for billing or for submission to a payer.';
+
+    let logo='';
+    try{ const resp=await fetch(new URL('assets/logo-icon.png', location.href).href); const blob=await resp.blob();
+      logo=await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=()=>res(''); fr.readAsDataURL(blob); }); }catch(e){ logo=''; }
+
+    const idLine=`${esc2(nm)} · DOB ${esc2(dob)} · MRN ${esc2(mrnFor(pid))} · DOS ${esc2(dos)}`;
+    const html=`
+      <div class="pkt-runhead">${idLine}</div>
+      <div style="display:flex;align-items:flex-start;gap:12px;border-bottom:2px solid #0a6cf5;padding-bottom:10px;margin-bottom:12px">
+        ${logo?`<img src="${logo}" alt="" style="height:38px;width:auto;border-radius:0">`:''}
+        <div style="line-height:1.15">
+          <div style="font-family:Montserrat,Inter,sans-serif;text-transform:uppercase;letter-spacing:.15em;font-weight:600;font-size:18px">Vitality</div>
+          <div style="font-family:Montserrat,Inter,sans-serif;text-transform:uppercase;letter-spacing:.30em;font-weight:500;font-size:8px;margin-top:2px">Weight Loss</div>
+          <div style="font-size:10.5px;color:#6b7280;margin-top:4px">${esc2(PRACTICE.billing_entity)} · ${esc2(PRACTICE.address)}<br>${esc2(PRACTICE.phone)} · Billing NPI ${esc2(PRACTICE.billing_npi)}</div>
+        </div>
+        <div style="margin-left:auto;text-align:right;font-size:10.5px;color:#6b7280;line-height:1.5">
+          <b style="color:#16201d">Chart packet</b><br>${esc2(NOTE_TYPE_LABELS[n.encounter_type]||'Clinical note')}${signed?'':' · DRAFT'}<br>Generated ${new Date().toLocaleDateString('en-US')}
+        </div>
+      </div>
+      <table style="width:100%;font-size:12.5px;border-collapse:collapse;margin-bottom:4px">
+        <tr><td style="padding:1px 0;width:34%"><b>Patient:</b> ${esc2(nm)}</td><td style="width:33%"><b>DOB:</b> ${esc2(dob)}</td><td><b>MRN:</b> ${esc2(mrnFor(pid))}</td></tr>
+        <tr><td style="padding:1px 0"><b>Date of service:</b> ${esc2(dos)}</td><td><b>Visit type:</b> ${esc2(n.visit_type==='new'?'New patient':n.visit_type==='established'?'Established':'Not specified')}</td><td><b>Location:</b> ${esc2(n.service_location||'Office')}</td></tr>
+        <tr><td style="padding:1px 0"><b>Rendering provider:</b> ${esc2(rend?rend.name:n.author)}</td><td>${rend?`<b>Rendering NPI:</b> ${esc2(rend.npi)}`:''}</td><td><b>Billing NPI:</b> ${esc2(PRACTICE.billing_npi)}</td></tr>
+        <tr><td style="padding:1px 0" colspan="3"><b>Coverage:</b> ${cov?esc2(cov.payer_name)+(cov.member_id_masked?' · Member '+esc2(cov.member_id_masked):'')+(cov.group_number?' · Group '+esc2(cov.group_number):''):'Self-pay / none on file'}</td></tr>
+      </table>
+      <div style="font-size:10px;color:#9aa0ab;margin-bottom:2px">Member ID is shown masked. The full identifier is available in the CRM through the separately audited reveal.</div>
+      ${sec('Chief complaint', esc2(n.chief_complaint))}
+      ${sec('History of present illness', esc2(n.hpi))}
+      ${sec('Subjective', esc2(n.subjective))}
+      ${H('Allergies')}<div style="font-size:13px">${allergyHtml}</div>
+      ${probs.length?H('Past medical history / problem list')+rowsOf(probs,x=>`${x.code?'<b>'+esc2(x.code)+'</b> ':''}${esc2(x.label)}${x.onset_date?' <span style="color:#6b7280">(onset '+esc2(x.onset_date)+')</span>':''}`):''}
+      ${meds.length?H('Current medications')+medsHtml:''}
+      ${(n.med_rec&&n.med_rec.reviewed)?`<div style="font-size:12px;color:#0a7a3d;margin-top:3px">Medication list reviewed and updated at this encounter${n.med_rec.by?' by '+esc2(n.med_rec.by):''}.</div>`:''}
+      ${surg.length?H('Surgical history')+rowsOf(surg,s=>`${esc2(s.procedure)}${s.performed_on?' ('+esc2(s.performed_on)+')':''}`):''}
+      ${fam.length?H('Family history')+rowsOf(fam,f=>`<b>${esc2(RELATIONS[f.relation]||f.relation)}:</b> ${esc2(f.condition)}${f.age_at_onset!=null?' (onset age '+esc2(f.age_at_onset)+')':''}`):''}
+      ${socHtml?H('Social history')+`<div style="font-size:13px;line-height:1.5">${socHtml}</div>`:''}
+      ${rosTxt?H('Review of systems')+`<div style="font-size:13px;line-height:1.5">${rosTxt}</div>`:''}
+      ${vitalsHtml?H('Vital signs')+vitalsHtml:''}
+      ${sec('Objective', esc2(n.objective))}
+      ${peTxt?H('Physical examination')+`<div style="font-size:13px;line-height:1.5">${peTxt}</div>`:''}
+      ${sec('Diagnostic data reviewed', esc2(n.data_reviewed))}
+      ${dx?H('Assessment / ICD-10')+`<div style="font-size:13px;line-height:1.6">${dx}</div>`:''}
+      ${sec('Assessment', esc2(n.assessment))}
+      ${mdmTxt?H('Medical decision making')+`<div style="font-size:13px;line-height:1.5">${mdmTxt}</div>`:''}
+      ${sec('Plan', esc2(n.plan))}
+      ${ordTxt?H('Orders')+ordTxt:''}
+      ${sec('Patient education', esc2(n.patient_education))}
+      ${sec('Preventive services', esc2(n.preventive))}
+      ${sec('Follow-up', esc2(n.followup))}
+      ${addenda?H('Addenda')+addenda:''}
+      ${n.mdm&&n.mdm.cpt_suggested?`<div style="margin-top:14px;padding:8px 10px;background:#f7fafd;border:1px solid #e6eef7;border-radius:6px;font-size:12.5px"><b>Billing summary.</b> Documentation supports CPT ${esc2(n.mdm.cpt_suggested)}${n.visit_type?' ('+esc2(n.visit_type)+' patient)':''} when all payer and CPT documentation requirements are met.</div>`:''}
+      <div style="margin-top:18px;padding-top:8px;border-top:1px solid #e6e9ee;font-size:12px;color:#374151">${sig}</div>`;
+
+    let holder=document.getElementById('pktprintBody');
+    if(!holder){ holder=document.createElement('div'); holder.id='pktprintBody'; holder.style.display='none'; document.body.appendChild(holder); }
+    holder.innerHTML=html;
+    window.__printEl('pktprintBody', 'Chart packet - '+nm+' - '+dos, PACKET_PRINT_CSS);
+  };
+  // Repeats the patient identifier at the top of EVERY printed page. A payer packet whose page 3 has
+  // no patient on it is a page that can be separated from the chart it belongs to.
+  const PACKET_PRINT_CSS = `
+    .pkt-runhead{display:none}
+    @media print{
+      @page{margin:14mm 12mm}
+      body{padding:0!important;max-width:none!important}
+      .pkt-runhead{display:block;position:fixed;top:0;left:0;right:0;font-size:9px;color:#6b7280;
+        border-bottom:1px solid #e6e9ee;padding-bottom:2px;margin-bottom:4px}
+      h3{break-after:avoid}
+      table,ul,li{break-inside:avoid}
+    }`;
+
   async function loadChartNotes(pid){
     const box=document.getElementById('chartNotesPanel'); if(!box) return;
     box.innerHTML=chartShell('<div class="text-sm text-[#9aa0ab]">Loading notes…</div>');
@@ -4016,9 +4188,197 @@ HARD RULES:
     const f=(id,label,ph)=>`<div><div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mb-1">${label}</div><textarea id="${id}" rows="4" class="field w-full resize-y" placeholder="${ph}"></textarea></div>`;
     return f('noteSubjective','Subjective','Patient-reported: symptoms, tolerability, adherence…')+f('noteObjective','Objective','Vitals, weight, InBody, exam…')+f('noteAssessment','Assessment','Clinical impression + ICD-10 (e.g., E66.811)…')+f('notePlan','Plan','Medication/dose, counseling, labs, follow-up…');
   }
+
+  // ---- E/M documentation sections -------------------------------------------------------------
+  // The 20-section set a payer expects behind a billed office visit. Everything except Chief
+  // complaint / HPI and Medical decision making is COLLAPSED by default: a follow-up visit is much
+  // shorter than a new-patient exam, and burying the provider in twenty open textareas is how a
+  // template like this gets abandoned. Collapsed sections still save whatever they hold.
+  const BODY_SYSTEMS = [
+    ['constitutional','Constitutional'],['eyes','Eyes'],['ent','ENT'],['cv','Cardiovascular'],
+    ['resp','Respiratory'],['gi','GI'],['gu','GU'],['msk','Musculoskeletal'],['skin','Skin'],
+    ['neuro','Neurologic'],['psych','Psychiatric'],['endo','Endocrine'],['heme','Hematologic'],
+    ['allergy','Allergic/Immunologic'],
+  ];
+  function emSection(title, inner, open, hint){
+    return `<details class="border border-[#e6e9ee] rounded-xl" ${open?'open':''}>
+      <summary class="cursor-pointer select-none px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-[#3d4a45]">${title}${hint?`<span class="ml-2 normal-case tracking-normal font-normal text-[#9aa0ab]">${hint}</span>`:''}</summary>
+      <div class="px-3 pb-3 pt-1 space-y-3">${inner}</div></details>`;
+  }
+  const emTa=(id,label,ph,rows)=>`<div><div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mb-1">${label}</div><textarea id="${id}" rows="${rows||3}" class="field w-full resize-y" placeholder="${ph}"></textarea></div>`;
+
+  // ROS: three states per system. "Not addressed" is the default and is NOT the same as "reviewed and
+  // negative": an auditor reads those very differently, so the note records which one the provider meant.
+  function rosGrid(){
+    const row=([k,label])=>`<div class="flex items-center gap-2 py-0.5">
+      <div class="w-32 shrink-0 text-[11px] text-[#3d4a45]">${label}</div>
+      <select id="ros_${k}" class="field text-xs py-1"><option value="na">Not addressed</option><option value="neg">Negative</option><option value="pos">Positive</option></select>
+      <input id="rosf_${k}" class="field text-xs py-1 flex-1 min-w-0" placeholder="findings (if positive)">
+    </div>`;
+    return `<div class="flex gap-2 mb-2"><button type="button" onclick="rosAllNegative()" class="px-2.5 py-1 rounded-lg border border-[#0a6cf5]/40 text-[#0a6cf5] text-[11px] font-semibold hover:bg-[#0a6cf5]/10">Mark all reviewed &amp; negative</button><button type="button" onclick="rosClear()" class="px-2.5 py-1 rounded-lg border border-[#e6e9ee] text-[#6b7280] text-[11px] font-semibold hover:bg-[#f1f3f7]">Clear</button></div>
+      <div>${BODY_SYSTEMS.map(row).join('')}</div>${emTa('rosComment','Additional ROS comment','',2)}`;
+  }
+  function examGrid(){
+    const row=([k,label])=>`<div class="flex items-center gap-2 py-0.5"><div class="w-32 shrink-0 text-[11px] text-[#3d4a45]">${label}</div><input id="pe_${k}" class="field text-xs py-1 flex-1 min-w-0" placeholder="findings"></div>`;
+    return `<div>${BODY_SYSTEMS.map(row).join('')}</div>${emTa('peComment','Additional exam comment','',2)}`;
+  }
+  const ORDER_KINDS=[['lab','Lab'],['imaging','Imaging'],['referral','Referral'],['medication','Medication'],['procedure','Procedure'],['other','Other']];
+  function ordersEditor(){
+    return `<div id="ordersRows" class="space-y-2"></div>
+      <button type="button" onclick="addOrderRow()" class="px-2.5 py-1 rounded-lg border border-[#0a6cf5]/40 text-[#0a6cf5] text-[11px] font-semibold hover:bg-[#0a6cf5]/10">+ Add order</button>`;
+  }
+  window.addOrderRow=function(kind,detail){
+    const box=document.getElementById('ordersRows'); if(!box) return;
+    const d=document.createElement('div'); d.className='flex items-center gap-2';
+    d.innerHTML=`<select class="field text-xs py-1 ord-kind">${ORDER_KINDS.map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select>
+      <input class="field text-xs py-1 flex-1 min-w-0 ord-detail" placeholder="e.g. CBC, CMP, Lipid panel, HbA1c">
+      <button type="button" class="text-[#be123c] text-xs font-semibold px-1" onclick="this.parentElement.remove()">×</button>`;
+    box.appendChild(d);
+    if(kind) d.querySelector('.ord-kind').value=kind;
+    if(detail) d.querySelector('.ord-detail').value=detail;
+  };
+
+  // MDM. The option WORDING comes from the server (charting.mdmSchemaInternal) so the AMA text lives
+  // in exactly one place. The 2-of-3 arithmetic is mirrored here only to paint the live badge; the
+  // server recomputes it authoritatively on every save, so this preview can never set the billed code.
+  let __mdmSchema=null;
+  const MDM_RANK={ problems:{minimal:0,low:1,moderate:2,high:3}, data:{none:0,limited:1,moderate:2,extensive:3}, risk:{minimal:0,low:1,moderate:2,high:3} };
+  const MDM_CPT={ new:['99202','99203','99204','99205'], established:['99212','99213','99214','99215'] };
+  function mdmEditor(){
+    return `<div id="mdmBox" class="space-y-3"><div class="text-xs text-[#9aa0ab]">Loading the AMA decision-making table…</div></div>
+      ${emTa('mdmRationale','Rationale (your own words)','e.g. Two stable chronic illnesses addressed; labs ordered; prescription drug management initiated.',2)}`;
+  }
+  async function loadMdmSchema(){
+    if(__mdmSchema) return __mdmSchema;
+    const j=await postChart({action:'mdm_schema'}).catch(()=>null);
+    if(j && j.ok) __mdmSchema=j;
+    return __mdmSchema;
+  }
+  function mdmAxisHtml(axis, opts, sel){
+    const label={problems:'Problems addressed',data:'Data reviewed &amp; analyzed',risk:'Risk of management'}[axis];
+    const o=opts.map(x=>`<option value="${x.value}" ${x.value===sel?'selected':''}>${esc(x.label)}</option>`).join('');
+    const detail=(opts.find(x=>x.value===sel)||{}).detail||'';
+    return `<div><div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mb-1">${label}</div>
+      <select id="mdm_${axis}" onchange="renderMdm()" class="field w-full text-sm"><option value="">Select...</option>${o}</select>
+      <div id="mdmd_${axis}" class="text-[11px] text-[#6b7280] mt-1 leading-snug">${esc(detail)}</div></div>`;
+  }
+  window.renderMdm=function(){
+    const box=document.getElementById('mdmBox'); if(!box||!__mdmSchema) return;
+    const cur=window.__mdmSel||{};
+    ['problems','data','risk'].forEach(a=>{ const e=document.getElementById('mdm_'+a); if(e) cur[a]=e.value; });
+    const t=document.getElementById('mdmTime'); if(t) cur.total_time_min=t.value;
+    window.__mdmSel=cur;
+    const visit=(document.getElementById('noteVisitType')||{}).value||'established';
+    const o=__mdmSchema.options;
+    const axes=mdmAxisHtml('problems',o.problems,cur.problems)+mdmAxisHtml('data',o.data,cur.data)+mdmAxisHtml('risk',o.risk,cur.risk);
+    // 2 of 3 must meet or exceed the level (AMA CPT Table 2).
+    const ranks=['problems','data','risk'].map(a=>{ const v=cur[a]; return (v&&MDM_RANK[a][v]!==undefined)?MDM_RANK[a][v]:null; });
+    let badge='<span class="text-[#9aa0ab]">Select all three to see the supported code.</span>';
+    if(ranks.every(r=>r!==null)){
+      let rank=0; for(let c=3;c>=0;c--){ if(ranks.filter(x=>x>=c).length>=2){ rank=c; break; } }
+      const cpt=MDM_CPT[visit==='new'?'new':'established'][rank];
+      const lvl=['straightforward','low','moderate','high'][rank];
+      const met=ranks.filter(x=>x>=rank).length;
+      badge=`<span class="inline-block bg-[#eaf7ef] text-[#0a7a3d] border border-[#bfe6cf] rounded-full px-3 py-1 text-sm font-semibold">Supports CPT ${cpt}</span>
+        <span class="text-[11px] text-[#6b7280] ml-2">MDM ${lvl} · ${met} of 3 elements met this level · ${visit==='new'?'new':'established'} patient</span>`;
+    }
+    const mins=cur.total_time_min||'';
+    box.innerHTML=`<div class="grid md:grid-cols-3 gap-3">${axes}</div>
+      <div class="flex items-center gap-2"><label class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280]">Total time (min)</label>
+        <input id="mdmTime" type="number" min="0" step="1" value="${esc(String(mins))}" oninput="renderMdm()" class="field text-sm py-1 w-24">
+        <span class="text-[11px] text-[#9aa0ab]">Optional. Time is an alternative basis for the level.</span></div>
+      <div class="bg-[#f7fafd] border border-[#e6eef7] rounded-xl p-3">${badge}</div>`;
+  };
+  window.rosAllNegative=function(){ BODY_SYSTEMS.forEach(([k])=>{ const e=document.getElementById('ros_'+k); if(e) e.value='neg'; }); };
+  window.rosClear=function(){ BODY_SYSTEMS.forEach(([k])=>{ const e=document.getElementById('ros_'+k); if(e) e.value='na'; const f=document.getElementById('rosf_'+k); if(f) f.value=''; }); };
+
+  function emFields(){
+    return emSection('Chief complaint &amp; history of present illness',
+        emTa('noteChiefComplaint','Chief complaint',"In the patient's own words…",2)
+      + emTa('noteHpi','History of present illness','Location, quality, severity, duration, timing, context, modifying factors, associated symptoms, or the chronic disease update.',4), true)
+    + emSection('Review of systems', rosGrid(), false, 'not addressed by default')
+    + emSection('Physical examination', examGrid(), false)
+    + emSection('Data reviewed', emTa('noteDataReviewed','Diagnostic data reviewed','Prior notes, labs, imaging, outside records, specialist reports…',3), false)
+    + emSection('Medical decision making', mdmEditor(), true, 'sets the billable level')
+    + emSection('Orders', ordersEditor(), false)
+    + emSection('Education, prevention &amp; follow-up',
+        emTa('notePatientEducation','Patient education','Counseling performed, materials provided…',2)
+      + emTa('notePreventive','Preventive services','Immunizations, screenings, lifestyle counseling, health maintenance…',2)
+      + emTa('noteFollowup','Follow-up','Return timeframe and the warning signs that should prompt earlier evaluation…',2), false);
+  }
+
+  /** Read every E/M field out of the open editor into the shape /chart-notes expects. */
+  function collectEmFields(){
+    const val=id=>{ const e=document.getElementById(id); return e?e.value:undefined; };
+    const rosSystems=[], peSystems=[];
+    BODY_SYSTEMS.forEach(([k])=>{
+      const st=(document.getElementById('ros_'+k)||{}).value;
+      if(st && st!=='na') rosSystems.push({ key:k, status:st, findings:(document.getElementById('rosf_'+k)||{}).value||undefined });
+      const f=((document.getElementById('pe_'+k)||{}).value||'').trim();
+      if(f) peSystems.push({ key:k, findings:f });
+    });
+    const orders=[...document.querySelectorAll('#ordersRows > div')].map(r=>({
+      kind:(r.querySelector('.ord-kind')||{}).value, detail:((r.querySelector('.ord-detail')||{}).value||'').trim(),
+    })).filter(o=>o.detail);
+    const sel=window.__mdmSel||{};
+    const timeNum=parseInt(sel.total_time_min,10);
+    return {
+      visit_type: val('noteVisitType')||undefined,
+      service_location: val('noteLocation'),
+      chief_complaint: val('noteChiefComplaint'),
+      hpi: val('noteHpi'),
+      ros: { systems: rosSystems, comment: val('rosComment') },
+      physical_exam: { systems: peSystems, comment: val('peComment') },
+      data_reviewed: val('noteDataReviewed'),
+      mdm: { problems:sel.problems||undefined, data:sel.data||undefined, risk:sel.risk||undefined,
+             total_time_min: isNaN(timeNum)?undefined:timeNum, rationale: val('mdmRationale') },
+      orders,
+      med_rec_reviewed: !!(document.getElementById('noteMedRec')||{}).checked,
+      patient_education: val('notePatientEducation'),
+      preventive: val('notePreventive'),
+      followup: val('noteFollowup'),
+    };
+  }
+  /** Populate the editor from an existing draft. */
+  function fillEmFields(n){
+    const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.value=v||''; };
+    set('noteVisitType',n.visit_type); set('noteLocation',n.service_location);
+    set('noteChiefComplaint',n.chief_complaint); set('noteHpi',n.hpi);
+    set('noteDataReviewed',n.data_reviewed); set('notePatientEducation',n.patient_education);
+    set('notePreventive',n.preventive); set('noteFollowup',n.followup);
+    if(n.ros){ (n.ros.systems||[]).forEach(s=>{ set('ros_'+s.key,s.status); set('rosf_'+s.key,s.findings); }); set('rosComment',n.ros.comment); }
+    if(n.physical_exam){ (n.physical_exam.systems||[]).forEach(s=>set('pe_'+s.key,s.findings)); set('peComment',n.physical_exam.comment); }
+    (n.orders||[]).forEach(o=>window.addOrderRow(o.kind,o.detail));
+    const mr=document.getElementById('noteMedRec'); if(mr&&n.med_rec&&n.med_rec.reviewed) mr.checked=true;
+    if(n.mdm){ window.__mdmSel={ problems:n.mdm.problems, data:n.mdm.data, risk:n.mdm.risk, total_time_min:n.mdm.total_time_min }; set('mdmRationale',n.mdm.rationale); }
+  }
+
   function soapReadonly(n){
-    const blk=(label,val)=>`<div><div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mb-1">${label}</div><div class="text-sm text-[#16201d] whitespace-pre-wrap">${val?esc(val):'<span class=\'text-[#9aa0ab]\'>—</span>'}</div></div>`;
-    return blk('Subjective',n.subjective)+blk('Objective',n.objective)+blk('Assessment',n.assessment)+blk('Plan',n.plan);
+    const blk=(label,val)=>val?`<div><div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mb-1">${label}</div><div class="text-sm text-[#16201d] whitespace-pre-wrap">${esc(val)}</div></div>`:'';
+    const sysLabel=k=>(BODY_SYSTEMS.find(s=>s[0]===k)||[,k])[1];
+    const rosBlk=(()=>{ if(!n.ros||!(n.ros.systems||[]).length&&!n.ros.comment) return '';
+      const pos=(n.ros.systems||[]).filter(s=>s.status==='pos'), neg=(n.ros.systems||[]).filter(s=>s.status==='neg');
+      const parts=[];
+      if(pos.length) parts.push('Positive: '+pos.map(s=>sysLabel(s.key)+(s.findings?' ('+s.findings+')':'')).join(', ')+'.');
+      if(neg.length) parts.push(neg.length===BODY_SYSTEMS.length-pos.length?'Remaining systems reviewed and negative.':'Negative: '+neg.map(s=>sysLabel(s.key)).join(', ')+'.');
+      if(n.ros.comment) parts.push(n.ros.comment);
+      return blk('Review of systems',parts.join(' ')); })();
+    const peBlk=(()=>{ if(!n.physical_exam||!((n.physical_exam.systems||[]).length||n.physical_exam.comment)) return '';
+      const t=(n.physical_exam.systems||[]).map(s=>sysLabel(s.key)+': '+s.findings).join(' ')+(n.physical_exam.comment?' '+n.physical_exam.comment:'');
+      return blk('Physical examination',t); })();
+    const ordBlk=(n.orders||[]).length?blk('Orders',n.orders.map(o=>{ const l=(ORDER_KINDS.find(k=>k[0]===o.kind)||[,o.kind])[1]; return l+': '+o.detail; }).join('\n')):'';
+    const mdmBlk=(()=>{ if(!n.mdm) return '';
+      const bits=[];
+      if(n.mdm.rationale) bits.push(n.mdm.rationale);
+      if(n.mdm.basis) bits.push(n.mdm.basis);
+      if(n.mdm.total_time_min) bits.push('Total time on the date of the encounter: '+n.mdm.total_time_min+' minutes.'+(n.mdm.time_alternative?' Time supports CPT '+n.mdm.time_alternative+'.':''));
+      return bits.length?blk('Medical decision making',bits.join('\n\n')):''; })();
+    const mrBlk=(n.med_rec&&n.med_rec.reviewed)?blk('Medication reconciliation','Medication list reviewed and updated at this encounter'+(n.med_rec.by?' by '+n.med_rec.by:'')+'.'):'';
+    return blk('Chief complaint',n.chief_complaint)+blk('History of present illness',n.hpi)
+      +blk('Subjective',n.subjective)+blk('Objective',n.objective)
+      +rosBlk+peBlk+mrBlk+blk('Data reviewed',n.data_reviewed)
+      +blk('Assessment',n.assessment)+mdmBlk+blk('Plan',n.plan)+ordBlk
+      +blk('Patient education',n.patient_education)+blk('Preventive services',n.preventive)+blk('Follow-up',n.followup);
   }
   window.openNoteEditor = function(pid){ openNoteModal(pid, null); };
   window.openNote = function(noteId){ const n=(window.__chartNotes||[]).find(x=>x.id===noteId); if(!n){ alert('Note not found — reload the record.'); return; } openNoteModal(n.patient_id, n); };
@@ -4036,15 +4396,39 @@ HARD RULES:
     }
     const typeVal=note?note.encounter_type:'follow_up', dateVal=note?(note.encounter_date||today):today;
     const typeOpts=Object.entries(NOTE_TYPE_LABELS).map(([k,vv])=>`<option value="${k}" ${k===typeVal?'selected':''}>${vv}</option>`).join('');
-    ov.innerHTML=`<div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-6"><div class="flex items-center justify-between p-4 border-b border-[#e6e9ee]"><div><div class="font-display text-lg font-semibold">${isNew?'New encounter note':'Edit draft'}</div><div class="text-xs text-[#6b7280]">${esc(pname)}</div></div><button onclick="document.getElementById('noteOverlay').remove()" class="text-[#9aa0ab] hover:text-[#16201d] text-2xl leading-none">×</button></div>
-      <div class="p-5 space-y-3"><div class="flex gap-3 flex-wrap items-end"><label class="text-xs font-semibold text-[#3d4a45]">Encounter type<select id="noteType" class="field mt-1 block">${typeOpts}</select></label><label class="text-xs font-semibold text-[#3d4a45]">Date of service<input id="noteDate" type="date" value="${dateVal}" class="field mt-1 block"></label><button onclick="applyNoteTemplate()" class="px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-sm font-semibold hover:bg-[#0a6cf5]/10">Use template</button></div>${noteRefStrip()}${soapFields()}</div>
+    // A brand-new note with no prior signed note has nothing to carry forward, so the button only
+    // appears when there is one to seed from.
+    const hasPrior=(window.__chartNotes||[]).some(x=>x.status==='signed');
+    const carryBtn=(isNew&&hasPrior)?`<button onclick="carryForwardNote()" class="px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-sm font-semibold hover:bg-[#0a6cf5]/10" title="Copy the review of systems, exam, diagnoses, education, prevention and follow-up from the last signed note. Findings that justify this visit are never carried.">Carry forward</button>`:'';
+    const visitVal=note?(note.visit_type||''):'';
+    ov.innerHTML=`<div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl my-6"><div class="flex items-center justify-between p-4 border-b border-[#e6e9ee]"><div><div class="font-display text-lg font-semibold">${isNew?'New encounter note':'Edit draft'}</div><div class="text-xs text-[#6b7280]">${esc(pname)}</div></div><button onclick="document.getElementById('noteOverlay').remove()" class="text-[#9aa0ab] hover:text-[#16201d] text-2xl leading-none">×</button></div>
+      <div class="p-5 space-y-3"><div class="flex gap-3 flex-wrap items-end"><label class="text-xs font-semibold text-[#3d4a45]">Encounter type<select id="noteType" class="field mt-1 block">${typeOpts}</select></label><label class="text-xs font-semibold text-[#3d4a45]">Visit type<select id="noteVisitType" onchange="renderMdm()" class="field mt-1 block"><option value="">Not set</option><option value="new" ${visitVal==='new'?'selected':''}>New patient</option><option value="established" ${visitVal==='established'?'selected':''}>Established</option></select></label><label class="text-xs font-semibold text-[#3d4a45]">Date of service<input id="noteDate" type="date" value="${dateVal}" class="field mt-1 block"></label><label class="text-xs font-semibold text-[#3d4a45]">Location<input id="noteLocation" class="field mt-1 block" placeholder="Office"></label><button onclick="applyNoteTemplate()" class="px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-sm font-semibold hover:bg-[#0a6cf5]/10">Use template</button>${carryBtn}</div>${noteRefStrip()}
+      <label class="flex items-center gap-2 text-xs text-[#3d4a45]"><input type="checkbox" id="noteMedRec" class="rounded"> Medication list reviewed and updated at this encounter</label>
+      ${soapFields()}${emFields()}</div>
       <div class="flex items-center justify-between gap-2 p-4 border-t border-[#e6e9ee]"><div class="text-[11px] text-[#9aa0ab]">${isNew?'Saved as a draft you can edit until you sign.':'Draft · editable until signed.'}</div><div class="flex gap-2">${!isNew?`<button onclick="deleteNoteDraft('${note.id}')" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#be123c] text-sm font-semibold hover:bg-[#fef2f2]">Delete</button>`:''}<button id="noteSaveBtn" onclick="saveNoteDraft(false)" class="px-4 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-sm font-semibold hover:bg-[#0a6cf5]/10">Save draft</button><button id="noteSignBtn" onclick="saveNoteDraft(true)" class="px-4 py-2 rounded-xl bg-[#0a7a3d] text-white text-sm font-semibold hover:bg-[#0a6a34]">Sign & lock</button></div></div></div>`;
     document.body.appendChild(ov);
     window.__noteCtx={ pid, noteId: note?note.id:null };
+    window.__mdmSel = note&&note.mdm ? { problems:note.mdm.problems, data:note.mdm.data, risk:note.mdm.risk, total_time_min:note.mdm.total_time_min } : {};
     const set=(id,val)=>{ const e=document.getElementById(id); if(e) e.value=val||''; };
-    if(note){ set('noteSubjective',note.subjective); set('noteObjective',note.objective); set('noteAssessment',note.assessment); set('notePlan',note.plan); }
+    if(note){ set('noteSubjective',note.subjective); set('noteObjective',note.objective); set('noteAssessment',note.assessment); set('notePlan',note.plan); fillEmFields(note); }
     else if(patient.inbody && patient.inbody.weight_lb!=null){ set('noteObjective', `Weight: ${patient.inbody.weight_lb} lb (InBody ${fmtDate(patient.inbody.test_date)})\n`); }
+    // MDM table is fetched once per session, then the badge paints. Failure here must not break the
+    // editor. The note still saves, the server just computes the level without a live preview.
+    loadMdmSchema().then(()=>window.renderMdm()).catch(()=>{});
   }
+  /** Seed a NEW draft from the last signed note. The server owns which fields are eligible. */
+  window.carryForwardNote = async function(){
+    const ctx=window.__noteCtx||{}; if(ctx.noteId){ alert('This draft already exists. Carry forward only seeds a new note.'); return; }
+    const body={ action:'create', patient_id:ctx.pid, encounter_type:(document.getElementById('noteType')||{}).value||'follow_up',
+                 encounter_date:(document.getElementById('noteDate')||{}).value, seed_from_previous:true };
+    try{
+      const r=await postChart(body); if(!r.ok) throw new Error(r.error||'could not carry forward');
+      await loadChartNotes(ctx.pid);
+      const fresh=(window.__chartNotes||[]).find(x=>x.id===r.id);
+      document.getElementById('noteOverlay')?.remove();
+      if(fresh) openNoteModal(ctx.pid, fresh);
+    }catch(e){ alert('Could not carry forward: '+e.message); }
+  };
   window.applyNoteTemplate = function(){
     const type=(document.getElementById('noteType')||{}).value||'other'; const t=NOTE_TEMPLATES[type]||NOTE_TEMPLATES.other;
     const fill=(id,val)=>{ const e=document.getElementById(id); if(e && !e.value.trim()) e.value=val||''; };
@@ -4055,7 +4439,7 @@ HARD RULES:
     const val=(id)=>{ const e=document.getElementById(id); return e?e.value:undefined; };
     if(sign && !confirm('Sign and lock this note? After signing it cannot be edited — only addenda can be added.')) return;
     if(btn){ btn.disabled=true; btn.textContent=sign?'Signing…':'Saving…'; }
-    const body={ encounter_type:val('noteType'), encounter_date:val('noteDate'), subjective:val('noteSubjective'), objective:val('noteObjective'), assessment:val('noteAssessment'), plan:val('notePlan') };
+    const body={ encounter_type:val('noteType'), encounter_date:val('noteDate'), subjective:val('noteSubjective'), objective:val('noteObjective'), assessment:val('noteAssessment'), plan:val('notePlan'), ...collectEmFields() };
     try{
       let noteId=ctx.noteId;
       if(noteId){ const r=await postChart({action:'update',note_id:noteId,...body}); if(r.ok===false) throw new Error(r.error||'save failed'); }
@@ -4113,9 +4497,10 @@ HARD RULES:
     if(!j || j.ok===false){ box.innerHTML=''; return; }   // non-clinical staff: hidden (notes tab carries the message)
     window.__chartProblems=j.problems||[]; window.__chartMeds=j.meds||[]; window.__chartVitals=j.vitals||[]; window.__chartListsWrite=!!j.canWrite;
     window.__chartAllergies=j.allergies||[]; window.__chartSurgeries=j.surgeries||[]; window.__chartFamily=j.family||[];
+    window.__chartSocial=j.social||null;
     // Allergies sit directly under vitals, above the problem list: it is the one list read for safety
     // before anything is prescribed, so it gets the position every EHR gives it.
-    box.innerHTML = vitalsCard(j)+allergiesCard(j)+problemsCard(j)+medsCard(j)+surgeriesCard(j)+familyCard(j);
+    box.innerHTML = vitalsCard(j)+allergiesCard(j)+problemsCard(j)+medsCard(j)+surgeriesCard(j)+familyCard(j)+socialCard(j);
   }
   // Tab switch for the unified Clinical Chart card.
   window.chartTab=function(name, el){
@@ -4294,6 +4679,34 @@ HARD RULES:
     const acts=window.__chartListsWrite?`<button onclick="openFamilyModal('${f.id}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="deleteFamily('${f.id}')" class="text-[#be123c] hover:underline">delete</button>`:'';
     return `<div class="flex items-start justify-between gap-3 py-2 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm text-[#16201d]"><span class="font-medium">${esc(RELATIONS[f.relation]||f.relation)}</span> · ${esc(f.condition)}</div><div class="text-[11px] text-[#9aa0ab]">${esc(meta)}${f.note?(meta?' · ':'')+esc(f.note):''}</div></div><div class="text-[11px] whitespace-nowrap pt-0.5">${acts}</div></div>`;
   }
+  // Social history: ONE row per patient, upserted (not a list). Lifestyle is the documented baseline
+  // that later notes demonstrate measurable improvement against, which is what supports continued
+  // treatment on a prior authorization.
+  const SOCIAL_FIELDS=[['tobacco','Tobacco'],['alcohol','Alcohol'],['substances','Substances'],['occupation','Occupation'],['exercise','Exercise'],['diet','Diet'],['living_situation','Living situation'],['sexual_history','Sexual history']];
+  function socialCard(j){
+    const s=j.social||null;
+    const filled=s?SOCIAL_FIELDS.filter(([k])=>(s[k]||'').trim()):[];
+    const body=filled.length
+      ? `<div class="grid sm:grid-cols-2 gap-x-4">${filled.map(([k,label])=>`<div class="py-1.5 border-b border-[#f1f3f7]"><div class="text-[10px] uppercase tracking-wide text-[#9aa0ab]">${label}</div><div class="text-sm text-[#16201d]">${esc(s[k])}</div></div>`).join('')}</div>${s.note?`<div class="text-[11px] text-[#6b7280] mt-2">${esc(s.note)}</div>`:''}`
+      : '<div class="text-sm text-[#9aa0ab]">No social history recorded.</div>';
+    const add=j.canWrite?`<button onclick="openSocialModal()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">${s?'Edit':'+ Add'} social history</button>`:'';
+    return chartSection('Social history', add, body);
+  }
+  window.openSocialModal=function(){
+    const s=window.__chartSocial||{};
+    const body=SOCIAL_FIELDS.map(([k,label])=>_lf('sh_'+k,label,s[k]||''))
+      .join('')+`<label class="block text-xs font-semibold text-[#3d4a45]">Note (optional)<textarea id="sh_note" rows="2" class="field mt-1 block w-full resize-none">${esc(s.note||'')}</textarea></label>`;
+    const footer=`<button onclick="document.getElementById('listOverlay').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-sm font-semibold hover:bg-[#f1f3f7]">Cancel</button><button id="shSave" onclick="saveSocial()" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Save</button>`;
+    listModalShell(window.__chartSocial?'Edit social history':'Add social history', body, footer);
+  };
+  window.saveSocial=async function(){
+    const gv=id=>{const e=document.getElementById(id);return e?e.value:undefined;};
+    const btn=document.getElementById('shSave'); if(btn){btn.disabled=true;btn.textContent='Saving…';}
+    const payload={ action:'social_save', patient_id:selId, note:gv('sh_note') };
+    SOCIAL_FIELDS.forEach(([k])=>{ payload[k]=gv('sh_'+k); });
+    try{ const r=await postLists(payload); if(!r.ok) throw new Error(r.error||'save failed'); document.getElementById('listOverlay')?.remove(); await loadChartLists(selId); }
+    catch(e){ alert('Could not save social history: '+e.message); if(btn){btn.disabled=false;btn.textContent='Save';} }
+  };
   window.openFamilyModal=function(familyId){
     const f=familyId?(window.__chartFamily||[]).find(x=>x.id===familyId):null;
     const relSel=`<label class="block text-xs font-semibold text-[#3d4a45]">Relation<select id="fhRel" class="field mt-1 block w-full">${Object.entries(RELATIONS).map(([k,vv])=>`<option value="${k}" ${f&&f.relation===k?'selected':''}>${vv}</option>`).join('')}</select></label>`;
