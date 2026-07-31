@@ -4894,6 +4894,7 @@ HARD RULES:
     let j; try{ j=await postBilling({action:'list',patient_id:pid}); }catch(e){ box.innerHTML=chartSection('Insurance','','<div class="text-sm text-[#be123c]">Could not load billing.</div>'); return; }
     if(!j || j.ok===false){ box.innerHTML=chartSection('Insurance','','<div class="text-sm text-[#9aa0ab]">Billing is available to clinical and admin staff.</div>'); return; }
     window.__coverages=j.coverages||[]; window.__superbills=j.superbills||[]; window.__canCode=!!j.canCode; window.__canWriteIns=!!j.canWriteInsurance;
+    window.__fees=j.fees||[];
     box.innerHTML = insuranceCard(j) + superbillCard(j);
   }
   function insuranceCard(j){
@@ -4957,7 +4958,7 @@ HARD RULES:
     // an empty list that reads as "this patient has never been billed".
     if(j.clinicalOk===false) return chartSection('Coded visits (superbills)', '', '<div class="text-sm text-[#9aa0ab]">Coded visits are visible to clinical and admin staff.</div>');
     const rows=(j.superbills||[]).length?j.superbills.map(renderSuperbillRow).join(''):'<div class="text-sm text-[#9aa0ab]">No coded visits yet. Code a visit from a signed note, or start one here.</div>';
-    const add=j.canCode?`<button onclick="openSuperbillModal()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Code a visit</button>`:'';
+    const add=(j.canCode?`<button onclick="openFeeSchedule()" class="px-3 py-1.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10 mr-1.5">Fee schedule</button>`:'')+(j.canCode?`<button onclick="openSuperbillModal()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Code a visit</button>`:'');
     return chartSection('Coded visits (superbills)', add, `<div class="space-y-2">${rows}</div>`);
   }
   function renderSuperbillRow(s){
@@ -5002,14 +5003,84 @@ HARD RULES:
       <input id="sbL${i}Desc" value="${esc(l.description||'')}" oninput="sbSetLine(${i},'description',this.value)" placeholder="description" class="field">
       <input value="${esc((l.modifiers||[]).join(','))}" oninput="sbSetLine(${i},'modifiers',this.value)" placeholder="mods" title="Modifiers, comma separated (e.g. 25,95)" class="field font-mono">
       <input value="${esc(String(l.units==null?1:l.units))}" oninput="sbSetLine(${i},'units',this.value)" type="number" min="1" step="1" title="Units" class="field">
-      <div class="flex items-center gap-1"><span class="text-[11px] text-[#9aa0ab]">$</span><input value="${esc(l.charge||'')}" oninput="sbSetLine(${i},'charge',this.value)" type="number" min="0" step="0.01" placeholder="0.00" class="field"></div>
+      <div class="flex items-center gap-1"><span class="text-[11px] text-[#9aa0ab]">$</span><input id="sbL${i}Charge" value="${esc(l.charge||'')}" oninput="sbSetLine(${i},'charge',this.value)" type="number" min="0" step="0.01" placeholder="0.00" class="field"></div>
       <button type="button" onclick="sbDelLine(${i})" class="text-[#be123c] text-xs">×</button>
       <div style="grid-column:1 / -1" class="flex items-center gap-2 pl-1"><span class="text-[10px] text-[#6b7280] uppercase tracking-wide">Dx ref</span><input value="${esc((l.dx_pointers||[]).join(','))}" oninput="sbSetLine(${i},'dx_pointers',this.value)" placeholder="1,2" class="field font-mono" style="width:80px"><span class="text-[10px] text-[#9aa0ab]">which numbered diagnoses this code is for</span></div>
     </div>`).join('')
       +`<button type="button" onclick="sbAddLine()" class="text-[#0a6cf5] text-xs font-semibold mt-1">+ Add service line</button>
-        <datalist id="sbCptList">${COMMON_CPT.map(([c,d])=>`<option value="${c}">${esc(d)}</option>`).join('')}</datalist>`;
+        <datalist id="sbCptList">${feeDatalist()}</datalist>`;
     sbTotal();
   }
+  // ---- Fee schedule (chargemaster) ------------------------------------------------------------
+  // PRACTICE level, not per patient. It lives behind a button on the Billing tab because that is
+  // where the biller already is, but every patient sees the same schedule.
+  const FEE_CATEGORIES={ e_m:'E/M', preventive:'Preventive', behavioral:'Behavioral health', nutrition:'Nutrition', other:'Other' };
+  function feeDatalist(){
+    const fees=(window.__fees||[]).filter(f=>f.active);
+    if(fees.length) return fees.map(f=>`<option value="${esc(f.code)}">${esc(f.description)} · ${money(f.charge_cents)}</option>`).join('');
+    return COMMON_CPT.map(([c,d])=>`<option value="${c}">${esc(d)}</option>`).join('');
+  }
+  window.openFeeSchedule=async function(){
+    let fees=window.__fees;
+    if(!fees){ const r=await postBilling({action:'fee_list'}); fees=(r&&r.fees)||[]; window.__fees=fees; }
+    const canEdit=window.__canCode!==false;
+    const rows=fees.length?fees.map(f=>`<tr class="border-b border-[#f1f3f7] ${f.active?'':'opacity-50'}">
+        <td class="py-1.5 pr-2 font-mono text-xs">${esc(f.code)}</td>
+        <td class="py-1.5 pr-2 text-xs">${esc(f.description)}</td>
+        <td class="py-1.5 pr-2 text-[11px] text-[#9aa0ab] whitespace-nowrap">${f.medicare_allowable_cents!=null?money(f.medicare_allowable_cents):''}</td>
+        <td class="py-1.5 pr-2 text-xs font-semibold whitespace-nowrap">${money(f.charge_cents)}</td>
+        <td class="py-1.5 pr-2 text-[11px] text-[#6b7280]">${esc(FEE_CATEGORIES[f.category]||f.category)}</td>
+        <td class="py-1.5 text-[11px] whitespace-nowrap">${canEdit?`<button onclick="editFee('${esc(f.code)}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="deleteFee('${f.id}')" class="text-[#be123c] hover:underline">delete</button>`:''}</td>
+      </tr>`).join(''):'<tr><td colspan="6" class="py-3 text-sm text-[#9aa0ab]">No fee schedule yet.</td></tr>';
+    const seed=(canEdit&&!fees.length)?`<button onclick="seedFees()" class="px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Load Dr. DeBry's schedule</button>`:'';
+    const gap=fees.length&&!fees.some(f=>/^9(079|083|084)/.test(f.code))
+      ? `<div class="mt-3 text-[11px] text-[#b45309] bg-[#fffbeb] border border-[#fde68a] rounded-lg p-2">This schedule covers the physician (Type 20) side only. There are no behavioral health codes in it, so Type 14 services cannot be priced yet. Add them here when the rates are set.</div>` : '';
+    const body=`<div class="text-[11px] text-[#6b7280] mb-2">Practice-wide charges. A code entered on a coded visit prices itself from this list.</div>
+      <div style="max-height:52vh;overflow:auto"><table class="w-full text-left"><thead><tr class="text-[10px] uppercase tracking-wide text-[#9aa0ab] border-b border-[#e6e9ee]">
+        <th class="py-1 pr-2">Code</th><th class="py-1 pr-2">Description</th><th class="py-1 pr-2">Medicare</th><th class="py-1 pr-2">Our charge</th><th class="py-1 pr-2">Category</th><th></th></tr></thead>
+        <tbody>${rows}</tbody></table></div>${gap}`;
+    const footer=`${seed}${canEdit?`<button onclick="editFee('')" class="px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-sm font-semibold hover:bg-[#0a6cf5]/10">+ Add code</button>`:''}<button onclick="document.getElementById('listOverlay').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-sm font-semibold hover:bg-[#f1f3f7]">Close</button>`;
+    listModalShell('Fee schedule', body, footer, 'max-w-3xl');
+  };
+  window.editFee=function(code){
+    const f=(window.__fees||[]).find(x=>x.code===code)||null;
+    const catOpts=Object.entries(FEE_CATEGORIES).map(([k,v])=>`<option value="${k}" ${f&&f.category===k?'selected':''}>${v}</option>`).join('');
+    const body=_lf('feeCode','CPT / HCPCS',f?f.code:'','5 characters, e.g. 99214')
+      +_lf('feeDesc','Description',f?f.description:'')
+      +`<div class="grid grid-cols-2 gap-3">${_lf('feeCharge','Our charge ($)',f?(f.charge_cents/100).toFixed(2):'','','number')}${_lf('feeAllow','Medicare allowable ($, optional)',f&&f.medicare_allowable_cents!=null?(f.medicare_allowable_cents/100).toFixed(2):'','','number')}</div>`
+      +`<label class="block text-xs font-semibold text-[#3d4a45]">Category<select id="feeCat" class="field mt-1 block w-full">${catOpts}</select></label>`
+      +`<label class="flex items-center gap-2 text-xs text-[#3d4a45] mt-1"><input type="checkbox" id="feeActive" class="rounded" ${!f||f.active?'checked':''}> Active</label>`;
+    const footer=`<button onclick="openFeeSchedule()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-sm font-semibold hover:bg-[#f1f3f7]">Back</button><button id="feeSave" onclick="saveFee()" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Save</button>`;
+    listModalShell(f?'Edit '+f.code:'Add a code', body, footer);
+  };
+  window.saveFee=async function(){
+    const gv=id=>{const e=document.getElementById(id);return e?e.value:'';};
+    const code=(gv('feeCode')||'').trim().toUpperCase();
+    if(!/^[0-9A-Z]{5}$/.test(code)){ alert('CPT/HCPCS must be 5 characters (letters and digits).'); return; }
+    const chargeRaw=(gv('feeCharge')||'').trim();
+    if(chargeRaw==='' || isNaN(parseFloat(chargeRaw))){ alert('Enter a charge.'); return; }
+    const allowRaw=(gv('feeAllow')||'').trim();
+    const btn=document.getElementById('feeSave'); if(btn){btn.disabled=true;btn.textContent='Saving…';}
+    const payload={ action:'fee_save', code, description:gv('feeDesc'),
+      charge_cents:Math.round(parseFloat(chargeRaw)*100),
+      medicare_allowable_cents: allowRaw===''?undefined:Math.round(parseFloat(allowRaw)*100),
+      category:gv('feeCat'), active:!!(document.getElementById('feeActive')||{}).checked };
+    try{ const r=await postBilling(payload); if(!r.ok) throw new Error(r.error||'save failed');
+      const l=await postBilling({action:'fee_list'}); window.__fees=(l&&l.fees)||[]; await openFeeSchedule(); }
+    catch(e){ alert('Could not save: '+e.message); if(btn){btn.disabled=false;btn.textContent='Save';} }
+  };
+  window.deleteFee=async function(id){
+    if(!confirm('Remove this code from the fee schedule?')) return;
+    try{ const r=await postBilling({action:'fee_delete',fee_id:id}); if(!r.ok) throw new Error(r.error||'failed');
+      const l=await postBilling({action:'fee_list'}); window.__fees=(l&&l.fees)||[]; await openFeeSchedule(); }
+    catch(e){ alert('Could not delete: '+e.message); }
+  };
+  window.seedFees=async function(){
+    try{ const r=await postBilling({action:'fee_seed'}); if(!r.ok) throw new Error(r.error||'failed');
+      const l=await postBilling({action:'fee_list'}); window.__fees=(l&&l.fees)||[]; await openFeeSchedule();
+      alert('Loaded '+r.added+' codes'+(r.skipped?', left '+r.skipped+' existing codes untouched':'')+'.'); }
+    catch(e){ alert('Could not load the schedule: '+e.message); }
+  };
   function sbTotal(){
     const cents=sbLines.reduce((s,l)=>s+Math.round((parseFloat(l.charge)||0)*100),0);
     const el=document.getElementById('sbTotal'); if(el) el.textContent=money(cents);
@@ -5032,7 +5103,22 @@ HARD RULES:
     else if(k==='units') l.units=Number(v)||1;
     // Autofill the description in place rather than re-rendering: a full rebuild here would steal focus
     // out of the field the coder is still typing in.
-    else { l[k]=v; if(k==='cpt'){ const d=CPT_DESC[String(v).trim().toUpperCase()]; if(d && !l.description){ l.description=d; const el=document.getElementById('sbL'+i+'Desc'); if(el) el.value=d; } } }
+    else {
+      l[k]=v;
+      if(k==='cpt'){
+        const code=String(v).trim().toUpperCase();
+        const fee=(window.__fees||[]).find(f=>f.code===code && f.active);
+        const d=(fee&&fee.description)||CPT_DESC[code];
+        if(d && !l.description){ l.description=d; const el=document.getElementById('sbL'+i+'Desc'); if(el) el.value=d; }
+        // Price from the practice's own schedule, and ONLY into an empty charge: a coder who has
+        // deliberately overridden an amount should never have it silently reset.
+        if(fee && !String(l.charge||'').trim()){
+          l.charge=(fee.charge_cents/100).toFixed(2);
+          const ce=document.getElementById('sbL'+i+'Charge'); if(ce) ce.value=l.charge;
+          sbTotal();
+        }
+      }
+    }
     if(k==='charge') sbTotal();
   };
   /**
