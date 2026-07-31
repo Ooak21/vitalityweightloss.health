@@ -3944,9 +3944,10 @@ HARD RULES:
     else acts.push(`<button onclick="openNote('${n.id}')" class="text-[#0a6cf5] text-xs font-semibold hover:underline">View</button>`);
     if(n.canSign) acts.push(`<button onclick="signNote('${n.id}')" class="text-[#0a7a3d] text-xs font-semibold hover:underline">Sign</button>`);
     if(n.canDelete) acts.push(`<button onclick="deleteNoteDraft('${n.id}')" class="text-[#be123c] text-xs font-semibold hover:underline">Delete</button>`);
-    // Coding is offered only on a SIGNED note (canAmend == clinician && signed). Billing an unsigned
-    // encounter is exactly the thing you do not want to make easy.
-    if(n.canAmend) acts.push(`<button onclick="codeVisitFromNote('${n.id}')" class="text-[#0a6cf5] text-xs font-semibold hover:underline">Code visit</button>`);
+    // Coding is offered only on a SIGNED note. Billing an unsigned encounter is exactly the thing you
+    // do not want to make easy. Offered to the biller (admin) as well as the provider, matching the
+    // server rule in billing.ts.
+    if(n.canCode) acts.push(`<button onclick="codeVisitFromNote('${n.id}')" class="text-[#0a6cf5] text-xs font-semibold hover:underline">Code visit</button>`);
     acts.push(`<button onclick="printChartNote('${n.id}')" class="text-[#6b7280] text-xs font-semibold hover:underline">🖨 Note</button>`);
     // The packet is what a prior authorization or a payer audit asks for: the note PLUS the chart
     // context that establishes medical necessity. Netty attaches this to a PA submission.
