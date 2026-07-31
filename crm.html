@@ -4023,19 +4023,15 @@ HARD RULES:
     address: '6140 Brent Thurman Way, Suite 100, Las Vegas, NV 89148',
     phone: '(702) 602-5002',
   };
-  // Rendering NPIs by provider. Keyed on a lowercase surname fragment because the note stores the
-  // author's DISPLAY NAME, not a staff id. Replace this with a field on the staff record once the
-  // remaining NPIs are collected; an unknown author simply prints without an NPI line rather than
-  // guessing one.
-  const RENDERING_NPI = {
-    'debry': { name: 'Peter W. DeBry, MD', npi: '1831137991', taxonomy: 'General Practice 208D00000X' },
-    'de vera': { name: 'Richard Del Fierro De Vera, FNP-C', npi: '1801466016', taxonomy: 'Nurse Practitioner - Family 363LF0000X' },
-    'devera': { name: 'Richard Del Fierro De Vera, FNP-C', npi: '1801466016', taxonomy: 'Nurse Practitioner - Family 363LF0000X' },
-  };
-  function renderingFor(authorName){
-    const a=(authorName||'').toLowerCase();
-    for(const k in RENDERING_NPI) if(a.indexOf(k)>=0) return RENDERING_NPI[k];
-    return null;
+  // The rendering provider now comes from the AUTHOR'S STAFF RECORD, resolved server-side in
+  // charting.ts and returned on the note as `rendering`. It used to be matched here against a
+  // hardcoded surname table, which meant any provider not in that table printed a packet with no
+  // NPI on it. A provider with no NPI on file still prints without one, deliberately: an absent
+  // identifier is correct, a guessed one is a bad claim.
+  function renderingFor(note){
+    const r = note && note.rendering;
+    if(!r) return null;
+    return (r.npi || r.taxonomy) ? r : null;
   }
   /** Stable, human-readable record number derived from the patient id. A display encoding of the real
    *  record key, not a second identifier. The chart has never had an MRN and a payer packet needs one. */
@@ -4098,11 +4094,11 @@ HARD RULES:
       return bits.join('<br><br>'); })();
     const addenda=(n.addenda||[]).map(a=>`<div style="margin-top:8px;font-size:13px"><b>Addendum</b> (${esc2(a.author)}${a.at?' · '+new Date(a.at).toLocaleString('en-US'):''}): ${esc2(a.text)}</div>`).join('');
     const signed=n.status==='signed';
-    const rend=renderingFor(n.author);
+    const rend=renderingFor(n);
     const cov=(coverages||[])[0];
     const dos=fmtNoteDate(n);
     const sig=signed
-      ? `Electronically signed by ${esc2(n.signed_by||n.author)}${rend?', '+esc2(rend.taxonomy):''} on ${n.signed_at?new Date(n.signed_at).toLocaleString('en-US'):''}.<br>This entry is locked; subsequent changes appear as addenda above.`
+      ? `Electronically signed by ${esc2(n.signed_by||n.author)}${(rend&&rend.taxonomy)?', '+esc2(rend.taxonomy):''}${(rend&&rend.license)?', license '+esc2(rend.license):''} on ${n.signed_at?new Date(n.signed_at).toLocaleString('en-US'):''}.<br>This entry is locked; subsequent changes appear as addenda above.`
       : '<b>DRAFT. NOT SIGNED.</b> Not valid for billing or for submission to a payer.';
 
     let logo='';
@@ -4131,7 +4127,7 @@ HARD RULES:
       <table style="width:100%;font-size:12.5px;border-collapse:collapse;margin-bottom:4px">
         <tr><td style="padding:1px 0;width:34%"><b>Patient:</b> ${esc2(nm)}</td><td style="width:33%"><b>DOB:</b> ${esc2(dob)}</td><td><b>MRN:</b> ${esc2(mrnFor(pid))}</td></tr>
         <tr><td style="padding:1px 0"><b>Date of service:</b> ${esc2(dos)}</td><td><b>Visit type:</b> ${esc2(n.visit_type==='new'?'New patient':n.visit_type==='established'?'Established':'Not specified')}</td><td><b>Location:</b> ${esc2(n.service_location||'Office')}</td></tr>
-        <tr><td style="padding:1px 0"><b>Rendering provider:</b> ${esc2(rend?rend.name:n.author)}</td><td>${rend?`<b>Rendering NPI:</b> ${esc2(rend.npi)}`:''}</td><td><b>Billing NPI:</b> ${esc2(PRACTICE.billing_npi)}</td></tr>
+        <tr><td style="padding:1px 0"><b>Rendering provider:</b> ${esc2((n.rendering&&n.rendering.name)||n.author)}</td><td>${(rend&&rend.npi)?`<b>Rendering NPI:</b> ${esc2(rend.npi)}`:'<span style="color:#b45309">Rendering NPI: not on file</span>'}</td><td><b>Billing NPI:</b> ${esc2(PRACTICE.billing_npi)}</td></tr>
         <tr><td style="padding:1px 0" colspan="3"><b>Coverage:</b> ${cov?esc2(cov.payer_name)+(cov.member_id_masked?' · Member '+esc2(cov.member_id_masked):'')+(cov.group_number?' · Group '+esc2(cov.group_number):''):'Self-pay / none on file'}</td></tr>
       </table>
       <div style="font-size:10px;color:#9aa0ab;margin-bottom:2px">Member ID is shown masked. The full identifier is available in the CRM through the separately audited reveal.</div>
