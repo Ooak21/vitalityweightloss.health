@@ -3910,7 +3910,7 @@ HARD RULES:
     follow_up: {
       subjective:'Interval since last visit: \nTolerability / side effects: \nAdherence: \nAppetite & satiety: \nDiet & activity changes: \nRed flags denied.',
       objective:'Weight (change since last): \nBP / HR: \nInBody trend: ',
-      assessment:'Obesity, on GLP-1 therapy — tolerating, progressing toward goal.',
+      assessment:'Obesity, on GLP-1 therapy: tolerating, progressing toward goal.',
       plan:'Continue current dose OR titrate to: \nReinforce nutrition & activity.\nLabs if due: \nFollow-up in 4 weeks.' },
     dose_titration: {
       subjective:'Tolerability at current dose: \nSide effects: \nReason for titration: ',
@@ -4109,8 +4109,13 @@ HARD RULES:
       logo=await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=()=>res(''); fr.readAsDataURL(blob); }); }catch(e){ logo=''; }
 
     const idLine=`${esc2(nm)} · DOB ${esc2(dob)} · MRN ${esc2(mrnFor(pid))} · DOS ${esc2(dos)}`;
+    // The identifier band is a real table header row, not a fixed-position overlay. A thead with
+    // display:table-header-group is the only repeating-header mechanism that also RESERVES the space
+    // it occupies, so page two starts below the band instead of underneath it.
     const html=`
-      <div class="pkt-runhead">${idLine}</div>
+      <table class="pkt-wrap" style="width:100%;border-collapse:collapse">
+      <thead><tr><td style="padding:0"><div class="pkt-runhead">${idLine}</div></td></tr></thead>
+      <tbody><tr><td style="padding:0">
       <div style="display:flex;align-items:flex-start;gap:12px;border-bottom:2px solid #0a6cf5;padding-bottom:10px;margin-bottom:12px">
         ${logo?`<img src="${logo}" alt="" style="height:38px;width:auto;border-radius:0">`:''}
         <div style="line-height:1.15">
@@ -4154,7 +4159,8 @@ HARD RULES:
       ${sec('Follow-up', esc2(n.followup))}
       ${addenda?H('Addenda')+addenda:''}
       ${n.mdm&&n.mdm.cpt_suggested?`<div style="margin-top:14px;padding:8px 10px;background:#f7fafd;border:1px solid #e6eef7;border-radius:6px;font-size:12.5px"><b>Billing summary.</b> Documentation supports CPT ${esc2(n.mdm.cpt_suggested)}${n.visit_type?' ('+esc2(n.visit_type)+' patient)':''} when all payer and CPT documentation requirements are met.</div>`:''}
-      <div style="margin-top:18px;padding-top:8px;border-top:1px solid #e6e9ee;font-size:12px;color:#374151">${sig}</div>`;
+      <div style="margin-top:18px;padding-top:8px;border-top:1px solid #e6e9ee;font-size:12px;color:#374151">${sig}</div>
+      </td></tr></tbody></table>`;
 
     let holder=document.getElementById('pktprintBody');
     if(!holder){ holder=document.createElement('div'); holder.id='pktprintBody'; holder.style.display='none'; document.body.appendChild(holder); }
@@ -4166,11 +4172,15 @@ HARD RULES:
   const PACKET_PRINT_CSS = `
     .pkt-runhead{display:none}
     @media print{
-      @page{margin:14mm 12mm}
+      @page{margin:12mm}
       body{padding:0!important;max-width:none!important}
-      .pkt-runhead{display:block;position:fixed;top:0;left:0;right:0;font-size:9px;color:#6b7280;
-        border-bottom:1px solid #e6e9ee;padding-bottom:2px;margin-bottom:4px}
-      h3{break-after:avoid}
+      /* Repeats on every page AND reserves its own height, which position:fixed cannot do. */
+      .pkt-wrap thead{display:table-header-group}
+      .pkt-wrap tfoot{display:table-footer-group}
+      .pkt-runhead{display:block;font-size:9px;color:#6b7280;border-bottom:1px solid #e6e9ee;
+        padding:0 0 2px;margin-bottom:6px}
+      /* A heading must never split across the break, nor be stranded at the foot of a page. */
+      h3{break-inside:avoid;break-after:avoid;page-break-inside:avoid;page-break-after:avoid}
       table,ul,li{break-inside:avoid}
     }`;
 
@@ -4268,19 +4278,23 @@ HARD RULES:
     ['problems','data','risk'].forEach(a=>{ const e=document.getElementById('mdm_'+a); if(e) cur[a]=e.value; });
     const t=document.getElementById('mdmTime'); if(t) cur.total_time_min=t.value;
     window.__mdmSel=cur;
-    const visit=(document.getElementById('noteVisitType')||{}).value||'established';
+    const visit=(document.getElementById('noteVisitType')||{}).value||'';
     const o=__mdmSchema.options;
     const axes=mdmAxisHtml('problems',o.problems,cur.problems)+mdmAxisHtml('data',o.data,cur.data)+mdmAxisHtml('risk',o.risk,cur.risk);
     // 2 of 3 must meet or exceed the level (AMA CPT Table 2).
     const ranks=['problems','data','risk'].map(a=>{ const v=cur[a]; return (v&&MDM_RANK[a][v]!==undefined)?MDM_RANK[a][v]:null; });
     let badge='<span class="text-[#9aa0ab]">Select all three to see the supported code.</span>';
-    if(ranks.every(r=>r!==null)){
+    // Visit type is required, never assumed: new vs established is 99202 vs 99212 at the same
+    // documented complexity. Mirrors the server rule in lib/mdm.ts.
+    if(visit!=='new'&&visit!=='established'){
+      badge='<span class="text-[#b45309]">Pick a visit type (new or established) above to see the supported code.</span>';
+    } else if(ranks.every(r=>r!==null)){
       let rank=0; for(let c=3;c>=0;c--){ if(ranks.filter(x=>x>=c).length>=2){ rank=c; break; } }
-      const cpt=MDM_CPT[visit==='new'?'new':'established'][rank];
+      const cpt=MDM_CPT[visit][rank];
       const lvl=['straightforward','low','moderate','high'][rank];
       const met=ranks.filter(x=>x>=rank).length;
       badge=`<span class="inline-block bg-[#eaf7ef] text-[#0a7a3d] border border-[#bfe6cf] rounded-full px-3 py-1 text-sm font-semibold">Supports CPT ${cpt}</span>
-        <span class="text-[11px] text-[#6b7280] ml-2">MDM ${lvl} · ${met} of 3 elements met this level · ${visit==='new'?'new':'established'} patient</span>`;
+        <span class="text-[11px] text-[#6b7280] ml-2">MDM ${lvl} · ${met} of 3 elements met this level · ${visit} patient</span>`;
     }
     const mins=cur.total_time_min||'';
     box.innerHTML=`<div class="grid md:grid-cols-3 gap-3">${axes}</div>
