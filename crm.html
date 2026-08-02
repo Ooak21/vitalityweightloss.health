@@ -1337,12 +1337,30 @@
   window.saveInjectionRx = async function(id){
     const dose=parseFloat(document.getElementById('rxDoseInput').value);
     const per=parseInt(document.getElementById('rxPerInput').value,10);
+    const fill=(document.getElementById('rxFillInput')||{}).value||'';
+    const cad=parseInt(((document.getElementById('rxCadenceInput')||{}).value)||'',10);
     const msg=document.getElementById('rxSaveMsg');
     const body={action:'set_injection_rx',patient_id:id};
     if(!isNaN(dose)) body.rx_dose_mg=dose;
     if(!isNaN(per)&&per>0) body.doses_per_bottle=per;
+    if(fill) body.rx_last_fill_date=fill;
+    if(!isNaN(cad)&&cad>0) body.rx_cadence_days=cad;
     if(msg){ msg.style.color='#6b7280'; msg.textContent='Saving…'; }
-    try{ const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify(body)}); const j=await r.json(); if(!j.ok) throw new Error(j.error||'failed'); const p=patients.find(x=>x.id===id); if(p){ if(!isNaN(dose))p.rx_dose_mg=dose; if(!isNaN(per))p.doses_per_bottle=per; } if(msg){ msg.style.color='#0a7a3d'; msg.textContent='Saved ✓'; } }
+    try{ const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify(body)}); const j=await r.json(); if(!j.ok) throw new Error(j.error||'failed'); const p=patients.find(x=>x.id===id); if(p){ if(!isNaN(dose))p.rx_dose_mg=dose; if(!isNaN(per))p.doses_per_bottle=per; if(fill)p.rx_last_fill_date=fill; if(!isNaN(cad)&&cad>0)p.rx_cadence_days=cad; }
+      // Mirror the server's projection so the provider sees the payoff without a reload.
+      const out=document.getElementById('rxRunOut');
+      if(out){
+        const anchor=fill||(p&&p.rx_last_fill_date)||'';
+        const nPer=(!isNaN(per)&&per>0)?per:((p&&p.doses_per_bottle)||6);
+        const nCad=(!isNaN(cad)&&cad>0)?cad:((p&&p.rx_cadence_days)||7);
+        if(anchor){
+          const d=new Date(anchor+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+nPer*nCad);
+          const iso=d.toISOString().slice(0,10);
+          if(p) p.rx_run_out_date=iso;
+          out.innerHTML='<span style="color:#0a7a3d">Projected run-out: <b>'+iso+'</b>. Dr. DeBry gets a task and an email 10 days before that date.</span>';
+        }
+      }
+      if(msg){ msg.style.color='#0a7a3d'; msg.textContent='Saved ✓'; } }
     catch(e){ if(msg){ msg.style.color='#b3261e'; msg.textContent='Could not save ('+((e&&e.message)||'error')+')'; } }
   };
   window.saveInfo = async function(id,field,v){
@@ -1571,13 +1589,18 @@
 
         ${isProvider() ? `<div class="rounded-2xl border border-[#e6e9ee] p-5 mb-6">
           <div class="sect-h flex items-center gap-1.5">💉 Injection schedule</div>
-          <p class="text-xs text-[#6b7280] mt-1 mb-3">Sets what the patient's injection tracker tells them to inject. Provider-only.</p>
+          <p class="text-xs text-[#6b7280] mt-1 mb-3">Sets what the patient's injection tracker tells them to inject, and drives the refill reminder. Provider-only.</p>
           <div class="flex gap-3 items-end flex-wrap">
             <div><label class="text-[11px] font-semibold text-[#6b7280]">Scheduled dose (mg)</label><input id="rxDoseInput" type="number" step="0.05" min="0" class="field mt-1" style="width:130px" value="${p.rx_dose_mg!=null?p.rx_dose_mg:''}" placeholder="0.50"></div>
             <div><label class="text-[11px] font-semibold text-[#6b7280]">Doses per bottle</label><input id="rxPerInput" type="number" step="1" min="1" class="field mt-1" style="width:130px" value="${p.doses_per_bottle!=null?p.doses_per_bottle:6}" placeholder="6"></div>
+            <div><label class="text-[11px] font-semibold text-[#6b7280]">Last fill date</label><input id="rxFillInput" type="date" class="field mt-1" style="width:160px" value="${p.rx_last_fill_date||''}"></div>
+            <div><label class="text-[11px] font-semibold text-[#6b7280]">Days between doses</label><input id="rxCadenceInput" type="number" step="1" min="1" class="field mt-1" style="width:140px" value="${p.rx_cadence_days!=null?p.rx_cadence_days:7}" placeholder="7"></div>
             <button onclick="saveInjectionRx('${p.id}')" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold">Save</button>
             <span id="rxSaveMsg" class="text-xs"></span>
           </div>
+          <div id="rxRunOut" class="text-xs mt-3">${p.rx_run_out_date
+            ? `<span style="color:#0a7a3d">Projected run-out: <b>${p.rx_run_out_date}</b>. Dr. DeBry gets a task and an email 10 days before that date.</span>`
+            : `<span style="color:#b3261e">No refill reminder is running for this patient. Add the last fill date above and the run-out date is tracked from then on.</span>`}</div>
           ${p.injection_bottle?`<div class="text-xs text-[#6b7280] mt-3">Patient's current bottle: <b>${esc(p.injection_bottle.medication||'')}</b> ${p.injection_bottle.strength_mg_ml||''} mg/mL, lot ${esc(p.injection_bottle.lot||'')} · ${(p.injection_bottle.doses_used||0)}/${p.doses_per_bottle||6} doses used</div>`:'<div class="text-xs text-[#9aa0ab] mt-3">Patient has not logged a bottle yet.</div>'}
         </div>` : ''}
 
