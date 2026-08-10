@@ -3826,7 +3826,10 @@ HARD RULES:
     if(!mb){ alert('No Medicare Bridge data was captured for this patient.'); return; }
     const e = esc;
     const cond = mb.conditions || {}, diab = mb.diabetes || '';
-    const RX = { name:'Peter W DeBry, MD', npi:'1831137991', taxId:'', addr:'6140 Brent Thurman Way Ste 100', city:'Las Vegas, NV', zip:'89148', phone:'(702) 602-5002', fax:'', contact:'' };
+    // Prescriber block. Tax ID, fax and office contact used to render blank and nobody filled
+    // them, which is why CMS bounced the 8/10 submission for "missing provider information".
+    // Tax ID is the PC's EIN (billing entity, confirmed in writing by Fred 2026-08-04).
+    const RX = { name:'Peter W DeBry, MD', npi:'1831137991', taxId:'39-4043345', addr:'6140 Brent Thurman Way Ste 100', city:'Las Vegas, NV', zip:'89148', phone:'(702) 602-5002', fax:'(702) 988-8818', contact:'Vitality Weight Loss' };
     const patName = ((p.first||'')+' '+(p.last||'')).trim();
     const dob = mb.dob || p.dob || '';
     const addr = mb.addr_line1 || '', pcity = (mb.addr_city||'') + (mb.addr_state?(', '+mb.addr_state):''), pzip = mb.addr_zip || '', phone = p.phone || '';
@@ -3869,12 +3872,15 @@ HARD RULES:
 <div class="sheet">
   <h1>MEDICARE GLP-1 BRIDGE PRIOR AUTHORIZATION REQUEST FORM</h1>
   <div class="sub">Submit electronic PA at Covermymeds.com &nbsp;OR&nbsp; Fax to: 1-800-530-2404</div>
+  <div class="sub" style="margin-top:4px;font-weight:600">A DENIED pharmacy claim to GLP-1 Bridge BIN 028918 / PCN MEDDGLP1BR is REQUIRED before this PA can be submitted. Confirm it exists first.</div>
+  <div class="sub" style="margin-top:2px;opacity:.7">Matches CMS form revision Y0040_GHHN3HAEN_C</div>
   ${isPartD ? `<div class="warn"><b>Routing check:</b> the patient reported a Part-D-eligible diagnosis (OSA, MASH, type 2 diabetes, or established CV disease). Per this form, GLP-1 coverage for those patients must be submitted to the patient&rsquo;s <b>Part D plan</b>, not the Bridge. Confirm before filing.</div>` : ''}
   <div class="note"><b>Prefilled from the patient&rsquo;s intake.</b> Dr. DeBry must verify every answer against the chart, select the requested drug, and sign before submitting. A denied pharmacy claim to the GLP-1 Bridge <b>BIN 028918 / PCN MEDDGLP1BR</b> is required before a PA can be submitted.</div>
   <div class="grid">
     <div class="box"><h3>Patient</h3>
       <div class="r"><label class="k">Name</label>${fld(patName)}</div>
-      <div class="r"><label class="k">Medicare MBI</label>${fld(mb.mbi)}</div>
+      <div class="r"><label class="k">Member MBI</label>${fld(mb.mbi)}</div>
+      <div class="r"><label class="k">Group number</label>${fld(mb.group_number)}</div>
       <div class="r"><label class="k">Date of birth</label>${fld(dob)}</div>
       <div class="r"><label class="k">Address</label>${fld(addr)}</div>
       <div class="r"><label class="k">City, State</label>${fld(pcity)}</div>
