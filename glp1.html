@@ -1899,6 +1899,18 @@ async function goToHostedCheckout() {
     });
     const j = await r.json().catch(() => ({}));
     if (r.ok && j.orderRef) state.orderRef = j.orderRef;
+    // This flow has no <form>, so ga.js's submit listener can never see it. Fire explicitly at the
+    // point the patient is actually being sent to pay.
+    if (r.ok && j.orderRef && window.vitalityTrack) {
+      try {
+        window.vitalityTrack('begin_checkout', {
+          currency: 'USD',
+          value: amountCents / 100,
+          program: state.drug,
+          order_ref: j.orderRef,
+        });
+      } catch (e) { /* analytics must never block checkout */ }
+    }
     if (r.ok && j.href) {
       save();
       window.location.href = j.href;
@@ -2265,6 +2277,25 @@ function finalizeAfterPayment(info) {
   const payload = (info === true) ? { subscriptionEstablished: true }
     : (info === false || info == null) ? { subscriptionEstablished: false }
     : (typeof info === 'object' ? info : { subscriptionEstablished: !!info });
+  // Payment confirmed. Guarded on the order ref so refreshing the confirmation URL
+  // (?ref=...&billing=done) cannot double-count revenue.
+  try {
+    const oref = new URLSearchParams(location.search).get('ref') || state.orderRef || '';
+    const key = 'vit_purchase_' + oref;
+    if (oref && window.vitalityTrack && !sessionStorage.getItem(key)) {
+      sessionStorage.setItem(key, '1');
+      const cents = (payload.introCents != null)
+        ? payload.introCents
+        : ((PRICING[state.drug] ? PRICING[state.drug].intro : 149) * 100);
+      window.vitalityTrack('purchase', {
+        transaction_id: oref,
+        currency: 'USD',
+        value: cents / 100,
+        program: state.drug,
+        subscription: !!payload.subscriptionEstablished,
+      });
+    }
+  } catch (e) { /* never break the confirmation screen */ }
   render({ id:'paid', section:'Confirmed', view: (wrap) => viewPaid(wrap, payload) });
   setProgress(1);
 }

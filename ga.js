@@ -53,10 +53,17 @@
   }, true);
 
   // Form submits: treat payment/checkout forms as begin_checkout, everything else as a lead.
+  //
+  // AUTH FORMS ARE EXCLUDED. Until 2026-08-14 this counted every form submit as a lead, which meant
+  // patient portal logins (portal-login.html), Thrive app logins and password resets (m.html) were
+  // all landing in the lead figure. generate_lead is a conversion in GA4, so a returning patient
+  // signing in was being reported as a new lead. Sign-in is not acquisition.
+  var AUTH_FORM = /login|signin|sign-in|reset|password|forgot|auth/;
   document.addEventListener("submit", function (e) {
     var f = e.target;
     if (!f || f.tagName !== "FORM") return;
     var id = (f.id || f.getAttribute("name") || "").toLowerCase();
+    if (AUTH_FORM.test(id)) return;
     var isPay = /checkout|payment|\bpay\b|card|billing/.test(id);
     window.vitalityTrack(isPay ? "begin_checkout" : "generate_lead", { form_id: id || "form" });
   }, true);
