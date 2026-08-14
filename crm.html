@@ -4920,8 +4920,57 @@ HARD RULES:
     if(!j || j.ok===false){ box.innerHTML=chartSection('Insurance','','<div class="text-sm text-[#9aa0ab]">Billing is available to clinical and admin staff.</div>'); return; }
     window.__coverages=j.coverages||[]; window.__superbills=j.superbills||[]; window.__canCode=!!j.canCode; window.__canWriteIns=!!j.canWriteInsurance;
     window.__fees=j.fees||[];
-    box.innerHTML = insuranceCard(j) + superbillCard(j);
+    // Claims ride along only for the coder. Front desk takes cards; they do not watch claim status.
+    let cj={claims:[]};
+    if(j.canCode){ try{ cj=await postBilling({action:'claim_list',patient_id:pid}); }catch(e){ cj={claims:[]}; } }
+    window.__claims=(cj&&cj.claims)||[];
+    box.innerHTML = insuranceCard(j) + superbillCard(j) + claimsCard(j);
   }
+  // ---- Claims (837 out, 277CA + 835 back) ----
+  const CLAIM_STATUS={ submitted:['#eef4ff','#0a6cf5','Submitted'], accepted:['#eaf7ef','#0a7a3d','Accepted'], rejected:['#fef2f2','#be123c','Rejected'], paid:['#eaf7ef','#0a7a3d','Paid'], denied:['#fef2f2','#be123c','Denied'], error:['#fef2f2','#be123c','Error'] };
+  function claimsCard(j){
+    if(!j.canCode) return '';
+    const rows=(window.__claims||[]).length?window.__claims.map(renderClaimRow).join('')
+      :'<div class="text-sm text-[#9aa0ab]">No claims submitted for this patient.</div>';
+    return chartSection('Claims', '', `<div class="space-y-2">${rows}</div>`);
+  }
+  function renderClaimRow(c){
+    const st=CLAIM_STATUS[c.status]||CLAIM_STATUS.submitted;
+    // A test claim rides Stedi's sandbox and never reaches a payer. Label it loudly so a sandbox
+    // acknowledgment is never mistaken for money on the way.
+    const modeChip=c.mode==='test'?'<span class="ml-1.5 inline-block rounded px-1.5 py-0.5 text-[10px] font-bold bg-[#fff7ed] text-[#9a5a00] border border-[#ffd9a8]">TEST · not sent to a payer</span>':'';
+    const ack=c.ack_message?`<div class="text-[11px] text-[#6b7280] mt-1">${esc(c.ack_message)}</div>`:'';
+    const err=c.error_message?`<div class="text-[11px] text-[#be123c] mt-1">${esc(c.error_message)}</div>`:'';
+    const paid=c.paid_cents!=null?`<div class="text-[11px] text-[#0a7a3d] mt-1">Paid ${money(c.paid_cents)}</div>`:'';
+    return `<div class="border border-[#e6e9ee] rounded-xl p-3">
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0">
+          <div class="text-sm font-semibold text-[#16201d]">${esc(c.payer_name||'Claim')} · ${esc(c.date_of_service||'')}${modeChip}</div>
+          <div class="text-[11px] text-[#6b7280] font-mono">${esc(c.patient_control_number)}</div>
+        </div>
+        <div class="text-right shrink-0">
+          <span class="inline-block rounded-full px-2 py-0.5 text-[10px] font-bold" style="background:${st[0]};color:${st[1]}">${st[2]}</span>
+          <div class="text-xs text-[#3d4a45] mt-1">${money(c.total_charge_cents)}</div>
+        </div>
+      </div>${ack}${err}${paid}
+    </div>`;
+  }
+  // Submitting is money. Confirm with the mode named out loud, so nobody sends a live claim thinking
+  // it was a rehearsal (or assumes a sandbox one was real).
+  window.submitClaimForSuperbill=async function(sbId){
+    const sb=(window.__superbills||[]).find(x=>x.id===sbId);
+    const cov=(window.__coverages||[]).find(c=>c.status==='active');
+    if(!cov){ alert('No active insurance on file. Add coverage before submitting a claim.'); return; }
+    if(!confirm('Submit this claim to the clearinghouse?\n\n'+(sb?('Charge: '+money(sb.total_cents)+'\nDate of service: '+sb.date_of_service+'\n\n'):'')
+      +'The system decides test vs live from its own settings, not from this screen. A test claim goes to the sandbox and never reaches a payer.')) return;
+    try{
+      const r=await postBilling({action:'claim_submit',superbill_id:sbId});
+      if(!r||!r.ok){ alert('Not submitted: '+((r&&(r.error||r.ack&&r.ack.message))||'unknown error')); await loadChartBilling(selId); return; }
+      alert((r.mode==='test'?'TEST claim accepted by the sandbox. Nothing was sent to a payer.':'Claim submitted.')
+        +'\n\nStatus: '+r.status+'\nReference: '+r.patient_control_number);
+      await loadChartBilling(selId);
+    }catch(e){ alert('Could not submit: '+e.message); }
+  };
   function insuranceCard(j){
     const rows=(j.coverages||[]).length?j.coverages.map(renderCoverageRow).join(''):'<div class="text-sm text-[#9aa0ab]">No insurance on file. Self-pay until a card is added.</div>';
     const add=j.canWriteInsurance?`<button onclick="openCoverageModal()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add coverage</button>`:'';
@@ -4963,7 +5012,36 @@ HARD RULES:
     listModalShell(insId?'Edit coverage':'Add coverage', body, footer, 'max-w-lg');
     const rel=document.getElementById('inRel');
     if(rel) rel.onchange=()=>{ const hide=rel.value==='self'; ['subFields','subFields2'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle('hidden',hide); }); };
+    // On a NEW coverage, offer what we already know. Eligibility has been verifying real cards since
+    // July but writes to its own table, so without this staff re-key a card the system already read.
+    if(!insId) offerCoveragePrefill();
   };
+  // Suggests payer/plan from the last eligibility check and member/group from the intake note.
+  // Never auto-fills: it renders a banner the user has to click, so nothing lands in a claim because
+  // a form was quietly populated behind them.
+  async function offerCoveragePrefill(){
+    let r; try{ r=await postBilling({action:'insurance_prefill',patient_id:selId}); }catch(e){ return; }
+    if(!r||!r.ok||!r.found) return;
+    const p=r.prefill||{};
+    const bits=[p.payer_name,p.plan_name,p.member_id?('member '+String(p.member_id).slice(-4).padStart(String(p.member_id).length>4?8:String(p.member_id).length,'•'):'')].filter(Boolean).join(' · ');
+    const host=document.getElementById('inPayer'); if(!host) return;
+    const bar=document.createElement('div');
+    bar.className='rounded-xl border border-[#cfe3ff] bg-[#f2f7ff] px-3 py-2.5 mb-3 text-xs';
+    bar.innerHTML=`<div class="font-semibold text-[#16201d] mb-0.5">We already have this on file</div>
+      <div class="text-[#3d4a45] mb-2">${esc(bits)} <span class="text-[#6b7280]">(${esc(r.source||'on file')})</span></div>
+      <button type="button" id="pfApply" class="px-2.5 py-1 rounded-lg bg-[#0a6cf5] text-white text-[11px] font-semibold">Use this</button>
+      <span class="text-[#6b7280] ml-2">Confirm against the card before saving.</span>`;
+    (host.closest('label')||host).parentNode.insertBefore(bar, (host.closest('label')||host));
+    document.getElementById('pfApply').onclick=()=>{
+      const set=(id,val)=>{ const el=document.getElementById(id); if(el&&val) el.value=val; };
+      set('inPayer',p.payer_name); set('inPayerId',p.payer_id); set('inPlanName',p.plan_name);
+      set('inMember',p.member_id); set('inGroup',p.group_number);
+      set('inPlanType',p.plan_type); set('inStatus',p.status);
+      set('inSubFirst',p.subscriber_first); set('inSubLast',p.subscriber_last);
+      set('inSubDob',p.subscriber_dob); set('inSubSex',p.subscriber_sex);
+      bar.innerHTML='<span class="text-[#0a7a3d] font-semibold">Filled in. Check it against the card, then Save.</span>';
+    };
+  }
   window.saveCoverage=async function(insId){
     const gv=(id)=>{const e=document.getElementById(id);return e?e.value:undefined;};
     const payer=(gv('inPayer')||'').trim(); if(!payer){ alert('Enter the payer name.'); return; }
@@ -4991,7 +5069,10 @@ HARD RULES:
     const dx=(s.diagnoses||[]).map((d,i)=>`<span class="inline-block bg-[#f7fafd] border border-[#e6eef7] rounded px-1.5 py-0.5 text-[10px] font-mono mr-1">${i+1}. ${esc(d.code)}</span>`).join('');
     const lines=(s.lines||[]).map(l=>`<div class="flex justify-between gap-2 text-[11px] text-[#3d4a45] py-0.5"><span><span class="font-mono">${esc(l.cpt)}</span>${(l.modifiers&&l.modifiers.length)?'<span class="font-mono text-[#0a6cf5]">-'+l.modifiers.map(esc).join('-')+'</span>':''} ${esc(l.description||CPT_DESC[l.cpt]||'')} <span class="text-[#9aa0ab]">×${l.units} · dx ${(l.dx_pointers||[]).join(',')}</span></span><span class="font-medium whitespace-nowrap">${money(l.charge_cents)}</span></div>`).join('');
     const locked=s.status==='submitted'||s.status==='paid';
-    const acts=(window.__canCode&&!locked)?`<button onclick="openSuperbillModal('${s.id}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="setSuperbillStatus('${s.id}','${s.status==='ready'?'draft':'ready'}')" class="text-[#6b7280] hover:underline">${s.status==='ready'?'back to draft':'mark ready'}</button> · <button onclick="setSuperbillStatus('${s.id}','void')" class="text-[#6b7280] hover:underline">void</button> · <button onclick="deleteSuperbill('${s.id}')" class="text-[#be123c] hover:underline">delete</button>`:'';
+    // Submit is offered ONLY on a superbill marked ready. Coding it and sending it are two decisions,
+    // and collapsing them is how an unfinished draft becomes a claim.
+    const submitAct=(window.__canCode&&s.status==='ready')?` · <button onclick="submitClaimForSuperbill('${s.id}')" class="text-[#0a7a3d] font-semibold hover:underline">submit claim</button>`:'';
+    const acts=(window.__canCode&&!locked)?`<button onclick="openSuperbillModal('${s.id}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="setSuperbillStatus('${s.id}','${s.status==='ready'?'draft':'ready'}')" class="text-[#6b7280] hover:underline">${s.status==='ready'?'back to draft':'mark ready'}</button>${submitAct} · <button onclick="setSuperbillStatus('${s.id}','void')" class="text-[#6b7280] hover:underline">void</button> · <button onclick="deleteSuperbill('${s.id}')" class="text-[#be123c] hover:underline">delete</button>`:'';
     return `<div class="border border-[#e6e9ee] rounded-xl p-3">
       <div class="flex items-start justify-between gap-2">
         <div class="min-w-0"><div class="text-sm font-semibold text-[#16201d]">${esc(s.date_of_service)} · ${esc(PLACES_OF_SERVICE[s.place_of_service]||('POS '+s.place_of_service))}</div>
