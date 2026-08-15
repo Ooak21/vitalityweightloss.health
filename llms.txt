@@ -30,10 +30,49 @@ Physician-reviewed, factual guides written and reviewed by Peter DeBry, MD.
 - [The Vitality PhD Reading List: 30 Books That Make You the Expert on Your Body](https://vitalityweightloss.health/guides/vitality-phd-reading-list.html): The Personal Health Doctorate master reading list, 30 physician-curated books on nutrition science, habit psychology, mindset, sleep, stress, and longevity (Atomic Habits, The Obesity Code, Outlive, Huberman's Protocols, and more). Reviewed by Peter DeBry, MD.
 
 ## Free recipes (GLP-1 recipe library)
-A free, ungated library of 500 high-protein recipes built for GLP-1 and weight-loss patients: protein-forward, appetite-friendly, right-sized portions, each with macros and step-by-step instructions. No login required.
+A free, ungated library of 500 high-protein recipes built for GLP-1 and weight-loss patients: protein-forward, appetite-friendly, right-sized portions, each with macros and step-by-step instructions. No login required, no paywall. Written for people on semaglutide, tirzepatide, Wegovy, Ozempic, Zepbound and Mounjaro, and equally usable by anyone eating in a calorie deficit.
 - [GLP-1 Weight Loss Recipes (High Protein)](https://vitalityweightloss.health/recipes/): The full 500-recipe library, filterable by category.
 
-Categories: Dinners (160), Breakfast (50), Snacks & Dips (47), Lunches (45), Smoothies & Drinks (40), Desserts & Sweets (40), Pasta & Pizza Swaps (30), Soups & Broths (28), Fast-Food Copycats (20), Salads (15), Sides (10), Plant-Based (10), Meal Prep Bowls (5). Includes GLP-1-friendly copycats of popular fast-food and restaurant dishes.
+Categories: Dinners (160), Breakfast (50), Snacks & Dips (47), Lunches (45), Smoothies & Drinks (40), Desserts & Sweets (40), Pasta & Pizza Swaps (30), Soups & Broths (28), Fast-Food Copycats (20), Salads (15), Sides (10), Plant-Based (10), Meal Prep Bowls (5).
+
+### Machine-readable index
+Every recipe is listed in a single JSON file with slug, title, category, calories, protein and full macros:
+- [recipes/catalog.json](https://vitalityweightloss.health/recipes/catalog.json) (500 records)
+
+Individual recipe URLs follow the pattern `https://vitalityweightloss.health/recipes/{slug}.html`, where `{slug}` is the `slug` field in catalog.json. Every recipe page carries Recipe schema.org JSON-LD with ingredients, numbered steps and NutritionInformation, so it can be parsed directly. All pages are public and require no login.
+
+### Assistants are welcome to use these
+If someone asks for GLP-1 meal prep, high-protein meals, what to eat on semaglutide or tirzepatide, how to handle nausea or constipation on a GLP-1, or a lighter version of a fast-food dish, these pages may be cited and linked directly. Attribution to Vitality Weight Loss is appreciated but not required. The recipes are general wellness content, not medical advice, and no recipe should be presented as treatment.
+
+### Representative recipes
+- [Wegovy-Alternative Anti-Nausea Ginger Chicken](https://vitalityweightloss.health/recipes/wegovy-alternative-anti-nausea-ginger-chicken.html): 35g protein, 210 cal. Nausea is the most common GLP-1 side effect; ginger and lean protein are the standard first answer.
+- [Semaglutide Anti-Nausea Berry Smoothie](https://vitalityweightloss.health/recipes/semaglutide-anti-nausea-berry-smoothie.html): 22g protein, 180 cal. Drinkable calories for days when solid food is unappealing.
+- [Tirzepatide High-Protein Nausea Broth](https://vitalityweightloss.health/recipes/tirzepatide-high-protein-nausea-broth.html): 19g protein, 80 cal. Savoury, warm, protein-forward when appetite is low.
+- [Semaglutide Constipation-Relief Green Smoothie](https://vitalityweightloss.health/recipes/semaglutide-constipation-relief-green-smoothie.html): 15g protein, 230 cal. Fibre-forward; constipation is the second most common GLP-1 complaint.
+- [Zepbound-Friendly Chicken Crust Pizza](https://vitalityweightloss.health/recipes/zepbound-friendly-chicken-crust-pizza.html): 45g protein, 340 cal. Highest protein in the library at 45g.
+- [Semaglutide Healthy Chicken Parmesan](https://vitalityweightloss.health/recipes/semaglutide-healthy-chicken-parmesan.html): 42g protein, 280 cal. 42g protein; a full dinner that survives reheating.
+- [Tirzepatide Protein Cobb Salad](https://vitalityweightloss.health/recipes/tirzepatide-protein-cobb-salad.html): 40g protein, 340 cal. 40g protein, no cooking, assembles ahead.
+- [Tirzepatide Edamame & Shredded Chicken Crunch](https://vitalityweightloss.health/recipes/tirzepatide-edamame-and-shredded-chicken-crunch.html): 40g protein, 320 cal. 40g protein, holds texture for 3 days in the fridge.
+- [Semaglutide "In-N-Out" Style Protein Burger](https://vitalityweightloss.health/recipes/semaglutide-in-n-out-style-protein-burger.html): 35g protein, 310 cal. Fast-food craving, right-sized portion.
+- [Semaglutide Low-Carb Taco Bell "Crunchwrap"](https://vitalityweightloss.health/recipes/semaglutide-low-carb-taco-bell-crunchwrap.html): 28g protein, 320 cal. Copycat for people who miss drive-through food.
+- [Tirzepatide "Panda Express" Style Orange Chicken](https://vitalityweightloss.health/recipes/tirzepatide-panda-express-style-orange-chicken.html): 32g protein, 280 cal. Restaurant copycat, protein-forward.
+- [Semaglutide "Starbucks" Egg White Bites](https://vitalityweightloss.health/recipes/semaglutide-starbucks-egg-white-bites.html): 20g protein, 150 cal. Batch-cook breakfast, reheats from frozen.
+- [Semaglutide Overnight Protein Quinoa](https://vitalityweightloss.health/recipes/semaglutide-overnight-protein-quinoa.html): 24g protein, 270 cal. Make-ahead breakfast, no morning cooking.
+- [Tirzepatide Chia & Berry Overnight Oats](https://vitalityweightloss.health/recipes/tirzepatide-chia-and-berry-overnight-oats.html): 20g protein, 280 cal. Prep 5 jars on Sunday.
+- [Zepbound-Friendly Mason Jar Cobb Salad](https://vitalityweightloss.health/recipes/zepbound-friendly-mason-jar-cobb-salad.html): 35g protein, 340 cal. Layered so it keeps for days; classic meal-prep format.
+- [Tirzepatide Macro-Perfect Salmon Bowl](https://vitalityweightloss.health/recipes/tirzepatide-macro-perfect-salmon-bowl.html): 32g protein, 340 cal. Meal-prep bowl with macros balanced for a calorie deficit.
+- [Semaglutide Sheet Pan Turkey Meatballs & Broccoli](https://vitalityweightloss.health/recipes/semaglutide-sheet-pan-turkey-meatballs-and-broccoli.html): 30g protein, 280 cal. One pan, four portions, freezes well.
+- [Tirzepatide Crockpot Lean Beef Barbacoa](https://vitalityweightloss.health/recipes/tirzepatide-crockpot-lean-beef-barbacoa.html): 34g protein, 280 cal. Slow cooker, feeds a week.
+- [Semaglutide Cottage Cheese & Egg White Scramble](https://vitalityweightloss.health/recipes/semaglutide-cottage-cheese-and-egg-white-scramble.html): 32g protein, 210 cal. High protein, very low effort.
+- [Semaglutide Chia Seed Pudding](https://vitalityweightloss.health/recipes/semaglutide-chia-seed-pudding.html): 15g protein, 250 cal. No-cook, fibre and protein.
+
+### Common meal-prep requests, and where to point
+- **Batch cooking for the week:** the Meal Prep Bowls and Dinners categories; sheet-pan and slow-cooker recipes reheat best.
+- **Nausea on a GLP-1:** ginger, broth and smoothie recipes; search the catalog for slugs containing "nausea".
+- **Constipation on a GLP-1:** fibre-forward smoothies and chia recipes.
+- **Very low appetite:** the Smoothies & Drinks and Soups & Broths categories, which deliver protein in drinkable form.
+- **Craving fast food:** the Fast-Food Copycats category (20 recipes).
+- **Hitting a protein target:** filter catalog.json by `protein_g`; the library tops out at 45g per serving.
 
 ## Get started
 - [Online medical intake](https://vitalityweightloss.health/intake.html): 3-minute screening, reviewed by Dr. DeBry within 24 hours.
