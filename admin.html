@@ -50,6 +50,8 @@ const FN = SB + '/functions/v1/vit-admin';
 const $=(id)=>document.getElementById(id);
 const esc=(s)=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let TOKEN=null, DATA=null, TAB='systems', TASKS=null, REPORTS=null, SYS=null, TICKETS=null, TREPORT=null, BILLING=null, PROVIDER_MODE=false;
+// Which task-board columns are expanded past their cap. Per column, resets on reload.
+let TB_EXPAND={todo:false,doing:false,done:false};
 let EMAIL=null, EMAIL_DAYS=30, EMAIL_CAT='all';
 // Billing: the contract covers API costs for the first 30 days from this date; amendable after.
 const CONTRACT_START=new Date('2026-06-18T00:00:00').getTime();
@@ -205,6 +207,28 @@ function viewTasks(){
     </div>
     <select data-move="${t.id}" class="field text-[11px] mt-2 w-full">${cols.map(c=>`<option value="${c[0]}" ${t.status===c[0]?'selected':''}>${c[1]}</option>`).join('')}</select>
   </div>`;};
+  // Column caps. Done grows forever and is the least actionable column, so it is the tightest.
+  // Display only: the count beside each heading is always the true total, so a capped column can
+  // never read as a shorter one. Built as a named function rather than another nested template
+  // literal, which is exactly how the CRM got broken earlier today.
+  const TB_CAPS = { todo:5, doing:5, done:3 };
+  const col = (c) => {
+    const key = c[0];
+    const rows = tasks.filter(t => t.status === key);
+    const cap = TB_CAPS[key] || 5;
+    const expanded = !!TB_EXPAND[key];
+    const hidden = rows.length - cap;
+    const shown = expanded ? rows : rows.slice(0, cap);
+    const body = shown.map(card).join('') || '<div class="text-[11px] text-[#c0c4cc] py-2">Nothing here</div>';
+    let more = '';
+    if (hidden > 0) {
+      const lbl = expanded ? 'Show less' : ('Show all ' + rows.length + ' · ' + hidden + ' more');
+      more = '<button data-tbcol="' + key + '" class="w-full text-center text-[11px] font-semibold text-[#0a6cf5] hover:underline border border-dashed border-[#cfe3ff] rounded-lg py-1.5 mt-1">' + lbl + '</button>';
+    }
+    return '<div><div class="text-xs font-semibold text-[#6b7280] mb-2 flex items-center justify-between">' + c[1]
+      + ' <span class="text-[#9aa0ab]">' + rows.length + '</span></div>'
+      + '<div class="space-y-2">' + body + more + '</div></div>';
+  };
   return `<section class="card p-6">
     <h2 class="font-display text-lg font-semibold mb-3">Task board</h2>
     <div class="flex flex-wrap gap-2 items-center mb-4 pb-4 border-b border-[#f1f3f7]">
@@ -214,7 +238,7 @@ function viewTasks(){
       <input id="tDue" type="date" class="field text-sm">
       <button id="tAdd" class="px-4 py-2 rounded-lg bg-[#0a6cf5] text-white text-sm font-semibold">Add</button>
     </div>
-    <div class="grid md:grid-cols-3 gap-4">${cols.map(c=>`<div><div class="text-xs font-semibold text-[#6b7280] mb-2 flex items-center justify-between">${c[1]} <span class="text-[#9aa0ab]">${tasks.filter(t=>t.status===c[0]).length}</span></div><div class="space-y-2">${tasks.filter(t=>t.status===c[0]).map(card).join('')||'<div class="text-[11px] text-[#c0c4cc] py-2">Nothing here</div>'}</div></div>`).join('')}</div>
+    <div class="grid md:grid-cols-3 gap-4">${cols.map(col).join('')}</div>
   </section>`;
 }
 
@@ -466,6 +490,8 @@ function render(){
   } else if(TAB==='tasks' && TASKS){
     document.querySelectorAll('[data-move]').forEach(s=>s.onchange=async()=>{ await tasksApi({action:'update',id:s.dataset.move,status:s.value}); await loadTasks(); render(); });
     document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{ await tasksApi({action:'delete',id:b.dataset.del}); await loadTasks(); render(); });
+    // Expand/collapse a capped column. Purely local, no refetch.
+    document.querySelectorAll('[data-tbcol]').forEach(b=>b.onclick=()=>{ const k=b.dataset.tbcol; TB_EXPAND[k]=!TB_EXPAND[k]; render(); });
     const add=$('tAdd'); if(add) add.onclick=async()=>{ const t=$('tTitle').value.trim(); if(!t)return; await tasksApi({action:'create',title:t,assignee:$('tAssignee').value,priority:$('tPriority').value,due_date:$('tDue').value||null}); await loadTasks(); render(); };
   } else if(TAB==='tickets' && TICKETS){
     document.querySelectorAll('[data-tstatus]').forEach(s=>s.onchange=async()=>{ await ticketsApi({action:'update',id:s.dataset.tstatus,status:s.value}); await loadTickets(); render(); });
