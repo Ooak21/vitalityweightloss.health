@@ -5039,7 +5039,7 @@ HARD RULES:
     let r; try{ r=await postBilling({action:'insurance_prefill',patient_id:selId}); }catch(e){ return; }
     if(!r||!r.ok||!r.found) return;
     const p=r.prefill||{};
-    const bits=[p.payer_name,p.plan_name,p.member_id?('member '+String(p.member_id).slice(-4).padStart(String(p.member_id).length>4?8:String(p.member_id).length,'•'):'')].filter(Boolean).join(' · ');
+    const bits=[p.payer_name,p.plan_name,p.member_id?('member ending '+String(p.member_id).slice(-4)):''].filter(Boolean).join(' · ');
     const host=document.getElementById('inPayer'); if(!host) return;
     const bar=document.createElement('div');
     bar.className='rounded-xl border border-[#cfe3ff] bg-[#f2f7ff] px-3 py-2.5 mb-3 text-xs';
