@@ -1130,10 +1130,10 @@ const flow = [
     const hero = h('div', { class:'hero notrans' });
     hero.innerHTML = HERO_LOGO_SVG + ((window.__LANG==='es') ? `
       <h1>Comienza tu programa <em>GLP-1</em>.</h1>
-      <p class="lede">Una evaluación de 3 minutos. Revisada personalmente por el Dr. Peter DeBry, MD en un plazo de 24 horas. Si se aprueba, tu receta semaglutida, tirzepatida o nuestra <strong>opción oral sin agujas</strong> está lista para recoger en nuestra clínica de Las Vegas y surtir en una farmacia de compuestos 503A con licencia en EE. UU.</p>
+      <p class="lede">Una evaluación de 3 minutos. Revisada personalmente por el Dr. Peter DeBry, MD en un plazo de 24 horas. Si se aprueba, tu receta semaglutida, tirzepatida o nuestra <strong>opción oral sin agujas</strong> se surte en una farmacia de compuestos 503A con licencia en EE. UU.</p>
     ` : `
       <h1>Start your <em>GLP-1</em> program.</h1>
-      <p class="lede">A 3-minute intake. Reviewed personally by Dr. Peter DeBry, MD within 24 hours. If approved, your prescription semaglutide, tirzepatide, or our <strong>no-needle oral option</strong> is ready to pick up at our Las Vegas clinic and fill at a USA-licensed 503A compounding pharmacy.</p>
+      <p class="lede">A 3-minute intake. Reviewed personally by Dr. Peter DeBry, MD within 24 hours. If approved, your prescription semaglutide, tirzepatide, or our <strong>no-needle oral option</strong> is filled by a USA-licensed 503A compounding pharmacy.</p>
     `);
     p.appendChild(hero);
 
@@ -1148,7 +1148,6 @@ const flow = [
     trust.innerHTML = `
       <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> MD-reviewed</span>
       <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> USA-licensed 503A pharmacy</span>
-      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Pick up at our clinic</span>
       <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Cancel anytime</span>
     `;
     p.appendChild(trust);
@@ -1447,7 +1446,7 @@ const flow = [
     wrap.innerHTML = _eduEs ? '<h1>Calificas para <em>tres</em> formas de tratamiento.</h1>' : '<h1>You qualify for <em>three</em> ways to treat.</h1>';
     const _eduHead = wrap.firstChild; _eduHead.classList.add('notrans');
     p.appendChild(_eduHead);
-    p.appendChild(h('p', { class:'lede' }, ['Every option is compounded for you by a USA-licensed 503A pharmacy under Dr. DeBry\'s prescription, ready to pick up at our Las Vegas clinic, with the full Vitality Thrive Track app, lessons, workouts, and recipes included.']));
+    p.appendChild(h('p', { class:'lede' }, ['Every option is compounded for you by a USA-licensed 503A pharmacy under Dr. DeBry\'s prescription, with the full Vitality Thrive Track app, lessons, workouts, and recipes included.']));
 
     const exclusive = h('div', { class:'info warn notrans' });
     exclusive.innerHTML = _eduEs ? 'Vitality ofrece una opción de <strong>semaglutida sin agujas (oral sublingual)</strong>, preparada por una farmacia 503A con licencia en EE. UU. bajo la receta del Dr. DeBry, para pacientes que prefieren evitar las inyecciones.' : 'Vitality offers a <strong>no-needle (oral sublingual) semaglutide</strong> option, compounded by a USA-licensed 503A pharmacy under Dr. DeBry\'s prescription, for patients who prefer to avoid injections.';
@@ -1844,7 +1843,7 @@ function viewSubmitted(p) {
   let cta;
   if (glp1) {
     cta = `
-    <p class="lede" style="margin:18px auto 14px;max-width:480px;">Next, complete secure checkout to send your request to <strong>Dr. DeBry</strong>. He reviews your intake and, when appropriate, writes your prescription for pickup at our Las Vegas clinic.</p>
+    <p class="lede" style="margin:18px auto 14px;max-width:480px;">Next, complete secure checkout to send your request to <strong>Dr. DeBry</strong>. He reviews your intake and, when appropriate, writes your prescription.</p>
     <div class="info" style="text-align:left;margin:0 auto 14px;max-width:480px;"><strong>${drugMeta.name}</strong>${drugMeta.price ? '<br><span style="color:var(--muted)">'+drugMeta.price+'</span>' : ''}</div>
     <a class="cta cta-green" href="#" onclick="goToPayment();return false;" style="display:inline-flex;text-decoration:none;margin-top:4px;cursor:pointer;">Continue to secure payment &rarr;</a>
     <div class="skip-info">Secure card payment · Cancel anytime</div>`;
@@ -2324,8 +2323,8 @@ function viewPaid(p, info) {
     <a class="cta cta-green" href="#" onclick="goToBillingSetup('${ref||''}');return false;" style="display:inline-flex;text-decoration:none;margin-top:4px;cursor:pointer;">Secure monthly billing &rarr;</a>`;
   }
   const enrolledCopy = established
-    ? `<p class="lede" style="margin:0 auto 16px;max-width:480px;">You&rsquo;re enrolled &mdash; <strong>$${intro}</strong> charged today, <strong>$${monthly}/mo</strong> starting <strong>${nextBillLabel}</strong>. Your prescription is with <strong>Dr. DeBry</strong> for clinical review; when approved, you&rsquo;ll pick up at our Las Vegas clinic (typically within 24 hours).</p>`
-    : `<p class="lede" style="margin:0 auto 16px;max-width:480px;">Payment received. Your intake is with <strong>Dr. DeBry</strong> for clinical review; when appropriate, he writes your prescription for pickup at our Las Vegas clinic (typically within 24 hours).</p>`;
+    ? `<p class="lede" style="margin:0 auto 16px;max-width:480px;">You&rsquo;re enrolled &mdash; <strong>$${intro}</strong> charged today, <strong>$${monthly}/mo</strong> starting <strong>${nextBillLabel}</strong>. Your prescription is with <strong>Dr. DeBry</strong> for clinical review; when approved, we&rsquo;ll email you where to pick it up (typically within 24 hours).</p>`
+    : `<p class="lede" style="margin:0 auto 16px;max-width:480px;">Payment received. Your intake is with <strong>Dr. DeBry</strong> for clinical review; when appropriate, he writes your prescription and we&rsquo;ll email you where to pick it up (typically within 24 hours).</p>`;
   card.innerHTML = `
     <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
     <h1>${established ? "You're enrolled, " + fn + '.' : 'Payment received, ' + fn + '.'}</h1>
@@ -2363,7 +2362,7 @@ const DOCS = {
     <h4>Informed consent summary</h4>
     <p>You're consenting to once-weekly subcutaneous injections of compounded semaglutide or tirzepatide, prescribed individually for you by Peter DeBry, MD (Nevada-licensed, NPI 1831137991) after asynchronous telehealth review of your intake.</p>
     <h4>What you can expect</h4>
-    <p>Dr. DeBry reviews your intake within 24 hours. If approved, Dr. DeBry writes your prescription, which you pick up at our Las Vegas clinic and fill at a USA-licensed 503A compounding pharmacy. You self-administer weekly using the supplies provided with your prescription.</p>
+    <p>Dr. DeBry reviews your intake within 24 hours. If approved, Dr. DeBry sends your prescription to a USA-licensed 503A compounding pharmacy, and we email you when it is ready to pick up. You self-administer weekly using the supplies provided with your prescription.</p>
     <h4>Common side effects</h4>
     <p>Nausea, vomiting, diarrhea, constipation, decreased appetite, fatigue, injection-site reactions. Usually most pronounced during dose increases.</p>
     <h4>Serious risks</h4>
@@ -2424,7 +2423,6 @@ window.__LANG = (function(){ try { return localStorage.getItem('vitality_lang') 
 window.TEXT_ES = {
   "MD-reviewed":"Revisado por un médico",
   "USA-licensed 503A pharmacy":"Farmacia 503A con licencia en EE. UU.",
-  "Pick up at our clinic":"Recoge en nuestra clínica",
   "Cancel anytime":"Cancela cuando quieras",
   "Physician review by Dr. DeBry":"Revisión médica por el Dr. DeBry",
   "Dr. Peter DeBry, MD · NPI 1831137991 · Nevada-licensed · HIPAA-protected":"Dr. Peter DeBry, MD · NPI 1831137991 · Con licencia en Nevada · Protegido por HIPAA",
@@ -2513,7 +2511,7 @@ window.TEXT_ES = {
   "Any drug allergies?":"¿Alguna alergia a medicamentos?",
   "Drug + reaction (or \"none\")":"Medicamento + reacción (o “ninguno”)",
   "e.g., penicillin rash":"p. ej., penicilina sarpullido",
-  "Every option is compounded for you by a USA-licensed 503A pharmacy under Dr. DeBry's prescription, ready to pick up at our Las Vegas clinic, with the full Vitality Thrive Track app, lessons, workouts, and recipes included.":"Cada opción se prepara para ti en una farmacia de compuestos 503A con licencia en EE. UU. bajo la receta del Dr. DeBry, lista para recoger en nuestra clínica de Las Vegas, con la app completa Vitality Thrive Track, lecciones, ejercicios y recetas incluidas.",
+  "Every option is compounded for you by a USA-licensed 503A pharmacy under Dr. DeBry's prescription, with the full Vitality Thrive Track app, lessons, workouts, and recipes included.":"Cada opción se prepara para ti en una farmacia de compuestos 503A con licencia en EE. UU. bajo la receta del Dr. DeBry, con la app completa Vitality Thrive Track, lecciones, ejercicios y recetas incluidas.",
   "Which one is right for you?":"¿Cuál es la adecuada para ti?",
   "Pick the track you prefer. Dr. DeBry will confirm at clinical review and may recommend a different one if better suited.":"Elige el plan que prefieras. El Dr. DeBry lo confirmará en la revisión clínica y puede recomendar otro si es más adecuado.",
   "Compounded Semaglutide":"Semaglutida compuesta",
@@ -2575,7 +2573,7 @@ window.DOCS_ES = {
     <h4>Consentimiento informado resumen</h4>
     <p>Estás consintiendo inyecciones subcutáneas una vez por semana de semaglutida o tirzepatida compuesta, recetadas individualmente para ti por Peter DeBry, MD (con licencia en Nevada, NPI 1831137991) tras una revisión de telesalud asincrónica de tu evaluación.</p>
     <h4>Qué puedes esperar</h4>
-    <p>El Dr. DeBry revisa tu evaluación en un plazo de 24 horas. Si se aprueba, la farmacia prepara y envía tu medicamento en ~5 días hábiles. Tú te lo administras semanalmente usando los insumos provistos.</p>
+    <p>El Dr. DeBry revisa tu evaluación en un plazo de 24 horas. Si se aprueba, el Dr. DeBry envía tu receta a una farmacia de compuestos 503A con licencia en EE. UU., y te avisamos por correo cuando esté lista para recoger. Tú te lo administras semanalmente usando los insumos provistos.</p>
     <h4>Efectos secundarios comunes</h4>
     <p>Náuseas, vómitos, diarrea, estreñimiento, disminución del apetito, fatiga, reacciones en el lugar de la inyección. Suelen ser más pronunciados durante los aumentos de dosis.</p>
     <h4>Riesgos graves</h4>
