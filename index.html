@@ -223,7 +223,7 @@
     <div class="py-1.5 flex flex-col text-[15px] font-medium text-[#16201d]">
       <a href="guides/semaglutide-medicare-nevada.html" class="flex items-start gap-2 px-5 py-2.5 bg-[#f6faef] border-b border-[#f1f3f6] hover:bg-[#eef6e0]">
         <span class="w-1.5 h-1.5 rounded-full bg-[#74992F] mt-1.5 flex-shrink-0"></span>
-        <span class="text-[13px] leading-tight"><span class="font-semibold">Medicare $50/mo GLP-1 Bridge</span><br><span class="text-[#6b7280]">coming July 1</span></span>
+        <span class="text-[13px] leading-tight"><span class="font-semibold">Medicare $50/mo GLP-1 Bridge</span><br><span class="text-[#6b7280]">now available</span></span>
       </a>
       <a href="vitality90.html" class="flex items-start gap-2 px-5 py-2.5 bg-[#eef4ff] border-b border-[#f1f3f6] hover:bg-[#e2edff]">
         <span class="w-1.5 h-1.5 rounded-full bg-[#0a6cf5] mt-1.5 flex-shrink-0"></span>
@@ -277,12 +277,15 @@
       <div class="text-sm text-[#4b5563] leading-snug">Full body-composition analysis, on us. Then 50% off your first program. <span class="text-[#0a6cf5] font-semibold whitespace-nowrap">Book yours &rarr;</span></div>
     </div>
   </a>
-  <!-- HERO PROMO 2: Medicare $50/mo GLP-1 Bridge (July 1), pops out from the left (above the InBody card) -->
+  <!-- HERO PROMO 2: Medicare $50/mo GLP-1 Bridge, pops out from the left (above the InBody card) -->
   <a href="guides/semaglutide-medicare-nevada.html" id="medicarePromo" class="hidden lg:flex absolute left-0 bottom-[31%] z-20 items-center gap-4 bg-white/95 backdrop-blur rounded-r-3xl shadow-2xl shadow-black/30 border border-[#e6e9ee] pl-4 pr-6 py-4 max-w-sm hover:bg-white transition-colors">
-    <!-- Wegovy vial, sized large and popping up out of the card to catch the eye -->
-    <img src="assets/wegovy-vial.png" alt="Wegovy semaglutide vial" class="shrink-0 h-56 w-auto self-end -mt-16 -mb-2 select-none pointer-events-none">
+    <!-- Product image intentionally absent. This card previously showed a fabricated vial
+         carrying the Wegovy trademark on a Vitality-branded label, a product that does not
+         exist, since Wegovy ships as a pen injector, never a vial. Awaiting a compliant
+         asset. A card with no image beats a card that misrepresents what the clinic
+         dispenses. -->
     <div class="text-left">
-      <div class="inline-flex self-start items-center gap-1.5 mb-2 text-[11px] font-extrabold uppercase tracking-[0.1em] text-white bg-[#74992F] rounded-full px-3 py-1">★ Coming July 1</div>
+      <div class="inline-flex self-start items-center gap-1.5 mb-2 text-[11px] font-extrabold uppercase tracking-[0.1em] text-white bg-[#74992F] rounded-full px-3 py-1">★ Now available</div>
       <div class="font-display text-xl font-semibold text-[#16201d] leading-[1.15] mb-1.5">Medicare <span class="text-[#0a6cf5]">$50/mo</span> GLP-1 Bridge.</div>
       <div class="text-sm text-[#4b5563] leading-snug">Eligible Medicare members get brand-name Wegovy or Zepbound for about $50 a month. <span class="text-[#0a6cf5] font-semibold whitespace-nowrap">Check eligibility &rarr;</span></div>
     </div>
@@ -907,9 +910,8 @@
         <!-- 2 Medicare -->
         <div class="faq-panel" data-panel="2">
           <div class="rounded-3xl border border-[#e6e9ee] bg-[#f7f8fa] p-8 flex flex-col md:flex-row items-center gap-7">
-            <img src="assets/wegovy-vial.png" alt="Wegovy semaglutide vial" class="h-60 md:h-72 w-auto shrink-0 select-none pointer-events-none">
             <div>
-              <div class="inline-flex items-center gap-1.5 mb-2 text-[11px] font-extrabold uppercase tracking-[.1em] text-white bg-[#74992F] rounded-full px-3 py-1">★ Coming July 1</div>
+              <div class="inline-flex items-center gap-1.5 mb-2 text-[11px] font-extrabold uppercase tracking-[.1em] text-white bg-[#74992F] rounded-full px-3 py-1">★ Now available</div>
               <h3 class="font-display text-2xl md:text-3xl font-semibold tracking-[-.5px] mb-3">Medicare <span class="text-[#0a6cf5]">$50/mo</span> GLP-1 Bridge.</h3>
               <p class="text-[#4b5563] leading-relaxed mb-5">Vitality's GLP-1 Bridge helps eligible Medicare members access brand-name Wegovy or Zepbound for about $50 per month. Eligibility is confirmed by the clinic.</p>
               <div class="grid grid-cols-2 gap-3 mb-6">
@@ -1335,7 +1337,7 @@ function playVwl(){
   var slot=document.getElementById('navSlot'); if(!slot) return;
   var ROWH=24, COPIES=30, STEP=5;
   var msgs=[
-    {html:'<span class="font-semibold text-[#16201d]">Medicare $50/mo GLP-1 Bridge</span> <span class="text-[#16201d]/55">&middot; coming July 1</span>', href:'guides/semaglutide-medicare-nevada.html'},
+    {html:'<span class="font-semibold text-[#16201d]">Medicare $50/mo GLP-1 Bridge</span> <span class="text-[#16201d]/55">&middot; now available</span>', href:'guides/semaglutide-medicare-nevada.html'},
     {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Vitality Bloom</span> <span class="text-[#16201d]/55">&middot; new online hair-loss treatment &rarr;</span>', href:'bloom.html'},
     {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Vitality Total Male</span> <span class="text-[#16201d]/55">&middot; TRT + GLP-1 for men &rarr;</span>', href:'total-male.html'},
     {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Vitality 90</span> <span class="text-[#16201d]/55">&middot; free 90-day founding cohort &rarr;</span>', href:'vitality90.html'}
