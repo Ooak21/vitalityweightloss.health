@@ -111,6 +111,9 @@
   .soc-fb:hover{box-shadow:0 10px 22px -8px rgba(24,119,242,.6)}
   .soc-yt:hover{box-shadow:0 10px 22px -8px rgba(255,0,0,.55)}
   /* chat teaser carousel */
+  @keyframes veeTeaserIn{0%{opacity:0;transform:translateY(10px) scale(.92)}100%{opacity:1;transform:none}}
+  #veeTeaser:not(.hidden){animation:veeTeaserIn .42s cubic-bezier(.34,1.4,.5,1)}
+  @media (prefers-reduced-motion:reduce){#veeTeaser:not(.hidden){animation:none}#veeTeaserBody{transition:none !important}}
   .vt-dot{width:5px;height:5px;border-radius:9px;background:#d9dde3;transition:all .3s ease}
   .vt-dot.on{background:#0a6cf5;width:15px}
 </style>
@@ -275,24 +278,28 @@
     </div>
   </a>
   <!-- HERO PROMO 2: Medicare $50/mo GLP-1 Bridge, pops out from the left (above the InBody card) -->
-  <a href="guides/semaglutide-medicare-nevada.html" id="medicarePromo" class="hidden lg:flex absolute left-0 bottom-[31%] z-20 items-center gap-4 bg-white/95 backdrop-blur rounded-r-3xl shadow-2xl shadow-black/30 border border-[#e6e9ee] pl-4 pr-6 py-4 max-w-sm hover:bg-white transition-colors">
-    <!-- Licensed Pexels photo, deliberately a PERSON not a product: the Bridge is a coverage
-         benefit, and showing medication would misstate what is on offer. Provenance in
+  <a href="guides/semaglutide-medicare-nevada.html" id="medicarePromo" class="hidden lg:block absolute left-0 bottom-[31%] z-20 overflow-hidden bg-white/95 backdrop-blur rounded-r-3xl shadow-2xl shadow-black/30 border border-[#e6e9ee] w-[26rem] group">
+    <!-- Recipe-card treatment: the photo bleeds off the right edge and a white scrim
+         fades it out under the copy, so the image reads as part of the card instead of
+         a thumbnail stuck beside the text. Licensed Pexels photo, deliberately a PERSON
+         and not a product, since the Bridge is a coverage benefit. Provenance in
          assets/candidates/MANIFEST.md. -->
-    <img src="assets/medicare-bridge.jpg" alt="An older couple at home" width="900" height="600" loading="lazy" decoding="async" class="shrink-0 h-24 w-24 rounded-2xl object-cover select-none pointer-events-none">
-    <div class="text-left">
+    <div class="absolute inset-y-0 right-0 w-3/5 bg-cover bg-center transition-transform duration-500 group-hover:scale-[1.04]" style="background-image:url('assets/medicare-bridge.jpg')"></div>
+    <div class="absolute inset-0" style="background:linear-gradient(to right,#ffffff 0%,#ffffff 42%,rgba(255,255,255,.72) 62%,rgba(255,255,255,0) 100%)"></div>
+    <div class="relative text-left pl-5 pr-4 py-4 w-[64%]">
       <div class="inline-flex self-start items-center gap-1.5 mb-2 text-[11px] font-extrabold uppercase tracking-[0.1em] text-white bg-[#74992F] rounded-full px-3 py-1">★ Now available</div>
       <div class="font-display text-xl font-semibold text-[#16201d] leading-[1.15] mb-1.5">Medicare <span class="text-[#0a6cf5]">$50/mo</span> GLP-1 Bridge.</div>
-      <div class="text-sm text-[#4b5563] leading-snug">Eligible Medicare members get brand-name Wegovy or Zepbound for about $50 a month. <span class="text-[#0a6cf5] font-semibold whitespace-nowrap">Check eligibility &rarr;</span></div>
+      <div class="text-sm text-[#4b5563] leading-snug">Eligible Medicare members get brand-name coverage for about $50 a month. <span class="text-[#0a6cf5] font-semibold whitespace-nowrap">Check eligibility &rarr;</span></div>
     </div>
   </a>
   <!-- HERO PROMO 3: Vitality Bloom (hair loss, async), pops out from the left above the Medicare card -->
-  <a href="bloom.html" id="bloomPromo" class="hidden lg:flex absolute left-0 bottom-[58%] z-20 items-center gap-4 bg-white/95 backdrop-blur rounded-r-3xl shadow-2xl shadow-black/30 border border-[#e6e9ee] pl-4 pr-6 py-4 max-w-sm hover:bg-white transition-colors">
-    <img src="assets/bloom-man.png" alt="Man examining his thinning hairline" class="shrink-0 h-32 w-auto self-end -mb-1 select-none pointer-events-none">
-    <div class="text-left">
+  <a href="bloom.html" id="bloomPromo" class="hidden lg:block absolute left-0 bottom-[58%] z-20 overflow-hidden bg-white/95 backdrop-blur rounded-r-3xl shadow-2xl shadow-black/30 border border-[#e6e9ee] w-[26rem] group">
+    <div class="absolute inset-y-0 right-0 w-3/5 bg-cover bg-top transition-transform duration-500 group-hover:scale-[1.04]" style="background-image:url('assets/bloom-man.png')"></div>
+    <div class="absolute inset-0" style="background:linear-gradient(to right,#ffffff 0%,#ffffff 42%,rgba(255,255,255,.72) 62%,rgba(255,255,255,0) 100%)"></div>
+    <div class="relative text-left pl-5 pr-4 py-4 w-[64%]">
       <div class="inline-flex self-start items-center gap-1.5 mb-2 text-[11px] font-extrabold uppercase tracking-[0.1em] text-white bg-[#0a6cf5] rounded-full px-3 py-1">★ New</div>
       <div class="font-display text-xl font-semibold text-[#16201d] leading-[1.15] mb-1.5">Vitality <span class="text-[#0a6cf5]">Bloom</span><br>hair loss.</div>
-      <div class="text-sm text-[#4b5563] leading-snug">Physician-reviewed hair regrowth, fully online. From $59/mo. <span class="text-[#0a6cf5] font-semibold whitespace-nowrap">Start now &rarr;</span></div>
+      <div class="text-sm text-[#4b5563] leading-snug">Physician-reviewed hair regrowth, fully online. <span class="text-[#0a6cf5] font-semibold whitespace-nowrap">Start now &rarr;</span></div>
     </div>
   </a>
   <div class="max-w-5xl mx-auto px-6 md:px-8 pt-24 pb-56 text-center relative z-10">
@@ -1096,8 +1103,11 @@ function playVwl(){
 
 <!-- VEE CHAT WIDGET -->
 <div class="fixed bottom-5 right-5 z-[60]">
-  <!-- Vee teaser bubble removed 2026-08-17 at the clinic's request. The chat
-       launcher below still opens Vee; this only stops the unprompted popup. -->
+  <div id="veeTeaser" class="hidden absolute bottom-[4.5rem] right-0 w-[250px] bg-white rounded-2xl border border-[#e6e9ee] shadow-xl p-3.5 pr-7 cursor-pointer overflow-hidden">
+    <button id="veeTeaserX" aria-label="Close" class="absolute top-1.5 right-2.5 text-[#9aa0ab] hover:text-[#16201d] text-lg leading-none z-10">&times;</button>
+    <div id="veeTeaserBody" style="min-height:54px;transition:opacity .25s ease,transform .25s ease"></div>
+    <div id="veeTeaserDots" class="flex gap-1.5 mt-2.5"><span class="vt-dot"></span><span class="vt-dot"></span><span class="vt-dot"></span></div>
+  </div>
   <button id="veeBubble" onclick="veeToggleChat()" aria-label="Chat with Vee" class="w-14 h-14 rounded-full bg-[#0a6cf5] text-white shadow-xl shadow-[#0a6cf5]/30 flex items-center justify-center hover:bg-[#0856c8] transition active:scale-95">
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
   </button>
@@ -1161,7 +1171,33 @@ function playVwl(){
     catch(e){typing.remove();bubble("Sorry, I had trouble connecting. Please call (702) 602-5002.",'bot');}
     busy=false;inp.focus();
   };
-  /* Vee teaser rotation removed with the bubble. */
+  (function(){
+    var t=document.getElementById('veeTeaser'),x=document.getElementById('veeTeaserX'),body=document.getElementById('veeTeaserBody');
+    if(!t||!body)return;
+    var dots=[].slice.call(document.querySelectorAll('#veeTeaserDots .vt-dot'));
+    var SLIDES=[
+      {t:'🩺 Medicare $50/mo GLP-1 Bridge',s:'Eligible Medicare members can get brand-name coverage for about $50 a month. Ask me if you qualify.',cta:'Check eligibility',act:'chat'},
+      {t:'✨ Start Vitality 90, free',s:'Ninety days of structure, coaching and accountability. No card, no catch. Ask me how it works.',cta:'Tell me more',act:'chat'},
+      {t:'💬 Questions? Ask the front desk',s:'Programs, hours, or getting booked. We reply right here.',cta:'Chat now',act:'chat'}
+    ];
+    var cur=0,timer=null;
+    function fill(i){cur=i;var s=SLIDES[i];body.innerHTML='<div class="text-sm font-semibold text-[#16201d] pr-2">'+s.t+'</div><div class="text-xs text-[#6b7280] mt-1 leading-snug">'+s.s+' <span class="text-[#0a6cf5] font-semibold whitespace-nowrap">'+s.cta+' →</span></div>';dots.forEach(function(d,k){d.classList.toggle('on',k===i);});}
+    function paint(i){body.style.opacity='0';body.style.transform='translateY(5px)';setTimeout(function(){fill(i);body.style.opacity='1';body.style.transform='none';},200);}
+    function next(){if(t.classList.contains('hidden'))return;paint((cur+1)%SLIDES.length);}
+    function startAuto(){stopAuto();timer=setInterval(next,4800);}
+    function stopAuto(){if(timer){clearInterval(timer);timer=null;}}
+    t.addEventListener('click',function(){var a=SLIDES[cur].act;if(a==='chat'){window.veeToggleChat();}else{location.href=a;}});
+    t.addEventListener('mouseenter',stopAuto);
+    t.addEventListener('mouseleave',startAuto);
+    if(x)x.addEventListener('click',function(e){e.stopPropagation();hideTeaser();stopAuto();try{sessionStorage.setItem('vee_teaser_x','1');}catch(_){}});
+    dots.forEach(function(d,k){d.style.cursor='pointer';d.addEventListener('click',function(e){e.stopPropagation();paint(k);startAuto();});});
+    setTimeout(function(){
+      if(opened)return;
+      try{if(sessionStorage.getItem('vee_teaser_x'))return;}catch(e){}
+      fill(0);body.style.opacity='1';body.style.transform='none';
+      t.classList.remove('hidden');startAuto();
+    },5000);
+  })();
 })();
 </script>
 
@@ -1254,45 +1290,10 @@ function playVwl(){
 })();
 </script>
 
-<!-- LANDING POP-UP: pushes visitors to the GLP-1 health quiz (Athena prescribe path). Set POPUP_ENABLED=false to disable. -->
-<div id="quizPopup" class="fixed inset-0 z-[90] hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="quizPopupTitle">
-  <div class="absolute inset-0 bg-[#0b1220]/60 backdrop-blur-sm" data-popup-close></div>
-  <div class="relative w-full max-w-md rounded-3xl bg-white shadow-2xl border border-[#e6e9ee] overflow-hidden translate-y-2 opacity-0 transition-all duration-300" id="quizPopupCard">
-    <button data-popup-close aria-label="Close" class="absolute top-3 right-3 z-10 flex h-9 w-9 items-center justify-center rounded-full text-[#6b7280] hover:bg-[#f1f3f6] hover:text-[#16201d] transition-colors">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
-    </button>
-    <div class="px-8 pt-8 pb-7 text-center">
-      <img src="assets/logo-icon.png" alt="" class="h-10 w-auto mx-auto mb-4">
-      <div class="text-xs font-semibold tracking-[0.16em] text-[#0a6cf5] uppercase mb-2">Free live webinar</div>
-      <h3 id="quizPopupTitle" class="font-display text-2xl md:text-3xl font-semibold tracking-[-0.5px] mb-2">GLP-1 for $50/mo through Medicare</h3>
-      <p class="text-[#4b5563] leading-relaxed mb-6">Join Dr. DeBry live Thursday, June 25 at 7PM PT. See how Medicare's new GLP-1 Bridge covers Wegovy and Zepbound for about $50 a month, and how to qualify.</p>
-      <a href="webinar.html" class="block w-full px-7 py-3.5 rounded-2xl bg-[#0a6cf5] text-white font-semibold hover:bg-[#0856c8] transition-all active:scale-[0.985]">Save my spot &rarr;</a>
-      <button data-popup-close class="mt-3 text-sm font-medium text-[#9aa0ab] hover:text-[#6b7280] transition-colors">Maybe later</button>
-    </div>
-  </div>
-</div>
-<script>
-(function(){
-  var POPUP_ENABLED = false;         // webinar finished 2026-06-25 — landing pop-up off
-  var SUPPRESS_HOURS = 24;           // don't reshow within this window per visitor
-  var DELAY_MS = 1500;               // wait after land before showing
-  if(!POPUP_ENABLED) return;
-  var WEBINAR_END=new Date('2026-06-26T07:00:00Z'); if(new Date()>WEBINAR_END) return; // webinar popup auto-off after Jun 25 night PT
-  var el=document.getElementById('quizPopup'), card=document.getElementById('quizPopupCard');
-  if(!el||!card) return;
-  try{ var t=parseInt(localStorage.getItem('vit_quiz_popup')||'0',10); if(t && (Date.now()-t) < SUPPRESS_HOURS*3600*1000) return; }catch(e){}
-  function open(){ el.classList.remove('hidden'); el.classList.add('flex'); document.body.style.overflow='hidden';
-    requestAnimationFrame(function(){ card.classList.remove('translate-y-2','opacity-0'); }); }
-  function close(){ card.classList.add('translate-y-2','opacity-0'); document.body.style.overflow='';
-    setTimeout(function(){ el.classList.add('hidden'); el.classList.remove('flex'); }, 250);
-    try{ localStorage.setItem('vit_quiz_popup', String(Date.now())); }catch(e){} }
-  el.querySelectorAll('[data-popup-close]').forEach(function(b){ b.addEventListener('click', close); });
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && !el.classList.contains('hidden')) close(); });
-  // record the suppression as soon as they engage the CTA too
-  var cta=el.querySelector('a[href="glp1.html"]'); if(cta) cta.addEventListener('click', function(){ try{ localStorage.setItem('vit_quiz_popup', String(Date.now())); }catch(e){} });
-  setTimeout(open, DELAY_MS);
-})();
-</script>
+<!-- Webinar landing pop-up removed 2026-08-18. It had been disabled since the
+     25 June session but its markup stayed in the served HTML, so crawlers and
+     AI assistants could still read the date as upcoming. There is no next
+     webinar scheduled; when one is, build it fresh rather than reviving this. -->
 <script src="/prelaunch.js" defer></script>
 <script>
 /* Top-nav slot-machine announcement reel: Medicare Bridge ⇄ Vitality Bloom ⇄ Vitality Total Male.
