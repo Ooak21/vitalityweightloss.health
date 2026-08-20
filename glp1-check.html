@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Is GLP-1 Right for You? | Vitality Weight Loss Las Vegas</title>
+<style>
+  /* ---------- Vitality brand palette ---------- */
+  :root{
+    --navy:#0d2a4b;
+    --navy2:#103a5e;
+    --blue:#1c8fe0;
+    --blue-dark:#1577bd;
+    --green:#6cbf43;
+    --green-dark:#57a833;
+    --ink:#1f2d3d;
+    --muted:#64748b;
+    --line:#e2ebf3;
+    --bg:#eef4f9;
+    --card:#ffffff;
+    --shadow:0 18px 50px rgba(13,42,75,.14);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+    background:
+      radial-gradient(680px 460px at 6% -8%, rgba(28,143,224,.22), transparent 62%),
+      radial-gradient(620px 460px at 100% 0%, rgba(108,191,67,.20), transparent 60%),
+      radial-gradient(940px 540px at 50% 118%, rgba(28,143,224,.13), transparent 62%),
+      linear-gradient(180deg,#f6fbff 0%,#ecf4fb 55%,#e8f0f8 100%);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+  }
+  .wrap{max-width:560px;margin:0 auto;padding:20px 16px 60px}
+
+  /* ---------- Header ---------- */
+  .brand{display:flex;align-items:center;justify-content:center;padding:18px 0 24px;text-decoration:none}
+  .brand img{height:140px;width:auto;max-width:92%}
+
+  /* ---------- Card ---------- */
+  .card{
+    background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+  .card-top{
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 60%,var(--blue-dark) 130%);
+    color:#fff;padding:26px 24px 22px;position:relative;
+  }
+  .pill{display:inline-block;background:rgba(108,191,67,.18);color:#bfe9a3;border:1px solid rgba(108,191,67,.4);
+    font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:6px 12px;border-radius:999px;margin-bottom:14px}
+  .card-top h1{font-size:25px;line-height:1.22;font-weight:800;letter-spacing:-.01em}
+  .card-top h1 .hl{color:#5fc3ff}
+  .card-top p.sub{margin-top:10px;color:#cfe0f0;font-size:14.5px}
+  .trust{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px}
+  .trust span{font-size:11.5px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);
+    padding:5px 10px;border-radius:8px;color:#eaf3fb}
+
+  .card-body{padding:24px}
+
+  /* ---------- Progress ---------- */
+  .progress-row{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+  .bar{flex:1;height:8px;background:var(--line);border-radius:999px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:999px;transition:width .4s ease}
+  .step-count{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}
+
+  /* ---------- Steps ---------- */
+  .step{display:none;animation:fade .35s ease}
+  .step.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .q-eyebrow{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--blue);margin-bottom:6px}
+  .q-title{font-size:21px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
+  .q-help{font-size:14px;color:var(--muted);margin-bottom:18px}
+
+  /* ---------- Option buttons ---------- */
+  .opts{display:flex;flex-direction:column;gap:10px}
+  .opt{
+    display:flex;align-items:center;gap:12px;width:100%;text-align:left;cursor:pointer;
+    background:#fff;border:2px solid var(--line);border-radius:14px;padding:15px 16px;font-size:15.5px;
+    color:var(--ink);font-weight:600;transition:all .15s ease;
+  }
+  .opt:hover{border-color:var(--blue);background:#f5fbff}
+  .opt.selected{border-color:var(--green);background:#f3fbef;box-shadow:0 0 0 3px rgba(108,191,67,.14)}
+  .opt .dot{width:22px;height:22px;border-radius:50%;border:2px solid #cfd9e4;flex:none;display:grid;place-items:center;transition:all .15s}
+  .opt.selected .dot{border-color:var(--green);background:var(--green)}
+  .opt.selected .dot::after{content:"";width:8px;height:8px;border-radius:50%;background:#fff}
+  .opt small{display:block;font-weight:500;color:var(--muted);font-size:12.5px;margin-top:2px}
+
+  /* ---------- Inputs ---------- */
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:13px;font-weight:700;color:var(--ink);margin-bottom:6px}
+  .field input, .field select{
+    width:100%;padding:13px 14px;border:2px solid var(--line);border-radius:12px;font-size:15.5px;color:var(--ink);
+    background:#fff;transition:border .15s;
+  }
+  .field input:focus, .field select:focus{outline:none;border-color:var(--blue)}
+  .row2{display:flex;gap:10px}
+  .row2 .field{flex:1}
+  .inline-units{display:flex;gap:8px;align-items:center}
+  .inline-units input{text-align:center}
+
+  /* ---------- Nav buttons ---------- */
+  .nav{display:flex;gap:10px;margin-top:22px}
+  .btn{
+    flex:1;border:none;cursor:pointer;font-size:16px;font-weight:800;padding:15px 18px;border-radius:13px;transition:transform .1s ease,box-shadow .2s;
+  }
+  .btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;box-shadow:0 10px 24px rgba(28,143,224,.35)}
+  .btn-primary:hover{transform:translateY(-1px)}
+  .btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+  .btn-ghost{flex:0 0 auto;background:#eef3f8;color:var(--navy);padding:15px 18px}
+  .btn-cta{background:linear-gradient(135deg,var(--green),var(--green-dark));color:#fff;box-shadow:0 10px 24px rgba(108,191,67,.34);text-decoration:none;text-align:center}
+  /* result CTA row: two half-width buttons side by side */
+  .cta-row{display:flex;gap:10px}
+  .cta-row .btn{flex:1 1 0;min-width:0;font-size:14.5px;padding:14px 12px;line-height:1.2;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .cta-row .btn small{display:block;font-weight:500;font-size:11px;opacity:.9;margin-top:3px}
+  .btn-async{background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;box-shadow:0 10px 24px rgba(28,143,224,.30);text-decoration:none;text-align:center}
+
+  /* ---------- Consent ---------- */
+  .consent{display:flex;gap:9px;align-items:flex-start;margin-top:14px;font-size:12px;color:var(--muted);line-height:1.45}
+  .consent input{margin-top:2px;flex:none;width:16px;height:16px;accent-color:var(--green)}
+
+  /* ---------- Result ---------- */
+  .result-badge{display:flex;align-items:center;gap:14px;padding:18px;border-radius:14px;margin-bottom:18px}
+  .result-badge .ring{width:54px;height:54px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:26px;font-weight:900;color:#fff}
+  .res-strong{background:#f1faec;border:1.5px solid #cdeab4}
+  .res-strong .ring{background:linear-gradient(135deg,var(--green),var(--green-dark))}
+  .res-maybe{background:#eef7fe;border:1.5px solid #c3e2f7}
+  .res-maybe .ring{background:linear-gradient(135deg,var(--blue),var(--blue-dark))}
+  .res-alt{background:#fff6ed;border:1.5px solid #f6d9b3}
+  .res-alt .ring{background:linear-gradient(135deg,#f0a242,#e0852a)}
+  .result-badge h2{font-size:19px;font-weight:800}
+  .result-badge p{font-size:13px;color:var(--muted)}
+  .result-body p{font-size:14.5px;margin-bottom:12px;color:#34465a}
+  .stat-line{display:flex;justify-content:space-between;background:#f6f9fc;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:14px 0;font-size:14px}
+  .stat-line b{color:var(--navy)}
+  .reco{background:var(--navy);color:#fff;border-radius:14px;padding:18px;margin:16px 0}
+  .reco h3{font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:#7fd0ff;margin-bottom:8px}
+  .reco .track{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.12);font-size:14.5px}
+  .reco .track:last-child{border-bottom:none}
+  .reco .track b{color:#bfe9a3}
+  .hook{display:flex;gap:10px;align-items:flex-start;margin-top:14px;padding:13px 15px;
+    background:#ffffff;border-radius:11px;border-left:5px solid var(--green);
+    color:var(--navy);font-size:14.5px;font-weight:700;line-height:1.4;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+  .hook .lock{flex:none;font-size:17px;line-height:1.3}
+  .hook b{color:var(--green-dark)}
+  .hook .sub{display:block;font-weight:600;color:#4a5b6e;font-size:12.5px;margin-top:3px}
+
+  .disclaimer{font-size:11px;color:#94a3b4;line-height:1.55;margin-top:22px;padding-top:16px;border-top:1px solid var(--line)}
+  footer.f{text-align:center;font-size:12.5px;color:#33485f;font-weight:500;margin-top:22px;line-height:1.7}
+  footer.f a{color:var(--blue);text-decoration:none;font-weight:700}
+  .err{color:#d23b3b;font-size:12.5px;margin-top:8px;display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- Hidden form so Netlify detects and captures submissions at build time. Do not remove. -->
+  <form hidden method='post' name='glp1-leads'><input type='hidden' name='form-name' value='glp1-leads' />
+    <input type="text" name="name" />
+    <input type="text" name="firstname" />
+    <input type="text" name="lastname" />
+    <input type="email" name="email" />
+    <input type="tel" name="phone" />
+    <input type="text" name="eligibility_qualified" />
+    <input type="text" name="meds_track" />
+    <input type="text" name="estimated_bmi" />
+    <input type="text" name="goal" />
+    <input type="text" name="weight_related_conditions" />
+    <input type="text" name="safety_flag" />
+    <input type="text" name="source" />
+    <input type="text" name="bot-field" />
+  </form>
+
+  <a class="brand" href="https://vitalityweightloss.health" target="_blank" rel="noopener">
+    <img src="https://vitalityweightloss.health/wp-content/uploads/2025/06/no-background-logo.png" alt="Vitality Weight Loss" />
+  </a>
+
+  <div class="card">
+    <div class="card-top">
+      <span class="pill">60-Second Eligibility Check</span>
+      <h1>Is a <span class="hl">GLP-1</span> the right tool for <span class="hl">your</span> weight loss?</h1>
+      <p class="sub">Answer a few quick questions to see whether semaglutide or tirzepatide may be a fit — then a board-certified physician confirms.</p>
+      <div class="trust">
+        <span>✓ Physician-Led</span>
+        <span>✓ No Titration Sticker Shock</span>
+        <span>✓ InBody 570 Included</span>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="progress-row">
+        <div class="bar"><i id="bar"></i></div>
+        <div class="step-count" id="stepCount">Step 1 of 7</div>
+      </div>
+
+      <!-- STEP 1: sex/age + reason -->
+      <div class="step active" data-step="1">
+        <div class="q-eyebrow">About you</div>
+        <div class="q-title">Let's start with the basics.</div>
+        <div class="q-help">This helps us estimate your numbers. Your physician measures precisely at your visit.</div>
+        <div class="row2">
+          <div class="field">
+            <label>Age</label>
+            <input type="number" id="age" inputmode="numeric" placeholder="e.g. 42" min="18" max="99"/>
+          </div>
+          <div class="field">
+            <label>Sex at birth</label>
+            <select id="sex"><option value="">Select…</option><option>Female</option><option>Male</option></select>
+          </div>
+        </div>
+        <div class="err" id="err1">Please add your age and sex to continue.</div>
+      </div>
+
+      <!-- STEP 2: height + weight -> BMI -->
+      <div class="step" data-step="2">
+        <div class="q-eyebrow">Your numbers</div>
+        <div class="q-title">Height &amp; current weight</div>
+        <div class="q-help">Best estimates are perfect. We use these to estimate BMI — never a final diagnosis.</div>
+        <div class="field">
+          <label>Height</label>
+          <div class="inline-units">
+            <input type="number" id="ft" inputmode="numeric" placeholder="ft" min="3" max="7"/>
+            <input type="number" id="inch" inputmode="numeric" placeholder="in" min="0" max="11"/>
+          </div>
+        </div>
+        <div class="field">
+          <label>Current weight (lbs)</label>
+          <input type="number" id="wt" inputmode="numeric" placeholder="e.g. 210"/>
+        </div>
+        <div class="err" id="err2">Please add your height and weight to continue.</div>
+      </div>
+
+      <!-- STEP 3: weight-related conditions -->
+      <div class="step" data-step="3">
+        <div class="q-eyebrow">Your health</div>
+        <div class="q-title">Do any of these apply to you?</div>
+        <div class="q-help">GLP-1 eligibility often depends on weight-related conditions. Pick the closest.</div>
+        <div class="opts" data-single="cond">
+          <button class="opt" data-val="yes"><span class="dot"></span><span>Yes — I have one or more<small>High blood pressure, type 2 diabetes/prediabetes, high cholesterol, sleep apnea, PCOS, or joint pain</small></span></button>
+          <button class="opt" data-val="no"><span class="dot"></span><span>No known conditions<small>None of the above that I'm aware of</small></span></button>
+          <button class="opt" data-val="unsure"><span class="dot"></span><span>Not sure<small>I'd need to check with a doctor</small></span></button>
+        </div>
+      </div>
+
+      <!-- STEP 4: safety screen / contraindications -->
+      <div class="step" data-step="4">
+        <div class="q-eyebrow">Safety screen</div>
+        <div class="q-title">Do any of these apply?</div>
+        <div class="q-help">A few conditions mean GLP-1 may not be right — and your physician will recommend a safer path.</div>
+        <div class="opts" data-single="contra">
+          <button class="opt" data-val="none"><span class="dot"></span><span>None of these apply to me</span></button>
+          <button class="opt" data-val="flag"><span class="dot"></span><span>One or more applies<small>Pregnant, breastfeeding or trying to conceive · personal/family history of medullary thyroid cancer or MEN2 · history of pancreatitis</small></span></button>
+        </div>
+      </div>
+
+      <!-- STEP 5: goal / motivation -->
+      <div class="step" data-step="5">
+        <div class="q-eyebrow">Your goal</div>
+        <div class="q-title">How much do you want to lose?</div>
+        <div class="q-help">There's no wrong answer — this just helps us frame realistic paths.</div>
+        <div class="opts" data-single="goal">
+          <button class="opt" data-val="modest"><span class="dot"></span><span>15–30 lbs<small>A meaningful reset</small></span></button>
+          <button class="opt" data-val="significant"><span class="dot"></span><span>30–60 lbs<small>A major transformation</small></span></button>
+          <button class="opt" data-val="major"><span class="dot"></span><span>60+ lbs<small>A life-changing journey</small></span></button>
+        </div>
+      </div>
+
+      <!-- STEP 6: prior attempts / support -->
+      <div class="step" data-step="6">
+        <div class="q-eyebrow">Your history</div>
+        <div class="q-title">What's held you back before?</div>
+        <div class="q-help">The Vitality difference is meeting you exactly where you are.</div>
+        <div class="opts" data-single="hist">
+          <button class="opt" data-val="consistency"><span class="dot"></span><span>Staying consistent</span></button>
+          <button class="opt" data-val="what"><span class="dot"></span><span>Knowing what to actually do</span></button>
+          <button class="opt" data-val="emotional"><span class="dot"></span><span>Emotional &amp; stress eating</span></button>
+          <button class="opt" data-val="plateau"><span class="dot"></span><span>Plateaus &amp; frustration</span></button>
+          <button class="opt" data-val="first"><span class="dot"></span><span>This is my first real attempt</span></button>
+        </div>
+      </div>
+
+      <!-- STEP 7: lead capture gate -->
+      <div class="step" data-step="7">
+        <div class="q-eyebrow">Almost done</div>
+        <div class="q-title">Where should we send your results?</div>
+        <div class="q-help">See your personalized eligibility snapshot — and we'll hold a free consultation spot for you.</div>
+        <div class="field">
+          <label>Your name</label>
+          <input type="text" id="fname" placeholder="First & last name"/>
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="email" placeholder="you@email.com"/>
+        </div>
+        <div class="field">
+          <label>Mobile phone</label>
+          <input type="tel" id="phone" placeholder="(702) 000-0000"/>
+        </div>
+        <label class="consent">
+          <input type="checkbox" id="consent"/>
+          <span>I agree to be contacted by Vitality Weight Loss by phone, text, and email about my results and a free consultation. Message/data rates may apply. Consent is not a condition of purchase.</span>
+        </label>
+        <div class="err" id="err7">Please add your name, a valid email, and check the box to continue.</div>
+      </div>
+
+      <!-- RESULT -->
+      <div class="step" data-step="8">
+        <div id="resultMount"></div>
+        <div class="cta-row">
+          <a class="btn btn-cta" id="consultBtn" href="/intake">Book In-Person Visit<small>Free consult + InBody scan</small></a>
+          <a class="btn btn-async" id="asyncBtn" href="/care-intake" target="_blank" rel="noopener">See If I Qualify<small>Start online — no office visit</small></a>
+        </div>
+        <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--muted)">or call <b style="color:var(--navy)">(702) 602-5002</b></div>
+        <div class="disclaimer">
+          This tool is for educational purposes only and does not provide medical advice, diagnosis, or treatment. Eligibility for GLP-1 medication is determined solely by a licensed physician after a full evaluation, and is never assumed. Estimates are based on general clinical criteria and published trial averages; individual results vary. If you are pregnant, breastfeeding, or have a personal or family history of medullary thyroid carcinoma or MEN2, do not start a GLP-1 without physician guidance.
+        </div>
+      </div>
+
+      <!-- NAV -->
+      <div class="nav" id="nav">
+        <button class="btn btn-ghost" id="backBtn" style="display:none">← Back</button>
+        <button class="btn btn-primary" id="nextBtn">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="f">
+    <b>Vitality Weight Loss</b> · 6140 Brent Thurman Way, Suite 100, Las Vegas, NV 89148<br/>
+    (702) 602-5002 · <a href="https://vitalityweightloss.health" target="_blank" rel="noopener">vitalityweightloss.health</a>
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG — leads flow into HubSpot automatically.
+   Fill in hubspot.portalId and hubspot.formGuid (one-time, 2 min):
+     1. In HubSpot: Marketing > Forms > Create form (Embedded).
+     2. Add fields: Email, First name, Phone number,
+        "Eligibility Qualified", "Meds Track".
+     3. Publish, click "Share/Embed", copy the snippet —
+        it contains portalId and formId. Paste them below.
+   The page then creates/updates a HubSpot contact on every submit,
+   tagged with the quiz result. Booking link still works regardless.
+   ============================================================ */
+const CONFIG = {
+  consultUrl: "/intake",
+  asyncUrl: "/care-intake",
+  phone: "(702) 602-5002",
+
+  /* ---- LEAD CAPTURE: Netlify Forms (works automatically once hosted on Netlify) ----
+     Every submission is saved in your Netlify dashboard, and Netlify emails the
+     team on each one. ONE-TIME setup after you deploy:
+       Netlify > your site > Forms > Form notifications >
+       "Add notification" > Email notification, and enter these three addresses:
+         fcorona@vitalityacademies.health  (Fred)
+         dgaitan@vitalityacademies.health  (Delinah)
+         drdebry@vitalityweightloss.health (Dr. Debry)
+     No code, no tokens. The hidden <form name="glp1-leads"> below is what Netlify reads. */
+  netlify: { enabled: false, formName: "" },
+
+  alertRecipients: [
+    "fcorona@vitalityacademies.health",   // Fred
+    "dgaitan@vitalityacademies.health",   // Delinah
+    "drdebry@vitalityweightloss.health"   // Dr. Debry
+  ],
+
+  /* OPTIONAL: also mirror leads into HubSpot. Leave blank unless you create a
+     HubSpot form and paste its IDs here (Marketing > Forms). */
+  hubspot: { portalId: "", formGuid: "" }
+};
+
+const state = { age:null, sex:null, ft:null, inch:null, wt:null, bmi:null,
+  cond:null, contra:null, goal:null, hist:null,
+  fname:null, email:null, phone:null };
+
+let step = 1;
+const TOTAL = 7;
+const steps = [...document.querySelectorAll('.step')];
+const bar = document.getElementById('bar');
+const stepCount = document.getElementById('stepCount');
+const nextBtn = document.getElementById('nextBtn');
+const backBtn = document.getElementById('backBtn');
+
+function show(n){
+  steps.forEach(s=>s.classList.toggle('active', +s.dataset.step===n));
+  const pct = Math.min(n, TOTAL)/TOTAL*100;
+  bar.style.width = pct + '%';
+  if(n<=TOTAL){
+    stepCount.textContent = `Step ${n} of ${TOTAL}`;
+    document.getElementById('nav').style.display='flex';
+  } else {
+    stepCount.textContent = 'Your Results';
+    document.getElementById('nav').style.display='none';
+  }
+  backBtn.style.display = (n>1 && n<=TOTAL) ? 'block':'none';
+  nextBtn.textContent = (n===TOTAL) ? 'See My Results →' : 'Continue →';
+  hideErrs();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function hideErrs(){document.querySelectorAll('.err').forEach(e=>e.style.display='none');}
+
+/* option buttons (single-select) */
+document.querySelectorAll('.opts[data-single]').forEach(group=>{
+  const key = group.dataset.single;
+  group.querySelectorAll('.opt').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      group.querySelectorAll('.opt').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      state[key] = btn.dataset.val;
+      // auto-advance on choice for snappier feel
+      setTimeout(()=>{ if(step<TOTAL){ goNext(); } }, 230);
+    });
+  });
+});
+
+function validate(n){
+  if(n===1){
+    state.age=+document.getElementById('age').value||null;
+    state.sex=document.getElementById('sex').value||null;
+    if(!state.age||!state.sex){return showErr('err1');}
+  }
+  if(n===2){
+    state.ft=+document.getElementById('ft').value||null;
+    state.inch=+document.getElementById('inch').value||0;
+    state.wt=+document.getElementById('wt').value||null;
+    if(!state.ft||!state.wt){return showErr('err2');}
+    const inches = state.ft*12 + state.inch;
+    state.bmi = +( (state.wt/(inches*inches))*703 ).toFixed(1);
+  }
+  if(n===3 && !state.cond) return false;
+  if(n===4 && !state.contra) return false;
+  if(n===5 && !state.goal) return false;
+  if(n===6 && !state.hist) return false;
+  if(n===7){
+    state.fname=document.getElementById('fname').value.trim()||null;
+    state.email=document.getElementById('email').value.trim()||null;
+    state.phone=document.getElementById('phone').value.trim()||null;
+    const ok = state.fname && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(state.email||'') && document.getElementById('consent').checked;
+    if(!ok){return showErr('err7');}
+  }
+  return true;
+}
+function showErr(id){document.getElementById(id).style.display='block';return false;}
+
+function goNext(){
+  if(!validate(step)) return;
+  if(step===TOTAL){ submitLead(); renderResult(); step=8; show(8); return; }
+  step++; show(step);
+}
+nextBtn.addEventListener('click',goNext);
+backBtn.addEventListener('click',()=>{ if(step>1){step--; show(step);} });
+
+/* ---------- eligibility logic ---------- */
+function computeResult(){
+  const bmi = state.bmi||0;
+  const hasCond = state.cond==='yes';
+  const contra = state.contra==='flag';
+  // standard weight-management GLP-1 framing
+  let tier; // strong | maybe | alt
+  if(contra){
+    tier='alt';
+  } else if(bmi>=30 || (bmi>=27 && hasCond)){
+    tier='strong';
+  } else if(bmi>=27 || (bmi>=25 && hasCond) || state.cond==='unsure'){
+    tier='maybe';
+  } else {
+    tier='alt';
+  }
+  // medication lean (physician decides — informational only)
+  let med = (state.goal==='major' || state.goal==='significant') ? 'Tirz' : 'Sema';
+  return {tier, med, bmi};
+}
+
+function renderResult(){
+  const {tier, med, bmi} = computeResult();
+  const _parts = (state.fname||'').trim().split(/\s+/).filter(Boolean);
+  const _fn = _parts[0] || '';
+  const _ln = _parts.slice(1).join(' ');
+  const name = _fn ? `, ${_fn}` : '';
+  const mount = document.getElementById('resultMount');
+  let badge, title, sub, body;
+
+  if(tier==='strong'){
+    badge='res-strong'; var icon='✓';
+    title=`You look like a strong candidate${name}.`;
+    sub='Based on your answers, GLP-1 therapy is commonly appropriate at your profile.';
+    body=`<p>Your responses line up well with the clinical criteria physicians use for GLP-1 weight-loss therapy. The next step is a <b>free consultation and InBody 570 scan</b>, where Dr. DeBry confirms eligibility on real data and tailors your plan.</p>`;
+  } else if(tier==='maybe'){
+    badge='res-maybe'; var icon='~';
+    title=`You may be a candidate${name}.`;
+    sub='A quick physician review will confirm the right path for you.';
+    body=`<p>You're in the range where a physician's evaluation makes the call. At your <b>free consultation and InBody 570 scan</b>, we measure your true body composition and review your history — so your plan is built on facts, not averages.</p>`;
+  } else {
+    badge='res-alt'; var icon='♥';
+    title=`Let's find your best path${name}.`;
+    sub='GLP-1 may not be the right fit — but you have great options.';
+    body=`<p>Based on your answers, GLP-1 medication may not be the right starting point for you. That's exactly why Vitality is built around <b>five forms of structure</b> — physician care, coaching, nutrition, fitness, and behavioral therapy — not just an injection. A free consultation will map the safest, most effective path for your goals.</p>`;
+  }
+
+  const bmiLine = bmi ? `<div class="stat-line"><span>Estimated BMI</span><b>${bmi}</b></div>` : '';
+  let reco = '';
+  if(tier!=='alt'){
+    const medName = med==='Tirz' ? 'Tirzepatide (Tirz Track)' : 'Semaglutide (Sema Track)';
+    const avg = med==='Tirz' ? '~22%' : '~15%';
+    reco = `<div class="reco">
+      <h3>What your physician may discuss</h3>
+      <div class="track"><span>Likely track</span><b>${medName}</b></div>
+      <div class="track"><span>Avg. trial weight loss</span><b>${avg}</b></div>
+      <div class="track"><span>Your price is locked</span><b>No titration sticker shock</b></div>
+      <p class="hook"><span class="lock">🔒</span><span><b>Your monthly price stays the same — even as your dose goes up.</b><span class="sub">One number. No surprises. No titration sticker shock. Ever.</span></span></p>
+    </div>`;
+  }
+
+  mount.innerHTML = `
+    <div class="result-badge ${badge}">
+      <div class="ring">${icon}</div>
+      <div><h2>${title}</h2><p>${sub}</p></div>
+    </div>
+    <div class="result-body">${body}${bmiLine}${reco}</div>`;
+
+  // prefill the consult link with name/email when possible
+  const btn = document.getElementById('consultBtn');
+  const u = new URL(CONFIG.consultUrl);
+  if(_fn) u.searchParams.set('firstName', _fn);
+  if(_ln) u.searchParams.set('lastName', _ln);
+  if(state.email) u.searchParams.set('email', state.email);
+  btn.href = u.toString();
+
+  const ab = document.getElementById('asyncBtn');
+  const a = new URL(CONFIG.asyncUrl);
+  if(_fn) a.searchParams.set('firstName', _fn);
+  if(_ln) a.searchParams.set('lastName', _ln);
+  if(state.email) a.searchParams.set('email', state.email);
+  if(state.phone) a.searchParams.set('phone', state.phone);
+  ab.href = a.toString();
+}
+
+/* ---------- lead capture -> HubSpot ---------- */
+function submitLead(){
+  const r = computeResult();
+  // map quiz result to your existing HubSpot contact properties
+  const qualified = (r.tier === 'alt') ? 'false' : 'true';
+  const medsTrack = (r.tier === 'alt') ? 'None'
+                  : (r.med === 'Tirz' ? 'Tirz Track' : 'Sema Track');
+
+  const parts = (state.fname||'').trim().split(/\s+/).filter(Boolean);
+  const firstName = parts[0] || '';
+  const lastName  = parts.slice(1).join(' ');
+
+  // raw record (kept for testing / future use)
+  window.__lastLead = {
+    name: state.fname, firstName, lastName, email: state.email, phone: state.phone,
+    age: state.age, sex: state.sex, bmi: state.bmi, weightLbs: state.wt,
+    weightRelatedConditions: state.cond, safetyFlag: state.contra,
+    goal: state.goal, pastObstacle: state.hist,
+    eligibility_qualified: qualified, meds_track: medsTrack,
+    source: 'GLP-1 Eligibility Checker', submittedAt: new Date().toISOString()
+  };
+
+  // Lead goes to our own CRM. Nothing about a patient leaves our infrastructure.
+  try{
+    fetch('https://quixotic-cat-492.convex.site/lead',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        first_name:firstName, last_name:lastName,
+        email: state.email||'', phone: state.phone||'',
+        source:'glp1_check',
+        source_detail:'GLP-1 Eligibility Checker · '+(qualified==='true'?'qualified':'not qualified')+' · '+medsTrack,
+        health_notes:[
+          state.bmi?('BMI '+state.bmi):'', state.wt?(state.wt+' lbs'):'',
+          state.goal?('Goal: '+state.goal):'', state.cond?('Conditions: '+state.cond):'',
+          state.contra?('Safety flag: '+state.contra):''
+        ].filter(Boolean).join(' · '),
+        tags:['GLP-1 Checker', qualified==='true'?'Qualified':'Not qualified', medsTrack],
+        consent:true
+      })
+    }).catch(function(){});
+  }catch(e){/* result still shows + booking still works */}
+}
+
+show(1);
+</script>
+<div class="ls-seal" style="text-align:center;padding:22px 16px">
+<a href="https://www.legitscript.com/websites/?checker_keywords=vitalityweightloss.health" target="_blank" rel="noopener" title="Verify LegitScript Approval for www.vitalityweightloss.health">
+<img src="https://static.legitscript.com/seals/51690613.png" alt="Verify Approval for www.vitalityweightloss.health" width="73" height="79" />
+</a>
+</div>
+</body>
+</html>
