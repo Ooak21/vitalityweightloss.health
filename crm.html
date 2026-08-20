@@ -5175,16 +5175,21 @@ HARD RULES:
         <td class="py-1.5 pr-2 font-mono text-xs">${esc(f.code)}</td>
         <td class="py-1.5 pr-2 text-xs">${esc(f.description)}</td>
         <td class="py-1.5 pr-2 text-[11px] text-[#9aa0ab] whitespace-nowrap">${f.medicare_allowable_cents!=null?money(f.medicare_allowable_cents):''}</td>
+        <td class="py-1.5 pr-2 text-[11px] whitespace-nowrap ${f.medicaid_allowable_cents!=null?'text-[#0a7a3d] font-semibold':'text-[#d1d5db]'}">${f.medicaid_allowable_cents!=null?money(f.medicaid_allowable_cents)+(f.medicaid_provider_type?' <span class="font-normal text-[#9aa0ab]">'+esc(f.medicaid_provider_type)+'</span>':''):'not on schedule'}</td>
         <td class="py-1.5 pr-2 text-xs font-semibold whitespace-nowrap">${money(f.charge_cents)}</td>
         <td class="py-1.5 pr-2 text-[11px] text-[#6b7280]">${esc(FEE_CATEGORIES[f.category]||f.category)}</td>
         <td class="py-1.5 text-[11px] whitespace-nowrap">${canEdit?`<button onclick="editFee('${esc(f.code)}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="deleteFee('${f.id}')" class="text-[#be123c] hover:underline">delete</button>`:''}</td>
-      </tr>`).join(''):'<tr><td colspan="6" class="py-3 text-sm text-[#9aa0ab]">No fee schedule yet.</td></tr>';
-    const seed=(canEdit&&!fees.length)?`<button onclick="seedFees()" class="px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Load Dr. DeBry's schedule</button>`:'';
-    const gap=fees.length&&!fees.some(f=>/^9(079|083|084)/.test(f.code))
-      ? `<div class="mt-3 text-[11px] text-[#b45309] bg-[#fffbeb] border border-[#fde68a] rounded-lg p-2">This schedule covers the physician (Type 20) side only. There are no behavioral health codes in it, so Type 14 services cannot be priced yet. Add them here when the rates are set.</div>` : '';
-    const body=`<div class="text-[11px] text-[#6b7280] mb-2">Practice-wide charges. A code entered on a coded visit prices itself from this list.</div>
+      </tr>`).join(''):'<tr><td colspan="7" class="py-3 text-sm text-[#9aa0ab]">No fee schedule yet.</td></tr>';
+    const seed=(canEdit&&!fees.length)?`<button onclick="seedFees()" class="px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Load Dr. DeBry's schedule</button>`
+      :((canEdit&&needBench)?`<button onclick="seedMedicaid()" class="mr-auto px-3 py-2 rounded-xl bg-[#0a7a3d] text-white text-sm font-semibold hover:bg-[#085f2f]">Load Nevada Medicaid benchmark</button>`:'');
+    // Nevada Medicaid is the biller's benchmark: a payer allowing less than this gets reviewed against
+    // the contract. Offer the load whenever codes are still missing it.
+    const needBench=fees.length&&fees.some(f=>f.medicaid_allowable_cents==null&&!/^(G0473|97802)$/.test(f.code));
+    const gap=needBench
+      ? `<div class="mt-3 text-[11px] text-[#b45309] bg-[#fffbeb] border border-[#fde68a] rounded-lg p-2">Some codes have no Nevada Medicaid benchmark yet, so underpayments cannot be detected on them. Loading the benchmark also adds the behavioral health, intensive outpatient and nutrition codes. It never changes a charge.</div>` : '';
+    const body=`<div class="text-[11px] text-[#6b7280] mb-2">Practice-wide charges. A code entered on a coded visit prices itself from this list. <b>Medicaid</b> is the reimbursement benchmark: a payer allowing less than the Nevada Medicaid rate is flagged for review against the payer contract.</div>
       <div style="max-height:52vh;overflow:auto"><table class="w-full text-left"><thead><tr class="text-[10px] uppercase tracking-wide text-[#9aa0ab] border-b border-[#e6e9ee]">
-        <th class="py-1 pr-2">Code</th><th class="py-1 pr-2">Description</th><th class="py-1 pr-2">Medicare</th><th class="py-1 pr-2">Our charge</th><th class="py-1 pr-2">Category</th><th></th></tr></thead>
+        <th class="py-1 pr-2">Code</th><th class="py-1 pr-2">Description</th><th class="py-1 pr-2">Medicare</th><th class="py-1 pr-2">Medicaid</th><th class="py-1 pr-2">Our charge</th><th class="py-1 pr-2">Category</th><th></th></tr></thead>
         <tbody>${rows}</tbody></table></div>${gap}`;
     const footer=`${seed}${canEdit?`<button onclick="editFee('')" class="px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-sm font-semibold hover:bg-[#0a6cf5]/10">+ Add code</button>`:''}<button onclick="document.getElementById('listOverlay').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-sm font-semibold hover:bg-[#f1f3f7]">Close</button>`;
     listModalShell('Fee schedule', body, footer, 'max-w-3xl');
@@ -5195,6 +5200,8 @@ HARD RULES:
     const body=_lf('feeCode','CPT / HCPCS',f?f.code:'','5 characters, e.g. 99214')
       +_lf('feeDesc','Description',f?f.description:'')
       +`<div class="grid grid-cols-2 gap-3">${_lf('feeCharge','Our charge ($)',f?(f.charge_cents/100).toFixed(2):'','','number')}${_lf('feeAllow','Medicare allowable ($, optional)',f&&f.medicare_allowable_cents!=null?(f.medicare_allowable_cents/100).toFixed(2):'','','number')}</div>`
+      +`<div class="grid grid-cols-2 gap-3">${_lf('feeMcaid','Nevada Medicaid allowable ($)',f&&f.medicaid_allowable_cents!=null?(f.medicaid_allowable_cents/100).toFixed(2):'','','number')}${_lf('feeMcaidPt','Medicaid provider type',f?f.medicaid_provider_type:'','PT20, PT24, PT14, PT15')}</div>`
+      +`<div class="text-[10px] text-[#9aa0ab] -mt-1">The Medicaid rate is the underpayment benchmark. Leave it blank if the code is not on a Nevada Medicaid schedule.</div>`
       +`<label class="block text-xs font-semibold text-[#3d4a45]">Category<select id="feeCat" class="field mt-1 block w-full">${catOpts}</select></label>`
       +`<label class="flex items-center gap-2 text-xs text-[#3d4a45] mt-1"><input type="checkbox" id="feeActive" class="rounded" ${!f||f.active?'checked':''}> Active</label>`;
     const footer=`<button onclick="openFeeSchedule()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-sm font-semibold hover:bg-[#f1f3f7]">Back</button><button id="feeSave" onclick="saveFee()" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Save</button>`;
@@ -5207,10 +5214,13 @@ HARD RULES:
     const chargeRaw=(gv('feeCharge')||'').trim();
     if(chargeRaw==='' || isNaN(parseFloat(chargeRaw))){ alert('Enter a charge.'); return; }
     const allowRaw=(gv('feeAllow')||'').trim();
+    const mcaidRaw=(gv('feeMcaid')||'').trim();
     const btn=document.getElementById('feeSave'); if(btn){btn.disabled=true;btn.textContent='Saving…';}
     const payload={ action:'fee_save', code, description:gv('feeDesc'),
       charge_cents:Math.round(parseFloat(chargeRaw)*100),
       medicare_allowable_cents: allowRaw===''?undefined:Math.round(parseFloat(allowRaw)*100),
+      medicaid_allowable_cents: mcaidRaw===''?undefined:Math.round(parseFloat(mcaidRaw)*100),
+      medicaid_provider_type:(gv('feeMcaidPt')||'').trim().toUpperCase()||undefined,
       category:gv('feeCat'), active:!!(document.getElementById('feeActive')||{}).checked };
     try{ const r=await postBilling(payload); if(!r.ok) throw new Error(r.error||'save failed');
       const l=await postBilling({action:'fee_list'}); window.__fees=(l&&l.fees)||[]; await openFeeSchedule(); }
@@ -5221,6 +5231,13 @@ HARD RULES:
     try{ const r=await postBilling({action:'fee_delete',fee_id:id}); if(!r.ok) throw new Error(r.error||'failed');
       const l=await postBilling({action:'fee_list'}); window.__fees=(l&&l.fees)||[]; await openFeeSchedule(); }
     catch(e){ alert('Could not delete: '+e.message); }
+  };
+  /** Loads the Nevada Medicaid benchmark + the BH / IOP / nutrition codes. Never touches a charge. */
+  window.seedMedicaid=async function(){
+    try{ const r=await postBilling({action:'fee_seed_medicaid'}); if(!r.ok) throw new Error(r.error||'failed');
+      const l=await postBilling({action:'fee_list'}); window.__fees=(l&&l.fees)||[]; await openFeeSchedule();
+      alert(`Nevada Medicaid benchmark loaded.\n\n${r.benchmarked} existing codes now carry a Medicaid rate.\n${r.added} new codes added (behavioral health, intensive outpatient, nutrition).${r.skipped?'\n'+r.skipped+' already present, left untouched.':''}\n\nNo charge was changed.`); }
+    catch(e){ alert('Could not load the benchmark: '+e.message); }
   };
   window.seedFees=async function(){
     try{ const r=await postBilling({action:'fee_seed'}); if(!r.ok) throw new Error(r.error||'failed');
