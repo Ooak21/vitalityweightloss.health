@@ -176,11 +176,9 @@ p{margin:0;}
 <script type="module">
   // Supabase client for account creation + auto-sign-in. Same storageKey as the portal
   // so the session carries straight into portal.html (same origin).
-  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-  window.__SB_URL = 'https://jtifhcvbgxqwlywugvjv.supabase.co';
-  window.__ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWZoY3ZiZ3hxd2x5d3Vndmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDc5NTgsImV4cCI6MjA4ODA4Mzk1OH0.UfRVLuvM8_HPvKXUEDXb0cxR50znv16L5Tf99AnSc7g';
   window.__CONVEX_SITE = 'https://quixotic-cat-492.convex.site';
-  window.__sb = createClient(window.__SB_URL, window.__ANON, { auth:{ storageKey:'sb-vit-patient', persistSession:true } });
+  // Shared-Supabase client removed 2026-08-20. It was instantiated and never
+  // read. Intake data goes to our own Convex deployment.
 </script>
 
 <script>

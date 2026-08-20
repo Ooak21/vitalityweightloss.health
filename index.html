@@ -1133,11 +1133,11 @@ function playVwl(){
 </div>
 <script>
 (function(){
-  var SB='https://jtifhcvbgxqwlywugvjv.supabase.co';
-  var ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWZoY3ZiZ3hxd2x5d3Vndmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDc5NTgsImV4cCI6MjA4ODA4Mzk1OH0.UfRVLuvM8_HPvKXUEDXb0cxR50znv16L5Tf99AnSc7g';
+  // Shared-Supabase fallback removed 2026-08-20. Vee conversations are patient
+  // health information and go only to our own Convex deployment.
   var convo=[], opened=false, busy=false, SID=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():('s'+Date.now()+Math.random().toString(36).slice(2));
-  // Convex cutover flag for Vee chat. OFF = legacy vit-chat edge fn (live). Flip at cutover (needs XAI_API_KEY set on Convex).
-  var USE_CONVEX_VEE=true, CONVEX_URL='https://quixotic-cat-492.convex.cloud', _veeConvex=null;
+  // Vee chat runs on our own Convex. There is no longer an off-platform fallback.
+  var CONVEX_URL='https://quixotic-cat-492.convex.cloud', _veeConvex=null;
   async function getVeeConvex(){ if(!_veeConvex){ var m=await import('https://esm.sh/convex@1.41.0/browser'); _veeConvex=new m.ConvexHttpClient(CONVEX_URL); } return _veeConvex; }
   function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
   function bubble(t,who){var m=document.getElementById('veeMsgs');var w=document.createElement('div');w.className=who==='user'?'flex justify-end':'flex justify-start';w.innerHTML='<div class="'+(who==='user'?'bg-[#0a6cf5] text-white':'bg-white text-[#16201d] border border-[#e6e9ee]')+' rounded-2xl px-3.5 py-2 text-sm max-w-[82%] leading-relaxed">'+esc(t)+'</div>';m.appendChild(w);m.scrollTop=m.scrollHeight;return w;}
@@ -1172,8 +1172,7 @@ function playVwl(){
   window.veeToggleChat=function(){opened=!opened;var p=document.getElementById('veePanel');p.classList.toggle('hidden',!opened);if(opened){var _first=!document.getElementById('veeMsgs').children.length;if(_first){bubble("Hey there! \uD83D\uDC4B I'm Vee, the Vitality front desk. I can help with programs, pricing, hours, or getting you booked. What can I help you with?",'bot');}document.getElementById('veeInput').focus();}};
   window.veeSend=async function(){if(busy)return;var inp=document.getElementById('veeInput');var t=inp.value.trim();if(!t)return;inp.value='';bubble(t,'user');convo.push({role:'user',content:t});busy=true;var typing=bubble('…','bot');
     try{var d;
-      if(USE_CONVEX_VEE){var c=await getVeeConvex();d=await c.action('vee:chat',{messages:convo,session_id:SID});}
-      else{var r=await fetch(SB+'/functions/v1/vit-chat',{method:'POST',headers:{'content-type':'application/json','apikey':ANON,'authorization':'Bearer '+ANON},body:JSON.stringify({messages:convo,session_id:SID})});d=await r.json();}
+      var c=await getVeeConvex();d=await c.action('vee:chat',{messages:convo,session_id:SID});
       typing.remove();var reply=(d&&d.reply)||"Sorry, I had trouble there. You can reach us at (702) 602-5002.";bubble(reply,'bot');if(d&&d.cta&&d.cta.url)ctaBubble(d.cta);if(d&&d.booked&&d.booking)bookedBubble(d.booking);else if(d&&d.slots&&d.slots.length)slotChips(d.slots);convo.push({role:'assistant',content:reply});}
     catch(e){typing.remove();bubble("Sorry, I had trouble connecting. Please call (702) 602-5002.",'bot');}
     busy=false;inp.focus();

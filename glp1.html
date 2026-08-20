@@ -986,7 +986,7 @@ function disqualify(reason, isCrisis) {
 // LEAD CAPTURE fire-and-forget. Because name/contact lead the flow, we have an
 // email even when someone fails out of eligibility. Lands them in the CRM (tagged)
 // so the care team can follow up by other means. Demo: synthetic data only.
-const SB_URL = 'https://jtifhcvbgxqwlywugvjv.supabase.co';
+// Shared-Supabase URL removed 2026-08-20. It was declared and never used.
 const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWZoY3ZiZ3hxd2x5d3Vndmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDc5NTgsImV4cCI6MjA4ODA4Mzk1OH0.UfRVLuvM8_HPvKXUEDXb0cxR50znv16L5Tf99AnSc7g';
 function leadPassword() { return 'Lead-' + Math.abs((state.email||'x').split('').reduce((a,c)=>((a<<5)-a+c.charCodeAt(0))|0,7)).toString(36) + '-9aZ'; }
 async function captureLead(status) {
