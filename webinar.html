@@ -101,15 +101,9 @@ document.getElementById('regform').addEventListener('submit',function(e){
  e.preventDefault();var f=e.target;
  if(!f.consent.checked){document.getElementById('err').style.display='block';return;}
  var payload={firstname:f.firstname.value.trim(),lastname:f.lastname.value.trim(),email:f.email.value.trim(),phone:f.phone.value.trim(),session:f.session.value};
- /* HubSpot: registrant lands in CRM + alerts the team. Same form as the waitlist. */
- fetch('https://api.hsforms.com/submissions/v3/integration/submit/245385005/1e96f93a-770a-4b7a-89fd-04c1a5d0396f',{
-   method:'POST',headers:{'Content-Type':'application/json'},
-   body:JSON.stringify({fields:[
-     {name:'firstname',value:payload.firstname},{name:'lastname',value:payload.lastname},
-     {name:'email',value:payload.email},{name:'phone',value:payload.phone},
-     {name:'message',value:'WEBINAR REGISTRATION: '+payload.session}
-   ],context:{pageUri:location.href,pageName:document.title}})
- }).then(function(r){console.log('HubSpot',r.status);}).catch(function(err){console.error(err);});
+ /* HubSpot POST removed 2026-08-20. Registrant contact details are PHI-adjacent
+    and must not leave our infrastructure. The Convex /lead call below already
+    captures the same registrant into our own CRM. */
  fetch('https://quixotic-cat-492.convex.site/lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({first_name:payload.firstname,last_name:payload.lastname,email:payload.email,phone:payload.phone,source:'webinar_registration',source_detail:'Webinar: '+payload.session,consent:true})}).catch(function(){});
  document.querySelector('.card').innerHTML=window.successHTML(payload.firstname);
 });
