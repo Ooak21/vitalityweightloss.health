@@ -156,22 +156,6 @@
 </head>
 <body>
 <div class="wrap">
-  <!-- Hidden form so Netlify detects and captures submissions at build time. Do not remove. -->
-  <form hidden method='post' name='glp1-leads'><input type='hidden' name='form-name' value='glp1-leads' />
-    <input type="text" name="name" />
-    <input type="text" name="firstname" />
-    <input type="text" name="lastname" />
-    <input type="email" name="email" />
-    <input type="tel" name="phone" />
-    <input type="text" name="eligibility_qualified" />
-    <input type="text" name="meds_track" />
-    <input type="text" name="estimated_bmi" />
-    <input type="text" name="goal" />
-    <input type="text" name="weight_related_conditions" />
-    <input type="text" name="safety_flag" />
-    <input type="text" name="source" />
-    <input type="text" name="bot-field" />
-  </form>
 
   <a class="brand" href="https://vitalityweightloss.health" target="_blank" rel="noopener">
     <img src="https://vitalityweightloss.health/wp-content/uploads/2025/06/no-background-logo.png" alt="Vitality Weight Loss" />
@@ -334,41 +318,21 @@
 
 <script>
 /* ============================================================
-   CONFIG — leads flow into HubSpot automatically.
-   Fill in hubspot.portalId and hubspot.formGuid (one-time, 2 min):
-     1. In HubSpot: Marketing > Forms > Create form (Embedded).
-     2. Add fields: Email, First name, Phone number,
-        "Eligibility Qualified", "Meds Track".
-     3. Publish, click "Share/Embed", copy the snippet —
-        it contains portalId and formId. Paste them below.
-   The page then creates/updates a HubSpot contact on every submit,
-   tagged with the quiz result. Booking link still works regardless.
+   CONFIG — leads flow into our own Convex CRM automatically, and every
+   submission alerts Fred. Nothing about a patient leaves our infrastructure.
    ============================================================ */
 const CONFIG = {
   consultUrl: "/intake",
   asyncUrl: "/care-intake",
   phone: "(702) 602-5002",
 
-  /* ---- LEAD CAPTURE: Netlify Forms (works automatically once hosted on Netlify) ----
-     Every submission is saved in your Netlify dashboard, and Netlify emails the
-     team on each one. ONE-TIME setup after you deploy:
-       Netlify > your site > Forms > Form notifications >
-       "Add notification" > Email notification, and enter these three addresses:
-         fcorona@vitalityacademies.health  (Fred)
-         dgaitan@vitalityacademies.health  (Delinah)
-         drdebry@vitalityweightloss.health (Dr. Debry)
-     No code, no tokens. The hidden <form name="glp1-leads"> below is what Netlify reads. */
-  netlify: { enabled: false, formName: "" },
+  // Lead capture posts to our own Convex CRM in submitLead().
 
   alertRecipients: [
     "fcorona@vitalityacademies.health",   // Fred
     "dgaitan@vitalityacademies.health",   // Delinah
     "drdebry@vitalityweightloss.health"   // Dr. Debry
-  ],
-
-  /* OPTIONAL: also mirror leads into HubSpot. Leave blank unless you create a
-     HubSpot form and paste its IDs here (Marketing > Forms). */
-  hubspot: { portalId: "", formGuid: "" }
+  ]
 };
 
 const state = { age:null, sex:null, ft:null, inch:null, wt:null, bmi:null,
@@ -537,10 +501,10 @@ function renderResult(){
   ab.href = a.toString();
 }
 
-/* ---------- lead capture -> HubSpot ---------- */
+/* ---------- lead capture -> our own CRM ---------- */
 function submitLead(){
   const r = computeResult();
-  // map quiz result to your existing HubSpot contact properties
+  // map quiz result to CRM properties
   const qualified = (r.tier === 'alt') ? 'false' : 'true';
   const medsTrack = (r.tier === 'alt') ? 'None'
                   : (r.med === 'Tirz' ? 'Tirz Track' : 'Sema Track');

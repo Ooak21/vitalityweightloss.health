@@ -1106,37 +1106,6 @@ svg.chart{display:block;width:100%;height:auto;}
   </section>
 
   <div class="footer">VITALITY WEIGHT LOSS &nbsp;·&nbsp; 6140 Brent Thurman Way, Suite 100, Las Vegas, NV 89148 &nbsp;·&nbsp; (702) 602-5002</div>
-
-  <!-- Hidden form so Netlify detects the lead schema at build time and captures every pingLead() submission -->
-  <form aria-hidden='true' hidden method='post' name='vitality-wellness-lead'>
-    <input type="text" name="form-name" value="vitality-wellness-lead"/>
-    <input type="text" name="lead_source"/>
-    <input type="text" name="stage"/>
-    <input type="text" name="firstname"/>
-    <input type="email" name="email"/>
-    <input type="tel" name="phone"/>
-    <input type="text" name="current_weight"/>
-    <input type="text" name="goal_weight"/>
-    <input type="text" name="projected_path"/>
-    <input type="text" name="projected_med"/>
-    <input type="text" name="projected_loss_lbs"/>
-    <input type="text" name="selected_tier"/>
-    <input type="text" name="selected_track"/>
-    <input type="text" name="motivator"/>
-    <input type="text" name="why_text"/>
-    <input type="text" name="obstacle"/>
-    <input type="text" name="support_level"/>
-    <input type="text" name="confidence"/>
-    <input type="text" name="has_inbody"/>
-    <input type="text" name="inbody_bf"/>
-    <input type="text" name="inbody_vf"/>
-    <input type="text" name="inbody_muscle"/>
-    <input type="text" name="bp_sys"/>
-    <input type="text" name="bp_dia"/>
-    <input type="text" name="insurance_carrier"/>
-    <input type="text" name="insurance_member_id"/>
-    <input type="text" name="page_url"/>
-  </form>
 </div>
 
 <script>
@@ -1150,13 +1119,11 @@ const CONFIG = {
   stripePaymentLink: "",
   // Lead capture posts to our own Convex CRM in finishLead(). Not configurable
   // to an off-platform webhook: patient data stays on our infrastructure.
-  // Paste your free InBody scan scheduling URL (Calendly, Acuity, HubSpot meetings, etc.)
+  // Where the free InBody scan button goes.
   // Leave "" and the "Schedule My Free InBody" button falls back to call (702) 602-5002.
   inbodyBookingUrl: "/intake",
-  // HubSpot Forms v3 endpoint — Wellness Architecture Session — Lead Capture form (portal 245385005)
-  // HubSpot form endpoint removed 2026-08-20. Lead capture posts to our own
-  // Convex CRM in finishLead(). Patient data stays on our infrastructure.
-  // Strategic source tag — every lead in Netlify/HubSpot gets this so you can filter on it.
+  // Lead capture posts to our own Convex CRM in finishLead() and pingLead().
+  // Strategic source tag — every lead in the CRM gets this so you can filter on it.
   leadSourceLabel: "Wellness Architecture Session",
   clinicPhone: "(702) 602-5002",
   clinicName: "Vitality Weight Loss"
@@ -2041,13 +2008,13 @@ function escapeHtml(s){
 function validEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e||"").trim()); }
 
 /* ============================================================
-   LEAD CAPTURE — every step pings Netlify Forms + (optional) HubSpot
+   LEAD CAPTURE — every step enriches one record in our own CRM
    ============================================================ */
 function pingLead(stage){
   // Dedupe transition pings; always re-send final submits
   if(S.lastStagePinged === stage && !String(stage).startsWith("submitted")) return;
   S.lastStagePinged = stage;
-  if(!S.email) return; // need an email to be useful in HubSpot
+  if(!S.email) return; // email is the dedupe key in our CRM
   const data = {
     "form-name":"vitality-wellness-lead",
     "lead_source": CONFIG.leadSourceLabel || "Wellness Architecture Session",
@@ -2087,36 +2054,40 @@ function pingLead(stage){
   if(["blueprint_viewed","plan_viewed","ready_to_start","submitted_insurance","submitted_selfpay"].indexOf(stage)>=0){
     try { data.projected_loss_lbs = Math.round(projection(S.med,S.path).lostLbs); } catch(e){}
   }
-  // POST to Netlify Forms (works once deployed on Netlify; the hidden form below registers the schema)
+  // POST to our own Convex CRM. createLead dedupes on email and merges, so the
+  // progressive stage pings enrich one record rather than creating many.
+  // Mid-funnel stages use a source that is NOT in the alert list, so Fred is
+  // notified once on the real submit rather than on every step.
+  var isFinal = String(stage).indexOf("submitted") === 0;
   try {
-    const p = new URLSearchParams();
-    for(const k in data) p.append(k, data[k]);
-    fetch("/", {method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body:p.toString()}).catch(function(){});
+    var nm = (data.firstname||"").trim().split(/\s+/).filter(Boolean);
+    fetch("https://quixotic-cat-492.convex.site/lead", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        first_name: nm[0]||"", last_name: nm.slice(1).join(" "),
+        email: data.email, phone: data.phone,
+        source: isFinal ? "wellness_architecture" : "wellness_architecture_progress",
+        source_detail: (data.lead_source||"Wellness Architecture Session")+" \u00b7 "+stage,
+        weight: data.current_weight||undefined,
+        health_notes: [
+          data.current_weight?("Start "+data.current_weight+" lbs"):"",
+          data.goal_weight?("Goal "+data.goal_weight+" lbs"):"",
+          data.projected_med?("Projected: "+data.projected_med+" / "+data.projected_path):"",
+          data.projected_loss_lbs?("Projected loss "+data.projected_loss_lbs+" lbs"):"",
+          data.selected_tier?("Tier "+data.selected_tier+" / "+data.selected_track):"",
+          data.has_inbody==="yes"?("InBody BF "+data.inbody_bf+" VF "+data.inbody_vf+" muscle "+data.inbody_muscle):"",
+          (data.bp_sys||data.bp_dia)?("BP "+data.bp_sys+"/"+data.bp_dia):"",
+          data.insurance_carrier?("Carrier: "+data.insurance_carrier):"",
+          data.motivator?("Motivator: "+data.motivator):"",
+          data.obstacle?("Obstacle: "+data.obstacle):"",
+          data.confidence?("Confidence: "+data.confidence):""
+        ].filter(Boolean).join(" \u00b7 "),
+        tags:["Wellness Architecture", stage].concat(data.selected_tier?[data.selected_tier]:[]),
+        consent:true
+      })
+    }).catch(function(){});
   } catch(e){}
-  // POST to HubSpot Forms v3 endpoint if configured.
-  // The HubSpot form accepts firstname/lastname/email/phone — we send only those so the API
-  // doesn't reject the submission. The rich data (stage, projection, InBody, etc.) goes to
-  // Netlify Forms; HubSpot tracks the source via the form name + pageName.
-  if(CONFIG.hubspotFormUrl){
-    try {
-      const hsFields = [
-        {name:"email",     value: S.email || ""},
-        {name:"firstname", value: S.name  || ""},
-        {name:"phone",     value: S.phone || ""}
-      ];
-      fetch(CONFIG.hubspotFormUrl, {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-          fields: hsFields,
-          context: {
-            pageUri: location.href,
-            pageName: "Wellness Architecture Session — Stage: " + stage
-          }
-        })
-      }).catch(function(){});
-    } catch(e){}
-  }
+
 }
 </script>
 </body>
