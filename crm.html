@@ -652,31 +652,51 @@
         ((!ready.length&&!appr.length)?'<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Nothing waiting. 🎉</div>':'');
     }catch(e){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">Error: '+besc(e.message)+'</div>'; }
   }
-  function cqMsg(id,html){ const el=document.getElementById('cq-'+id); if(el) el.innerHTML=html; }
+  window.cqMsg=function(id,html){ const el=document.getElementById('cq-'+id); if(el) el.innerHTML=html; };
   window.claimDry=async function(id){
     cqMsg(id,'<span class="text-[#6b7280]">Checking…</span>');
     const j=await postClaimQ({ action:'claim_submit', superbill_id:id, dry_run:true });
     if(j&&j.ok) cqMsg(id,'<span class="text-emerald-700 font-semibold">✓ Builds cleanly. Nothing was sent.</span>');
     else cqMsg(id,'<span class="text-rose-600 font-semibold">✗ '+besc((j&&j.error)||'Could not build this claim.')+'</span>');
   };
-  window.claimApprove=async function(id){
-    const note=prompt('Approve this claim for submission?\n\nOptional note for the record:');
-    if(note===null) return;
+  // Inline, never window.prompt/confirm. A modal dialog in a clinical tool blocks the
+  // whole tab, cannot be styled, and reads as a browser error to the person using it.
+  window.claimApprove=function(id){
+    cqMsg(id,'<div class="rounded-xl bg-[#eef4ff] border border-[#cfe0ff] p-2.5 mt-1">'+
+      '<div class="text-[11px] font-semibold text-[#0a4fb8] mb-1.5">Approve this claim for submission?</div>'+
+      '<input id="cqn-'+id+'" placeholder="Optional note for the record" class="field w-full text-xs mb-2">'+
+      '<div class="flex gap-2 justify-end"><button onclick="cqMsg(\''+id+'\',\'\')" class="px-2.5 py-1 rounded-lg border border-[#e6e9ee] text-[11px] font-semibold">Cancel</button>'+
+      '<button onclick="claimApproveGo(\''+id+'\')" class="px-2.5 py-1 rounded-lg bg-[#0a6cf5] text-white text-[11px] font-semibold">Yes, approve</button></div></div>');
+  };
+  window.claimApproveGo=async function(id){
+    const el=document.getElementById('cqn-'+id); const note=el?el.value.trim():'';
+    cqMsg(id,'<span class="text-[#6b7280]">Approving…</span>');
     const j=await postClaimQ({ action:'claim_approve', superbill_id:id, review_note:note||undefined });
     if(j&&j.ok) await loadClaimQueue(); else cqMsg(id,'<span class="text-rose-600 font-semibold">'+besc((j&&j.error)||'Could not approve.')+'</span>');
   };
-  window.claimUnapprove=async function(id){
-    const why=prompt('Withdraw this approval?\n\nReason (optional):');
-    if(why===null) return;
+  window.claimUnapprove=function(id){
+    cqMsg(id,'<div class="rounded-xl bg-[#fff7ed] border border-[#ffd9a8] p-2.5 mt-1">'+
+      '<div class="text-[11px] font-semibold text-[#9a5a00] mb-1.5">Withdraw this approval? It goes back to the review list.</div>'+
+      '<input id="cqn-'+id+'" placeholder="Reason (optional)" class="field w-full text-xs mb-2">'+
+      '<div class="flex gap-2 justify-end"><button onclick="cqMsg(\''+id+'\',\'\')" class="px-2.5 py-1 rounded-lg border border-[#e6e9ee] text-[11px] font-semibold">Cancel</button>'+
+      '<button onclick="claimUnapproveGo(\''+id+'\')" class="px-2.5 py-1 rounded-lg bg-[#9a5a00] text-white text-[11px] font-semibold">Withdraw</button></div></div>');
+  };
+  window.claimUnapproveGo=async function(id){
+    const el=document.getElementById('cqn-'+id); const why=el?el.value.trim():'';
     const j=await postClaimQ({ action:'claim_unapprove', superbill_id:id, reason:why||undefined });
     if(j&&j.ok) await loadClaimQueue(); else cqMsg(id,'<span class="text-rose-600 font-semibold">'+besc((j&&j.error)||'Could not withdraw.')+'</span>');
   };
-  window.claimSend=async function(id){
+  window.claimSend=function(id){
     const x=(window.__claimQueue||[]).find(q=>q.superbill_id===id);
-    if(!confirm('Send this claim to the payer'+(x?' for '+x.patient+' ('+cqMoney(x.total_charge_cents)+')':'')+'?\n\nThis transmits. It cannot be unsent.')) return;
+    cqMsg(id,'<div class="rounded-xl bg-[#fef2f2] border border-[#fecaca] p-2.5 mt-1">'+
+      '<div class="text-[11px] font-semibold text-[#9f1239] mb-1.5">Send '+(x?besc(x.patient)+' · '+cqMoney(x.total_charge_cents):'this claim')+' to the payer? This transmits and cannot be unsent.</div>'+
+      '<div class="flex gap-2 justify-end"><button onclick="cqMsg(\''+id+'\',\'\')" class="px-2.5 py-1 rounded-lg border border-[#e6e9ee] text-[11px] font-semibold">Cancel</button>'+
+      '<button onclick="claimSendGo(\''+id+'\')" class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[11px] font-semibold">Yes, send it</button></div></div>');
+  };
+  window.claimSendGo=async function(id){
     cqMsg(id,'<span class="text-[#6b7280]">Transmitting…</span>');
     const j=await postClaimQ({ action:'claim_submit', superbill_id:id });
-    if(j&&j.ok){ cqMsg(id,'<span class="text-emerald-700 font-semibold">✓ Sent · '+besc(j.status||'submitted')+'</span>'); setTimeout(loadClaimQueue,1200); }
+    if(j&&j.ok){ cqMsg(id,'<span class="text-emerald-700 font-semibold">✓ Sent · '+besc(j.status||'submitted')+'</span>'); setTimeout(loadClaimQueue,1400); }
     else cqMsg(id,'<span class="text-rose-600 font-semibold">✗ '+besc((j&&j.error)||'Submission failed.')+'</span>');
   };
 
