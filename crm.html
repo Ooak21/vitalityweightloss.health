@@ -628,6 +628,8 @@
         const cpt=(x.lines||[]).map(l=>besc(l.cpt)+(l.modifiers&&l.modifiers.length?'-'+l.modifiers.map(besc).join('-'):'')+(l.units>1?' ×'+l.units:'')).join(', ')||'—';
         const approved=x.status==='approved';
         const who=approved&&x.reviewed_by?'<div class="text-[11px] text-emerald-700 mt-1">Approved by '+besc(x.reviewed_by)+(x.reviewed_at?' · '+new Date(x.reviewed_at).toLocaleString():'')+'</div>':'';
+        // Payer effective-date hold, e.g. Anthem before 4 Sep. Warns, never blocks.
+        const hold=x.hold_warning?'<div class="mt-2 rounded-xl bg-[#fff7ed] border border-[#ffd9a8] px-2.5 py-2 text-[11px] font-semibold text-[#9a5a00]">⚑ '+besc(x.hold_warning)+'</div>':'';
         const act=approved
           ? '<button onclick="claimUnapprove(\''+x.superbill_id+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">Withdraw</button>'
             +'<button onclick="claimSend(\''+x.superbill_id+'\')" class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700">Send to payer</button>'
@@ -641,7 +643,7 @@
             '<div class="text-right"><div class="font-display text-lg font-semibold">'+cqMoney(x.total_charge_cents)+'</div>'+
             '<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full '+(approved?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800')+'">'+(approved?'Approved, not sent':'Needs review')+'</span></div>'+
           '</div>'+
-          '<div id="cq-'+x.superbill_id+'" class="text-xs mt-2"></div>'+
+          hold+'<div id="cq-'+x.superbill_id+'" class="text-xs mt-2"></div>'+
           '<div class="flex gap-2 justify-end mt-3">'+act+'</div>'+
         '</div>';
       };
