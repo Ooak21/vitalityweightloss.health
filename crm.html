@@ -236,12 +236,14 @@
     <div id="expandTools" class="flex items-stretch gap-2 px-3 pt-1 pb-2">
       <button onclick="toggleBoard()" title="Pipeline board" class="relative flex-1 px-2 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7] flex items-center justify-center gap-1">🗂 Board<span id="inqBadgeExpand" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#be123c] text-white text-[10px] font-bold flex items-center justify-center"></span></button>
       <button onclick="openGlp1Queue()" title="GLP-1 review queue" class="flex-1 px-2 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10 flex items-center justify-center gap-1">💊 GLP-1</button>
+      <button onclick="openClaimQueue()" title="Billing review queue" class="flex-1 px-2 py-2 rounded-xl border border-emerald-600/40 text-emerald-700 text-xs font-semibold hover:bg-emerald-600/10 flex items-center justify-center gap-1">🧾 Billing</button>
       <button onclick="openBloomQueue()" title="Bloom review queue" class="flex-1 px-2 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10 flex items-center justify-center gap-1">🌱 Bloom</button>
     </div>
     <!-- Collapsed-rail quick actions: only visible when the patient list is collapsed -->
     <div id="railTools" class="hidden flex-col items-center gap-2 py-2 border-b border-[#e6e9ee]">
       <button onclick="toggleBoard()" title="Pipeline board" class="relative w-10 h-10 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-lg hover:bg-[#f1f3f7] flex items-center justify-center">🗂<span id="inqBadgeRail" class="hidden absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-[#be123c] text-white text-[9px] font-bold flex items-center justify-center"></span></button>
       <button onclick="openGlp1Queue()" title="GLP-1 review queue" class="w-10 h-10 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-lg hover:bg-[#0a6cf5]/10 flex items-center justify-center">💊</button>
+      <button onclick="openClaimQueue()" title="Billing review queue" class="w-10 h-10 rounded-xl border border-emerald-600/40 text-emerald-700 text-lg hover:bg-emerald-600/10 flex items-center justify-center">🧾</button>
       <button onclick="openBloomQueue()" title="Bloom review queue" class="w-10 h-10 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-lg hover:bg-[#0a6cf5]/10 flex items-center justify-center">🌱</button>
       <button onclick="openClinicSchedule()" title="Clinic schedule" class="w-10 h-10 rounded-xl border border-[#dbe7ff] bg-[#f5f9ff] text-[#0a6cf5] text-lg hover:bg-[#eaf2ff] flex items-center justify-center">⊞</button>
     </div>
@@ -595,6 +597,87 @@
       if(!j.ok){ alert('Failed: '+(j.error||'unknown')); return; }
       await loadBloomQueue();
     }catch(e){ alert('Error: '+besc(e.message)); }
+  };
+
+
+  // ---- Billing review queue ----------------------------------------------------------
+  // Nettie, 2026-08-20: claims must not auto-send to Stedi. A coded superbill waits here
+  // until a biller reviews it and pushes it. submitClaim enforces the same rule server
+  // side, so this screen is the workflow, not the security boundary.
+  window.openClaimQueue = async function(){
+    let ov=document.getElementById('claimOverlay');
+    if(!ov){ ov=document.createElement('div'); ov.id='claimOverlay'; ov.className='fixed inset-0 z-[70] bg-black/40 overflow-y-auto'; ov.onclick=e=>{ if(e.target===ov) ov.remove(); }; document.body.appendChild(ov); }
+    ov.innerHTML='<div class="max-w-4xl mx-auto my-8 px-3"><div class="flex justify-between items-center mb-3"><div class="font-display font-semibold text-lg text-white">🧾 Billing review — claims waiting to go out</div><button onclick="document.getElementById(\'claimOverlay\').remove()" class="w-9 h-9 rounded-full bg-white text-2xl leading-none text-[#16201d]">×</button></div><div id="claimBody"><div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Loading…</div></div></div>';
+    await loadClaimQueue();
+  };
+  const cqMoney=(c)=>'$'+((Number(c)||0)/100).toFixed(2);
+  async function postClaimQ(payload){
+    const r=await fetch(CONVEX_URL+'/chart-billing',{ method:'POST', headers:await convexHeaders(), body:JSON.stringify(payload) });
+    return await r.json().catch(()=>({ ok:false, error:'bad response' }));
+  }
+  async function loadClaimQueue(){
+    const body=document.getElementById('claimBody'); if(!body) return;
+    try{
+      const j=await postClaimQ({ action:'claim_queue' });
+      if(!j.ok){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">'+besc(j.error||'Not permitted.')+'</div>'; return; }
+      window.__claimQueue=j.queue||[];
+      const ready=window.__claimQueue.filter(x=>x.status==='ready');
+      const appr=window.__claimQueue.filter(x=>x.status==='approved');
+      const card=(x)=>{
+        const dx=(x.diagnoses||[]).map(d=>besc(d.code)).join(', ')||'—';
+        const cpt=(x.lines||[]).map(l=>besc(l.cpt)+(l.modifiers&&l.modifiers.length?'-'+l.modifiers.map(besc).join('-'):'')+(l.units>1?' ×'+l.units:'')).join(', ')||'—';
+        const approved=x.status==='approved';
+        const who=approved&&x.reviewed_by?'<div class="text-[11px] text-emerald-700 mt-1">Approved by '+besc(x.reviewed_by)+(x.reviewed_at?' · '+new Date(x.reviewed_at).toLocaleString():'')+'</div>':'';
+        const act=approved
+          ? '<button onclick="claimUnapprove(\''+x.superbill_id+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">Withdraw</button>'
+            +'<button onclick="claimSend(\''+x.superbill_id+'\')" class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700">Send to payer</button>'
+          : '<button onclick="claimDry(\''+x.superbill_id+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">Check it</button>'
+            +'<button onclick="claimApprove(\''+x.superbill_id+'\')" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">Approve</button>';
+        return '<div class="bg-white rounded-2xl border '+(approved?'border-emerald-200':'border-[#e6e9ee]')+' p-4 mb-2">'+
+          '<div class="flex items-start justify-between gap-3 flex-wrap">'+
+            '<div><div class="font-semibold text-[#16201d]">'+besc(x.patient)+'</div>'+
+            '<div class="text-xs text-[#6b7280] mt-0.5">DOS '+besc(x.date_of_service||'—')+' · POS '+besc(x.place_of_service||'—')+' · '+besc(x.rendering_provider||'no rendering provider')+'</div>'+
+            '<div class="text-xs text-[#6b7280] mt-1">CPT '+cpt+' · Dx '+dx+(x.prior_auth_number?' · auth '+besc(x.prior_auth_number):'')+'</div>'+who+'</div>'+
+            '<div class="text-right"><div class="font-display text-lg font-semibold">'+cqMoney(x.total_charge_cents)+'</div>'+
+            '<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full '+(approved?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800')+'">'+(approved?'Approved, not sent':'Needs review')+'</span></div>'+
+          '</div>'+
+          '<div id="cq-'+x.superbill_id+'" class="text-xs mt-2"></div>'+
+          '<div class="flex gap-2 justify-end mt-3">'+act+'</div>'+
+        '</div>';
+      };
+      body.innerHTML=
+        '<div class="bg-white rounded-2xl p-3 mb-3 text-xs text-[#6b7280]">Nothing is transmitted automatically. A claim only goes to the payer when someone presses <b>Send to payer</b> here.</div>'+
+        (ready.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pb-1 px-1">Waiting on review ('+ready.length+')</div>'+ready.map(card).join(''):'')+
+        (appr.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-3 pb-1 px-1">Approved, ready to send ('+appr.length+')</div>'+appr.map(card).join(''):'')+
+        ((!ready.length&&!appr.length)?'<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Nothing waiting. 🎉</div>':'');
+    }catch(e){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">Error: '+besc(e.message)+'</div>'; }
+  }
+  function cqMsg(id,html){ const el=document.getElementById('cq-'+id); if(el) el.innerHTML=html; }
+  window.claimDry=async function(id){
+    cqMsg(id,'<span class="text-[#6b7280]">Checking…</span>');
+    const j=await postClaimQ({ action:'claim_submit', superbill_id:id, dry_run:true });
+    if(j&&j.ok) cqMsg(id,'<span class="text-emerald-700 font-semibold">✓ Builds cleanly. Nothing was sent.</span>');
+    else cqMsg(id,'<span class="text-rose-600 font-semibold">✗ '+besc((j&&j.error)||'Could not build this claim.')+'</span>');
+  };
+  window.claimApprove=async function(id){
+    const note=prompt('Approve this claim for submission?\n\nOptional note for the record:');
+    if(note===null) return;
+    const j=await postClaimQ({ action:'claim_approve', superbill_id:id, review_note:note||undefined });
+    if(j&&j.ok) await loadClaimQueue(); else cqMsg(id,'<span class="text-rose-600 font-semibold">'+besc((j&&j.error)||'Could not approve.')+'</span>');
+  };
+  window.claimUnapprove=async function(id){
+    const why=prompt('Withdraw this approval?\n\nReason (optional):');
+    if(why===null) return;
+    const j=await postClaimQ({ action:'claim_unapprove', superbill_id:id, reason:why||undefined });
+    if(j&&j.ok) await loadClaimQueue(); else cqMsg(id,'<span class="text-rose-600 font-semibold">'+besc((j&&j.error)||'Could not withdraw.')+'</span>');
+  };
+  window.claimSend=async function(id){
+    const x=(window.__claimQueue||[]).find(q=>q.superbill_id===id);
+    if(!confirm('Send this claim to the payer'+(x?' for '+x.patient+' ('+cqMoney(x.total_charge_cents)+')':'')+'?\n\nThis transmits. It cannot be unsent.')) return;
+    cqMsg(id,'<span class="text-[#6b7280]">Transmitting…</span>');
+    const j=await postClaimQ({ action:'claim_submit', superbill_id:id });
+    if(j&&j.ok){ cqMsg(id,'<span class="text-emerald-700 font-semibold">✓ Sent · '+besc(j.status||'submitted')+'</span>'); setTimeout(loadClaimQueue,1200); }
+    else cqMsg(id,'<span class="text-rose-600 font-semibold">✗ '+besc((j&&j.error)||'Submission failed.')+'</span>');
   };
 
   // ---- Async GLP-1 Rx review queue (mirrors the Bloom queue; decisions reuse /record-rx-decision) ----
@@ -4575,7 +4658,7 @@ HARD RULES:
     const box=document.getElementById('chartListsPanel'); if(!box) return;
     let j; try{ j=await postLists({action:'list',patient_id:pid}); }catch(e){ box.innerHTML=''; return; }
     if(!j || j.ok===false){ box.innerHTML=''; return; }   // non-clinical staff: hidden (notes tab carries the message)
-    window.__chartProblems=j.problems||[]; window.__chartMeds=j.meds||[]; window.__chartVitals=j.vitals||[]; window.__chartListsWrite=!!j.canWrite;
+    window.__chartProblems=j.problems||[]; window.__chartMeds=j.meds||[]; window.__chartVitals=j.vitals||[]; window.__chartListsWrite=!!j.canWrite; window.__chartVitalsWrite=!!(j.canWriteVitals||j.canWrite);
     window.__chartAllergies=j.allergies||[]; window.__chartSurgeries=j.surgeries||[]; window.__chartFamily=j.family||[];
     window.__chartSocial=j.social||null;
     // Allergies sit directly under vitals, above the problem list: it is the one list read for safety
@@ -4810,21 +4893,21 @@ HARD RULES:
   // ================= Vitals flowsheet =================
   function vitalsCard(j){
     const vs=j.vitals||[]; const latest=vs[0];
-    const add=j.canWrite?`<button onclick="openVitalsModal()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Record vitals</button>`:'';
+    const add=(j.canWriteVitals||j.canWrite)?`<button onclick="openVitalsModal()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Record vitals</button>`:'';
     let bodyHtml;
     if(!vs.length){ bodyHtml='<div class="text-sm text-[#9aa0ab]">No vitals recorded.</div>'; }
     else {
       const cell=(label,val,unit)=>`<div class="bg-[#f7f8fa] border border-[#e6e9ee] rounded-xl p-3"><div class="text-[11px] text-[#6b7280]">${label}</div><div class="font-display text-lg font-semibold mt-0.5">${val==null?'—':esc(String(val))+(unit?`<span class="text-xs font-medium text-[#9aa0ab] ml-0.5">${unit}</span>`:'')}</div></div>`;
       const bp=(latest.bp_systolic!=null&&latest.bp_diastolic!=null)?`${latest.bp_systolic}/${latest.bp_diastolic}`:null;
       const grid=`<div class="text-[11px] text-[#6b7280] mb-2">Latest · ${esc(latest.measured_at)}</div><div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">${cell('Weight',latest.weight_lb,'lb')}${cell('BMI',latest.bmi,'')}${cell('BP',bp,'')}${cell('Heart rate',latest.heart_rate,'bpm')}${latest.temp_f!=null?cell('Temp',latest.temp_f,'°F'):''}${latest.waist_in!=null?cell('Waist',latest.waist_in,'in'):''}</div>`;
-      const hist=vs.length>1?`<details class="mt-1"><summary class="text-xs text-[#0a6cf5] font-semibold cursor-pointer">History (${vs.length})</summary><div class="mt-2 overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-[10px] uppercase tracking-wide text-[#6b7280] text-left border-b border-[#e6e9ee]"><th class="py-1.5 pr-3">Date</th><th class="py-1.5 pr-3">Weight</th><th class="py-1.5 pr-3">BMI</th><th class="py-1.5 pr-3">BP</th><th class="py-1.5 pr-3">HR</th>${j.canWrite?'<th class="py-1.5"></th>':''}</tr></thead><tbody>${vs.map(renderVitalsRow).join('')}</tbody></table></div></details>`:'';
+      const hist=vs.length>1?`<details class="mt-1"><summary class="text-xs text-[#0a6cf5] font-semibold cursor-pointer">History (${vs.length})</summary><div class="mt-2 overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-[10px] uppercase tracking-wide text-[#6b7280] text-left border-b border-[#e6e9ee]"><th class="py-1.5 pr-3">Date</th><th class="py-1.5 pr-3">Weight</th><th class="py-1.5 pr-3">BMI</th><th class="py-1.5 pr-3">BP</th><th class="py-1.5 pr-3">HR</th>${(j.canWriteVitals||j.canWrite)?'<th class="py-1.5"></th>':''}</tr></thead><tbody>${vs.map(renderVitalsRow).join('')}</tbody></table></div></details>`:'';
       bodyHtml=grid+hist;
     }
     return chartSection('Vitals', add, bodyHtml);
   }
   function renderVitalsRow(v){
     const bp=(v.bp_systolic!=null&&v.bp_diastolic!=null)?`${v.bp_systolic}/${v.bp_diastolic}`:'—';
-    const acts=window.__chartListsWrite?`<td class="py-1.5 text-right whitespace-nowrap text-[11px]"><button onclick="openVitalsModal('${v.id}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="deleteVitals('${v.id}')" class="text-[#be123c] hover:underline">del</button></td>`:'';
+    const acts=window.__chartVitalsWrite?`<td class="py-1.5 text-right whitespace-nowrap text-[11px]"><button onclick="openVitalsModal('${v.id}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="deleteVitals('${v.id}')" class="text-[#be123c] hover:underline">del</button></td>`:'';
     return `<tr class="border-b border-[#f1f3f7] last:border-0"><td class="py-1.5 pr-3 whitespace-nowrap">${esc(v.measured_at)}</td><td class="py-1.5 pr-3">${v.weight_lb!=null?v.weight_lb+' lb':'—'}</td><td class="py-1.5 pr-3">${v.bmi!=null?v.bmi:'—'}</td><td class="py-1.5 pr-3">${bp}</td><td class="py-1.5 pr-3">${v.heart_rate!=null?v.heart_rate:'—'}</td>${acts}</tr>`;
   }
   window.openVitalsModal=function(vitalsId){
