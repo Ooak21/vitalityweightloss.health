@@ -238,6 +238,7 @@
       <button onclick="openGlp1Queue()" title="GLP-1 review queue" class="flex-1 px-2 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10 flex items-center justify-center gap-1">💊 GLP-1</button>
       <button onclick="openClaimQueue()" title="Billing review queue" class="flex-1 px-2 py-2 rounded-xl border border-emerald-600/40 text-emerald-700 text-xs font-semibold hover:bg-emerald-600/10 flex items-center justify-center gap-1">🧾 Billing</button>
       <button onclick="openBloomQueue()" title="Bloom review queue" class="flex-1 px-2 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10 flex items-center justify-center gap-1">🌱 Bloom</button>
+      <button onclick="openCallLog()" title="Call catalog" class="flex-1 px-2 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7] flex items-center justify-center gap-1">☎ Calls</button>
     </div>
     <!-- Collapsed-rail quick actions: only visible when the patient list is collapsed -->
     <div id="railTools" class="hidden flex-col items-center gap-2 py-2 border-b border-[#e6e9ee]">
@@ -245,6 +246,7 @@
       <button onclick="openGlp1Queue()" title="GLP-1 review queue" class="w-10 h-10 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-lg hover:bg-[#0a6cf5]/10 flex items-center justify-center">💊</button>
       <button onclick="openClaimQueue()" title="Billing review queue" class="w-10 h-10 rounded-xl border border-emerald-600/40 text-emerald-700 text-lg hover:bg-emerald-600/10 flex items-center justify-center">🧾</button>
       <button onclick="openBloomQueue()" title="Bloom review queue" class="w-10 h-10 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-lg hover:bg-[#0a6cf5]/10 flex items-center justify-center">🌱</button>
+      <button onclick="openCallLog()" title="Call catalog" class="w-10 h-10 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-lg hover:bg-[#f1f3f7] flex items-center justify-center">☎</button>
       <button onclick="openClinicSchedule()" title="Clinic schedule" class="w-10 h-10 rounded-xl border border-[#dbe7ff] bg-[#f5f9ff] text-[#0a6cf5] text-lg hover:bg-[#eaf2ff] flex items-center justify-center">⊞</button>
     </div>
     <div id="todayPanel" class="px-3 pb-3 flex-shrink-0 border-b border-[#e6e9ee]"></div>
@@ -610,6 +612,81 @@
     ov.innerHTML='<div class="max-w-4xl mx-auto my-8 px-3"><div class="flex justify-between items-center mb-3"><div class="font-display font-semibold text-lg text-white">🧾 Billing review — claims waiting to go out</div><button onclick="document.getElementById(\'claimOverlay\').remove()" class="w-9 h-9 rounded-full bg-white text-2xl leading-none text-[#16201d]">×</button></div><div id="claimBody"><div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Loading…</div></div></div>';
     await loadClaimQueue();
   };
+  // ---- Calls: the catalog of every ring, patient or not. Reclassify callers and
+  // promote real prospects to the pipeline without a phantom chart ever existing. ----
+  async function postCalls(payload){
+    const r=await fetch(CONVEX_URL+'/calls',{ method:'POST', headers:await convexHeaders(), body:JSON.stringify(payload) });
+    return await r.json().catch(()=>({ ok:false, error:'bad response' }));
+  }
+  let __callRows=[], __callFilter='all';
+  const CALL_TYPE_LABEL={ patient:'Patient', prospect:'Prospect', rep_vendor:'Rep / vendor', spam:'Spam', unknown:'Unknown' };
+  const CALL_TYPE_CHIP={ patient:'bg-emerald-50 text-emerald-700 border-emerald-200', prospect:'bg-[#eaf2ff] text-[#0a6cf5] border-[#c9defc]', rep_vendor:'bg-amber-50 text-amber-700 border-amber-200', spam:'bg-rose-50 text-rose-700 border-rose-200', unknown:'bg-[#f1f3f7] text-[#6b7280] border-[#e6e9ee]' };
+  window.openCallLog = async function(){
+    let ov=document.getElementById('callOverlay');
+    if(!ov){ ov=document.createElement('div'); ov.id='callOverlay'; ov.className='fixed inset-0 z-[70] bg-black/40 overflow-y-auto'; ov.onclick=e=>{ if(e.target===ov) ov.remove(); }; document.body.appendChild(ov); }
+    ov.innerHTML='<div class="max-w-5xl mx-auto my-8 px-3"><div class="flex justify-between items-center mb-3"><div class="font-display font-semibold text-lg text-white">☎ Calls — every ring, cataloged</div><button onclick="document.getElementById(\'callOverlay\').remove()" class="w-9 h-9 rounded-full bg-white text-2xl leading-none text-[#16201d]">×</button></div><div id="callBody"><div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Loading…</div></div></div>';
+    const j=await postCalls({ action:'list', limit:150 });
+    if(!j.ok){ const b=document.getElementById('callBody'); if(b) b.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">'+besc(j.error||'Not permitted.')+'</div>'; return; }
+    __callRows=j.calls||[]; renderCallLog();
+  };
+  window.setCallFilter=function(f){ __callFilter=f; renderCallLog(); };
+  function callWhen(ms){
+    const d=new Date(ms);
+    return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' · '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  }
+  function renderCallLog(){
+    const body=document.getElementById('callBody'); if(!body) return;
+    const rows=__callFilter==='all'?__callRows:__callRows.filter(c=>(c.caller_type||'unknown')===__callFilter);
+    const counts={all:__callRows.length};
+    __callRows.forEach(c=>{ const t=c.caller_type||'unknown'; counts[t]=(counts[t]||0)+1; });
+    const chip=(f,label)=>'<button onclick="setCallFilter(\''+f+'\')" class="px-3 py-1.5 rounded-full text-xs font-semibold border '+(__callFilter===f?'bg-[#16201d] text-white border-[#16201d]':'bg-white text-[#4b5563] border-[#e6e9ee] hover:bg-[#f1f3f7]')+'">'+label+(counts[f]?' <span class="opacity-60">'+counts[f]+'</span>':'')+'</button>';
+    const filters='<div class="flex flex-wrap gap-2 mb-3">'+chip('all','All')+chip('patient','Patients')+chip('prospect','Prospects')+chip('rep_vendor','Reps / vendors')+chip('unknown','Unknown')+chip('spam','Spam')+'</div>';
+    if(!rows.length){ body.innerHTML=filters+'<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">No calls in this lane.</div>'; return; }
+    const html=rows.map(c=>{
+      const t=c.caller_type||'unknown';
+      const who=c.patient
+        ? '<button onclick="document.getElementById(\'callOverlay\').remove();select(\''+c.patient.id+'\')" class="font-semibold text-[#0a6cf5] hover:underline text-left">'+besc(c.patient.name)+'</button>'
+        : '<span class="font-semibold text-[#16201d]">'+besc(c.caller_name||'Unidentified caller')+'</span>';
+      const num=besc(c.from_number||c.callback_number||'no number');
+      const dur=c.duration_sec?Math.round(c.duration_sec/60*10)/10+' min':'';
+      const outcome=besc((c.outcome||'').replace(/_/g,' '));
+      const failed=c.outcome==='transfer_failed';
+      const typeSel='<select onchange="callSetType(\''+c.id+'\',this)" class="text-xs border border-[#e6e9ee] rounded-lg px-1.5 py-1 bg-white text-[#4b5563]">'+
+        Object.keys(CALL_TYPE_LABEL).map(k=>'<option value="'+k+'"'+(k===t?' selected':'')+'>'+CALL_TYPE_LABEL[k]+'</option>').join('')+'</select>';
+      const promote=!c.patient?'<button onclick="callPromote(\''+c.id+'\',this)" class="px-2.5 py-1 rounded-lg bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">→ Lead</button>':'';
+      return '<div class="bg-white rounded-2xl p-4 mb-2.5">'+
+        '<div class="flex items-start justify-between gap-3 flex-wrap">'+
+          '<div class="min-w-0">'+
+            '<div class="flex items-center gap-2 flex-wrap">'+who+'<span class="px-2 py-0.5 rounded-full text-[10px] font-bold border '+(CALL_TYPE_CHIP[t]||CALL_TYPE_CHIP.unknown)+'">'+(CALL_TYPE_LABEL[t]||t)+'</span>'+(failed?'<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white">MISSED — needs a call back</span>':'')+'</div>'+
+            '<div class="text-xs text-[#6b7280] mt-1">'+callWhen(c.at)+' · '+num+(dur?' · '+dur:'')+' · '+besc(c.intent||'?')+' → '+(outcome||'?')+'</div>'+
+            (c.message?'<div class="text-xs text-[#3d4a45] mt-1.5 bg-[#f8f9fb] border border-[#eef0f4] rounded-xl px-2.5 py-2">'+besc(c.message)+'</div>':'')+
+          '</div>'+
+          '<div class="flex items-center gap-2 shrink-0">'+typeSel+promote+'</div>'+
+        '</div></div>';
+    }).join('');
+    body.innerHTML=filters+html;
+  }
+  window.callSetType=async function(id,sel){
+    sel.disabled=true;
+    const j=await postCalls({ action:'set_type', call_id:id, caller_type:sel.value });
+    sel.disabled=false;
+    if(!j.ok){ alert('Could not save: '+(j.error||'unknown')); return; }
+    const row=__callRows.find(c=>c.id===id); if(row) row.caller_type=sel.value;
+    renderCallLog();
+  };
+  window.callPromote=async function(id,btn){
+    const row=__callRows.find(c=>c.id===id)||{};
+    const name=prompt('Name for the new lead (First Last):', row.caller_name||'');
+    if(name===null) return;
+    const parts=name.trim().split(/\s+/).filter(Boolean);
+    btn.disabled=true; btn.textContent='…';
+    const j=await postCalls({ action:'promote', call_id:id, first:parts[0], last:parts.slice(1).join(' ') });
+    if(!j.ok){ btn.disabled=false; btn.textContent='→ Lead'; alert('Could not promote: '+(j.error||'unknown')); return; }
+    const jj=await postCalls({ action:'list', limit:150 });
+    if(jj.ok){ __callRows=jj.calls||[]; renderCallLog(); }
+    if(typeof loadPatients==='function'){ try{ loadPatients(); }catch(e){} }
+  };
+
   const cqMoney=(c)=>'$'+((Number(c)||0)/100).toFixed(2);
   async function postClaimQ(payload){
     const r=await fetch(CONVEX_URL+'/chart-billing',{ method:'POST', headers:await convexHeaders(), body:JSON.stringify(payload) });
