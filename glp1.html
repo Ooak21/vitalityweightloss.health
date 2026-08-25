@@ -2086,7 +2086,11 @@ function viewPay(p) {
       payBtn.textContent = 'Complete enrollment';
     } else {
       const iL = '$' + (e.intro/100).toFixed(2), rL = '$' + Math.round(e.recur/100);
-      priceInfo.innerHTML = '<strong>Today: ' + iL + '</strong>, then <strong>' + rL + '/mo</strong> <span style="color:var(--muted)">billed monthly to this card until you cancel. Cancel anytime by calling (702)&nbsp;602-5002.</span>';
+      if (state.couponCode && state.couponMonths) {
+        priceInfo.innerHTML = '<strong>Today: ' + iL + '</strong>, then <strong>' + rL + '/mo</strong> <span style="color:var(--muted)">for a total of ' + state.couponMonths + ' monthly payments. Billing ends automatically after the final payment, nothing to cancel.</span>';
+      } else {
+        priceInfo.innerHTML = '<strong>Today: ' + iL + '</strong>, then <strong>' + rL + '/mo</strong> <span style="color:var(--muted)">billed monthly to this card until you cancel. Cancel anytime by calling (702)&nbsp;602-5002.</span>';
+      }
       if (cardFields) cardFields.style.display = '';
       payBtn.textContent = 'Pay ' + iL;
     }
@@ -2096,10 +2100,10 @@ function viewPay(p) {
     if (!code) { state.couponCode=''; state.couponComped=false; state.couponIntroCents=null; state.couponRecurringCents=null; save(); couponMsg.textContent=''; renderPrice(); return; }
     couponApply.disabled = true; couponMsg.style.color='var(--muted)'; couponMsg.textContent='Checking…';
     try {
-      const r = await fetch(ATHENA_MIDDLEWARE_URL + '/coupon-check', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ code, amountCents, recurringCents: recurCents }) });
+      const r = await fetch(ATHENA_MIDDLEWARE_URL + '/coupon-check', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ code, amountCents, recurringCents: recurCents, program: state.drug }) });
       const j = await r.json().catch(()=>({}));
-      if (!j.valid) { state.couponCode=''; state.couponComped=false; state.couponIntroCents=null; state.couponRecurringCents=null; save(); couponMsg.style.color='#c0392b'; couponMsg.textContent='That code is not valid.'; renderPrice(); }
-      else { state.couponCode=code; state.couponComped=!!j.comped; state.couponIntroCents=j.discountedIntroCents; state.couponRecurringCents=j.discountedRecurringCents; save(); couponMsg.style.color='#1a7a3d'; couponMsg.textContent=(j.label?j.label+' applied. ':'Code applied. ')+(j.comped?'Fully covered, no charge today.':'New price shown above.'); renderPrice(); }
+      if (!j.valid) { state.couponCode=''; state.couponComped=false; state.couponIntroCents=null; state.couponRecurringCents=null; state.couponMonths=null; save(); couponMsg.style.color='#c0392b'; couponMsg.textContent=j.detail||'That code is not valid.'; renderPrice(); }
+      else { state.couponCode=code; state.couponComped=!!j.comped; state.couponIntroCents=j.discountedIntroCents; state.couponRecurringCents=j.discountedRecurringCents; state.couponMonths=j.months||null; save(); couponMsg.style.color='#1a7a3d'; couponMsg.textContent=(j.label?j.label+' applied. ':'Code applied. ')+(j.comped?'Fully covered, no charge today.':'New price shown above.'); renderPrice(); }
     } catch(e){ couponMsg.style.color='#c0392b'; couponMsg.textContent='Could not check that code. Please try again.'; }
     finally { couponApply.disabled = false; }
   }
