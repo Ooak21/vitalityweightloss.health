@@ -5146,10 +5146,37 @@ HARD RULES:
     }catch(e){ alert('Could not submit: '+e.message); }
   };
   function insuranceCard(j){
-    const rows=(j.coverages||[]).length?j.coverages.map(renderCoverageRow).join(''):'<div class="text-sm text-[#9aa0ab]">No insurance on file. Self-pay until a card is added.</div>';
+    const hasCov=(j.coverages||[]).length>0;
+    // One story on both screens: if eligibility already verified coverage, say so
+    // here instead of a bare "no insurance on file" that contradicts the Add form.
+    let empty='';
+    if(!hasCov){
+      if(j.eligibility_hint){
+        const when=j.eligibility_hint.checked_at?new Date(j.eligibility_hint.checked_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
+        empty='<div class="rounded-xl bg-[#fff7ed] border border-[#ffd9a8] px-3 py-2.5 text-xs text-[#9a5a00]"><b>Verified coverage found, not yet saved to the chart.</b> Eligibility verified '+besc(j.eligibility_hint.payer_name||'')+(when?' on '+when:'')+'. Click <b>Add coverage</b>, the form is prefilled, confirm it against the card and save.</div>';
+      } else if(j.billing_intent==='self_pay'){
+        const by=j.billing_intent_by?(' by '+besc(j.billing_intent_by)):''; const at=j.billing_intent_at?(' · '+new Date(j.billing_intent_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})):'';
+        empty='<div class="text-sm text-[#6b7280]"><span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">Self-pay, confirmed'+by+at+'</span></div>';
+      } else {
+        empty='<div class="text-sm text-[#9aa0ab]">No insurance on the chart, and self-pay has not been confirmed. Add coverage, or mark self-pay so the payer stance is explicit.</div>';
+      }
+    }
+    const rows=hasCov?j.coverages.map(renderCoverageRow).join(''):empty;
+    const readiness=(j.missing_demographics&&j.missing_demographics.length)?'<div class="mt-2 rounded-xl bg-rose-50 border border-rose-200 px-3 py-2 text-xs text-rose-700"><b>Not billing-ready.</b> Missing: '+j.missing_demographics.map(besc).join(', ')+'. Claims cannot be approved until the chart is complete.</div>':'';
+    const spBtn=(j.canWriteInsurance&&!hasCov&&j.billing_intent!=='self_pay')?`<button onclick="markSelfPay()" class="px-3 py-1.5 rounded-xl border border-violet-300 text-violet-700 text-xs font-semibold hover:bg-violet-50">Mark self-pay</button>`:'';
+    const unSp=(j.canWriteInsurance&&j.billing_intent==='self_pay'&&!hasCov)?`<button onclick="unmarkSelfPay()" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">Undo self-pay</button>`:'';
     const add=j.canWriteInsurance?`<button onclick="openCoverageModal()" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add coverage</button>`:'';
-    return chartSection('Insurance', add, `<div>${rows}</div>`);
+    return chartSection('Insurance', spBtn+unSp+add, `<div>${rows}${readiness}</div>`);
   }
+  window.markSelfPay=async function(){
+    if(!confirm('Mark this chart SELF-PAY?\n\nThis records that insurance was asked about and the patient is paying out of pocket. It is logged with your name.')) return;
+    const r=await postBilling({action:'set_billing_intent',patient_id:selId,intent:'self_pay'});
+    if(r&&r.ok){ await loadChartBilling(selId); } else alert((r&&r.error)||'Could not update.');
+  };
+  window.unmarkSelfPay=async function(){
+    const r=await postBilling({action:'set_billing_intent',patient_id:selId,intent:'insurance'});
+    if(r&&r.ok){ await loadChartBilling(selId); } else alert((r&&r.error)||'Could not update.');
+  };
   function renderCoverageRow(c){
     const inactive=c.status==='inactive';
     const line=[c.payer_name, c.plan_name, PLAN_TYPES[c.plan_type]||''].filter(Boolean).join(' · ');
