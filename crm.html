@@ -621,8 +621,14 @@
       const j=await postClaimQ({ action:'claim_queue' });
       if(!j.ok){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">'+besc(j.error||'Not permitted.')+'</div>'; return; }
       window.__claimQueue=j.queue||[];
-      const ready=window.__claimQueue.filter(x=>x.status==='ready');
-      const appr=window.__claimQueue.filter(x=>x.status==='approved');
+      // Backend sorts oldest date of service first (timely filing runs on the oldest).
+      const agingAlertDays=j.aging_alert_days||20;
+      const insQ=window.__claimQueue.filter(x=>!x.self_pay);
+      const spQ=window.__claimQueue.filter(x=>x.self_pay);
+      const ready=insQ.filter(x=>x.status==='ready');
+      const appr=insQ.filter(x=>x.status==='approved');
+      const spReady=spQ.filter(x=>x.status==='ready');
+      const spAppr=spQ.filter(x=>x.status==='approved');
       const card=(x)=>{
         const dx=(x.diagnoses||[]).map(d=>besc(d.code)).join(', ')||'—';
         const cpt=(x.lines||[]).map(l=>besc(l.cpt)+(l.modifiers&&l.modifiers.length?'-'+l.modifiers.map(besc).join('-'):'')+(l.units>1?' ×'+l.units:'')).join(', ')||'—';
@@ -630,6 +636,7 @@
         const who=approved&&x.reviewed_by?'<div class="text-[11px] text-emerald-700 mt-1">Approved by '+besc(x.reviewed_by)+(x.reviewed_at?' · '+new Date(x.reviewed_at).toLocaleString():'')+'</div>':'';
         // Payer effective-date hold, e.g. Anthem before 4 Sep. Warns, never blocks.
         const hold=x.hold_warning?'<div class="mt-2 rounded-xl bg-[#fff7ed] border border-[#ffd9a8] px-2.5 py-2 text-[11px] font-semibold text-[#9a5a00]">⚑ '+besc(x.hold_warning)+'</div>':'';
+        const aging=(x.aging_days!=null)?('<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ml-2 '+(x.aging_alert?'bg-rose-100 text-rose-700':'bg-slate-100 text-slate-600')+'">'+x.aging_days+'d'+(x.aging_alert?' · timely filing':'')+'</span>'):'';
         const act=approved
           ? '<button onclick="claimUnapprove(\''+x.superbill_id+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">Withdraw</button>'
             +'<button onclick="claimSend(\''+x.superbill_id+'\')" class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700">Send to payer</button>'
@@ -638,7 +645,7 @@
         return '<div class="bg-white rounded-2xl border '+(approved?'border-emerald-200':'border-[#e6e9ee]')+' p-4 mb-2">'+
           '<div class="flex items-start justify-between gap-3 flex-wrap">'+
             '<div><div class="font-semibold text-[#16201d]">'+besc(x.patient)+'</div>'+
-            '<div class="text-xs text-[#6b7280] mt-0.5">DOS '+besc(x.date_of_service||'—')+' · POS '+besc(x.place_of_service||'—')+' · '+besc(x.rendering_provider||'no rendering provider')+'</div>'+
+            '<div class="text-xs text-[#6b7280] mt-0.5">DOS '+besc(x.date_of_service||'—')+aging+' · POS '+besc(x.place_of_service||'—')+' · '+besc(x.rendering_provider||'no rendering provider')+(x.self_pay?' · <span class="font-semibold text-[#7c3aed]">Self-pay</span>':'')+'</div>'+
             '<div class="text-xs text-[#6b7280] mt-1">CPT '+cpt+' · Dx '+dx+(x.prior_auth_number?' · auth '+besc(x.prior_auth_number):'')+'</div>'+who+'</div>'+
             '<div class="text-right"><div class="font-display text-lg font-semibold">'+cqMoney(x.total_charge_cents)+'</div>'+
             '<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full '+(approved?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800')+'">'+(approved?'Approved, not sent':'Needs review')+'</span></div>'+
@@ -649,9 +656,10 @@
       };
       body.innerHTML=
         '<div class="bg-white rounded-2xl p-3 mb-3 text-xs text-[#6b7280]">Nothing is transmitted automatically. A claim only goes to the payer when someone presses <b>Send to payer</b> here.</div>'+
-        (ready.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pb-1 px-1">Waiting on review ('+ready.length+')</div>'+ready.map(card).join(''):'')+
-        (appr.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-3 pb-1 px-1">Approved, ready to send ('+appr.length+')</div>'+appr.map(card).join(''):'')+
-        ((!ready.length&&!appr.length)?'<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Nothing waiting. 🎉</div>':'');
+        (ready.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pb-1 px-1">Insurance · waiting on review ('+ready.length+')</div>'+ready.map(card).join(''):'')+
+        (appr.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-3 pb-1 px-1">Insurance · approved, ready to send ('+appr.length+')</div>'+appr.map(card).join(''):'')+
+        (spReady.length||spAppr.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-4 pb-1 px-1">Self-pay visits · coded for records, retro coverage, and reimbursement ('+(spReady.length+spAppr.length)+')</div>'+spReady.map(card).join('')+spAppr.map(card).join(''):'')+
+        ((!ready.length&&!appr.length&&!spReady.length&&!spAppr.length)?'<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Nothing waiting. 🎉</div>':'');
     }catch(e){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">Error: '+besc(e.message)+'</div>'; }
   }
   window.cqMsg=function(id,html){ const el=document.getElementById('cq-'+id); if(el) el.innerHTML=html; };
@@ -913,7 +921,15 @@
   };
   const fmtDate = iso => new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric'});
   const fmtDT = iso => new Date(iso).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-  const rel = iso => { const h=(Date.now()-new Date(iso).getTime())/3600e3; if(isNaN(h)) return ''; if(h<0) return 'upcoming'; if(h<1) return Math.max(1,Math.round(h*60))+'m ago'; if(h<24) return Math.round(h)+'h ago'; return Math.round(h/24)+'d ago'; };
+  // Exact timestamps everywhere (biller requirement: "25 days ago" is not chart
+  // documentation). Absolute date+time leads; the relative age rides in parens.
+  const rel = iso => {
+    const d=new Date(iso); if(isNaN(d)) return '';
+    const abs=d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+', '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    const h=(Date.now()-d.getTime())/3600e3;
+    let r=''; if(h<0) r='upcoming'; else if(h<1) r=Math.max(1,Math.round(h*60))+'m ago'; else if(h<24) r=Math.round(h)+'h ago'; else r=Math.round(h/24)+'d ago';
+    return abs+(r?' ('+r+')':'');
+  };
   let filter='all', selId=null;
 
   // InBody scoring bar: zones (healthy/caution/high) with the patient's marker
@@ -4950,7 +4966,7 @@ HARD RULES:
   window.deleteVitals=async function(id){ if(!confirm('Delete this vitals entry?')) return; try{ const r=await postLists({action:'vitals_delete',vitals_id:id}); if(!r.ok) throw new Error(r.error||'failed'); document.getElementById('listOverlay')?.remove(); await loadChartLists(selId);}catch(e){ alert('Could not delete: '+e.message);} };
 
   // ================= Documents vault =================
-  const DOC_TYPE_LABELS = { id:'ID', insurance_card:'Insurance card', lab:'Lab result', inbody:'InBody scan', consent:'Consent form', other:'Other' };
+  const DOC_TYPE_LABELS = { id:'ID', insurance_card:'Insurance card', insurance_card_front:'Insurance card (front)', insurance_card_back:'Insurance card (back)', authorization:'Authorization', referral:'Referral', lab:'Lab result', inbody:'InBody scan', consent:'Consent form', records_request:'Records request', correspondence:'Correspondence', other:'Other' };
   async function postDocs(payload){ const r=await fetch(CONVEX_URL+'/chart-docs',{ method:'POST', headers:await convexHeaders(), body:JSON.stringify(payload) }); return await r.json().catch(()=>({ ok:false, error:'bad response' })); }
   function fmtBytes(n){ if(n==null) return ''; if(n<1024) return n+' B'; if(n<1048576) return (n/1024).toFixed(0)+' KB'; return (n/1048576).toFixed(1)+' MB'; }
   async function loadChartDocs(pid){
@@ -4964,10 +4980,14 @@ HARD RULES:
   }
   function renderDocRow(d){
     const dt=new Date(d.created_at); const dstr=isNaN(dt)?'':dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-    const meta=[DOC_TYPE_LABELS[d.doc_type]||d.doc_type, dstr, fmtBytes(d.size), 'by '+esc(d.uploaded_by)].filter(Boolean).join(' · ');
+    // The TYPE is the headline (find the insurance card without opening files);
+    // the raw upload filename drops to the meta line.
+    const meta=[esc(d.filename), dstr, fmtBytes(d.size), 'by '+esc(d.uploaded_by)].filter(Boolean).join(' · ');
     const view=d.url?`<button onclick="openDocPreview('${d.id}')" class="text-[#0a6cf5] hover:underline">view</button>`:'<span class="text-[#9aa0ab]">unavailable</span>';
+    const ren=window.__chartDocsWrite?` · <button onclick="renameDoc('${d.id}')" class="text-[#0a6cf5] hover:underline">re-file</button>`:'';
     const del=window.__chartDocsWrite?` · <button onclick="deleteDoc('${d.id}')" class="text-[#be123c] hover:underline">delete</button>`:'';
-    return `<div class="flex items-start justify-between gap-3 py-2 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm text-[#16201d] font-medium truncate">📄 ${esc(d.filename)}</div><div class="text-[11px] text-[#9aa0ab]">${meta}${d.note?' · '+esc(d.note):''}</div></div><div class="text-[11px] whitespace-nowrap pt-0.5">${view}${del}</div></div>`;
+    const headline=(DOC_TYPE_LABELS[d.doc_type]||d.doc_type||'Document')+(d.note?' — '+esc(d.note):'');
+    return `<div class="flex items-start justify-between gap-3 py-2 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm text-[#16201d] font-medium truncate">📄 ${headline}</div><div class="text-[11px] text-[#9aa0ab]">${meta}</div></div><div class="text-[11px] whitespace-nowrap pt-0.5">${view}${ren}${del}</div></div>`;
   }
   window.openDocUpload=function(){
     const typeOpts=Object.entries(DOC_TYPE_LABELS).map(([k,vv])=>`<option value="${k}" ${k==='insurance_card'?'selected':''}>${vv}</option>`).join('');
@@ -4996,6 +5016,14 @@ HARD RULES:
       if(!r.ok) throw new Error(r.error||'could not save document');
       document.getElementById('listOverlay')?.remove(); await loadChartDocs(selId);
     }catch(e){ alert('Upload error: '+e.message); if(btn){btn.disabled=false;btn.textContent='Upload';} }
+  };
+  window.renameDoc=async function(id){
+    const d=(window.__chartDocs||[]).find(x=>x.id===id); if(!d) return;
+    const typeOpts=Object.entries(DOC_TYPE_LABELS).map(([k,vv])=>k+' = '+vv).join('\n');
+    const nt=prompt('Document type key (one of):\n'+typeOpts, d.doc_type||'other'); if(nt===null) return;
+    const nn=prompt('Label / note shown on the chart (e.g. "front of card"):', d.note||''); if(nn===null) return;
+    const r=await postDocs({action:'update',document_id:id,doc_type:(nt||'').trim(),note:nn});
+    if(r&&r.ok){ await loadChartDocs(selId); } else alert((r&&r.error)||'Could not update document.');
   };
   window.deleteDoc=async function(id){ if(!confirm('Delete this document? This removes the file.')) return; try{ const r=await postDocs({action:'delete',document_id:id}); if(!r.ok) throw new Error(r.error||'failed'); await loadChartDocs(selId);}catch(e){ alert('Could not delete: '+e.message);} };
   // In-app preview: fetch the bytes into a blob and render inline (image or PDF), so "view" previews
