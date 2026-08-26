@@ -1731,7 +1731,7 @@
       <div class="glass border border-[#e6e9ee] rounded-2xl p-5 mb-6">
         <div class="flex items-center justify-between mb-4">
           <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Wearable Health · 30-Day Checkpoint</div>
-          <div class="text-xs text-[#6b7280]">Apple Health${span?' · '+span:''}${w.total_points?' · '+Number(w.total_points).toLocaleString()+' points':''}</div>
+          <div class="text-xs text-[#6b7280]">${w.source==='samsung_health'?'Samsung Health':'Apple Health'}${span?' · '+span:''}${w.total_points?' · '+Number(w.total_points).toLocaleString()+' points':''}</div>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">${kpis}</div>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
