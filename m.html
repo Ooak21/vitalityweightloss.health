@@ -1054,6 +1054,7 @@ function samsungCard(rec){ return `
       <div id="swErr" class="hidden text-xs text-rose-500 mt-2"></div>
     </div>`; }
 function viewConnect(){
+  const isAndroid=/Android/i.test(navigator.userAgent||'');
   const ib=latestScan();
   const bodySynced = ib
     ? `<div class="card p-3 mb-3 flex items-center gap-3"><div class="ic" style="width:34px;height:34px;border-radius:11px"><svg viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M20 6 9 17l-5-5"/></svg></div><div class="min-w-0"><div class="text-sm font-semibold">Body composition · synced</div><div class="text-[11px] muted">InBody scan ${esc(fmtDate(ib.test_date))} · ${Math.round(ib.pbf_pct)}% body fat</div></div></div>`
