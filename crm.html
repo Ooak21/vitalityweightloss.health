@@ -3498,7 +3498,20 @@
   };
 
   // ---------------- branded email ----------------
-  function openEmail(){ $('#emailModal').classList.remove('hidden'); $('#emailModal').classList.add('flex'); renderEmailPreview(); }
+  // The compose buttons carry REAL destinations: the reminder's "Confirm appointment" goes to a
+  // tokenized one-click confirm, "Add to calendar" serves the .ics for the same appointment.
+  // Fetched per patient when the modal opens; until it arrives (or if there is no upcoming
+  // appointment) the buttons fall back to the portal, so a dead button can never be sent again.
+  let __apptLink=null;
+  async function fetchApptLink(pid){
+    __apptLink=null;
+    try{
+      const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'appt_confirm_link',patient_id:pid})});
+      const j=await r.json(); if(j&&j.ok) __apptLink=j;
+    }catch(e){}
+    renderEmailPreview();
+  }
+  function openEmail(){ $('#emailModal').classList.remove('hidden'); $('#emailModal').classList.add('flex'); renderEmailPreview(); if(selId) fetchApptLink(selId); }
   function closeEmail(){ $('#emailModal').classList.add('hidden'); $('#emailModal').classList.remove('flex'); }
   // ---- sender signature (based on who's logged in; uses their profile photo) ----
   const ASSET='https://vitalityweightloss.health/assets';
@@ -3530,9 +3543,10 @@
   function emailContent(tpl,p){
     const appt = (p.appts||[]).find(a=>new Date(a.when)>now) || (p.appts||[]).slice(-1)[0];
     const when = appt? fmtDT(appt.when):'your upcoming visit';
-    if(tpl==='confirm') return {h:`You're confirmed, ${p.first}.`, b:`This confirms your ${appt?appt.type:'appointment'} at Vitality Weight Loss on <b>${when}</b>${appt?` with ${appt.provider}`:''}. We look forward to seeing you.`, cta:'Add to calendar'};
-    if(tpl==='reminder') return {h:`See you soon, ${p.first}.`, b:`A friendly reminder of your ${appt?appt.type:'appointment'} on <b>${when}</b>${appt?` with ${appt.provider}`:''}. Need to reschedule? Just reply or call us.`, cta:'Confirm appointment'};
-    return {h:`Welcome to Vitality, ${p.first}.`, b:`We're glad you're here. Your ${PROG[p.program]||'care'} program is built around you, with a physician in your corner every step. A coordinator will be in touch shortly.`, cta:'View your next steps'};
+    const PORTAL='https://vitalityweightloss.health/portal.html';
+    if(tpl==='confirm') return {h:`You're confirmed, ${p.first}.`, b:`This confirms your ${appt?appt.type:'appointment'} at Vitality Weight Loss on <b>${when}</b>${appt?` with ${appt.provider}`:''}. We look forward to seeing you.`, cta:'Add to calendar', href:(__apptLink&&__apptLink.ics_url)||PORTAL};
+    if(tpl==='reminder') return {h:`See you soon, ${p.first}.`, b:`A friendly reminder of your ${appt?appt.type:'appointment'} on <b>${when}</b>${appt?` with ${appt.provider}`:''}. Need to reschedule? Just reply or call us.`, cta:'Confirm appointment', href:(__apptLink&&__apptLink.confirm_url)||PORTAL};
+    return {h:`Welcome to Vitality, ${p.first}.`, b:`We're glad you're here. Your ${PROG[p.program]||'care'} program is built around you, with a physician in your corner every step. A coordinator will be in touch shortly.`, cta:'View your next steps', href:PORTAL};
   }
   function renderEmailPreview(){ const p=patients.find(x=>x.id===selId); const c=emailContent($('#emailTpl').value,p); const sig=senderSig();
     $('#emailPreview').innerHTML = `
@@ -3542,7 +3556,7 @@
           <div style="padding:6px 28px 6px;color:#16201d">
             <h2 style="font-family:'Montserrat',sans-serif;font-size:21px;margin:6px 0 10px;color:#0a3d7a">${c.h}</h2>
             <p style="font-size:14px;line-height:1.65;color:#3d4a45;margin:0 0 18px">${c.b}</p>
-            <a style="display:inline-block;background:#0a6cf5;color:#ffffff;font-weight:600;font-size:14px;text-decoration:none;padding:11px 22px;border-radius:10px">${c.cta}</a>
+            <a href="${c.href}" style="display:inline-block;background:#0a6cf5;color:#ffffff;font-weight:600;font-size:14px;text-decoration:none;padding:11px 22px;border-radius:10px">${c.cta}</a>
           </div>
           <div style="padding:18px 28px 8px">${sigBlockHtml(sig)}</div>
           <div style="border-top:1px solid #eef1f4;padding:14px 28px;color:#8a9098;font-size:11px;line-height:1.5;background:#fafbfc">
