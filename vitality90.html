@@ -207,6 +207,11 @@
         </div>
         <input id="v90Email" type="email" placeholder="Email" autocomplete="email" class="w-full mt-3 px-4 py-3 rounded-xl border border-[#e6e9ee] text-[15px] focus:outline-none focus:border-[#0a6cf5]">
         <input id="v90Phone" type="tel" placeholder="Phone" autocomplete="tel" class="w-full mt-3 px-4 py-3 rounded-xl border border-[#e6e9ee] text-[15px] focus:outline-none focus:border-[#0a6cf5]">
+        <label class="flex items-start gap-2.5 mt-4 text-[12.5px] leading-relaxed text-[#6b7280] cursor-pointer">
+          <input id="v90Consent" type="checkbox" class="mt-0.5 shrink-0">
+          <span>By checking this box, you authorize DeBry Vitality Academies PC (Vitality Weight Loss) to call, text, and email the contact info above about the Vitality 90 program, possibly using automated means. Msg &amp; data rates may apply; msg frequency varies. Consent is not a condition of purchase. Text HELP for help and STOP to unsubscribe.</span>
+        </label>
+        <p class="text-[12px] text-[#6b7280] mt-1 ml-6">See our <a href="/terms.html" target="_blank" rel="noopener" class="underline">SMS Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener" class="underline">Privacy Policy</a>.</p>
         <p id="v90Err" class="text-[#e11d48] text-sm mt-3 hidden"></p>
         <button id="v90Submit" type="button" class="w-full mt-5 px-6 py-3.5 rounded-2xl bg-[#0a6cf5] text-white font-semibold hover:bg-[#0856c8] transition">Join the founding cohort</button>
       </div>
@@ -319,7 +324,9 @@
     if(!first || phone.replace(/\D/g,'').length < 10){ err.textContent='Please enter your name and a valid phone number.'; err.classList.remove('hidden'); return; }
     var btn=document.getElementById('v90Submit'); btn.disabled=true; btn.textContent='Sending…';
     fetch(CONVEX+'/lead',{ method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ first_name:first, last_name:last, email:email, phone:phone, source:'vitality90' }) })
+      body: JSON.stringify({ first_name:first, last_name:last, email:email, phone:phone, source:'vitality90',
+        consent:!!(document.getElementById('v90Consent')||{}).checked,
+        tags: (document.getElementById('v90Consent')||{}).checked ? ['sms-consent'] : [] }) })
       .then(function(r){ return r.json().catch(function(){ return {}; }); })
       .then(function(j){
         if(j && j.ok){

@@ -409,8 +409,8 @@ function renderForm(){
   };
   const pair=(HS[oc]||HS.REROUTE)[L]; const head=pair[0], sub=pair[1];
   const F = L==='es'
-    ? {fn:'Nombre',ln:'Apellido',em:'Correo electr\u00f3nico',ph:'Tel\u00e9fono celular',bt:'Mejor hora para llamar',opt:'(opcional)',btph:'ej. por la ma\u00f1ana',consent:'Acepto que Vitality Weight Loss me contacte por tel\u00e9fono, mensaje de texto o correo sobre mi elegibilidad. Pueden aplicar tarifas de mensajes y datos. El consentimiento no es condici\u00f3n de compra.',err:'Por favor complete los campos requeridos y la casilla de consentimiento.',submit:'Reservar mi lugar \u2192',back:'\u2190 Atr\u00e1s'}
-    : {fn:'First name',ln:'Last name',em:'Email',ph:'Mobile phone',bt:'Best time to call',opt:'(optional)',btph:'e.g. mornings',consent:'I agree to be contacted by Vitality Weight Loss by phone, text, or email about my eligibility. Message/data rates may apply. Consent is not a condition of purchase.',err:'Please complete the required fields and consent box.',submit:'Reserve My Spot \u2192',back:'\u2190 Back'};
+    ? {fn:'Nombre',ln:'Apellido',em:'Correo electr\u00f3nico',ph:'Tel\u00e9fono celular',bt:'Mejor hora para llamar',opt:'(opcional)',btph:'ej. por la ma\u00f1ana',consent:'Al marcar esta casilla, autorizo a DeBry Vitality Academies PC (Vitality Weight Loss) a llamarme, enviarme mensajes de texto y correos al contacto de arriba sobre mi elegibilidad, posiblemente por medios automatizados. Pueden aplicar tarifas de mensajes y datos; la frecuencia var\u00eda. El consentimiento no es condici\u00f3n de compra. Env\u00eda HELP para ayuda y STOP para cancelar.',err:'Por favor complete los campos requeridos y la casilla de consentimiento.',submit:'Reservar mi lugar \u2192',back:'\u2190 Atr\u00e1s'}
+    : {fn:'First name',ln:'Last name',em:'Email',ph:'Mobile phone',bt:'Best time to call',opt:'(optional)',btph:'e.g. mornings',consent:'By checking this box, you authorize DeBry Vitality Academies PC (Vitality Weight Loss) to call, text, and email the contact info above about your eligibility, possibly using automated means. Msg & data rates may apply; msg frequency varies. Consent is not a condition of purchase. Text HELP for help and STOP to unsubscribe.',err:'Please complete the required fields and consent box.',submit:'Reserve My Spot \u2192',back:'\u2190 Back'};
   body.innerHTML=`<div class="qstep active">
     <div class="result-ico">${ICONS.check}</div>
     <div class="qtitle" style="text-align:center">${head}</div>
@@ -425,6 +425,7 @@ function renderForm(){
       <div class="field"><label>${F.bt} <span style="color:#9aa4ac;font-weight:400">${F.opt}</span></label><input name="besttime" placeholder="${F.btph}"></div>
       <label class="consent"><input type="checkbox" id="consent" required>
         <span>${F.consent}</span></label>
+      <div class="consent" style="margin-top:4px;">See our <a href="/terms.html" target="_blank" rel="noopener">SMS Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</div>
       <div class="err" id="formerr">${F.err}</div>
       <button type="submit" class="btn btn-primary btn-lg" style="width:100%">${F.submit}</button>
       <button type="button" class="quiz-back" onclick="back()" style="display:block;margin:10px auto 0">${F.back}</button>
@@ -472,7 +473,7 @@ function submitLead(e){
         source:'glp_bridge',
         source_detail:'Medicare GLP-1 Bridge · '+payload.segment,
         health_notes:summary,
-        tags:['Medicare Bridge', payload.segment].concat(payload.tags||[]),
+        tags:['Medicare Bridge', payload.segment, 'sms-consent'].concat(payload.tags||[]),
         consent:true
       })
     }).catch(function(){});

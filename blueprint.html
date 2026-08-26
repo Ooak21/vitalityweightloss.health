@@ -1050,6 +1050,11 @@ svg.chart{display:block;width:100%;height:auto;}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
           <span>Your insurance information is used only to verify your benefits and is handled under our patient-privacy practices.</span>
         </div>
+        <label style="display:flex;align-items:flex-start;gap:9px;margin-top:14px;font-size:12.5px;color:var(--faint);cursor:pointer;line-height:1.5">
+          <input type="checkbox" id="i-consent" style="margin-top:3px;flex:0 0 auto"/>
+          <span>By checking this box, you authorize DeBry Vitality Academies PC (Vitality Weight Loss) to call, text, and email the contact info above about your benefits check, possibly using automated means. Msg &amp; data rates may apply; msg frequency varies. Consent is not a condition of purchase. Text HELP for help and STOP to unsubscribe.</span>
+        </label>
+        <div style="font-size:12px;color:var(--faint);margin:4px 0 0 26px">See our <a href="/terms.html" target="_blank" rel="noopener">SMS Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</div>
         <div class="err" id="err-ins">Please add your name, phone, and insurance carrier so our team can reach you.</div>
         <button class="btn btn-primary btn-lg btn-block" id="submit-ins" style="margin-top:18px">Verify My Benefits — Free →</button>
       </div>
@@ -1066,6 +1071,11 @@ svg.chart{display:block;width:100%;height:auto;}
         <div class="notebox" style="margin-top:14px;border-color:var(--green);background:var(--tint-green)">
           <b style="color:var(--green-dark)">Physician-Protected Billing.</b> Today, we charge only your <b id="sp-tier-amt">program tier</b>. Your card is held securely on file for the medication track — and charged <em>only</em> if Dr. DeBry approves GLP medication at your consult and InBody scan. If GLP isn't right for you, your monthly stays at the program tier — you're never charged for medication you don't receive. Payment is completed through our protected checkout, never typed into this screen.
         </div>
+        <label style="display:flex;align-items:flex-start;gap:9px;margin-top:14px;font-size:12.5px;color:var(--faint);cursor:pointer;line-height:1.5">
+          <input type="checkbox" id="s-consent" style="margin-top:3px;flex:0 0 auto"/>
+          <span>By checking this box, you authorize DeBry Vitality Academies PC (Vitality Weight Loss) to call, text, and email the contact info above about your reservation and enrollment, possibly using automated means. Msg &amp; data rates may apply; msg frequency varies. Consent is not a condition of purchase. Text HELP for help and STOP to unsubscribe.</span>
+        </label>
+        <div style="font-size:12px;color:var(--faint);margin:4px 0 0 26px">See our <a href="/terms.html" target="_blank" rel="noopener">SMS Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</div>
         <div class="err" id="err-self">Please add your name and phone so we can hold your spot.</div>
         <button class="btn btn-green btn-lg btn-block" id="submit-self" style="margin-top:18px">Reserve My Spot — Pay Today →</button>
       </div>
@@ -1876,7 +1886,8 @@ $("submit-ins").addEventListener("click",()=>{
     type:"insurance", name:name, dob:$("i-dob").value.trim(), phone:phone,
     email:$("i-email").value.trim(), carrier:carrier, memberId:$("i-member").value.trim(),
     group:$("i-group").value.trim(), bestTime:$("i-time").value,
-    cardPhotos:(S.cardFront?1:0)+(S.cardBack?1:0)
+    cardPhotos:(S.cardFront?1:0)+(S.cardBack?1:0),
+    consent:$("i-consent").checked
   };
   finishLead(lead);
 });
@@ -1887,7 +1898,8 @@ $("submit-self").addEventListener("click",()=>{
   err.classList.remove("show");
   const lead={
     type:"selfpay", name:name, dob:$("s-dob").value.trim(),
-    phone:phone, email:$("s-email").value.trim()
+    phone:phone, email:$("s-email").value.trim(),
+    consent:$("s-consent").checked
   };
   if(CONFIG.stripePaymentLink){
     try{ window.open(CONFIG.stripePaymentLink,"_blank"); }catch(e){}
@@ -1924,8 +1936,8 @@ function finishLead(lead){
           "Monthly: $"+(TIER_PRICE[S.tier]+TRACK_PRICE[S.track]),
           lead.type==="insurance"&&lead.carrier?("Carrier: "+lead.carrier):""
         ].filter(Boolean).join(" · "),
-        tags:["Wellness Architecture", S.tier, S.track, lead.type==="insurance"?"Insurance":"Self-pay"],
-        consent:true
+        tags:["Wellness Architecture", S.tier, S.track, lead.type==="insurance"?"Insurance":"Self-pay"].concat(lead.consent?["sms-consent"]:[]),
+        consent:!!lead.consent
       })
     }).catch(function(){});
   }catch(e){}
@@ -2083,7 +2095,7 @@ function pingLead(stage){
           data.confidence?("Confidence: "+data.confidence):""
         ].filter(Boolean).join(" \u00b7 "),
         tags:["Wellness Architecture", stage].concat(data.selected_tier?[data.selected_tier]:[]),
-        consent:true
+        consent:!!(window.__vitalityLead && window.__vitalityLead.consent)
       })
     }).catch(function(){});
   } catch(e){}

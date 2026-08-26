@@ -284,8 +284,9 @@
         </div>
         <label class="consent">
           <input type="checkbox" id="consent"/>
-          <span>I agree to be contacted by Vitality Weight Loss by phone, text, and email about my results and a free consultation. Message/data rates may apply. Consent is not a condition of purchase.</span>
+          <span>By checking this box, you authorize DeBry Vitality Academies PC (Vitality Weight Loss) to call, text, and email the contact info above about your results and a free consultation, possibly using automated means. Msg &amp; data rates may apply; msg frequency varies. Consent is not a condition of purchase. Text HELP for help and STOP to unsubscribe.</span>
         </label>
+        <div class="consent" style="margin-top:4px;padding-left:26px;">See our <a href="/terms.html" target="_blank" rel="noopener">SMS Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</div>
         <div class="err" id="err7">Please add your name, a valid email, and check the box to continue.</div>
       </div>
 
@@ -537,7 +538,7 @@ function submitLead(){
           state.goal?('Goal: '+state.goal):'', state.cond?('Conditions: '+state.cond):'',
           state.contra?('Safety flag: '+state.contra):''
         ].filter(Boolean).join(' · '),
-        tags:['GLP-1 Checker', qualified==='true'?'Qualified':'Not qualified', medsTrack],
+        tags:['GLP-1 Checker', qualified==='true'?'Qualified':'Not qualified', medsTrack, 'sms-consent'],
         consent:true
       })
     }).catch(function(){});
