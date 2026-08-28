@@ -375,8 +375,16 @@
             </div>
           </div>
 
+          <label style="display:flex;align-items:flex-start;gap:9px;margin:14px 0 0;font-size:12.5px;color:#6b7280;cursor:pointer;line-height:1.5">
+            <input type="checkbox" id="a-sms" name="a_sms" style="margin-top:3px;flex:0 0 auto">
+            <span>Optional (Partner A): By providing your phone number and checking this box, you agree to receive SMS appointment reminders, care follow-ups, and account notifications from DeBry Vitality Academies PC (Vitality Weight Loss). Message frequency may vary. Standard Message and Data Rates may apply. Reply STOP to opt out. Reply HELP for help. Consent is not a condition of purchase or treatment. We will not share mobile information with third parties for promotional or marketing purposes. See our <a href="/sms.html" target="_blank" rel="noopener">Text Message Program</a>, <a href="/terms.html" target="_blank" rel="noopener">SMS Terms</a>, and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span>
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:9px;margin:10px 0 0;font-size:12.5px;color:#6b7280;cursor:pointer;line-height:1.5">
+            <input type="checkbox" id="b-sms" name="b_sms" style="margin-top:3px;flex:0 0 auto">
+            <span>Optional (Partner B): By providing your phone number and checking this box, you agree to receive SMS appointment reminders, care follow-ups, and account notifications from DeBry Vitality Academies PC (Vitality Weight Loss). Message frequency may vary. Standard Message and Data Rates may apply. Reply STOP to opt out. Reply HELP for help. Consent is not a condition of purchase or treatment. We will not share mobile information with third parties for promotional or marketing purposes. See our <a href="/sms.html" target="_blank" rel="noopener">Text Message Program</a>, <a href="/terms.html" target="_blank" rel="noopener">SMS Terms</a>, and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span>
+          </label>
           <button type="submit" class="btn btn-primary">Start Our 20 Pound Journey →</button>
-          <p class="disclaimer">By signing up you agree to be contacted by a Vitality coach about the challenge. No cost, no obligation.</p>
+          <p class="disclaimer">By signing up you agree to be contacted by a Vitality coach about the challenge. SMS is sent only if the optional box above is checked. No cost, no obligation.</p>
         </form>
 
         <div class="success" id="success">
@@ -428,9 +436,9 @@
       checks.forEach(function(c){setInvalid(c[0],!c[1]); if(!c[1])ok=false;});
       if(!ok){var f=form.querySelector('.field.invalid input'); if(f)f.focus(); return;}
       var payload={team:(d.get('team')||'').trim(),
-        partnerA:{name:d.get('a_name'),phone:d.get('a_phone'),email:d.get('a_email')},
-        partnerB:{name:d.get('b_name'),phone:d.get('b_phone'),email:d.get('b_email')}};
-      console.log('Challenge sign-up:',payload); try{(function(){var C='https://quixotic-cat-492.convex.site/lead';function nm(n){n=(n||'').trim();var i=n.indexOf(' ');return i<0?[n,'']:[n.slice(0,i),n.slice(i+1)];}function snd(pt,role,other){if(!pt||!pt.email)return;var f=nm(pt.name);fetch(C,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({first_name:f[0],last_name:f[1],email:pt.email,phone:pt.phone,source:'Vitality20',source_detail:'20 Pound Partner Challenge'+(payload.team?' · Team '+payload.team:'')+' · Partner '+role+(other?' (with '+other+')':''),tags:['Vitality20','Partner Challenge']})}).catch(function(){});}snd(payload.partnerA,'A',payload.partnerB&&payload.partnerB.name);snd(payload.partnerB,'B',payload.partnerA&&payload.partnerA.name);})();}catch(_){}
+        partnerA:{name:d.get('a_name'),phone:d.get('a_phone'),email:d.get('a_email'),sms:!!document.getElementById('a-sms').checked},
+        partnerB:{name:d.get('b_name'),phone:d.get('b_phone'),email:d.get('b_email'),sms:!!document.getElementById('b-sms').checked}};
+      console.log('Challenge sign-up:',payload); try{(function(){var C='https://quixotic-cat-492.convex.site/lead';function nm(n){n=(n||'').trim();var i=n.indexOf(' ');return i<0?[n,'']:[n.slice(0,i),n.slice(i+1)];}function snd(pt,role,other){if(!pt||!pt.email)return;var f=nm(pt.name);fetch(C,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({first_name:f[0],last_name:f[1],email:pt.email,phone:pt.phone,source:'Vitality20',source_detail:'20 Pound Partner Challenge'+(payload.team?' · Team '+payload.team:'')+' · Partner '+role+(other?' (with '+other+')':''),consent:!!pt.sms,tags:['Vitality20','Partner Challenge'].concat(pt.sms?['sms-consent']:[])})}).catch(function(){});}snd(payload.partnerA,'A',payload.partnerB&&payload.partnerB.name);snd(payload.partnerB,'B',payload.partnerA&&payload.partnerA.name);})();}catch(_){}
       var names=payload.partnerA.name.split(' ')[0]+' & '+payload.partnerB.name.split(' ')[0];
       document.getElementById('successMsg').innerHTML=(payload.team?'Team <span class="team">'+esc(payload.team)+'</span> is registered! ':'')+esc(names)+", your spot in the 20 Pound Partner Challenge is reserved. A Vitality coach will reach out shortly to get you started.";
       form.style.display='none';
