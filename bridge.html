@@ -423,9 +423,9 @@ function renderForm(){
       <div class="field"><label>${F.em}</label><input type="email" name="email" required></div>
       <div class="field"><label>${F.ph}</label><input type="tel" name="phone" required></div>
       <div class="field"><label>${F.bt} <span style="color:#9aa4ac;font-weight:400">${F.opt}</span></label><input name="besttime" placeholder="${F.btph}"></div>
-      <label class="consent"><input type="checkbox" id="consent" required>
+      <label class="consent"><input type="checkbox" id="consent">
         <span>${F.consent}</span></label>
-      <div class="consent" style="margin-top:4px;">See our <a href="/terms.html" target="_blank" rel="noopener">SMS Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</div>
+      <div class="consent" style="margin-top:4px;">See our <a href="/sms.html" target="_blank" rel="noopener">Text Message Program</a>, <a href="/terms.html" target="_blank" rel="noopener">SMS Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</div>
       <div class="err" id="formerr">${F.err}</div>
       <button type="submit" class="btn btn-primary btn-lg" style="width:100%">${F.submit}</button>
       <button type="button" class="quiz-back" onclick="back()" style="display:block;margin:10px auto 0">${F.back}</button>
@@ -435,7 +435,8 @@ function renderForm(){
 function submitLead(e){
   e.preventDefault();
   const f=e.target;
-  if(!f.consent.checked){document.getElementById('formerr').style.display='block';return false;}
+  // The SMS box is optional on purpose: consent can never be a condition of signing up.
+  const smsConsent=!!f.consent.checked;
   const payload={
     firstname:f.firstname.value.trim(), lastname:f.lastname.value.trim(),
     email:f.email.value.trim(), phone:f.phone.value.trim(), besttime:f.besttime.value.trim(),
@@ -473,8 +474,8 @@ function submitLead(e){
         source:'glp_bridge',
         source_detail:'Medicare GLP-1 Bridge · '+payload.segment,
         health_notes:summary,
-        tags:['Medicare Bridge', payload.segment, 'sms-consent'].concat(payload.tags||[]),
-        consent:true
+        tags:['Medicare Bridge', payload.segment].concat(smsConsent?['sms-consent']:[]).concat(payload.tags||[]),
+        consent:smsConsent
       })
     }).catch(function(){});
   }catch(e){}

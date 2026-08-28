@@ -284,10 +284,10 @@
         </div>
         <label class="consent">
           <input type="checkbox" id="consent"/>
-          <span>By checking this box, you authorize DeBry Vitality Academies PC (Vitality Weight Loss) to call, text, and email the contact info above about your results and a free consultation, possibly using automated means. Msg &amp; data rates may apply; msg frequency varies. Consent is not a condition of purchase. Text HELP for help and STOP to unsubscribe.</span>
+          <span><strong>Optional:</strong> By checking this box, you authorize DeBry Vitality Academies PC (Vitality Weight Loss) to call, text, and email the contact info above about your results and a free consultation, possibly using automated means. Msg &amp; data rates may apply; msg frequency varies. Consent is not a condition of purchase. Text HELP for help and STOP to unsubscribe.</span>
         </label>
-        <div class="consent" style="margin-top:4px;padding-left:26px;">See our <a href="/terms.html" target="_blank" rel="noopener">SMS Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</div>
-        <div class="err" id="err7">Please add your name, a valid email, and check the box to continue.</div>
+        <div class="consent" style="margin-top:4px;padding-left:26px;">See our <a href="/sms.html" target="_blank" rel="noopener">Text Message Program</a>, <a href="/terms.html" target="_blank" rel="noopener">SMS Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</div>
+        <div class="err" id="err7">Please add your name and a valid email to continue.</div>
       </div>
 
       <!-- RESULT -->
@@ -402,7 +402,9 @@ function validate(n){
     state.fname=document.getElementById('fname').value.trim()||null;
     state.email=document.getElementById('email').value.trim()||null;
     state.phone=document.getElementById('phone').value.trim()||null;
-    const ok = state.fname && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(state.email||'') && document.getElementById('consent').checked;
+    // The SMS box is optional on purpose: consent can never be a condition of getting results.
+    state.smsConsent=!!document.getElementById('consent').checked;
+    const ok = state.fname && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(state.email||'');
     if(!ok){return showErr('err7');}
   }
   return true;
@@ -487,14 +489,14 @@ function renderResult(){
 
   // prefill the consult link with name/email when possible
   const btn = document.getElementById('consultBtn');
-  const u = new URL(CONFIG.consultUrl);
+  const u = new URL(CONFIG.consultUrl, location.origin);
   if(_fn) u.searchParams.set('firstName', _fn);
   if(_ln) u.searchParams.set('lastName', _ln);
   if(state.email) u.searchParams.set('email', state.email);
   btn.href = u.toString();
 
   const ab = document.getElementById('asyncBtn');
-  const a = new URL(CONFIG.asyncUrl);
+  const a = new URL(CONFIG.asyncUrl, location.origin);
   if(_fn) a.searchParams.set('firstName', _fn);
   if(_ln) a.searchParams.set('lastName', _ln);
   if(state.email) a.searchParams.set('email', state.email);
@@ -538,8 +540,8 @@ function submitLead(){
           state.goal?('Goal: '+state.goal):'', state.cond?('Conditions: '+state.cond):'',
           state.contra?('Safety flag: '+state.contra):''
         ].filter(Boolean).join(' · '),
-        tags:['GLP-1 Checker', qualified==='true'?'Qualified':'Not qualified', medsTrack, 'sms-consent'],
-        consent:true
+        tags:['GLP-1 Checker', qualified==='true'?'Qualified':'Not qualified', medsTrack].concat(state.smsConsent?['sms-consent']:[]),
+        consent:!!state.smsConsent
       })
     }).catch(function(){});
   }catch(e){/* result still shows + booking still works */}
