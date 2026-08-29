@@ -15,7 +15,7 @@ Vitality Weight Loss treats adults 18 to 80 who are Nevada residents. Care is de
 - Compounded semaglutide (once-weekly injection): the same active ingredient as Ozempic and Wegovy. $149 the first month, then $199/month, with no price increase as the dose increases.
 - Compounded tirzepatide (once-weekly injection, dual GIP/GLP-1): the same active ingredient as Mounjaro and Zepbound. $249 the first month, then $399/month.
 - Oral semaglutide (daily sublingual, no needle): a true no-needle GLP-1 option for needle-averse patients. $199 the first month, then $299/month.
-- Medicare $50/month GLP-1 Bridge: helps eligible Medicare members get brand-name Wegovy or Zepbound for about $50/month instead of $1,000-plus. Eligibility is confirmed by the clinic. https://vitalityweightloss.health/free-or-reduced-cost-weight-loss-medications/
+- Medicare $50/month GLP-1 Bridge: helps eligible Medicare members get brand-name Wegovy or Zepbound for about $50/month instead of $1,000-plus. Eligibility is confirmed by the clinic. https://vitalityweightloss.health/guides/semaglutide-medicare-nevada.html
 - InBody body-composition scanning and personalized nutrition coaching: body-composition tracking, personalized plans, and 1:1 support.
 
 ## Clinicians
@@ -71,8 +71,8 @@ Routing common requests:
 
 ## Get started
 - Online medical intake: https://vitalityweightloss.health/intake.html (3-minute screening, reviewed by Dr. DeBry within 24 hours).
-- Our staff: https://vitalityweightloss.health/our-staff/
-- Contact and location: https://vitalityweightloss.health/contact/
+- Our staff: https://vitalityweightloss.health/#physician
+- Contact and location: https://vitalityweightloss.health/#contact
 
 ## Contact
 - Vitality Weight Loss, 6140 Brent Thurman Way, Suite 100, Las Vegas, NV 89148
