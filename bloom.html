@@ -157,10 +157,21 @@
   }
   h2 {
     font-family: 'Montserrat','Inter',sans-serif;
-    font-weight: 500;
-    font-size: 22px;
+    font-weight: 400;
+    font-size: clamp(30px, 5vw, 42px);
+    line-height: 1.1;
+    letter-spacing: -.025em;
     color: var(--navy);
-    margin: 32px 0 12px;
+    margin: 0 0 16px;
+  }
+  h2 em {
+    font-style: italic;
+    font-weight: 400;
+    background: linear-gradient(120deg, #0856c8 0%, #0a6cf5 30%, #0a6cf5 80%, #1f6db3 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
   }
   .lede {
     font-size: 16.5px;
@@ -990,7 +1001,7 @@ function viewLiveVisit(p) {
     <div class="icon-wrap" style="background:linear-gradient(180deg,#3AA0E0 0%,#2c7eb3 100%);">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
     </div>
-    <h1>Let's set up a live visit instead</h1>
+    <h2>Let's set up a live visit instead</h2>
     <p class="lede" style="margin:0 auto 20px;max-width:480px;">Based on your answers, a synchronous video visit with Dr. DeBry is the safest next step. Our async hair-loss program isn't the right fit for this situation.</p>
   `;
   const steps = h('div', { class: 'next-steps' });
@@ -1020,7 +1031,7 @@ function viewNonNV(p) {
     <div class="icon-wrap" style="background:linear-gradient(180deg,#3AA0E0 0%,#2c7eb3 100%);">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
     </div>
-    <h1>We currently serve Nevada only</h1>
+    <h2>We currently serve Nevada only</h2>
     <p class="lede" style="margin:0 auto 20px;max-width:480px;">Vitality Bloom is available to Nevada residents right now. We're expanding to more states soon — leave your email with our team and we'll notify you when we open in ${state.stateLabel || 'your state'}.</p>
     <div class="info" style="text-align:left;margin:0 auto;max-width:480px;">
       <strong>Flag:</strong> Non-Nevada resident attempted async hair-loss intake (state: ${state.state || 'unknown'}).
@@ -1043,7 +1054,7 @@ function viewSubmitted(p) {
     <div class="icon-wrap">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
     </div>
-    <h1>Thanks — Dr. DeBry will review your information and you'll hear back.</h1>
+    <h2>Thanks — Dr. DeBry will review your information and you'll hear back.</h2>
     <p class="lede" style="margin:0 auto;max-width:480px;">Your card has not been charged.</p>
   `;
   const homeWrap = h('div', { style: 'margin-top:24px;' });
@@ -1123,7 +1134,7 @@ const flow = [
 
   // 2. QUESTIONNAIRE ---------------------------------------------------------
   { id: 'questionnaire', section: 'Hair-loss intake', view: (p) => {
-    p.appendChild(h('h1', {}, ['Tell us about your hair loss']));
+    p.appendChild(h('h2', {}, ['Tell us about your hair loss']));
     p.appendChild(h('p', { class: 'lede' }, ['This helps Dr. DeBry understand your history and whether async care is appropriate.']));
 
     p.appendChild(h('h2', { style: 'margin-top:0;font-size:18px;' }, ['About you']));
@@ -1225,7 +1236,7 @@ const flow = [
 
   // 3. PHOTO UPLOAD ----------------------------------------------------------
   { id: 'photos', section: 'Scalp photos', view: (p) => {
-    p.appendChild(h('h1', {}, ['Upload scalp photos']));
+    p.appendChild(h('h2', {}, ['Upload scalp photos']));
     p.appendChild(h('p', { class: 'lede' }, ['Add 2–3 clear photos of thinning areas or your scalp. Good lighting, no filters. Photos are stored securely for Dr. DeBry\'s review.']));
 
     state.photos = state.photos || [];
@@ -1287,7 +1298,7 @@ const flow = [
 
   // 4. ACCOUNT & LOCATION ----------------------------------------------------
   { id: 'account', section: 'Your details', view: (p) => {
-    p.appendChild(h('h1', {}, ['Account & location']));
+    p.appendChild(h('h2', {}, ['Account & location']));
     p.appendChild(h('p', { class: 'lede' }, ['We\'ll use this to create your patient record and reach you about your care.']));
 
     const row = h('div', { class: 'row' });
@@ -1340,7 +1351,7 @@ const flow = [
 
   // 5. IDENTITY CHECK --------------------------------------------------------
   { id: 'identity', section: 'Identity verification', view: (p) => {
-    p.appendChild(h('h1', {}, ['Confirm your identity']));
+    p.appendChild(h('h2', {}, ['Confirm your identity']));
     p.appendChild(h('p', { class: 'lede' }, ['Federal telehealth rules require us to verify who you are before treatment.']));
 
     textInput(p, 'dob', 'Date of birth', '', 'date', { autocomplete: 'bday' });
@@ -1408,7 +1419,7 @@ const flow = [
 
   // 6. CONSENT & E-SIGNATURE (read-gated disclosures — matches the glp1 flow) -
   { id: 'consent', section: 'Consent & e-signature', view: (p) => {
-    p.appendChild(h('h1', {}, ['Last step your consents.']));
+    p.appendChild(h('h2', {}, ['Last step your consents.']));
     p.appendChild(h('p', { class: 'lede' }, ['You must open and fully read each document before its checkbox unlocks.']));
 
     state.acks = state.acks || {};
@@ -1556,7 +1567,7 @@ const flow = [
 
   // 7. PRODUCT SELECT + CHECKOUT ---------------------------------------------
   { id: 'checkout', section: 'Plan & payment', view: (p) => {
-    p.appendChild(h('h1', {}, ['Choose your plan']));
+    p.appendChild(h('h2', {}, ['Choose your plan']));
     p.appendChild(h('p', { class: 'lede' }, ['Select a monthly plan. Cash pay — cancel anytime. Your card is saved for authorization only; you are not charged until Dr. DeBry approves your treatment.']));
 
     if (!state.plan) state.plan = state.sex === 'female' ? 'women' : 'men';

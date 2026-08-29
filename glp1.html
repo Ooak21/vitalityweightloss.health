@@ -161,7 +161,7 @@
   }
 
   /* TYPOGRAPHY */
-  h1 {
+  h1, h2 {
     font-family: 'Montserrat','Inter',sans-serif;
     font-weight: 400;
     font-size: clamp(30px, 5vw, 42px);
@@ -170,7 +170,7 @@
     color: var(--navy);
     margin: 0 0 16px;
   }
-  h1 em {
+  h1 em, h2 em {
     font-style: italic;
     font-weight: 400;
     background: linear-gradient(120deg, #0856c8 0%, #0a6cf5 30%, #0a6cf5 80%, #1f6db3 100%);
@@ -699,7 +699,7 @@
     .topbar-inner { padding: 12px 18px; }
     main { padding: 40px 20px 120px; }
     .trust-pill { display: none; }
-    h1 { font-size: 28px; }
+    h1, h2 { font-size: 28px; }
     .hero h1 { font-size: 36px; }
     .hero-stat .big { font-size: 36px; }
     .cta { width: 100%; }
@@ -1167,7 +1167,7 @@ const flow = [
 
   // REASON FOR VISIT ---------------------------------------------------------
   { id:'reason', section:'About you', view:(p) => {
-    p.appendChild(h('h1', {}, ['What brings you to Vitality today?']));
+    p.appendChild(h('h2', {}, ['What brings you to Vitality today?']));
     p.appendChild(h('p', { class:'lede' }, ['This tailors your intake and tells your provider how to help.']));
     singleSelectChip(p, 'reason', [
       { label:'Vitality Direct Starting at $149/ First Month. Reviewed by Dr. DeBry Within 24 Hrs.', value:'glp1' },
@@ -1179,7 +1179,7 @@ const flow = [
 
   // CONTACT FIRST captured up front so a fail-out is still a marketable lead
   { id:'name', section:'Your details', view:(p) => {
-    p.appendChild(h('h1', {}, ['What\'s your name?']));
+    p.appendChild(h('h2', {}, ['What\'s your name?']));
     p.appendChild(h('p', { class:'lede' }, ['As it appears on your ID this goes on your prescription.']));
     const row = h('div', { class:'row' });
     const w1 = h('label', { class:'field' }, [h('span', { class:'lab' }, ['First name'])]);
@@ -1196,7 +1196,7 @@ const flow = [
   }, canContinue:(s) => (s.firstName||'').length>=1 && (s.lastName||'').length>=1 },
 
   { id:'contact', section:'Your details', view:(p) => {
-    p.appendChild(h('h1', {}, ['How should Dr. DeBry reach you?']));
+    p.appendChild(h('h2', {}, ['How should Dr. DeBry reach you?']));
     p.appendChild(h('p', { class:'lede' }, ['So we can follow up about your care, even if now is not the right time.']));
     textInput(p, 'email', 'Email', 'you@email.com', 'email', { autocomplete:'email' });
     textInput(p, 'phone', 'Phone', '(702) 555-0123', 'tel', { autocomplete:'tel' });
@@ -1204,14 +1204,14 @@ const flow = [
   }, canContinue:(s) => /.+@.+\..+/.test(s.email||'') && (s.phone||'').replace(/\D/g,'').length>=10 },
 
   { id:'dob', section:'Your details', view:(p) => {
-    p.appendChild(h('h1', {}, ['Date of birth?']));
+    p.appendChild(h('h2', {}, ['Date of birth?']));
     textInput(p, 'dob', 'MM/DD/YYYY', '', 'date', { autocomplete:'bday' });
     ctaBtn(p, { disabled: true });
   }, canContinue:(s) => (s.dob||'').length === 10 },
 
   // ELIGIBILITY --------------------------------------------------------------
   { id:'sex', section:'About you', view:(p) => {
-    p.appendChild(h('h1', {}, ['First, what sex were you assigned at birth?']));
+    p.appendChild(h('h2', {}, ['First, what sex were you assigned at birth?']));
     p.appendChild(h('p', { class:'lede' }, ['We use this for medication and pregnancy-related safety screening.']));
     singleSelectChip(p, 'sex', [
       { label:'Female', value:'female' },
@@ -1220,14 +1220,14 @@ const flow = [
   }},
 
   { id:'age', section:'About you', view:(p) => {
-    p.appendChild(h('h1', {}, ['How old are you?']));
+    p.appendChild(h('h2', {}, ['How old are you?']));
     p.appendChild(h('p', { class:'lede' }, ['We treat adults 18-80.']));
     textInput(p, 'age', 'Age', '32', 'number');
     ctaBtn(p, { disabled: true });
   }, canContinue:(s) => { const n=parseInt(s.age); return n>=18 && n<=80; } },
 
   { id:'state', section:'Where you live', view:(p) => {
-    p.appendChild(h('h1', {}, ['Are you a Nevada resident?']));
+    p.appendChild(h('h2', {}, ['Are you a Nevada resident?']));
     p.appendChild(h('p', { class:'lede' }, ['Right now we only serve Nevada residents. We\'re expanding soon.']));
     singleSelectChip(p, 'isNV', [
       { label:'Yes I live in Nevada', value:'yes' },
@@ -1236,7 +1236,7 @@ const flow = [
   }},
 
   { id:'height', section:'Your numbers', view:(p) => {
-    p.appendChild(h('h1', {}, ['What\'s your height?']));
+    p.appendChild(h('h2', {}, ['What\'s your height?']));
     const row = h('div', { class:'row' });
     const ft = h('label', { class:'field' }, [h('span', { class:'lab' }, ['Feet'])]);
     const ftIn = h('input', { type:'number', value: state.heightFt||'', placeholder:'5' });
@@ -1252,20 +1252,20 @@ const flow = [
   }, canContinue:(s) => parseInt(s.heightFt)>=3 && parseInt(s.heightIn)>=0 && parseInt(s.heightIn)<12 },
 
   { id:'weight', section:'Your numbers', view:(p) => {
-    p.appendChild(h('h1', {}, ['Your current weight?']));
+    p.appendChild(h('h2', {}, ['Your current weight?']));
     textInput(p, 'weightLbs', 'Weight (lbs)', '180', 'number');
     ctaBtn(p, { disabled: true });
   }, canContinue:(s) => parseInt(s.weightLbs)>=100 && parseInt(s.weightLbs)<700 },
 
   { id:'goal', section:'Your numbers', view:(p) => {
-    p.appendChild(h('h1', {}, ['What\'s your target weight?']));
+    p.appendChild(h('h2', {}, ['What\'s your target weight?']));
     p.appendChild(h('p', { class:'lede' }, ['Just a rough target. We\'ll personalize from there.']));
     textInput(p, 'goalWeight', 'Goal weight (lbs)', '150', 'number');
     ctaBtn(p, { disabled: true });
   }, canContinue:(s) => parseInt(s.goalWeight) > 0 && parseInt(s.goalWeight) < parseInt(s.weightLbs||9999) },
 
   { id:'attempts', section:'Your background', view:(p) => {
-    p.appendChild(h('h1', {}, ['Have you tried weight-loss medications before?']));
+    p.appendChild(h('h2', {}, ['Have you tried weight-loss medications before?']));
     singleSelectChip(p, 'attempts', [
       { label:'Yes multiple attempts', value:'many' },
       { label:'Yes once or twice', value:'few' },
@@ -1275,7 +1275,7 @@ const flow = [
 
   // SAFETY -------------------------------------------------------------------
   { id:'thyroid', section:'Medical history', view:(p) => {
-    p.appendChild(h('h1', {}, ['Any history of medullary thyroid cancer or MEN-2?']));
+    p.appendChild(h('h2', {}, ['Any history of medullary thyroid cancer or MEN-2?']));
     p.appendChild(h('p', { class:'lede' }, ['Personal or family history. If you\'re not sure, the answer is almost certainly No.']));
     singleSelectChip(p, 'thyroid', [
       { label:'No', value:'no' },
@@ -1284,7 +1284,7 @@ const flow = [
   }},
 
   { id:'eating', section:'Medical history', view:(p) => {
-    p.appendChild(h('h1', {}, ['Any active eating disorder?']));
+    p.appendChild(h('h2', {}, ['Any active eating disorder?']));
     p.appendChild(h('p', { class:'lede' }, ['Anorexia, bulimia, or binge-eating you\'re currently being treated for.']));
     singleSelectChip(p, 'eatingDisorder', [
       { label:'No', value:'no' },
@@ -1294,7 +1294,7 @@ const flow = [
   }},
 
   { id:'pancreatitis', section:'Medical history', view:(p) => {
-    p.appendChild(h('h1', {}, ['Pancreatitis history?']));
+    p.appendChild(h('h2', {}, ['Pancreatitis history?']));
     singleSelectChip(p, 'pancreatitis', [
       { label:'No', value:'no' },
       { label:'Yes acute, fully resolved', value:'acute' },
@@ -1303,7 +1303,7 @@ const flow = [
   }},
 
   { id:'gallbladder', section:'Medical history', view:(p) => {
-    p.appendChild(h('h1', {}, ['Active gallbladder disease?']));
+    p.appendChild(h('h2', {}, ['Active gallbladder disease?']));
     p.appendChild(h('p', { class:'lede' }, ['If your gallbladder was removed, select "No active disease."']));
     singleSelectChip(p, 'gallbladder', [
       { label:'No active disease', value:'no' },
@@ -1312,7 +1312,7 @@ const flow = [
   }},
 
   { id:'diabetes', section:'Medical history', view:(p) => {
-    p.appendChild(h('h1', {}, ['What\'s your diabetes status?']));
+    p.appendChild(h('h2', {}, ['What\'s your diabetes status?']));
     singleSelectChip(p, 'diabetes', [
       { label:'No diabetes', value:'none' },
       { label:'Pre-diabetic', value:'pre' },
@@ -1322,7 +1322,7 @@ const flow = [
   }},
 
   { id:'gimotility', section:'Medical history', view:(p) => {
-    p.appendChild(h('h1', {}, ['Severe GI motility issues like gastroparesis?']));
+    p.appendChild(h('h2', {}, ['Severe GI motility issues like gastroparesis?']));
     singleSelectChip(p, 'giMotility', [
       { label:'No', value:'no' },
       { label:'Yes', value:'yes' }
@@ -1330,7 +1330,7 @@ const flow = [
   }},
 
   { id:'bariatric', section:'Medical history', view:(p) => {
-    p.appendChild(h('h1', {}, ['Bariatric or major GI surgery in the past 6 months?']));
+    p.appendChild(h('h2', {}, ['Bariatric or major GI surgery in the past 6 months?']));
     singleSelectChip(p, 'bariatric', [
       { label:'No', value:'no' },
       { label:'Yes within last 6 months', value:'recent' },
@@ -1339,7 +1339,7 @@ const flow = [
   }},
 
   { id:'pregnancy', section:'Medical history', relevantWhen:(s) => s.sex === 'female', view:(p) => {
-    p.appendChild(h('h1', {}, ['Are you pregnant, planning pregnancy, or breastfeeding?']));
+    p.appendChild(h('h2', {}, ['Are you pregnant, planning pregnancy, or breastfeeding?']));
     singleSelectChip(p, 'pregnancy', [
       { label:'No to all', value:'no' },
       { label:'Currently pregnant', value:'pregnant' },
@@ -1349,7 +1349,7 @@ const flow = [
   }},
 
   { id:'ocp', section:'Medical history', relevantWhen:(s) => s.sex === 'female' && s.pregnancy === 'no', view:(p) => {
-    p.appendChild(h('h1', {}, ['Do you use an oral contraceptive?']));
+    p.appendChild(h('h2', {}, ['Do you use an oral contraceptive?']));
     p.appendChild(h('p', { class:'lede' }, ['Tirzepatide can affect oral contraceptive absorption we\'ll explain in detail if you choose tirz.']));
     singleSelectChip(p, 'ocp', [
       { label:'No', value:'no' },
@@ -1359,7 +1359,7 @@ const flow = [
   }},
 
   { id:'mental', section:'Medical history', view:(p) => {
-    p.appendChild(h('h1', {}, ['In the past month, any thoughts of harming yourself?']));
+    p.appendChild(h('h2', {}, ['In the past month, any thoughts of harming yourself?']));
     p.appendChild(h('p', { class:'lede' }, ['Standard safety check. Your answer doesn\'t automatically disqualify you it helps Dr. DeBry decide what\'s safe.']));
     singleSelectChip(p, 'selfHarm', [
       { label:'No', value:'no' },
@@ -1369,7 +1369,7 @@ const flow = [
   }},
 
   { id:'meds', section:'Medical history', view:(p) => {
-    p.appendChild(h('h1', {}, ['Other prescriptions you\'re taking']));
+    p.appendChild(h('h2', {}, ['Other prescriptions you\'re taking']));
     p.appendChild(h('p', { class:'lede' }, ['Include dose if you know it. Type "none" if you\'re not on anything.']));
     const wrap = h('label', { class:'field' }, [h('span', { class:'lab' }, ['Current meds'])]);
     const ta = h('textarea', { rows:'3', placeholder:'e.g., metformin 500mg twice daily, lisinopril 10mg' });
@@ -1381,7 +1381,7 @@ const flow = [
   }, canContinue:(s) => (s.currentMeds||'').trim().length >= 2 },
 
   { id:'allergies', section:'Medical history', view:(p) => {
-    p.appendChild(h('h1', {}, ['Any drug allergies?']));
+    p.appendChild(h('h2', {}, ['Any drug allergies?']));
     const wrap = h('label', { class:'field' }, [h('span', { class:'lab' }, ['Drug + reaction (or "none")'])]);
     const ta = h('textarea', { rows:'3', placeholder:'e.g., penicillin rash' });
     ta.value = state.allergies || '';
@@ -1393,7 +1393,7 @@ const flow = [
 
   // PRIMARY CARE DOCTOR (optional care-coordination capture) ------------------
   { id:'pcp', section:'Your care team', view:(p) => {
-    p.appendChild(h('h1', {}, ['Who is your primary care doctor?']));
+    p.appendChild(h('h2', {}, ['Who is your primary care doctor?']));
     p.appendChild(h('p', { class:'lede' }, ['Optional. With your OK we\'ll send them a short note that you\'ve started care with us, so everything stays coordinated. Leave it blank if you don\'t have one or would rather we didn\'t.']));
     textInput(p, 'pcpName', 'Doctor\'s name', 'Dr. Jane Smith', 'text');
     textInput(p, 'pcpPractice', 'Practice or clinic', 'Desert Valley Family Medicine', 'text');
@@ -1403,7 +1403,7 @@ const flow = [
 
   // MEDICARE SCREEN (placeholder criteria) -----------------------------------
   { id:'medicare', section:'Insurance', view:(p) => {
-    p.appendChild(h('h1', {}, ['Are you enrolled in Medicare?']));
+    p.appendChild(h('h2', {}, ['Are you enrolled in Medicare?']));
     p.appendChild(h('p', { class:'lede' }, ['Starting July 1, eligible Medicare members can get brand-name Wegovy or Zepbound for about $50/month through our GLP-1 Bridge. Not having Medicare won\'t affect your other options.']));
     singleSelectChip(p, 'medicare', [
       { label:'Yes I have Medicare', value:'yes' },
@@ -1414,7 +1414,7 @@ const flow = [
 
   // MEDICARE BRIDGE: MBI (only when enrolled) --------------------------------
   { id:'mbi', section:'Medicare Bridge', relevantWhen:(s) => s.medicare === 'yes', view:(p) => {
-    p.appendChild(h('h1', {}, ['Your Medicare number']));
+    p.appendChild(h('h2', {}, ['Your Medicare number']));
     p.appendChild(h('p', { class:'lede' }, ['The Medicare Beneficiary Identifier (MBI) on the front of your red, white, and blue Medicare card. It lets us run your $50 Bridge benefit. Optional here you can also give it to our team on your eligibility call.']));
     textInput(p, 'bridge_mbi', 'Medicare number (MBI)', '1EG4-TE5-MK73', 'text');
     p.appendChild(h('div', { class:'info' }, ['Your MBI is protected health information. It is transmitted securely and used only to verify your Medicare drug coverage.']));
@@ -1423,7 +1423,7 @@ const flow = [
 
   // MEDICARE BRIDGE: conditions checklist (drives Part D vs Bridge routing) ---
   { id:'bridge_conditions', section:'Medicare Bridge', relevantWhen:(s) => s.medicare === 'yes', view:(p) => {
-    p.appendChild(h('h1', {}, ['Have you been diagnosed with any of these?']));
+    p.appendChild(h('h2', {}, ['Have you been diagnosed with any of these?']));
     p.appendChild(h('p', { class:'lede' }, ['Check all that apply. Some diagnoses are covered directly by your Medicare Part D plan, so this helps Dr. DeBry route your GLP-1 the right way. If none apply, just continue.']));
     multiSelectChip(p, 'bridge', [
       { key:'osa',    label:'Moderate-to-severe sleep apnea (OSA)' },
@@ -1443,7 +1443,7 @@ const flow = [
   { id:'edu-options', section:'Your options', view:(p) => {
     const _eduEs = (window.__LANG==='es');
     const wrap = h('div');
-    wrap.innerHTML = _eduEs ? '<h1>Calificas para <em>tres</em> formas de tratamiento.</h1>' : '<h1>You qualify for <em>three</em> ways to treat.</h1>';
+    wrap.innerHTML = _eduEs ? '<h2>Calificas para <em>tres</em> formas de tratamiento.</h2>' : '<h2>You qualify for <em>three</em> ways to treat.</h2>';
     const _eduHead = wrap.firstChild; _eduHead.classList.add('notrans');
     p.appendChild(_eduHead);
     p.appendChild(h('p', { class:'lede' }, ['Every option is compounded for you by a USA-licensed 503A pharmacy under Dr. DeBry\'s prescription, with the full Vitality Thrive Track app, lessons, workouts, and recipes included.']));
@@ -1460,7 +1460,7 @@ const flow = [
   }},
 
   { id:'drug', section:'Choose your medication', view:(p) => {
-    p.appendChild(h('h1', {}, ['Which one is right for you?']));
+    p.appendChild(h('h2', {}, ['Which one is right for you?']));
     p.appendChild(h('p', { class:'lede' }, ['Pick the track you prefer. Dr. DeBry will confirm at clinical review and may recommend a different one if better suited.']));
     const cards = h('div', { class:'drug-cards' });
     const opts = [
@@ -1503,7 +1503,7 @@ const flow = [
   }},
 
   { id:'addr', section:'Your address', view:(p) => {
-    p.appendChild(h('h1', {}, ['Your address']));
+    p.appendChild(h('h2', {}, ['Your address']));
     p.appendChild(h('p', { class:'lede' }, ['Must be a Nevada address.']));
     textInput(p, 'addrLine1', 'Street address', '123 Main St', 'text', { autocomplete:'address-line1' });
     const row = h('div', { class:'row' });
@@ -1524,7 +1524,7 @@ const flow = [
   { id:'consent', section:'Consent & e-signature', view:(p) => {
     const drug = state.drug || 'sema';
     const _es = (window.__LANG==='es');
-    p.appendChild(h('h1', {}, [_es ? 'Último paso tus consentimientos.' : 'Last step your consents.']));
+    p.appendChild(h('h2', {}, [_es ? 'Último paso tus consentimientos.' : 'Last step your consents.']));
     p.appendChild(h('p', { class:'lede' }, [_es
       ? 'Debes abrir y leer cada documento completo antes de poder marcar su casilla.'
       : 'You must open and fully read each document before its checkbox unlocks.']));
@@ -1772,7 +1772,7 @@ function viewDisqualify(p) {
         ${isCrisis ? '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>' : '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'}
       </svg>
     </div>
-    <h1 style="margin-bottom:14px;">${isCrisis ? (es ? 'Tu seguridad es lo primero.' : 'Your safety comes first.') : (es ? 'No es la opción adecuada.' : 'Not quite the right fit.')}</h1>
+    <h2 style="margin-bottom:14px;">${isCrisis ? (es ? 'Tu seguridad es lo primero.' : 'Your safety comes first.') : (es ? 'No es la opción adecuada.' : 'Not quite the right fit.')}</h2>
     <p class="lede" style="margin:0 auto 20px;max-width:480px;">${reason}</p>
   `;
   if (isCrisis) {
@@ -1854,7 +1854,7 @@ function viewSubmitted(p) {
 
   card.innerHTML = `
     <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-    <h1>You're all set, ${fn}.</h1>
+    <h2>You're all set, ${fn}.</h2>
     <p class="lede" style="margin:0 auto 16px;max-width:480px;">Your intake is complete and your patient record is started. Here's what you may qualify for:</p>
     ${approved}
     ${cta}
@@ -2034,7 +2034,7 @@ function viewPay(p) {
   const recurLabel  = '$' + Math.round(recurCents / 100);
   const card = h('div', { class:'center-card notrans' });
   card.innerHTML = `
-    <h1>Secure payment</h1>
+    <h2>Secure payment</h2>
     <p class="lede" style="margin:0 auto 18px;max-width:460px;">Enter your card to complete enrollment. Payment is processed securely by Clover, and your card details never touch our servers.</p>
     <div class="info" id="priceInfo" style="text-align:left;margin:0 auto 16px;max-width:420px;"><strong>Today: ${amountLabel}</strong>, then <strong>${recurLabel}/mo</strong> <span style="color:var(--muted)">billed monthly to this card until you cancel. Cancel anytime by calling (702)&nbsp;602-5002.</span></div>
     <div style="max-width:420px;margin:0 auto 16px;text-align:left;">
@@ -2331,7 +2331,7 @@ function viewPaid(p, info) {
     : `<p class="lede" style="margin:0 auto 16px;max-width:480px;">Payment received. Your intake is with <strong>Dr. DeBry</strong> for clinical review; when appropriate, he writes your prescription and we&rsquo;ll email you where to pick it up (typically within 24 hours).</p>`;
   card.innerHTML = `
     <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-    <h1>${established ? "You're enrolled, " + fn + '.' : 'Payment received, ' + fn + '.'}</h1>
+    <h2>${established ? "You're enrolled, " + fn + '.' : 'Payment received, ' + fn + '.'}</h2>
     ${enrolledCopy}
     ${billingCta}
     <div class="skip-info">You&rsquo;ll get an email confirmation shortly.${ref ? ' Ref: ' + ref.slice(0,8) + '…' : ''}</div>

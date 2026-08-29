@@ -13,5 +13,6 @@ Disallow: /m.html
 Disallow: /sequences.html
 Disallow: /templates.html
 Disallow: /checkin.html
+Disallow: /checkout.html
 
 Sitemap: https://vitalityweightloss.health/sitemap.xml
