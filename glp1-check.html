@@ -563,7 +563,13 @@ function submitLead(){
         tags:['GLP-1 Checker', qualified==='true'?'Qualified':'Not qualified', medsTrack].concat(state.smsConsent?['sms-consent']:[]),
         consent:!!state.smsConsent
       })
-    }).catch(function(){});
+    }).then(function(r){ return r.json().catch(function(){ return {}; }); })
+      .then(function(j){
+        if(j && j.ok && window.vitalityTrack){
+          try{ window.vitalityTrack('generate_lead', { form_id:'glp1_check' }); }catch(e){}
+        }
+      })
+      .catch(function(){});
   }catch(e){/* result still shows + booking still works */}
 }
 

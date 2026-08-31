@@ -62,6 +62,8 @@
   document.addEventListener("submit", function (e) {
     var f = e.target;
     if (!f || f.tagName !== "FORM") return;
+    // Pages that fire generate_lead themselves on Convex success (quiz, webinar) set data-ga-manual.
+    if (f.getAttribute("data-ga-manual") != null) return;
     var id = (f.id || f.getAttribute("name") || "").toLowerCase();
     if (AUTH_FORM.test(id)) return;
     var isPay = /checkout|payment|\bpay\b|card|billing/.test(id);

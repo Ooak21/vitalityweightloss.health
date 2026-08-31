@@ -74,7 +74,7 @@ h1 .accent{color:var(--blue-d)}
 <div class="card">
 <h2 data-i18n data-en="Save your spot" data-es="Reserve su lugar">Save your spot</h2>
 <p style="color:var(--muted);margin-top:-4px;margin-bottom:18px"><span data-i18n data-en="Free. Takes 30 seconds." data-es="Gratis. Toma 30 segundos.">Free. Takes 30 seconds.</span></p>
-<form id="regform">
+<form id="regform" data-ga-manual>
 <div class="row2"><div class="field"><label data-i18n data-en="First name" data-es="Nombre">First name</label><input name="firstname" required></div><div class="field"><label data-i18n data-en="Last name" data-es="Apellido">Last name</label><input name="lastname" required></div></div>
 <div class="field"><label data-i18n data-en="Email" data-es="Correo electrónico">Email</label><input type="email" name="email" required></div>
 <div class="field"><label data-i18n data-en="Mobile phone" data-es="Teléfono celular">Mobile phone</label><input type="tel" name="phone" required></div>
@@ -106,7 +106,14 @@ document.getElementById('regform').addEventListener('submit',function(e){
  /* HubSpot POST removed 2026-08-20. Registrant contact details are PHI-adjacent
     and must not leave our infrastructure. The Convex /lead call below already
     captures the same registrant into our own CRM. */
- fetch('https://quixotic-cat-492.convex.site/lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({first_name:payload.firstname,last_name:payload.lastname,email:payload.email,phone:payload.phone,source:'webinar_registration',source_detail:'Webinar: '+payload.session,consent:smsConsent,tags:smsConsent?['sms-consent']:[]})}).catch(function(){});
+ fetch('https://quixotic-cat-492.convex.site/lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({first_name:payload.firstname,last_name:payload.lastname,email:payload.email,phone:payload.phone,source:'webinar_registration',source_detail:'Webinar: '+payload.session,consent:smsConsent,tags:smsConsent?['sms-consent']:[]})})
+  .then(function(r){ return r.json().catch(function(){ return {}; }); })
+  .then(function(j){
+    if(j && j.ok && window.vitalityTrack){
+      try{ window.vitalityTrack('generate_lead', { form_id:'webinar' }); }catch(e){}
+    }
+  })
+  .catch(function(){});
  document.querySelector('.card').innerHTML=window.successHTML(payload.firstname);
 });
 </script>
