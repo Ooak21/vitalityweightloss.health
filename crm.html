@@ -1887,7 +1887,7 @@
         </div>
 
         ${p.inbody ? `
-        <div class="glass border border-[#e6e9ee] rounded-2xl p-5 mb-6">
+        <div class="glass border border-[#e6e9ee] rounded-2xl p-5 mb-6" id="inbodyPrintCard">
           <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
             <div class="flex items-center gap-2.5 flex-wrap">
               <span class="inline-flex items-center gap-1.5">
@@ -1922,9 +1922,12 @@
               ${ibSeg(p.inbody.segmental_fat_lb, '#f43f5e')}
             </div>
           </div>
-          <div class="flex items-center justify-between mt-5 pt-4 border-t border-[#e6e9ee]">
+          <div class="flex items-center justify-between mt-5 pt-4 border-t border-[#e6e9ee] inbody-actions">
             <div class="text-xs text-[#6b7280]">Fat-lean control: <b class="text-[#be123c]">${p.inbody.target_fat_change_lb!=null?p.inbody.target_fat_change_lb+' lb fat':'target n/a'}</b> · <b class="text-[#0a6cf5]">0.0 lb lean</b> · TBW <b class="text-[#3d4a45]">${p.inbody.total_body_water_lb!=null?p.inbody.total_body_water_lb+' lb':'—'}</b></div>
-            <button type="button" onclick="openInbodyPdf('${p.id}',this)" class="text-xs text-[#0a6cf5] font-semibold hover:underline">↧ View original scan (PDF)</button>
+            <div class="flex items-center gap-3 shrink-0">
+              <button type="button" onclick="printInbodyCard('${p.id}')" class="text-xs text-[#16201d] font-semibold hover:underline">Print card</button>
+              <button type="button" onclick="openInbodyPdf('${p.id}',this)" class="text-xs text-[#0a6cf5] font-semibold hover:underline">View original scan (PDF)</button>
+            </div>
           </div>
         </div>` : ''}
 
@@ -2395,6 +2398,11 @@
   // anchor bound to p.inbody.pdf, a field the board payload never actually sent, so it rendered as
   // href="#" and did nothing on every patient. Opening a new tab from an async callback is blocked
   // by popup rules, so the tab is opened synchronously on the click and then pointed at the URL.
+  window.printInbodyCard=function(pid){
+    const p=(patients||[]).find(x=>x.id===pid);
+    const title='InBody — '+((p&&((p.first||'')+' '+(p.last||'')).trim())||'scan');
+    window.__printEl('inbodyPrintCard', title, '.inbody-actions{display:none}');
+  };
   window.openInbodyPdf=async function(pid, btn){
     const tab=window.open('','_blank');           // must happen in the click, not after the await
     const label=btn?btn.textContent:'';
