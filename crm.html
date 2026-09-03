@@ -5439,11 +5439,11 @@ HARD RULES:
         <td class="py-1.5 pr-2 text-[11px] text-[#6b7280]">${esc(FEE_CATEGORIES[f.category]||f.category)}</td>
         <td class="py-1.5 text-[11px] whitespace-nowrap">${canEdit?`<button onclick="editFee('${esc(f.code)}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="deleteFee('${f.id}')" class="text-[#be123c] hover:underline">delete</button>`:''}</td>
       </tr>`).join(''):'<tr><td colspan="7" class="py-3 text-sm text-[#9aa0ab]">No fee schedule yet.</td></tr>';
+    const needBench=fees.length&&fees.some(f=>f.medicaid_allowable_cents==null&&!/^(G0473|97802)$/.test(f.code));
     const seed=(canEdit&&!fees.length)?`<button onclick="seedFees()" class="px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Load Dr. DeBry's schedule</button>`
       :((canEdit&&needBench)?`<button onclick="seedMedicaid()" class="mr-auto px-3 py-2 rounded-xl bg-[#0a7a3d] text-white text-sm font-semibold hover:bg-[#085f2f]">Load Nevada Medicaid benchmark</button>`:'');
     // Nevada Medicaid is the biller's benchmark: a payer allowing less than this gets reviewed against
     // the contract. Offer the load whenever codes are still missing it.
-    const needBench=fees.length&&fees.some(f=>f.medicaid_allowable_cents==null&&!/^(G0473|97802)$/.test(f.code));
     const gap=needBench
       ? `<div class="mt-3 text-[11px] text-[#b45309] bg-[#fffbeb] border border-[#fde68a] rounded-lg p-2">Some codes have no Nevada Medicaid benchmark yet, so underpayments cannot be detected on them. Loading the benchmark also adds the behavioral health, intensive outpatient and nutrition codes. It never changes a charge.</div>` : '';
     const body=`<div class="text-[11px] text-[#6b7280] mb-2">Practice-wide charges. A code entered on a coded visit prices itself from this list. <b>Medicaid</b> is the reimbursement benchmark: a payer allowing less than the Nevada Medicaid rate is flagged for review against the payer contract.</div>
