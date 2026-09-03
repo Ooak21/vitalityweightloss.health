@@ -62,7 +62,7 @@ let PRODUCTION=null, PROD_FROM=Date.now()-30*86400000, PROD_TO=Date.now();
 // code shield: neutral codes in the DB/log; human labels decoded ONLY here in the admin UI
 const CODES={'S-001':'Role changed','S-002':'Staff added','S-003':'Access deactivated','S-004':'Access reactivated','A-001':'Chart accessed','M-001':'Record modified','M-002':'Note added','D-001':'Disclosure / sent','V-001':'Vendor risk reviewed','100-001':'Record created'};
 const decode=(c)=>CODES[c]||c;
-const roleColor={admin:'bg-[#eaf2ff] text-[#0a3d7a]',provider:'bg-[#eafaf0] text-[#0a7a3d]',staff:'bg-[#f1f3f7] text-[#6b7280]'};
+const roleColor={admin:'bg-[#eaf2ff] text-[#0a3d7a]',provider:'bg-[#eafaf0] text-[#0a7a3d]',staff:'bg-[#f1f3f7] text-[#6b7280]',biller:'bg-[#f5f3ff] text-[#5b21b6]'};
 
 // Vendor & AI risk register the "shadow AI" map: every tool, what data it touches,
 // and whether a BAA covers it. Curated reference (v1, read-only). A red flag = it
@@ -162,7 +162,7 @@ function viewAccess(){
     <div class="space-y-2">${staff.map(s=>`<div class="flex items-center gap-3 rounded-xl border border-[#eef0f4] bg-[#fbfcfe] p-3">
       <div class="h-9 w-9 rounded-full bg-[#0a6cf5] text-white grid place-items-center font-display font-semibold text-xs shrink-0">${esc((s.name||'?').split(' ').map(x=>x[0]).slice(0,2).join(''))}</div>
       <div class="min-w-0 flex-1"><div class="text-sm font-semibold truncate">${esc(s.name)}</div><div class="text-[11px] text-[#9aa0ab]">${s.email?esc(s.email):'no login yet'}${s.linked?' · linked':''}${s.active?'':' · <span class="text-rose-500">inactive</span>'+(s.reason?' · <span class="text-rose-500">'+esc(s.reason)+'</span>':'')}</div></div>
-      <select data-role="${s.id}" class="field text-xs"><option value="admin" ${s.role==='admin'?'selected':''}>Admin</option><option value="provider" ${s.role==='provider'?'selected':''}>Provider</option><option value="staff" ${s.role==='staff'?'selected':''}>Staff</option></select>
+      <select data-role="${s.id}" class="field text-xs"><option value="admin" ${s.role==='admin'?'selected':''}>Admin</option><option value="provider" ${s.role==='provider'?'selected':''}>Provider</option><option value="staff" ${s.role==='staff'?'selected':''}>Staff</option><option value="biller" ${s.role==='biller'?'selected':''}>Biller</option></select>
       <button data-active="${s.id}" data-to="${s.active?'0':'1'}" class="pill ${s.active?'bg-[#eafaf0] text-[#0a7a3d]':'bg-[#fde8e8] text-rose-600'}">${s.active?'Active':'Inactive'}</button>
       ${s.email?`<button data-invite="${esc(s.email)}" class="pill bg-[#eaf2ff] text-[#0a3d7a]" title="Send onboarding invite email">✉ Invite</button>`:''}
     </div>`).join('')}</div>
@@ -171,7 +171,7 @@ function viewAccess(){
       <div class="flex flex-wrap gap-2 items-center">
         <input id="nName" class="field flex-1" placeholder="Full name" style="min-width:150px">
         <input id="nEmail" class="field" placeholder="Email (optional)">
-        <select id="nRole" class="field text-sm"><option value="staff">Staff</option><option value="provider">Provider</option><option value="admin">Admin</option></select>
+        <select id="nRole" class="field text-sm"><option value="staff">Staff</option><option value="biller">Biller</option><option value="provider">Provider</option><option value="admin">Admin</option></select>
         <button id="addBtn" class="px-4 py-2 rounded-lg bg-[#0a6cf5] text-white text-sm font-semibold">Add</button>
       </div>
     </div>
