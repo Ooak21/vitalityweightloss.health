@@ -322,7 +322,7 @@
         <div><label class="text-xs text-[#6b7280] font-semibold">Time</label><input id="apptTime" type="time" class="field mt-1"></div>
       </div>
       <div class="grid grid-cols-2 gap-3">
-        <div><label class="text-xs text-[#6b7280] font-semibold">Type</label><select id="apptType" class="field mt-1"><option>Consult</option><option>Follow-up</option><option>Coaching</option><option>Lab</option><option>Other</option></select></div>
+        <div><label class="text-xs text-[#6b7280] font-semibold">Type</label><select id="apptType" class="field mt-1"><option>Consult</option><option>Follow-up</option><option>InBody scan</option><option>Workout</option><option>Coaching</option><option>Lab</option><option>Other</option></select></div>
         <div><label class="text-xs text-[#6b7280] font-semibold">Provider</label><select id="apptProvider" class="field mt-1"><option>DeBry</option><option>DeVera</option><option>Front Desk</option></select></div>
       </div>
       <div class="grid grid-cols-2 gap-3">
@@ -3244,6 +3244,20 @@
     const r=await fetch(CONVEX_URL+'/schedule-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify(body)});
     const j=await r.json(); if(!j||!j.ok) throw new Error((j&&j.error)||'failed'); return j;
   }
+  // The appointment form's provider list comes from the scheduling roster (vit_schedulable), not
+  // the hardcoded DeBry / DeVera / Front Desk trio. Ana and the InBody scanner were unbookable from
+  // this form, so workouts and scans were being typed into Google by hand and never existed here.
+  let ROSTER=[];
+  window.loadRoster=async function(){
+    try{
+      const j=await hrsPost({action:'board'});
+      ROSTER=(j.schedulables||[]).filter(x=>x.active!==false);
+      const sel=document.getElementById('apptProvider'); if(!sel||!ROSTER.length) return;
+      const cur=sel.value;
+      sel.innerHTML=ROSTER.map(x=>`<option value="${x.name}">${x.display_name||x.name}</option>`).join('');
+      if([...sel.options].some(o=>o.value===cur)) sel.value=cur;
+    }catch(e){ console.warn('roster load failed, keeping the built-in provider list:', e.message); }
+  };
   window.openHours=async function(){
     let ov=document.getElementById('hoursOverlay');
     if(!ov){ ov=document.createElement('div'); ov.id='hoursOverlay';
@@ -3548,8 +3562,15 @@
       </div>
     </div>`;
   }
+  // The next live appointment on the record, or null. Only a FUTURE, non-cancelled appointment may
+  // be quoted in a reminder: the old fallback to the last past appointment mailed a patient a
+  // reminder for a consult from July.
+  function upcomingAppt(p){
+    return (p.appts||[]).filter(a=>a&&a.when&&new Date(a.when)>new Date()&&a.status!=='cancelled'&&a.status!=='no_show')
+      .sort((x,y)=>new Date(x.when)-new Date(y.when))[0]||null;
+  }
   function emailContent(tpl,p){
-    const appt = (p.appts||[]).find(a=>new Date(a.when)>now) || (p.appts||[]).slice(-1)[0];
+    const appt = upcomingAppt(p);
     const when = appt? fmtDT(appt.when):'your upcoming visit';
     const PORTAL='https://vitalityweightloss.health/portal.html';
     if(tpl==='confirm') return {h:`You're confirmed, ${p.first}.`, b:`This confirms your ${appt?appt.type:'appointment'} at Vitality Weight Loss on <b>${when}</b>${appt?` with ${appt.provider}`:''}. We look forward to seeing you.`, cta:'Add to calendar', href:(__apptLink&&__apptLink.ics_url)||PORTAL};
@@ -3575,20 +3596,24 @@
   }
   async function sendEmail(){ const p=patients.find(x=>x.id===selId); if(!p) return; const tpl=$('#emailTpl').value;
     if(!p.email){ alert('This patient has no email address on file, so there is nowhere to send to.'); return; }
+    if((tpl==='reminder'||tpl==='confirm') && !upcomingAppt(p)){
+      alert('There is no upcoming appointment on this record, so there is nothing to confirm or remind them of. Book the appointment in the CRM first (+ Book appointment), then send.');
+      return;
+    }
     const label={confirm:'Appointment Confirmation',reminder:'Appointment Reminder',welcome:'Welcome'}[tpl];
     const subject={confirm:'Your appointment is confirmed · Vitality Weight Loss',reminder:'Reminder: your upcoming appointment · Vitality Weight Loss',welcome:'Welcome to Vitality Weight Loss'}[tpl];
     renderEmailPreview();                       // guarantee the HTML matches the selected template
     const html=$('#emailPreview').innerHTML;    // WYSIWYG: send exactly what was previewed
     const btn=[...document.querySelectorAll('#emailModal button')].find(b=>/send email/i.test(b.textContent));
     const restore=btn?btn.textContent:''; if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
-    let ok=false, errMsg='';
+    let ok=false, errMsg='', sentBy='';
     try{
       const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'send_email',patient_id:p.id,template:tpl,to:p.email,subject,html})});
-      const j=await r.json().catch(()=>({})); ok=r.ok&&j&&j.ok===true; errMsg=(j&&j.error)||('status '+r.status);
+      const j=await r.json().catch(()=>({})); ok=r.ok&&j&&j.ok===true; errMsg=(j&&j.error)||('status '+r.status); sentBy=(j&&j.author)||'';
     }catch(e){ errMsg=e.message; }
     if(btn){ btn.disabled=false; btn.textContent=restore||'Send email'; }
     if(ok){
-      p.notes.push({type:'message',author:'agent:mailer',auto:true,ts:new Date().toISOString(),body:`Branded email sent: "${label}" to ${p.email}`});
+      p.notes.push({type:'message',author:sentBy||'staff',auto:false,ts:new Date().toISOString(),body:`Branded email sent: "${label}" to ${p.email}`});
       closeEmail(); renderDetail();
     } else {
       alert('The email could not be sent'+(errMsg?' ('+errMsg+')':'')+'. Please try again, or check the patient email address.');
@@ -3970,6 +3995,7 @@ HARD RULES:
     // so the board only ever shows the real Convex patients (no "phantom batch" on a cold load).
     (async()=>{
       for(let i=0;i<6 && !liveLoaded;i++){ await loadData(); if(!liveLoaded) await new Promise(r=>setTimeout(r,500)); }
+      if(liveLoaded && window.loadRoster) loadRoster();
       if(!liveLoaded){ document.getElementById('list').innerHTML='<div class="text-center text-rose-500 text-sm py-10">Couldn\'t load patients.<br><button onclick="location.reload()" class="underline mt-1">Retry</button></div>'; }
     })();
     if (USE_SUPABASE) setInterval(loadData, 15000);  // Convex is reactive; no polling needed
