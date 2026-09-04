@@ -248,6 +248,7 @@
       <button onclick="openBloomQueue()" title="Bloom review queue" class="w-10 h-10 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-lg hover:bg-[#0a6cf5]/10 flex items-center justify-center">🌱</button>
       <button onclick="openCallLog()" title="Call catalog" class="w-10 h-10 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-lg hover:bg-[#f1f3f7] flex items-center justify-center">☎</button>
       <button onclick="openClinicSchedule()" title="Clinic schedule" class="w-10 h-10 rounded-xl border border-[#dbe7ff] bg-[#f5f9ff] text-[#0a6cf5] text-lg hover:bg-[#eaf2ff] flex items-center justify-center">⊞</button>
+      ${reqBlock}
     </div>
     <div id="todayPanel" class="px-3 pb-3 flex-shrink-0 border-b border-[#e6e9ee]"></div>
     <div class="flex-1 overflow-y-auto scroll px-3 pb-4 pt-3" id="list"></div>
@@ -1073,6 +1074,35 @@
   function provColor(name){ if(!name) return '#9aa0ab'; let h=0; for(let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))>>>0; return CAL_PALETTE[h%CAL_PALETTE.length]; }
   const calSameDay=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
   function calStartOfWeek(d){ const x=new Date(d.getFullYear(),d.getMonth(),d.getDate()); x.setDate(x.getDate()-x.getDay()); return x; }
+  // Phone requests that never got a time (status "requested", no when). They cannot sit on a
+  // grid, so they get their own queue at the top of the sidebar calendar until someone schedules
+  // them (the same row becomes the appointment) or dismisses them (the front-desk task closes).
+  function calRequests(){ const out=[]; patients.forEach(p=>(p.appts||[]).forEach(a=>{ if(!a||a.when||a.status!=='requested') return; out.push({id:a.id,pid:p.id,name:`${p.first||''} ${p.last||''}`.trim()||'Inbound caller',created:a.created||0,notes:a.notes||'',type:a.type||'Consult'}); })); return out.sort((x,y)=>(y.created||0)-(x.created||0)); }
+  function reqPref(notes){ return String(notes||'').replace(/^Caller preferred:\s*/i,''); }
+  function calRequestRow(r){
+    const when=r.created?new Date(r.created).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+    const pref=reqPref(r.notes);
+    return `<div class="py-1.5 px-2 rounded-lg hover:bg-[#fff3e0]">
+      <div class="flex items-center gap-2">
+        <span onclick="select('${r.pid}')" class="text-[12px] font-semibold text-[#16201d] truncate flex-1 min-w-0 cursor-pointer">${r.name}</span>
+        <span class="text-[10px] text-[#9a6b1f] shrink-0">called ${when}</span>
+      </div>
+      <div class="flex items-center justify-between gap-2 mt-0.5">
+        <span class="text-[11px] text-[#6b7280] truncate">${pref?('prefers '+pref):'no time given'}</span>
+        <span class="shrink-0 flex items-center gap-1">
+          <button onclick="editAppt('${r.pid}','${r.id}')" class="px-2 py-0.5 rounded-md bg-[#0a6cf5] text-white text-[10px] font-semibold hover:bg-[#0856c8]">Schedule</button>
+          <button onclick="dismissRequest('${r.pid}','${r.id}')" class="px-1.5 py-0.5 rounded-md text-[#6b7280] text-[10px] font-semibold hover:bg-[#f1f3f7]">Dismiss</button>
+        </span>
+      </div></div>`;
+  }
+  window.dismissRequest=async function(pid,apptId){
+    if(!confirm('Dismiss this appointment request? Nothing gets booked and the front-desk task closes.')) return;
+    try{
+      const r=await fetch(`${CONVEX_URL}/crm-data`,{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'cancel_appt',appt_id:apptId})});
+      const j=await r.json(); if(!j.ok) throw new Error(j.error||'dismiss failed');
+      await loadData();
+    }catch(e){ alert('Could not dismiss the request: '+e.message); }
+  };
   function calAllAppts(){ const out=[]; patients.forEach(p=>(p.appts||[]).forEach(a=>{ if(!a||!a.when) return; out.push({id:a.id,when:a.when,dt:new Date(a.when),type:a.type,provider:a.provider,duration:a.duration_min,pid:p.id,name:(p.first+' '+p.last).trim()}); })); return out; }
 
   // Google Calendar "Busy" overlay (phase 2b) — external busy time for each provider, fetched
@@ -1144,6 +1174,8 @@
     const provs=[...new Set(appts.map(a=>a.provider).filter(Boolean))];
     calFetchBusy(provs);
     const legend = provs.length ? `<div class="flex flex-wrap gap-x-2 gap-y-0.5 px-1 mb-2">${provs.map(p=>`<span class="inline-flex items-center gap-1 text-[9px] text-[#6b7280]"><span class="w-1.5 h-1.5 rounded-full" style="background:${provColor(p)}"></span>${p}</span>`).join('')}</div>` : '';
+    const reqs=calRequests();
+    const reqBlock=reqs.length?`<div class="mb-2 rounded-xl border border-[#fbe3c4] bg-[#fff8ef] px-1.5 py-1.5"><div class="flex items-center justify-between px-1 mb-0.5"><span class="text-[11px] font-bold uppercase tracking-wide text-[#b45309]">Needs scheduling</span><span class="text-[10px] font-semibold text-[#b45309] bg-white rounded-full px-1.5">${reqs.length}</span></div>${reqs.map(calRequestRow).join('')}</div>`:'';
     let label;
     if(calView==='month') label=calCursor.toLocaleDateString('en-US',{month:'long',year:'numeric'});
     else if(calView==='week'){ const ws=calStartOfWeek(calCursor), we=new Date(ws); we.setDate(ws.getDate()+6); label=`${ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})} to ${we.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`; }
@@ -1496,7 +1528,7 @@
     const items=[
       ...p.notes.map(n=>({ts:n.ts,kind:n.auto?'auto':'note',author:n.author,body:n.body,ntype:n.type})),
       ...p.calls.map(c=>({ts:c.ts,kind:'call',author:'Receptionist',body:`${c.dir==='inbound'?'Inbound':'Outbound'} call · ${c.intent} · ${c.outcome} · ${Math.floor(c.dur/60)}m${c.dur%60}s`})),
-      ...p.appts.map(a=>({ts:a.when,kind:'appt',author:a.provider,body:`${a.type} · ${a.status} · ${fmtDT(a.when)} · ${a.provider}`,pid:p.id,when:a.when,apptId:a.id})),
+      ...p.appts.map(a=>({ts:a.when||a.created,kind:'appt',author:a.provider||'Phone',body:apptLine(a),pid:p.id,when:a.when,apptId:a.id})),
     ].sort((x,y)=> new Date(y.ts).getTime() - new Date(x.ts).getTime());
     const dot={auto:'bg-blue-400',note:'bg-[#6b7280]',call:'bg-[#0a6cf5]',appt:'bg-amber-400'};
     return items.map(it=>{
@@ -1971,13 +2003,15 @@
   }
 
   // ============ CRM (operational) view ============
+  function apptLine(a){ return a.when? `${a.type} · ${a.status} · ${fmtDT(a.when)} · ${a.provider||''}` : `${a.type||'Appointment'} · requested by phone${a.notes?' · prefers '+reqPref(a.notes):''} · not scheduled`; }
   function apptRow(a){
     const when = a.when || a.scheduled_at;
-    const dt = when ? fmtDT(when) : 'unscheduled';
-    const stColor = {scheduled:'#0a6cf5',booked:'#0a6cf5',completed:'#0a7a3d',cancelled:'#9aa0ab',no_show:'#be123c'}[a.status]||'#6b7280';
+    const isReq = !when && a.status==='requested';
+    const dt = when ? fmtDT(when) : (isReq ? ('requested by phone'+(a.notes?' · prefers '+reqPref(a.notes):'')+' · not scheduled') : 'unscheduled');
+    const stColor = {scheduled:'#0a6cf5',booked:'#0a6cf5',completed:'#0a7a3d',cancelled:'#9aa0ab',no_show:'#be123c',requested:'#b45309'}[a.status]||'#6b7280';
     return `<div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-[#f1f3f7] last:border-0">
       <div><div class="text-sm font-medium text-[#16201d]">${a.type||'Appointment'}</div><div class="text-xs text-[#6b7280] mt-0.5">${dt}${a.provider?` · ${a.provider}`:''}</div></div>
-      <div class="flex items-center gap-3"><span class="text-xs font-semibold" style="color:${stColor}">${a.status||'scheduled'}</span><button onclick="editAppt('${a.pid||''}','${a.id||''}')" class="text-[#0a6cf5] text-xs font-semibold hover:underline">edit</button></div>
+      <div class="flex items-center gap-3"><span class="text-xs font-semibold" style="color:${stColor}">${a.status||'scheduled'}</span><button onclick="editAppt('${a.pid||''}','${a.id||''}')" class="text-[#0a6cf5] text-xs font-semibold hover:underline">${isReq?'schedule':'edit'}</button></div>
     </div>`;
   }
   // Inline line-icons matching the deck-icon style (currentColor so they inherit button color).
@@ -2078,7 +2112,7 @@
     return [
       ...(p.notes||[]).map(n=>({fam:'note',ts:n.ts,auto:n.auto,author:n.author,body:n.body,ntype:n.type})),
       ...(p.calls||[]).map(cc=>({fam:'call',ts:cc.ts,author:'Receptionist',body:`${cc.dir==='inbound'?'Inbound':'Outbound'} call · ${cc.intent} · ${cc.outcome} · ${Math.floor(cc.dur/60)}m${cc.dur%60}s`})),
-      ...(p.appts||[]).map(a=>({fam:'appt',ts:a.when,author:a.provider,body:`${a.type} · ${a.status} · ${fmtDT(a.when)} · ${a.provider}`,pid:p.id,apptId:a.id})),
+      ...(p.appts||[]).map(a=>({fam:'appt',ts:a.when||a.created,author:a.provider||'Phone',body:apptLine(a),pid:p.id,apptId:a.id})),
     ].sort((x,y)=> new Date(y.ts).getTime() - new Date(x.ts).getTime());
   }
   function actCounts(p){ const i=actItems(p); return {note:i.filter(x=>x.fam==='note').length,call:i.filter(x=>x.fam==='call').length,appt:i.filter(x=>x.fam==='appt').length}; }
@@ -3473,15 +3507,19 @@
     const p=patients.find(x=>x.id===pid); if(!p)return;
     const a=(p.appts||[]).find(x=>x.id===apptId); if(!a)return;
     apptEdit={pid, apptId, isNew:false};
-    const d=new Date(a.when); const pad=n=>String(n).padStart(2,'0');
+    // A phone request has no time yet: the same editor opens on the same row (saving converts it
+    // into the appointment in place, no phantom), defaulting to tomorrow morning.
+    const isRequest=!a.when && a.status==='requested';
+    const d=isRequest?(()=>{ const t=new Date(); t.setDate(t.getDate()+1); t.setHours(9,30,0,0); return t; })():new Date(a.when);
+    const pad=n=>String(n).padStart(2,'0');
     document.getElementById('apptDate').value=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
     document.getElementById('apptTime').value=`${pad(d.getHours())}:${pad(d.getMinutes())}`;
     document.getElementById('apptType').value=a.type||'Consult';
-    document.getElementById('apptProvider').value=a.provider||'DeBry';
-    document.getElementById('apptStatus').value=a.status||'scheduled';
+    const provSel=document.getElementById('apptProvider'); provSel.value=a.provider||'DeBry'; if(provSel.selectedIndex<0) provSel.selectedIndex=0;
+    document.getElementById('apptStatus').value=isRequest?'scheduled':(a.status||'scheduled');
     document.getElementById('apptDur').value=String(a.duration_min||30);
-    document.getElementById('apptModalTitle').textContent='Edit appointment';
-    document.getElementById('apptCancelBtn').style.display='';
+    document.getElementById('apptModalTitle').textContent=isRequest?('Schedule the request'+(a.notes?' · prefers '+reqPref(a.notes):'')):'Edit appointment';
+    const cb=document.getElementById('apptCancelBtn'); cb.style.display=''; cb.textContent=isRequest?'Dismiss request':'Cancel appt';
     openApptModal(p);
   };
   window.closeAppt=function(){ const mo=document.getElementById('apptModal'); mo.classList.add('hidden'); mo.classList.remove('flex'); apptEdit=null; };
