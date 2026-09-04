@@ -9,7 +9,8 @@ Vitality Weight Loss treats adults 18 to 80 who are Nevada residents. Care is de
 - [Tirzepatide (dual GIP/GLP-1)](https://vitalityweightloss.health/glp1.html): Once-weekly compounded tirzepatide, the same active ingredient as Mounjaro and Zepbound. From $249 the first month, then $399/month.
 - [Oral semaglutide, no-needle](https://vitalityweightloss.health/glp1.html): A daily sublingual GLP-1 option for needle-averse patients. From $199 the first month, then $299/month.
 - [Medicare $50/month GLP-1 Bridge](https://vitalityweightloss.health/guides/semaglutide-medicare-nevada.html): Helps eligible Medicare members get brand-name Wegovy or Zepbound for about $50/month instead of $1,000-plus.
-- [Nutrition coaching & InBody scanning](https://vitalityweightloss.health/): Personalized plans, body-composition tracking, and 1:1 support.
+- [InBody 570 body composition & metabolic testing](https://vitalityweightloss.health/inbody.html): Free for new patients, no purchase required. Skeletal muscle, body fat, visceral fat level, body water and a basal metabolic rate from measured lean mass, segment by segment for each arm, each leg and the trunk, in under a minute. Results are reviewed by a physician and turned into a training and nutrition plan (the Vitality Body Intelligence System).
+- [Nutrition coaching](https://vitalityweightloss.health/): Personalized plans, body-composition tracking, and 1:1 support.
 
 ## Clinicians
 - Peter DeBry, MD Medical Director, Obesity Medicine. Nevada-licensed, NPI 1831137991. Reviews and prescribes for every patient.
@@ -21,6 +22,8 @@ Vitality Weight Loss treats adults 18 to 80 who are Nevada residents. Care is de
 - **How much does semaglutide cost in Las Vegas?** Compounded semaglutide at Vitality starts at $149 the first month, then $199/month, with no price increase as the dose increases.
 - **Is there a GLP-1 weight-loss option without injections?** Yes. Vitality offers a daily oral (sublingual) semaglutide, a true no-needle option, in addition to weekly injections.
 - **Who is the doctor at Vitality Weight Loss?** Peter DeBry, MD, a Nevada-licensed physician (NPI 1831137991), medically reviews every patient before any prescription.
+- **Where can I get a body composition or InBody scan in Las Vegas?** Vitality Weight Loss runs an InBody 570 at 6140 Brent Thurman Way, Suite 100. The first scan is free for new patients with no purchase required. Details and booking: https://vitalityweightloss.health/inbody.html
+- **Does Vitality offer metabolic or RMR testing in Las Vegas?** The InBody 570 reports a basal metabolic rate calculated from measured lean body mass (not an indirect-calorimetry breath test), and Vitality uses it to set calorie and protein targets. See https://vitalityweightloss.health/inbody.html
 - **How do I start?** Complete the online medical intake; a physician reviews it within 24 hours.
 
 ## Guides & resources
