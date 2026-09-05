@@ -248,9 +248,8 @@
       <button onclick="openBloomQueue()" title="Bloom review queue" class="w-10 h-10 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-lg hover:bg-[#0a6cf5]/10 flex items-center justify-center">🌱</button>
       <button onclick="openCallLog()" title="Call catalog" class="w-10 h-10 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-lg hover:bg-[#f1f3f7] flex items-center justify-center">☎</button>
       <button onclick="openClinicSchedule()" title="Clinic schedule" class="w-10 h-10 rounded-xl border border-[#dbe7ff] bg-[#f5f9ff] text-[#0a6cf5] text-lg hover:bg-[#eaf2ff] flex items-center justify-center">⊞</button>
-      ${reqBlock}
     </div>
-    <div id="todayPanel" class="px-3 pb-3 flex-shrink-0 border-b border-[#e6e9ee]"></div>
+    <div id="todayPanel" class="px-3 pb-3 flex-shrink-0 max-h-[52vh] overflow-y-auto scroll border-b border-[#e6e9ee]"></div>
     <div class="flex-1 overflow-y-auto scroll px-3 pb-4 pt-3" id="list"></div>
   </div>
   <!-- DETAIL -->
@@ -1136,22 +1135,33 @@
     } catch(e){ gcalBusy = {}; }
     renderToday();
   }
+  // Every provider is mapped to the one calendar the clinic actually works (Fred's primary), so
+  // freeBusy returns the SAME blocks under all five names. Collapse identical intervals to one row
+  // and drop the ones that are only our own CRM appointments mirrored back into Google, or a normal
+  // day renders twenty "Busy" rows and pushes the patient list out of the sidebar.
   function calBusyOn(day){
-    const out=[];
+    const mine=new Set(calAllAppts().filter(a=>calSameDay(a.dt,day)).map(a=>+a.dt));
+    const total=Object.keys(gcalBusy).length, by=new Map();
     for(const [provider, ranges] of Object.entries(gcalBusy)){
       for(const b of (ranges||[])){
         const s=new Date(b.start), e=new Date(b.end);
-        if(calSameDay(s,day) || (s<day && e>day)) out.push({provider, s, e});
+        if(!(calSameDay(s,day) || (s<day && e>day))) continue;
+        if(mine.has(+s)) continue;
+        const k=`${+s}|${+e}`, hit=by.get(k);
+        if(hit) hit.provs.push(provider); else by.set(k,{s,e,provs:[provider]});
       }
     }
-    return out.sort((a,b)=>a.s-b.s);
+    return [...by.values()]
+      .map(o=>({s:o.s,e:o.e,provider:(total>1&&o.provs.length>=total)?'':o.provs.join(', ')}))
+      .sort((a,b)=>a.s-b.s);
   }
   function calBusyRow(b){
     const time=b.s.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    const who=b.provider||'clinic calendar';
     return `<div class="flex items-center gap-2 py-1.5 px-2 rounded-lg opacity-70">
       <span class="text-[11px] font-semibold text-[#9aa0ab] w-14 shrink-0 whitespace-nowrap">${time}</span>
-      <span class="w-2 h-2 rounded-full shrink-0" style="background:${provColor(b.provider)}" title="${b.provider}"></span>
-      <span class="text-[12px] text-[#9aa0ab] truncate">Busy · ${b.provider}</span></div>`;
+      <span class="w-2 h-2 rounded-full shrink-0" style="background:${provColor(b.provider)}" title="${who}"></span>
+      <span class="text-[12px] text-[#9aa0ab] truncate">Busy · ${who}</span></div>`;
   }
   window.calSetView = function(v){ calView=v; if(v==='day') calCursor=new Date(calSel); renderToday(); };
   window.calNav = function(delta){ const d=new Date(calCursor); if(calView==='month') d.setMonth(d.getMonth()+delta); else if(calView==='week') d.setDate(d.getDate()+7*delta); else d.setDate(d.getDate()+delta); calCursor=d; if(calView==='day') calSel=new Date(d); renderToday(); };
@@ -1238,7 +1248,7 @@
       const db=calBusyOn(calCursor);
       body=`${legend}${ds.length? ds.map(calApptRow).join('') : (db.length? '' : '<div class="text-xs text-[#9aa0ab] py-3 text-center">No appointments this day.</div>')}${db.map(calBusyRow).join('')}`;
     }
-    el.innerHTML=head+body;
+    el.innerHTML=head+reqBlock+body;
   }
 
   // ===== Outlook-style clinic schedule: a full-screen time grid so staff can see each other's
