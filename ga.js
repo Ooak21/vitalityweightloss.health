@@ -1,4 +1,4 @@
-/* Vitality Weight Loss — GA4 analytics loader + site-wide event tracking.
+/* Vitality Weight Loss — Google tag loader (GA4 + Google Ads) + site-wide event tracking.
  *
  * TO ACTIVATE: paste your GA4 Measurement ID into GA4_MEASUREMENT_ID below (looks like "G-XXXXXXXXXX").
  * Until a real ID is set, this runs in DRY MODE — it wires everything and logs events to the
@@ -10,8 +10,15 @@
 (function () {
   "use strict";
   var GA4_MEASUREMENT_ID = "G-HWCGE6Q1LS"; // Vitality Weight Loss GA4 property (live 2026-07-07)
+  var GOOGLE_ADS_ID = "AW-18438580697";     // Google Ads account tag (added 2026-09-08)
 
   var LIVE = /^G-[A-Z0-9]{6,}$/.test(GA4_MEASUREMENT_ID);
+
+  // The Google Ads tag is for marketing pages only. Anyone on these surfaces has signed in as a
+  // patient or as staff, and an advertising tag has no place there. GitHub Pages serves each page
+  // with and without the .html extension, so both forms are matched.
+  var SIGNED_IN_SURFACE = /\/(portal|portal-login|m|rewards|sequences|templates)(\.html)?$/;
+  var ADS = /^AW-\d{6,}$/.test(GOOGLE_ADS_ID) && !SIGNED_IN_SURFACE.test(location.pathname);
 
   window.dataLayer = window.dataLayer || [];
   function gtag() { window.dataLayer.push(arguments); }
@@ -24,6 +31,9 @@
     document.head.appendChild(s);
     gtag("js", new Date());
     gtag("config", GA4_MEASUREMENT_ID, { anonymize_ip: true });
+    // Same gtag.js library serves both products; a second config call is how Google documents
+    // adding an Ads destination to an existing Google tag.
+    if (ADS) gtag("config", GOOGLE_ADS_ID);
   }
 
   // Unified tracker. Pages can call window.vitalityTrack('purchase', {...}) on real conversions.
