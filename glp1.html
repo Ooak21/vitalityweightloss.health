@@ -2299,6 +2299,21 @@ function finalizeAfterPayment(info) {
       });
     }
   } catch (e) { /* never break the confirmation screen */ }
+  // Google Ads conversion 3, "Vitality Direct consult paid" (Fred, 2026-09-08). Real amount and a
+  // real transaction id: the order ref from hosted checkout, or the Clover charge id on the in-page
+  // card path (which never mints an order ref). Keyed in sessionStorage so a refresh of ?paid=1
+  // cannot count twice. In ?test=1 mode the card was charged $1, so $1 is what is reported.
+  try {
+    const txn = new URLSearchParams(location.search).get('ref') || state.orderRef || state.charge || '';
+    const adsKey = 'vit_ads_consult_' + txn;
+    if (txn && window.vitalityAdsConversion && !sessionStorage.getItem(adsKey)) {
+      const paidCents = TEST_DOLLAR ? 100
+        : (payload.introCents != null ? payload.introCents : ((PRICING[state.drug] ? PRICING[state.drug].intro : 149) * 100));
+      if (window.vitalityAdsConversion('consult_paid', { value: paidCents / 100, currency: 'USD', transaction_id: txn })) {
+        sessionStorage.setItem(adsKey, '1');
+      }
+    }
+  } catch (e) { /* never break the confirmation screen */ }
   render({ id:'paid', section:'Confirmed', view: (wrap) => viewPaid(wrap, payload) });
   setProgress(1);
 }

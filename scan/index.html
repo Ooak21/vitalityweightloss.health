@@ -24,7 +24,11 @@
 
 <!-- No analytics on this page, deliberately. Retiring the HubSpot scheduler was about keeping
      "this person wants a scan at a medical clinic" out of a system with no BAA. Re-adding a
-     marketing tag here would put it straight back. Do not add /ga.js. -->
+     marketing tag here would put it straight back. Do not add /ga.js.
+     The ONE exception is the Google Ads conversion for the InBody campaign, fired by adsConversion()
+     below only after a booking is confirmed: gtag loads at that moment, sends no page view and no
+     ad-personalization signal, and reports the conversion label. Google receives nothing about the
+     person; name, email and phone go to Convex only. -->
 
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebPage","@id":"https://vitalityweightloss.health/scan/#page","url":"https://vitalityweightloss.health/scan/","name":"Book your free InBody 570 scan","description":"Online scheduling for a complimentary InBody 570 body composition scan at Vitality Weight Loss in Las Vegas.","inLanguage":"en-US","isPartOf":{"@type":"WebSite","url":"https://vitalityweightloss.health/"},"about":{"@type":"Service","name":"InBody 570 Body Composition Scan","provider":{"@type":"MedicalClinic","name":"Vitality Weight Loss","telephone":"+1-702-602-5002","address":{"@type":"PostalAddress","streetAddress":"6140 Brent Thurman Way, Suite 100","addressLocality":"Las Vegas","addressRegion":"NV","postalCode":"89148","addressCountry":"US"}}}}
@@ -402,6 +406,7 @@ h1{font-size:clamp(1.75rem,4.6vw,2.5rem)}
         els.doneEmail.textContent = em;
         show(els.pick, false); show(els.details, false); show(els.done, true);
         window.scrollTo({ top: 0, behavior: "smooth" });
+        adsConversion();
         return;
       }
       // Someone else took it between loading the page and pressing the button.
@@ -425,6 +430,27 @@ h1{font-size:clamp(1.75rem,4.6vw,2.5rem)}
       note("We could not reach the scheduler. Please check your connection, or call (702) 602-5002.");
     });
   });
+
+  // Google Ads conversion 1, "InBody scan booked" (Fred, 2026-09-08). See the note in <head>: this
+  // page carries no tag while someone is choosing a time or typing their details. gtag loads only
+  // here, after the backend confirmed the booking, configured to send no page view and no
+  // ad-personalization signal, and fires the single conversion event. The click id Google needs
+  // for attribution comes from the first-party cookie the landing page's tag set; no identifier
+  // about the person is sent. Guarded so a failure can never touch the confirmation screen.
+  function adsConversion() {
+    try {
+      var ADS_ID = "AW-18438580697", LABEL = "h1diCKuywPEcENnTmdhE";
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+      var s = document.createElement("script");
+      s.async = true;
+      s.src = "https://www.googletagmanager.com/gtag/js?id=" + ADS_ID;
+      document.head.appendChild(s);
+      window.gtag("js", new Date());
+      window.gtag("config", ADS_ID, { send_page_view: false, allow_ad_personalization_signals: false });
+      window.gtag("event", "conversion", { send_to: ADS_ID + "/" + LABEL });
+    } catch (e) { /* never break the booked screen */ }
+  }
 
   load(false);
 })();

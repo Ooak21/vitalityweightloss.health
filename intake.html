@@ -1227,8 +1227,9 @@ async function submitIntake() {
     tags.push('bridge-route:' + (state.bridge_route || 'bridge'));   // part_d_plan | bridge
     if (state.bridge_mbi) tags.push('mbi-captured');
   }
+  let intakeAccepted = false;   // Google Ads "Intake completed" fires only on a 2xx from the backend
   try {
-    await fetch(window.__CONVEX_SITE + '/patient-prefs', {
+    const prefsRes = await fetch(window.__CONVEX_SITE + '/patient-prefs', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: state.email, first: state.firstName, last: state.lastName, phone: state.phone,
@@ -1258,10 +1259,14 @@ async function submitIntake() {
         }
       })
     });
+    intakeAccepted = !!(prefsRes && prefsRes.ok);
   } catch (e) { console.warn('prefs bridge (continues):', e); }
   delete state.password; delete state.password2; clearDraft();
   render({ id:'submitted', section:'Submitted', view: viewSubmitted });
   setProgress(1);
+  // Google Ads conversion 2 (Fred, 2026-09-08). The success callback, not the URL: a refresh of the
+  // submitted screen re-renders without re-submitting, so this line cannot run twice for one intake.
+  try { if (intakeAccepted && window.vitalityAdsConversion) window.vitalityAdsConversion('intake_completed'); } catch (e) {}
 }
 
 // DOCS -----------------------------------------------------------------------

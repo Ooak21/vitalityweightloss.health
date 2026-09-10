@@ -6,19 +6,32 @@
  *
  * Loaded on every public page via: <script src="/ga.js" defer></script>
  * Fire a custom conversion anywhere with: window.vitalityTrack('event_name', { key: 'value' })
+ * Fire a Google Ads conversion with:   window.vitalityAdsConversion('intake_completed', { ... })
  */
 (function () {
   "use strict";
   var GA4_MEASUREMENT_ID = "G-HWCGE6Q1LS"; // Vitality Weight Loss GA4 property (live 2026-07-07)
   var GOOGLE_ADS_ID = "AW-18438580697";     // Google Ads account tag (added 2026-09-08)
 
-  var LIVE = /^G-[A-Z0-9]{6,}$/.test(GA4_MEASUREMENT_ID);
-
-  // The Google Ads tag is for marketing pages only. Anyone on these surfaces has signed in as a
-  // patient or as staff, and an advertising tag has no place there. GitHub Pages serves each page
-  // with and without the .html extension, so both forms are matched.
+  // No Google tag of any kind on the signed-in surfaces (Fred, 2026-09-04): anyone on these pages
+  // has signed in as a patient or as staff, so neither the analytics tag nor the advertising tag
+  // belongs there. GitHub Pages serves each page with and without the .html extension, so both
+  // forms are matched. Until 2026-09-08 only the Ads destination was withheld here and GA4 still
+  // loaded; now the loader itself stays out.
   var SIGNED_IN_SURFACE = /\/(portal|portal-login|m|rewards|sequences|templates)(\.html)?$/;
-  var ADS = /^AW-\d{6,}$/.test(GOOGLE_ADS_ID) && !SIGNED_IN_SURFACE.test(location.pathname);
+  var SIGNED_IN = SIGNED_IN_SURFACE.test(location.pathname);
+
+  var LIVE = /^G-[A-Z0-9]{6,}$/.test(GA4_MEASUREMENT_ID) && !SIGNED_IN;
+  var ADS = /^AW-\d{6,}$/.test(GOOGLE_ADS_ID) && !SIGNED_IN;
+
+  // Google Ads conversion labels. Fred built the four actions in the account (2026-09-08); each
+  // fires on the real success event, never on a URL. "InBody scan booked" fires from /scan/, which
+  // deliberately carries no site-wide tag, so its label lives in scan/index.html instead.
+  var ADS_LABELS = {
+    intake_completed: "geexCK6ywPEcENnTmdhE",   // intake.html, after /patient-prefs accepts the intake
+    consult_paid:     "Ob00CLGywPEcENnTmdhE",   // glp1.html, on payment success, with the real amount
+    phone_call:       "ZccWCLSywPEcENnTmdhE"    // any tel: link click (below)
+  };
 
   window.dataLayer = window.dataLayer || [];
   function gtag() { window.dataLayer.push(arguments); }
@@ -41,7 +54,18 @@
     params = params || {};
     params.page_path = location.pathname;
     if (LIVE) window.gtag("event", name, params);
-    else if (window.console) console.debug("[GA4 dry-run] " + name, params);
+    else if (!SIGNED_IN && window.console) console.debug("[GA4 dry-run] " + name, params);
+  };
+
+  // Google Ads conversion. Silent (returns false) on signed-in surfaces, in dry-run, or for an
+  // unknown name, so a page can call it unconditionally. `params` may carry value / currency /
+  // transaction_id for the purchase action; nothing about the person is ever passed here.
+  window.vitalityAdsConversion = function (name, params) {
+    if (!ADS || !LIVE || !ADS_LABELS[name]) return false;
+    var p = { send_to: GOOGLE_ADS_ID + "/" + ADS_LABELS[name] };
+    if (params) for (var k in params) if (Object.prototype.hasOwnProperty.call(params, k)) p[k] = params[k];
+    window.gtag("event", "conversion", p);
+    return true;
   };
 
   // ---- Auto event tracking (works in dry-run too, so you can verify wiring before the ID lands) ----
@@ -52,6 +76,7 @@
     var text = (el.textContent || "").replace(/\s+/g, " ").trim().slice(0, 100);
     if (href.indexOf("tel:") === 0) {
       window.vitalityTrack("call_click", { link_text: text, phone_number: href.slice(4) });
+      window.vitalityAdsConversion("phone_call");
     } else if (href.indexOf("mailto:") === 0) {
       window.vitalityTrack("email_click", { email: href.slice(7) });
     } else if (/instagram\.com|facebook\.com|youtube\.com|youtu\.be|tiktok\.com/i.test(href)) {
