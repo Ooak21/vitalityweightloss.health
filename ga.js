@@ -27,6 +27,9 @@
   // Google Ads conversion labels. Fred built the four actions in the account (2026-09-08); each
   // fires on the real success event, never on a URL. "InBody scan booked" fires from /scan/, which
   // deliberately carries no site-wide tag, so its label lives in scan/index.html instead.
+  // Coaching signup (2026-09-13) is a destination conversion on /glp1-coaching/thank-you/ that
+  // Fred creates in the Ads account. Do not add a JS conversion label for it; the page load is
+  // the signal. Enhanced conversions stay off (no email/phone/user_data is ever sent to gtag).
   var ADS_LABELS = {
     intake_completed: "geexCK6ywPEcENnTmdhE",   // intake.html, after /patient-prefs accepts the intake
     consult_paid:     "Ob00CLGywPEcENnTmdhE",   // glp1.html, on payment success, with the real amount
