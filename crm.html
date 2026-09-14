@@ -4600,8 +4600,10 @@ HARD RULES:
   window.addOrderRow=function(kind,detail){
     const box=document.getElementById('ordersRows'); if(!box) return;
     const d=document.createElement('div'); d.className='flex items-center gap-2';
-    d.innerHTML=`<select class="field text-xs py-1 ord-kind">${ORDER_KINDS.map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select>
-      <input class="field text-xs py-1 flex-1 min-w-0 ord-detail" placeholder="e.g. CBC, CMP, Lipid panel, HbA1c">
+    // The kind select must not take the row (`.field` is width:100%): without w-auto the
+    // detail input collapsed to a rounded 40px stub that read as a checkbox that never checked.
+    d.innerHTML=`<select class="field text-xs py-1 w-auto shrink-0 ord-kind">${ORDER_KINDS.map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select>
+      <input class="field text-xs py-1 flex-1 min-w-0 ord-detail" placeholder="Detail: drug and dose, or the tests to order">
       <button type="button" class="text-[#be123c] text-xs font-semibold px-1" onclick="this.parentElement.remove()">×</button>`;
     box.appendChild(d);
     if(kind) d.querySelector('.ord-kind').value=kind;

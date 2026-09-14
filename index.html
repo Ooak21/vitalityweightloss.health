@@ -56,14 +56,6 @@
   /* GLP-1 promo bar: slides down on land */
   #glp1Bar{transform:translateY(-100%);animation:glp1BarDown .55s cubic-bezier(.23,1,.32,1) .35s forwards}
   @keyframes glp1BarDown{to{transform:translateY(0)}}
-  /* hero InBody promo: pops out from the left after land */
-  #inbodyPromo{transform:translateX(-115%) scale(.8);transform-origin:left center;animation:inbodyPop .75s cubic-bezier(.34,1.32,.5,1) 1.1s forwards}
-  @keyframes inbodyPop{to{transform:translateX(0) scale(.8)}}
-  #medicarePromo{transform:translateX(-115%) scale(.8);transform-origin:left center;animation:medPop .75s cubic-bezier(.34,1.32,.5,1) 1.4s forwards}
-  @keyframes medPop{to{transform:translateX(0) scale(.8)}}
-  #bloomPromo{transform:translateX(-115%) scale(.8);transform-origin:left center;animation:bloomPop .75s cubic-bezier(.34,1.32,.5,1) 1.7s forwards}
-  @keyframes bloomPop{to{transform:translateX(0) scale(.8)}}
-  @media (prefers-reduced-motion:reduce){#inbodyPromo,#medicarePromo,#bloomPromo{transform:scale(.8);transform-origin:left center;animation:none}}
   /* interactive FAQ: question rail + swapping detail cards */
   .faqq{display:flex;align-items:center;justify-content:space-between;gap:.75rem;width:100%;text-align:left;border:1px solid #e6e9ee;border-radius:1rem;padding:.95rem 1.15rem;font-weight:600;color:#4b5563;background:#fff;transition:all .18s;cursor:pointer;line-height:1.3}
   .faqq:hover{border-color:rgba(10,108,245,.45);color:#16201d}
@@ -281,43 +273,6 @@
   <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(56% 46% at 50% 42%, rgba(0,0,0,.40), rgba(0,0,0,0) 72%)"></div>
   <div class="absolute inset-0 glow-emerald pointer-events-none"></div>
   <div class="absolute inset-0 glow-blue pointer-events-none"></div>
-  <!-- HERO PROMO: free InBody scan, pops out from the left -->
-  <a href="tel:+17026025002" id="inbodyPromo" class="hidden lg:flex absolute left-0 bottom-[5%] z-20 items-center gap-4 bg-white/95 backdrop-blur rounded-r-3xl shadow-2xl shadow-black/30 border border-[#e6e9ee] pl-4 pr-6 py-4 max-w-sm hover:bg-white transition-colors">
-    <img src="assets/inbody-970s.png" alt="InBody body composition scanner" class="shrink-0 h-56 w-auto self-end -mt-16 -mb-2 select-none pointer-events-none">
-    <div>
-      <div class="flex flex-wrap items-center gap-2 mb-1.5">
-        <span class="text-[11px] font-semibold tracking-[0.14em] uppercase text-[#0a6cf5]">Las Vegas <span class="font-extrabold">Exclusive</span></span>
-        <span class="text-[10px] font-bold uppercase tracking-wide text-white bg-red-500 rounded-full px-2 py-0.5">Limited time</span>
-      </div>
-      <div class="font-display text-xl font-semibold text-[#16201d] leading-[1.15] mb-1.5">Your <span class="text-[#0a6cf5]">FREE</span> InBody scan in Las Vegas.</div>
-      <div class="text-sm text-[#4b5563] leading-snug">Full body-composition analysis, on us. Then 50% off your first program. <span class="text-[#0a6cf5] font-semibold whitespace-nowrap">Book yours &rarr;</span></div>
-    </div>
-  </a>
-  <!-- HERO PROMO 2: Medicare $50/mo GLP-1 Bridge, pops out from the left (above the InBody card) -->
-  <a href="guides/semaglutide-medicare-nevada.html" id="medicarePromo" class="hidden lg:block absolute left-0 bottom-[31%] z-20 overflow-hidden bg-white/95 backdrop-blur rounded-r-3xl shadow-2xl shadow-black/30 border border-[#e6e9ee] w-[26rem] group">
-    <!-- Recipe-card treatment: the photo bleeds off the right edge and a white scrim
-         fades it out under the copy, so the image reads as part of the card instead of
-         a thumbnail stuck beside the text. Licensed Pexels photo, deliberately a PERSON
-         and not a product, since the Bridge is a coverage benefit. Provenance in
-         assets/candidates/MANIFEST.md. -->
-    <div class="absolute inset-y-0 right-0 w-3/5 bg-cover bg-center transition-transform duration-500 group-hover:scale-[1.04]" style="background-image:url('assets/medicare-bridge.jpg')"></div>
-    <div class="absolute inset-0" style="background:linear-gradient(to right,#ffffff 0%,#ffffff 42%,rgba(255,255,255,.72) 62%,rgba(255,255,255,0) 100%)"></div>
-    <div class="relative text-left pl-5 pr-4 py-4 w-[64%]">
-      <div class="inline-flex self-start items-center gap-1.5 mb-2 text-[11px] font-extrabold uppercase tracking-[0.1em] text-white bg-[#74992F] rounded-full px-3 py-1">★ Now available</div>
-      <div class="font-display text-xl font-semibold text-[#16201d] leading-[1.15] mb-1.5">Medicare <span class="text-[#0a6cf5]">$50/mo</span> GLP-1 Bridge.</div>
-      <div class="text-sm text-[#4b5563] leading-snug">Eligible Medicare members get brand-name coverage for about $50 a month. <span class="text-[#0a6cf5] font-semibold whitespace-nowrap">Check eligibility &rarr;</span></div>
-    </div>
-  </a>
-  <!-- HERO PROMO 3: Vitality Bloom (hair loss, async), pops out from the left above the Medicare card -->
-  <a href="bloom.html" id="bloomPromo" class="hidden lg:block absolute left-0 bottom-[58%] z-20 overflow-hidden bg-white/95 backdrop-blur rounded-r-3xl shadow-2xl shadow-black/30 border border-[#e6e9ee] w-[26rem] group">
-    <div class="absolute inset-y-0 right-0 w-3/5 bg-cover bg-top transition-transform duration-500 group-hover:scale-[1.04]" style="background-image:url('assets/bloom-man.png')"></div>
-    <div class="absolute inset-0" style="background:linear-gradient(to right,#ffffff 0%,#ffffff 42%,rgba(255,255,255,.72) 62%,rgba(255,255,255,0) 100%)"></div>
-    <div class="relative text-left pl-5 pr-4 py-4 w-[64%]">
-      <div class="inline-flex self-start items-center gap-1.5 mb-2 text-[11px] font-extrabold uppercase tracking-[0.1em] text-white bg-[#0a6cf5] rounded-full px-3 py-1">★ New</div>
-      <div class="font-display text-xl font-semibold text-[#16201d] leading-[1.15] mb-1.5">Vitality <span class="text-[#0a6cf5]">Bloom</span><br>hair loss.</div>
-      <div class="text-sm text-[#4b5563] leading-snug">Physician-reviewed hair regrowth, fully online. <span class="text-[#0a6cf5] font-semibold whitespace-nowrap">Start now &rarr;</span></div>
-    </div>
-  </a>
   <div class="max-w-5xl mx-auto px-6 md:px-8 pt-24 pb-56 text-center relative z-10">
     <h1 class="font-display text-5xl md:text-7xl font-semibold tracking-[-3.5px] leading-[0.95] mb-6 text-white hero-text">
       Lose the weight.<br>
@@ -1322,12 +1277,13 @@ function playVwl(){
      webinar scheduled; when one is, build it fresh rather than reviving this. -->
 <script src="/prelaunch.js" defer></script>
 <script>
-/* Top-nav slot-machine announcement reel: Medicare Bridge ⇄ Vitality Bloom ⇄ Vitality Total Male.
+/* Top-nav slot-machine announcement reel: Free GLP-1 coaching ⇄ Medicare Bridge ⇄ Vitality Bloom ⇄ Vitality Total Male ⇄ Vitality 90.
    Spins through several rows with motion blur + deceleration, lands on the next message. */
 (function(){
   var slot=document.getElementById('navSlot'); if(!slot) return;
   var ROWH=24, COPIES=30, STEP=5;
   var msgs=[
+    {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Free GLP-1 coaching</span> <span class="text-[#16201d]/55">&middot; the shot is only the beginning &rarr;</span>', href:'/glp1-coaching/'},
     {html:'<span class="font-semibold text-[#16201d]">Medicare $50/mo GLP-1 Bridge</span> <span class="text-[#16201d]/55">&middot; now available</span>', href:'guides/semaglutide-medicare-nevada.html'},
     {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Vitality Bloom</span> <span class="text-[#16201d]/55">&middot; new online hair-loss treatment &rarr;</span>', href:'bloom.html'},
     {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Vitality Total Male</span> <span class="text-[#16201d]/55">&middot; TRT + GLP-1 for men &rarr;</span>', href:'total-male.html'},
