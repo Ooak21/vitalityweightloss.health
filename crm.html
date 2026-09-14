@@ -4448,7 +4448,7 @@ HARD RULES:
       if(n.ros.comment) parts.push(esc2(n.ros.comment));
       return parts.join(' '); })();
     const peTxt=n.physical_exam?((n.physical_exam.systems||[]).map(s=>`<b>${esc2(sysLabel(s.key))}:</b> ${esc2(s.findings)}`).join(' ')+(n.physical_exam.comment?' '+esc2(n.physical_exam.comment):'')):'';
-    const ordTxt=(n.orders||[]).length?rowsOf(n.orders,o=>{ const l=(ORDER_KINDS.find(k=>k[0]===o.kind)||[,o.kind])[1]; return `<b>${esc2(l)}:</b> ${esc2(o.detail)}`; }):'';
+    const ordTxt=(n.orders||[]).length?rowsOf(n.orders,o=>{ const l=(ORDER_KINDS.find(k=>k[0]===o.kind)||[,o.kind])[1]; return `<b>${esc2(l)}:</b> ${esc2(o.detail)}${o.placed?' <span style="color:#0a7d3a;font-weight:600">&#10003; ordered</span>':''}`; }):'';
     const mdmTxt=(()=>{ if(!n.mdm) return '';
       const bits=[];
       if(n.mdm.rationale) bits.push(esc2(n.mdm.rationale));
@@ -4597,17 +4597,20 @@ HARD RULES:
     return `<div id="ordersRows" class="space-y-2"></div>
       <button type="button" onclick="addOrderRow()" class="px-2.5 py-1 rounded-lg border border-[#0a6cf5]/40 text-[#0a6cf5] text-[11px] font-semibold hover:bg-[#0a6cf5]/10">+ Add order</button>`;
   }
-  window.addOrderRow=function(kind,detail){
+  window.addOrderRow=function(kind,detail,placed){
     const box=document.getElementById('ordersRows'); if(!box) return;
     const d=document.createElement('div'); d.className='flex items-center gap-2';
     // The kind select must not take the row (`.field` is width:100%): without w-auto the
-    // detail input collapsed to a rounded 40px stub that read as a checkbox that never checked.
+    // detail input collapsed to a rounded stub. "Ordered" is a real checkbox, a plain native
+    // one so the check is a checkmark, saved with the note as `placed` (DeBry, 14 Sept).
     d.innerHTML=`<select class="field text-xs py-1 w-auto shrink-0 ord-kind">${ORDER_KINDS.map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select>
       <input class="field text-xs py-1 flex-1 min-w-0 ord-detail" placeholder="Detail: drug and dose, or the tests to order">
+      <label class="flex items-center gap-1.5 text-xs font-semibold text-[#3d4a45] shrink-0 select-none cursor-pointer" title="Tick when the order has been placed"><input type="checkbox" class="ord-placed accent-[#0a6cf5] w-5 h-5"> Ordered</label>
       <button type="button" class="text-[#be123c] text-xs font-semibold px-1" onclick="this.parentElement.remove()">×</button>`;
     box.appendChild(d);
     if(kind) d.querySelector('.ord-kind').value=kind;
     if(detail) d.querySelector('.ord-detail').value=detail;
+    if(placed) d.querySelector('.ord-placed').checked=true;
   };
 
   // MDM. The option WORDING comes from the server (charting.mdmSchemaInternal) so the AMA text lives
@@ -4695,6 +4698,7 @@ HARD RULES:
     });
     const orders=[...document.querySelectorAll('#ordersRows > div')].map(r=>({
       kind:(r.querySelector('.ord-kind')||{}).value, detail:((r.querySelector('.ord-detail')||{}).value||'').trim(),
+      placed:!!((r.querySelector('.ord-placed')||{}).checked),
     })).filter(o=>o.detail);
     const sel=window.__mdmSel||{};
     const timeNum=parseInt(sel.total_time_min,10);
@@ -4724,7 +4728,7 @@ HARD RULES:
     set('notePreventive',n.preventive); set('noteFollowup',n.followup);
     if(n.ros){ (n.ros.systems||[]).forEach(s=>{ set('ros_'+s.key,s.status); set('rosf_'+s.key,s.findings); }); set('rosComment',n.ros.comment); }
     if(n.physical_exam){ (n.physical_exam.systems||[]).forEach(s=>set('pe_'+s.key,s.findings)); set('peComment',n.physical_exam.comment); }
-    (n.orders||[]).forEach(o=>window.addOrderRow(o.kind,o.detail));
+    (n.orders||[]).forEach(o=>window.addOrderRow(o.kind,o.detail,!!o.placed));
     const mr=document.getElementById('noteMedRec'); if(mr&&n.med_rec&&n.med_rec.reviewed) mr.checked=true;
     if(n.mdm){ window.__mdmSel={ problems:n.mdm.problems, data:n.mdm.data, risk:n.mdm.risk, total_time_min:n.mdm.total_time_min }; set('mdmRationale',n.mdm.rationale); }
   }
@@ -4742,7 +4746,7 @@ HARD RULES:
     const peBlk=(()=>{ if(!n.physical_exam||!((n.physical_exam.systems||[]).length||n.physical_exam.comment)) return '';
       const t=(n.physical_exam.systems||[]).map(s=>sysLabel(s.key)+': '+s.findings).join(' ')+(n.physical_exam.comment?' '+n.physical_exam.comment:'');
       return blk('Physical examination',t); })();
-    const ordBlk=(n.orders||[]).length?blk('Orders',n.orders.map(o=>{ const l=(ORDER_KINDS.find(k=>k[0]===o.kind)||[,o.kind])[1]; return l+': '+o.detail; }).join('\n')):'';
+    const ordBlk=(n.orders||[]).length?blk('Orders',n.orders.map(o=>{ const l=(ORDER_KINDS.find(k=>k[0]===o.kind)||[,o.kind])[1]; return l+': '+o.detail+(o.placed?' \u2713 ordered':''); }).join('\n')):'';
     const mdmBlk=(()=>{ if(!n.mdm) return '';
       const bits=[];
       if(n.mdm.rationale) bits.push(n.mdm.rationale);

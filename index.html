@@ -1281,7 +1281,7 @@ function playVwl(){
    Spins through several rows with motion blur + deceleration, lands on the next message. */
 (function(){
   var slot=document.getElementById('navSlot'); if(!slot) return;
-  var ROWH=24, COPIES=30, STEP=5;
+  var ROWH=24, COPIES=30;
   var msgs=[
     {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Free GLP-1 coaching</span> <span class="text-[#16201d]/55">&middot; the shot is only the beginning &rarr;</span>', href:'/glp1-coaching/'},
     {html:'<span class="font-semibold text-[#16201d]">Medicare $50/mo GLP-1 Bridge</span> <span class="text-[#16201d]/55">&middot; now available</span>', href:'guides/semaglutide-medicare-nevada.html'},
@@ -1289,6 +1289,9 @@ function playVwl(){
     {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Vitality Total Male</span> <span class="text-[#16201d]/55">&middot; TRT + GLP-1 for men &rarr;</span>', href:'total-male.html'},
     {html:'<img src="assets/logo-icon.png" alt="Vitality" class="h-4 w-auto inline-block align-middle mr-1.5"> <span class="font-semibold text-[#16201d]">Vitality 90</span> <span class="text-[#16201d]/55">&middot; free 90-day founding cohort &rarr;</span>', href:'vitality90.html'}
   ];
+  // One more row than there are messages, so every pull lands on the NEXT message. A fixed
+  // step equal to the message count (5 of 5 on 14 Sept) spun and landed on the same one.
+  var STEP=msgs.length+1;
   var reel=document.createElement('div'); reel.id='navSlotReel'; reel.style.willChange='transform';
   for(var i=0;i<COPIES;i++){ var m=msgs[i%msgs.length]; var a=document.createElement('a'); a.href=m.href;
     a.className='flex items-center justify-center whitespace-nowrap hover:opacity-75 transition-opacity';
