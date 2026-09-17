@@ -5145,7 +5145,7 @@ HARD RULES:
   window.deleteVitals=async function(id){ if(!confirm('Delete this vitals entry?')) return; try{ const r=await postLists({action:'vitals_delete',vitals_id:id}); if(!r.ok) throw new Error(r.error||'failed'); document.getElementById('listOverlay')?.remove(); await loadChartLists(selId);}catch(e){ alert('Could not delete: '+e.message);} };
 
   // ================= Documents vault =================
-  const DOC_TYPE_LABELS = { id:'ID', insurance_card:'Insurance card', insurance_card_front:'Insurance card (front)', insurance_card_back:'Insurance card (back)', authorization:'Authorization', referral:'Referral', lab:'Lab result', inbody:'InBody scan', consent:'Consent form', records_request:'Records request', correspondence:'Correspondence', other:'Other' };
+  const DOC_TYPE_LABELS = { id:'ID', insurance_card:'Insurance card', insurance_card_front:'Insurance card (front)', insurance_card_back:'Insurance card (back)', authorization:'Authorization', referral:'Referral', lab:'Lab result', inbody:'InBody scan', consent:'Consent form', records_request:'Records request', correspondence:'Correspondence', eligibility:'Eligibility check', other:'Other' };
   async function postDocs(payload){ const r=await fetch(CONVEX_URL+'/chart-docs',{ method:'POST', headers:await convexHeaders(), body:JSON.stringify(payload) }); return await r.json().catch(()=>({ ok:false, error:'bad response' })); }
   function fmtBytes(n){ if(n==null) return ''; if(n<1024) return n+' B'; if(n<1048576) return (n/1024).toFixed(0)+' KB'; return (n/1048576).toFixed(1)+' MB'; }
   async function loadChartDocs(pid){
