@@ -5362,8 +5362,18 @@ HARD RULES:
     const sub=c.subscriber_relationship&&c.subscriber_relationship!=='self'?`subscriber: ${esc((c.subscriber_first||'')+' '+(c.subscriber_last||''))} (${RELATIONSHIPS[c.subscriber_relationship]||c.subscriber_relationship})`:'subscriber: self';
     const meta=[RANKS[c.rank]||c.rank, c.group_number?('group '+c.group_number):'', sub, c.payer_id?('payer id '+c.payer_id):'', inactive?'inactive':''].filter(Boolean).join(' · ');
     const memberEl=`<span id="mem-${c.id}" class="font-mono text-[11px] text-[#3d4a45]">${esc(c.member_id_masked||'')}</span> <button onclick="revealMemberId('${c.id}')" class="text-[10px] text-[#0a6cf5] hover:underline">reveal</button>`;
-    const acts=j_canWriteIns()?`<button onclick="openCoverageModal('${c.id}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="deleteCoverage('${c.id}')" class="text-[#be123c] hover:underline">delete</button>`:'';
-    return `<div class="flex items-start justify-between gap-3 py-2 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm ${inactive?'text-[#9aa0ab]':'text-[#16201d] font-medium'}">${esc(line)}</div><div class="text-[11px] text-[#9aa0ab] mt-0.5">Member ${memberEl}</div><div class="text-[11px] text-[#9aa0ab]">${esc(meta)}</div></div><div class="text-[11px] whitespace-nowrap pt-0.5">${acts}</div></div>`;
+    const el=c.eligibility;
+    let eligChip='<span class="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold bg-[#f1f3f7] text-[#6b7280]">Eligibility not run</span>';
+    if(el&&el.status){
+      const active=el.status==='active'||el.active===true;
+      const bad=el.status==='inactive'||el.status==='error';
+      const bg=active?'#eaf7ef':bad?'#fef2f2':'#fff7ed';
+      const fg=active?'#0a7a3d':bad?'#be123c':'#9a5a00';
+      const when=el.checked_at?new Date(el.checked_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+      eligChip=`<span class="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold" style="background:${bg};color:${fg}">Stedi ${esc(el.status)}${el.plan_name?' · '+esc(el.plan_name):''}${el.error_code?' · AAA '+esc(el.error_code):''}${when?' · '+when:''}</span>`;
+    }
+    const acts=j_canWriteIns()?`<button onclick="openCoverageModal('${c.id}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="runCoverageEligibility('${c.id}')" class="text-[#0a7a3d] hover:underline">check eligibility</button> · <button onclick="deleteCoverage('${c.id}')" class="text-[#be123c] hover:underline">delete</button>`:'';
+    return `<div class="flex items-start justify-between gap-3 py-2 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm ${inactive?'text-[#9aa0ab]':'text-[#16201d] font-medium'}">${esc(line)}</div><div class="mt-1">${eligChip}</div><div class="text-[11px] text-[#9aa0ab] mt-0.5">Member ${memberEl}</div><div class="text-[11px] text-[#9aa0ab]">${esc(meta)}</div></div><div class="text-[11px] whitespace-nowrap pt-0.5">${acts}</div></div>`;
   }
   function j_canWriteIns(){ return !!window.__canWriteIns; }
   // Revealing a member id writes its own audit row server-side, so it is a click, not a render.
@@ -5377,7 +5387,7 @@ HARD RULES:
     const sel=(id,label,map,cur,blank)=>`<label class="block text-xs font-semibold text-[#3d4a45]">${label}<select id="${id}" class="field mt-1 block w-full">${blank?`<option value="">${blank}</option>`:''}${Object.entries(map).map(([k,vv])=>`<option value="${k}" ${cur===k?'selected':''}>${vv}</option>`).join('')}</select></label>`;
     const half='grid grid-cols-2 gap-3';
     const body=`<div class="${half}">${sel('inRank','Rank',RANKS,c?c.rank:'primary')}${sel('inPlanType','Plan type',PLAN_TYPES,c?c.plan_type:'','Not recorded')}</div>`
-      +_lf('inPayer','Payer',c?c.payer_name:'','e.g., Sierra Health and Life')
+      +`<label class="block text-xs font-semibold text-[#3d4a45]">Payer<div class="relative mt-1"><input id="inPayer" type="text" value="${esc(c?c.payer_name:'')}" placeholder="type to search Stedi payers, e.g. UMR" class="field block w-full" autocomplete="off"><div id="inPayerList" hidden class="absolute left-0 right-0 top-full z-30 mt-1 bg-white border border-[#e6e9ee] rounded-xl max-h-56 overflow-auto shadow-lg"></div></div></label>`
       +`<div class="${half}">${_lf('inMember','Member ID','',c?'leave blank to keep current':'as printed on the card')}${_lf('inGroup','Group number (optional)',c?c.group_number:'')}</div>`
       +(c?`<div class="text-[11px] text-[#9aa0ab] -mt-1">Member ID on file: <span class="font-mono">${esc(c.member_id_masked||'')}</span>. Typing a new one replaces it.</div>`:'')
       +_lf('inPlanName','Plan name (optional)',c?c.plan_name:'','e.g., Sierra PPO Select')
@@ -5392,9 +5402,66 @@ HARD RULES:
     listModalShell(insId?'Edit coverage':'Add coverage', body, footer, 'max-w-lg');
     const rel=document.getElementById('inRel');
     if(rel) rel.onchange=()=>{ const hide=rel.value==='self'; ['subFields','subFields2'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle('hidden',hide); }); };
+    wirePayerCombo();
     // On a NEW coverage, offer what we already know. Eligibility has been verifying real cards since
     // July but writes to its own table, so without this staff re-key a card the system already read.
     if(!insId) offerCoveragePrefill();
+  };
+  function wirePayerCombo(){
+    const input=document.getElementById('inPayer'), hidden=document.getElementById('inPayerId'), list=document.getElementById('inPayerList');
+    if(!input||!list) return;
+    let t=null, activeIdx=-1, opts=[];
+    const close=()=>{ list.hidden=true; list.innerHTML=''; activeIdx=-1; opts=[]; };
+    const pick=(o)=>{ input.value=o.name||''; if(hidden) hidden.value=o.payer_id||''; close(); };
+    const render=(payers)=>{
+      opts=payers||[];
+      list.innerHTML=opts.map((o,i)=>`<div class="px-3 py-2 text-xs cursor-pointer flex justify-between gap-2 hover:bg-[#f2f7ff]" data-i="${i}"><span>${esc(o.name||'')}</span><span class="font-mono text-[10px] text-[#9aa0ab]">${esc(o.payer_id||'')}</span></div>`).join('');
+      list.hidden=!opts.length;
+      [...list.children].forEach(el=>el.addEventListener('mousedown',e=>{ e.preventDefault(); pick(opts[+el.dataset.i]); }));
+    };
+    async function search(q){
+      try{
+        const r=await fetch(CONVEX_URL+'/payer-search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q})});
+        const j=await r.json().catch(()=>({}));
+        if(input.value.trim()!==q) return;
+        render(j.payers||[]);
+      }catch(_){}
+    }
+    input.addEventListener('input',()=>{ if(hidden) hidden.value=''; const q=input.value.trim(); clearTimeout(t); if(q.length<2){ close(); return; } t=setTimeout(()=>search(q),220); });
+    input.addEventListener('keydown',e=>{
+      if(list.hidden) return;
+      if(e.key==='ArrowDown'||e.key==='ArrowUp'){ e.preventDefault(); activeIdx=(activeIdx+(e.key==='ArrowDown'?1:-1)+opts.length)%opts.length; [...list.children].forEach((el,i)=>el.classList.toggle('bg-[#f2f7ff]',i===activeIdx)); }
+      else if(e.key==='Enter'&&activeIdx>=0){ e.preventDefault(); pick(opts[activeIdx]); }
+      else if(e.key==='Escape') close();
+    });
+    input.addEventListener('blur',()=>setTimeout(close,150));
+  }
+  function describeEligibility(el){
+    if(!el) return 'No eligibility result.';
+    if(el.ok===false){
+      const why={
+        payer_unresolved:'Stedi could not match that payer name. Pick the payer from the search list.',
+        missing_dob:'Need a date of birth on the chart (or subscriber DOB if the patient is not the subscriber).',
+        missing_name:'Need the subscriber first and last name.',
+        missing_member_id:'Need the member ID from the card.',
+        stedi_disabled:'Stedi eligibility is turned off.',
+        insufficient_input:'Not enough to send a 270.',
+        not_found:'Coverage row not found.',
+      };
+      return 'Coverage is on the chart. Eligibility did not run: '+(why[el.reason]||el.reason||'unknown')+(el.carrier?(' ('+el.carrier+')'):'');
+    }
+    const st=el.status||'';
+    if(st==='active') return 'Stedi: active coverage'+(el.plan_name?(' · '+el.plan_name):'')+(el.cached?' (already checked in the last 24 hours)':'');
+    if(st==='inactive') return 'Stedi: inactive / no active coverage'+(el.error_code?(' · AAA '+el.error_code):'');
+    if(st==='error') return 'Stedi returned an error'+(el.error_code?(' · AAA '+el.error_code):'')+(el.error_desc?(' · '+el.error_desc):'');
+    return 'Stedi: '+(st||'submitted')+(el.plan_name?(' · '+el.plan_name):'');
+  }
+  window.runCoverageEligibility=async function(id){
+    try{
+      const r=await postBilling({action:'insurance_eligibility',insurance_id:id});
+      alert(describeEligibility(r));
+      await loadChartBilling(selId);
+    }catch(e){ alert('Could not check eligibility: '+e.message); }
   };
   // Suggests payer/plan from the last eligibility check and member/group from the intake note.
   // Never auto-fills: it renders a banner the user has to click, so nothing lands in a claim because
@@ -5427,10 +5494,10 @@ HARD RULES:
     const payer=(gv('inPayer')||'').trim(); if(!payer){ alert('Enter the payer name.'); return; }
     const member=(gv('inMember')||'').trim();
     if(!insId && !member){ alert('Enter the member ID. A claim cannot be built without it.'); return; }
-    const btn=document.getElementById('inSave'); if(btn){btn.disabled=true;btn.textContent='Saving…';}
+    const btn=document.getElementById('inSave'); if(btn){btn.disabled=true;btn.textContent='Saving, then checking benefits…';}
     const payload={ rank:gv('inRank'), payer_name:payer, payer_id:gv('inPayerId'), group_number:gv('inGroup'), plan_name:gv('inPlanName'), plan_type:gv('inPlanType'), subscriber_relationship:gv('inRel'), subscriber_first:gv('inSubFirst'), subscriber_last:gv('inSubLast'), subscriber_dob:gv('inSubDob'), subscriber_sex:gv('inSubSex'), effective_date:gv('inEff'), term_date:gv('inTerm'), status:gv('inStatus'), note:gv('inNote') };
     if(member) payload.member_id=member;   // blank on edit = keep the stored id
-    try{ const r=insId?await postBilling({action:'insurance_update',insurance_id:insId,...payload}):await postBilling({action:'insurance_add',patient_id:selId,...payload}); if(!r.ok) throw new Error(r.error||'save failed'); document.getElementById('listOverlay')?.remove(); await loadChartBilling(selId); }
+    try{ const r=insId?await postBilling({action:'insurance_update',insurance_id:insId,...payload}):await postBilling({action:'insurance_add',patient_id:selId,...payload}); if(!r.ok) throw new Error(r.error||'save failed'); document.getElementById('listOverlay')?.remove(); await loadChartBilling(selId); if(r.eligibility) alert(describeEligibility(r.eligibility)); }
     catch(e){ alert('Could not save: '+e.message); if(btn){btn.disabled=false;btn.textContent='Save';} }
   };
   window.deleteCoverage=async function(id){ if(!confirm('Remove this coverage?')) return; try{ const r=await postBilling({action:'insurance_delete',insurance_id:id}); if(!r.ok) throw new Error(r.error||'failed'); document.getElementById('listOverlay')?.remove(); await loadChartBilling(selId);}catch(e){ alert('Could not delete: '+e.message);} };
