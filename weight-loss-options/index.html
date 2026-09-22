@@ -60,4 +60,64 @@ const mobileCTA = document.querySelector('.mobile-cta');
 if ('IntersectionObserver' in window) new IntersectionObserver(entries=>mobileCTA.classList.toggle('hidden',entries[0].isIntersecting),{threshold:.15}).observe(document.querySelector('#get-info'));
 
 document.querySelector('.video-play')?.addEventListener('click', () => { const frame = document.createElement('iframe'); frame.src = 'https://www.youtube-nocookie.com/embed/HV4RvffpACU?autoplay=1'; frame.title = 'Introducing Vitality Weight Loss in Las Vegas'; frame.allow = 'autoplay; encrypted-media; picture-in-picture'; frame.allowFullscreen = true; frame.referrerPolicy = 'strict-origin-when-cross-origin'; document.querySelector('.video-frame').replaceChildren(frame); });
-</script></body></html>
+</script>
+<script>
+(function(){
+  var form = document.getElementById("lead-form");
+  if (!form) return;
+  var interest = "";
+  try { interest = new URLSearchParams(location.search).get("focus") || ""; } catch (e) {}
+  document.querySelectorAll("[data-interest]").forEach(function(link){
+    link.addEventListener("click", function(){ interest = link.getAttribute("data-interest") || interest; });
+  });
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    var trap = form.querySelector("[name=company]");
+    if (trap && String(trap.value || "").trim()) return;
+    var status = document.getElementById("form-status");
+    function say(msg){ if (status) status.textContent = msg; }
+    function val(sel){ var el = form.querySelector(sel); return el && el.value ? String(el.value).trim() : ""; }
+    var first = val("[name=first_name]");
+    var email = val("[name=email]");
+    var phone = val("[name=phone]");
+    var question = val("[name=question]");
+    var digits = phone.replace(/\D/g, "");
+    if (digits.length === 11 && digits.charAt(0) === "1") digits = digits.slice(1);
+    var emailOk = /^[^@]+@[^@]+\.[^@]+$/.test(email);
+    if (digits.length !== 10) { say("Enter a phone number we can call."); return; }
+    if (email && !emailOk) { say("That email does not look right."); return; }
+    var btn = form.querySelector("button[type=submit]");
+    if (btn) btn.disabled = true;
+    say("Sending…");
+    fetch("https://quixotic-cat-492.convex.site/lead", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        first_name: first,
+        last_name: "",
+        email: emailOk ? email : "",
+        phone: phone,
+        program: "weight_loss",
+        source: "weight_loss_options",
+        source_detail: "Weight-loss options page" + (interest ? " (" + interest + ")" : ""),
+        health_notes: question,
+        lead_status: "new",
+        consent: true,
+        tags: ["Weight-loss options"]
+      })
+    }).then(function(r){ return r.json().catch(function(){ return {}; }); })
+    .then(function(j){
+      if (j && j.ok) {
+        if (window.vitalityTrack) window.vitalityTrack("generate_lead", { form_id: "weight_loss_options" });
+        location.href = "/weight-loss-options/thank-you/";
+        return;
+      }
+      throw new Error((j && j.error) || "failed");
+    }).catch(function(){
+      say("Something went wrong. Please call (702) 602-5002.");
+      if (btn) btn.disabled = false;
+    });
+  });
+})();
+</script>
+</body></html>
