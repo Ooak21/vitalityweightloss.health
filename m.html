@@ -450,6 +450,19 @@ function viewHome(){
       <div class="text-xs muted leading-snug">${isPaidTier()?'Your full library is unlocked — browse all high-protein GLP-1 recipes.':`Start with ${rmax} chef-picked recipes. Upgrade anytime for the full 500 + medication tracking.`}</div>
       <div class="text-xs accent font-semibold mt-2">Open library →</div>
     </button>`:'';
+  // Video visits (video.ts): the same magic link the clinic emails, surfaced in the app. Opens in
+  // the browser so the camera prompt is the normal one; nothing to install.
+  const vv=(DATA&&DATA.video_visits)||[];
+  const fmtT=(ms)=>new Date(ms).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+  const vvCard=vv.map(x=>`<a href="${esc(x.join_url)}" target="_blank" rel="noopener" class="card block w-full p-4 mb-4 text-left">
+      <div class="flex items-center justify-between gap-2 mb-1">
+        <div class="text-[11px] font-semibold uppercase tracking-wide accent">Video visit</div>
+        <span class="text-[10px] muted font-semibold">${x.open_now?'Open now':'Opens '+esc(fmtT(x.opens_at))}</span>
+      </div>
+      <div class="font-display font-semibold text-base mb-0.5">${esc(x.when_label)}${x.provider?' · '+esc(x.provider):''}</div>
+      <div class="text-xs muted leading-snug">Opens right here in your browser, nothing to download. You will land in a short waiting room and your provider will let you in.</div>
+      <div class="text-xs accent font-semibold mt-2">${x.open_now?'Join your visit →':'Come back here when it opens →'}</div>
+    </a>`).join('');
   $('view').innerHTML=`
     <div class="mb-4">
       <div class="text-2xl font-display font-bold tracking-tight">Welcome${first?', '+esc(first):''}.</div>
@@ -461,7 +474,7 @@ function viewHome(){
       <div class="card p-3 text-center"><div class="font-display text-xl font-bold seg">${ib?Math.round(ib.weight_lb):'—'}</div><div class="text-[10px] muted font-semibold uppercase tracking-wide">${ib?'lb':'weight'}</div></div>
     </div>
     ${ib?`<div class="card p-4 mb-4"><div class="flex items-center justify-between mb-2"><div class="font-display font-semibold text-sm">Latest InBody scan</div><span class="text-[11px] muted">${fmtDate(ib.test_date)}</span></div><div class="grid grid-cols-3 gap-2 text-center"><div><div class="font-display font-bold seg">${Math.round(ib.weight_lb)}</div><div class="text-[10px] muted uppercase">lb</div></div><div><div class="font-display font-bold seg">${Math.round(ib.pbf_pct)}%</div><div class="text-[10px] muted uppercase">body fat</div></div><div><div class="font-display font-bold seg">${Math.round(ib.smm_lb)}</div><div class="text-[10px] muted uppercase">lb muscle</div></div></div></div>`:''}
-    ${frBanner}
+    ${vvCard}${frBanner}
     <div class="grid grid-cols-2 gap-3">
       ${TILES.map(t=>{
         const locked=t.id==='inject'&&!canInject();

@@ -958,6 +958,41 @@ else {
   catch(e){ console.error('portal render error:', e); $('loading').textContent='Something went wrong loading your dashboard. Please refresh.'; $('loading').classList.remove('hidden'); }
 }
 </script>
+<script type="module">
+// Video visits (convex/video.ts, query video:mine). Self-contained on purpose: it reads its own data
+// with the patient's session and drops the card at the top of the dashboard once the dashboard is
+// on screen, and again after every re-render. Nothing in the dashboard code above is touched.
+try {
+  const { getToken, STORE_PATIENT } = await import('./auth-convex.js');
+  const tok = await getToken(STORE_PATIENT);
+  if (tok) {
+    const { ConvexHttpClient } = await import('https://esm.sh/convex@1.41.0/browser');
+    const c = new ConvexHttpClient('https://quixotic-cat-492.convex.cloud'); c.setAuth(tok);
+    const rows = await c.query('video:mine', {});
+    if (Array.isArray(rows) && rows.length) {
+      const esc = (v) => String(v ?? '').replace(/[&<>"]/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+      const fmtT = (ms) => new Date(ms).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+      const html = rows.map((x) => `<section class="card p-6 border border-[#dbe7ff] bg-[#f5f9ff]">
+        <div class="flex items-center justify-between gap-3 mb-2">
+          <div class="text-[11px] uppercase tracking-wide text-[#0a6cf5] font-semibold">Video visit</div>
+          <span class="chip ${x.open_now ? 'bg-[#e6f7ee] text-[#0a7a3d]' : 'bg-[#eef0f4] text-[#6b7280]'}">${x.open_now ? 'Open now' : 'Opens ' + esc(fmtT(x.opens_at))}</span>
+        </div>
+        <div class="font-display text-lg font-semibold mb-1">${esc(x.when_label)}${x.provider ? ' &middot; ' + esc(x.provider) : ''}</div>
+        <p class="text-sm text-[#6b7280] mb-4">Opens right in your browser, nothing to download. You will land in a short waiting room and your provider will let you in.</p>
+        <a href="${esc(x.join_url)}" target="_blank" rel="noopener" class="inline-block px-5 py-2.5 rounded-xl ${x.open_now ? 'bg-[#0a6cf5] text-white hover:bg-[#0856c8]' : 'border border-[#e6e9ee] text-[#16201d] hover:bg-[#f1f3f7]'} font-semibold text-sm">${x.open_now ? 'Join your visit' : 'Open the waiting room'} &rarr;</a>
+      </section>`).join('');
+      const host = document.getElementById('content');
+      const place = () => {
+        if (!host || host.classList.contains('hidden') || document.getElementById('vvCard')) return;
+        const d = document.createElement('div'); d.id = 'vvCard'; d.className = 'space-y-6'; d.innerHTML = html;
+        host.prepend(d);
+      };
+      place();
+      if (host) new MutationObserver(place).observe(host, { attributes: true, childList: true });
+    }
+  }
+} catch (e) { console.warn('[video] card', e && e.message); }
+</script>
 <script src="handbook-render.js?v=20260711a"></script>
 </body>
 </html>

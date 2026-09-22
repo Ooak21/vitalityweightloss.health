@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<title>Video visit, Vitality Weight Loss</title>
+<meta name="robots" content="noindex, nofollow">
+<!--
+  visit.html — ONE video surface, two doors.
+
+    ?t=<32-hex token>   the patient. No account, no app, no password. The token in the link
+                        is the whole credential and the backend refuses to mint a Telnyx
+                        client token until the provider has admitted them.
+    ?v=<visit id>       the provider. Requires a live staff session (auth-convex.js), the
+                        same gate as crm.html. Opened from the appointment in the CRM.
+
+  Built on the Telnyx Video JS SDK loaded straight from jsDelivr as an ESM bundle, because
+  these are static pages with no build step. Pinned to an exact version on purpose.
+
+  DARK ON PURPOSE: the rest of the product is a white clinical surface, but a lit room makes
+  a video call harder to look at and washes the picture out. Same type, same blue, dark stage.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#0a6cf5; --blue-hi:#3b8bff;
+    --ink:#0b1220; --stage:#0d1522; --panel:#141d2c; --panel-2:#1b263a;
+    --line:rgba(255,255,255,.10); --line-2:rgba(255,255,255,.18);
+    --text:#eef2f7; --muted:#95a1b4; --ok:#22c55e; --warn:#f59e0b; --bad:#f43f5e;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--ink);color:var(--text);
+       font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+  .display{font-family:'Montserrat','Inter',sans-serif}
+  button{font-family:inherit}
+  ::selection{background:rgba(10,108,245,.35)}
+
+  /* ---------- shell ---------- */
+  #app{height:100dvh;display:flex;flex-direction:column}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;
+         padding:12px 18px;border-bottom:1px solid var(--line);flex:0 0 auto;background:var(--ink)}
+  .brand{display:flex;align-items:center;gap:10px;min-width:0}
+  .brand img{height:26px;width:auto;display:block}
+  .brand .fallback{font-weight:700;letter-spacing:-.01em;font-size:15px}
+  .who{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hdr-right{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;
+        padding:5px 11px;border-radius:9999px;border:1px solid var(--line-2);color:var(--muted);white-space:nowrap}
+  .chip .dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:0 0 auto}
+  .chip.live{color:#8ee7a8;border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.10)}
+  .chip.rec{color:#ffb0bd;border-color:rgba(244,63,94,.45);background:rgba(244,63,94,.12)}
+  .chip.rec .dot{animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+  /* ---------- stage ---------- */
+  main{flex:1 1 auto;min-height:0;position:relative;background:var(--stage);overflow:hidden}
+  #remoteWrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+  #remoteVideo{width:100%;height:100%;object-fit:contain;background:#000;display:none}
+  #remotePlaceholder{text-align:center;padding:24px;max-width:440px}
+  #remotePlaceholder .ring{width:82px;height:82px;border-radius:50%;margin:0 auto 18px;
+    background:rgba(10,108,245,.14);border:1px solid rgba(10,108,245,.35);
+    display:flex;align-items:center;justify-content:center;font-size:30px}
+  #remotePlaceholder h2{font-size:19px;margin:0 0 8px;font-weight:600;letter-spacing:-.01em}
+  #remotePlaceholder p{margin:0;color:var(--muted);font-size:14px;line-height:1.6}
+
+  #localWrap{position:absolute;right:16px;bottom:16px;width:min(30vw,208px);aspect-ratio:4/3;
+    border-radius:14px;overflow:hidden;border:1px solid var(--line-2);background:#000;
+    box-shadow:0 18px 40px -18px rgba(0,0,0,.85);z-index:4}
+  #localVideo{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+  #localOff{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    background:var(--panel-2);color:var(--muted);font-size:11.5px;font-weight:600;letter-spacing:.04em;text-align:center;padding:8px}
+  #localWrap.camoff #localVideo{visibility:hidden}
+  #localWrap.camoff #localOff{display:flex}
+
+  /* provider's waiting-room banner */
+  #knock{position:absolute;left:50%;top:18px;transform:translateX(-50%);z-index:6;
+    display:none;align-items:center;gap:14px;padding:12px 14px 12px 18px;border-radius:16px;
+    background:rgba(20,29,44,.92);backdrop-filter:blur(10px);border:1px solid rgba(10,108,245,.45);
+    box-shadow:0 20px 50px -20px rgba(0,0,0,.9);max-width:calc(100% - 32px)}
+  #knock.show{display:flex}
+  #knock .txt{font-size:13.5px;line-height:1.4}
+  #knock .txt b{font-weight:600}
+  #knock .txt span{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+
+  /* ---------- controls ---------- */
+  footer{flex:0 0 auto;padding:14px 18px calc(14px + env(safe-area-inset-bottom));
+         border-top:1px solid var(--line);background:var(--ink);
+         display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+  .ctl{width:52px;height:52px;border-radius:50%;border:1px solid var(--line-2);background:var(--panel);
+       color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;
+       transition:background .15s,border-color .15s,color .15s;flex:0 0 auto}
+  .ctl:hover{background:var(--panel-2);border-color:rgba(255,255,255,.32)}
+  .ctl.off{background:rgba(244,63,94,.16);border-color:rgba(244,63,94,.5);color:#ffb0bd}
+  .ctl.end{background:var(--bad);border-color:var(--bad);color:#fff;width:auto;padding:0 22px;border-radius:26px;
+           font-weight:600;font-size:14px;gap:8px}
+  .ctl.end:hover{background:#e11d48;border-color:#e11d48}
+  .ctl:disabled{opacity:.4;cursor:not-allowed}
+  .ctl-lbl{position:absolute}
+
+  /* ---------- centered cards (pre-join, waiting, errors) ---------- */
+  #card{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;
+        padding:22px;background:linear-gradient(180deg,rgba(11,18,32,.94),rgba(11,18,32,.98));overflow-y:auto}
+  #card.show{display:flex}
+  .cardbox{width:100%;max-width:520px;background:var(--panel);border:1px solid var(--line);
+           border-radius:22px;padding:30px;box-shadow:0 30px 70px -30px rgba(0,0,0,.9);margin:auto}
+  .cardbox .eyebrow{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--blue-hi);margin-bottom:10px}
+  .cardbox h1{font-size:25px;line-height:1.2;margin:0 0 10px;font-weight:600;letter-spacing:-.02em}
+  .cardbox p{margin:0 0 14px;color:var(--muted);font-size:14.5px;line-height:1.65}
+  .cardbox p:last-of-type{margin-bottom:0}
+  .cardbox b{color:var(--text);font-weight:600}
+
+  .preview{width:100%;aspect-ratio:16/10;border-radius:16px;overflow:hidden;background:#000;
+           border:1px solid var(--line-2);margin:18px 0;position:relative}
+  .preview video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+  .preview .msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    color:var(--muted);font-size:13px;text-align:center;padding:20px;line-height:1.5}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;
+       padding:14px 20px;border-radius:14px;border:none;background:var(--blue);color:#fff;
+       font-weight:600;font-size:15px;cursor:pointer;transition:background .15s}
+  .btn:hover{background:#0856c8}
+  .btn:disabled{opacity:.55;cursor:not-allowed}
+  .btn.ghost{background:transparent;border:1px solid var(--line-2);color:var(--text)}
+  .btn.ghost:hover{background:var(--panel-2)}
+
+  .consent{display:flex;gap:11px;align-items:flex-start;margin:16px 0 4px;
+    padding:14px;border-radius:13px;background:var(--panel-2);border:1px solid var(--line)}
+  .consent input{margin:2px 0 0;width:17px;height:17px;accent-color:var(--blue);flex:0 0 auto;cursor:pointer}
+  .consent label{font-size:13px;line-height:1.55;color:var(--text);cursor:pointer}
+  .consent label span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+
+  .dots{display:inline-flex;gap:5px;margin-left:2px;vertical-align:middle}
+  .dots i{width:5px;height:5px;border-radius:50%;background:var(--blue-hi);animation:bounce 1.3s ease-in-out infinite}
+  .dots i:nth-child(2){animation-delay:.18s}.dots i:nth-child(3){animation-delay:.36s}
+  @keyframes bounce{0%,60%,100%{opacity:.28;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+
+  .note{font-size:12.5px;color:var(--muted);line-height:1.6;margin-top:16px;
+        padding-top:16px;border-top:1px solid var(--line)}
+  .err{background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.4);color:#ffc2cc;
+       border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.55;margin:14px 0 0}
+
+  /* ---------- provider side rail ---------- */
+  #rail{position:absolute;right:16px;top:16px;width:290px;max-width:calc(100% - 32px);z-index:5;
+    background:rgba(20,29,44,.94);backdrop-filter:blur(10px);border:1px solid var(--line);
+    border-radius:18px;padding:16px;display:none;box-shadow:0 22px 50px -24px rgba(0,0,0,.85)}
+  #rail.show{display:block}
+  #rail h3{margin:0 0 3px;font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+  #rail .sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+  #rail .lbl{font-size:10.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;
+             color:var(--blue-hi);margin:0 0 7px}
+  .linkbox{display:flex;gap:6px;margin-bottom:9px}
+  .linkbox input{flex:1;min-width:0;background:var(--stage);border:1px solid var(--line-2);border-radius:10px;
+    padding:9px 11px;color:var(--text);font-size:11.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .mini{padding:9px 12px;border-radius:10px;border:1px solid var(--line-2);background:var(--panel-2);
+        color:var(--text);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .mini:hover{background:#22304a;border-color:rgba(255,255,255,.3)}
+  .mini:disabled{opacity:.45;cursor:not-allowed}
+  .mini.primary{background:var(--blue);border-color:var(--blue)}
+  .mini.primary:hover{background:#0856c8}
+  .sendrow{display:flex;gap:6px}
+  .sendrow .mini{flex:1;text-align:center}
+  #railMsg{font-size:12px;line-height:1.5;margin-top:10px;color:var(--muted);min-height:0}
+  #railMsg.good{color:#8ee7a8}#railMsg.bad{color:#ffb0bd}
+  #railToggle{position:absolute;right:16px;top:16px;z-index:5;display:none}
+  #railToggle.show{display:block}
+
+  @media (max-width:640px){
+    header{padding:10px 14px}
+    .who{display:none}
+    #localWrap{width:112px;right:12px;bottom:12px}
+    #rail{left:12px;right:12px;width:auto;top:auto;bottom:88px}
+    footer{gap:8px;padding:12px}
+    .ctl{width:48px;height:48px}
+    .cardbox{padding:24px 20px}
+    .cardbox h1{font-size:21px}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">
+      <img src="assets/logo-full.png" alt="Vitality Weight Loss" onerror="this.remove();document.getElementById('brandFallback').style.display='block'">
+      <span class="fallback display" id="brandFallback" style="display:none">Vitality Weight Loss</span>
+    </div>
+    <div class="hdr-right">
+      <span class="chip rec" id="recChip" style="display:none"><span class="dot"></span>Recording</span>
+      <span class="chip" id="stateChip"><span class="dot"></span><span id="stateTxt">Starting</span></span>
+      <span class="who" id="whoTxt"></span>
+    </div>
+  </header>
+
+  <main>
+    <div id="remoteWrap">
+      <video id="remoteVideo" autoplay playsinline></video>
+      <div id="remotePlaceholder">
+        <div class="ring">👋</div>
+        <h2 id="phTitle">Connecting you now</h2>
+        <p id="phBody">Hold tight, this only takes a moment.</p>
+      </div>
+    </div>
+
+    <div id="knock">
+      <div class="txt"><b id="knockName">Your patient is in the waiting room</b><span id="knockSince">just arrived</span></div>
+      <button class="mini primary" id="admitBtn" onclick="admit()">Let them in</button>
+    </div>
+
+    <button class="mini" id="railToggle" onclick="toggleRail()">Visit details</button>
+
+    <div id="rail">
+      <h3 id="railName">Video visit</h3>
+      <div class="sub" id="railWhen"></div>
+
+      <div class="lbl">Patient link</div>
+      <div class="linkbox">
+        <input id="linkInput" readonly value="">
+        <button class="mini" onclick="copyLink()" id="copyBtn">Copy</button>
+      </div>
+      <div class="sendrow">
+        <button class="mini" onclick="sendLink('email')" id="sendEmailBtn">Email it</button>
+        <button class="mini" onclick="sendLink('sms')" id="sendSmsBtn">Text it</button>
+      </div>
+      <div id="railMsg"></div>
+    </div>
+
+    <div id="localWrap">
+      <video id="localVideo" autoplay playsinline muted></video>
+      <div id="localOff">Camera off</div>
+    </div>
+
+    <div id="card">
+      <div class="cardbox" id="cardBox"></div>
+    </div>
+  </main>
+
+  <footer id="controls" style="display:none">
+    <button class="ctl" id="micBtn" onclick="toggleMic()" title="Mute" aria-label="Mute">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>
+      </svg>
+    </button>
+    <button class="ctl" id="camBtn" onclick="toggleCam()" title="Turn camera off" aria-label="Turn camera off">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="m15.5 11 5-3v8l-5-3z"/>
+      </svg>
+    </button>
+    <button class="ctl end" id="endBtn" onclick="hangUp()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2.5 13.2c5.2-4.6 13.8-4.6 19 0l-2.2 2.6a1.6 1.6 0 0 1-2 .35l-2.5-1.4a1.6 1.6 0 0 1-.8-1.5l.1-1.5a11.5 11.5 0 0 0-5.2 0l.1 1.5a1.6 1.6 0 0 1-.8 1.5l-2.5 1.4a1.6 1.6 0 0 1-2-.35Z"/>
+      </svg>
+      <span id="endLbl">End visit</span>
+    </button>
+  </footer>
+</div>
+
+<script type="module">
+// ── configuration ────────────────────────────────────────────────────────────
+const CONVEX_URL = 'https://quixotic-cat-492.convex.site';
+const SDK_URL    = 'https://cdn.jsdelivr.net/npm/@telnyx/video@1.0.2/+esm';
+// Filled in from the backend on the first call (VIDEO_SUPPORT_PHONE per deployment).
+// The literal is only the fallback for a page that fails before it ever reaches us.
+let CLINIC_TEL = '(702) 602-5002';
+const noteTel = (r) => { if (r && r.support_phone) CLINIC_TEL = r.support_phone; return r; };
+
+const qs        = new URLSearchParams(location.search);
+const TOKEN     = (qs.get('t') || '').trim();
+const VISIT_ID  = (qs.get('v') || '').trim();
+const IS_PATIENT = !!TOKEN;
+
+// ── element handles ──────────────────────────────────────────────────────────
+const $ = (id) => document.getElementById(id);
+const remoteVideo = $('remoteVideo'), localVideo = $('localVideo');
+const card = $('card'), cardBox = $('cardBox');
+
+// ── runtime state ────────────────────────────────────────────────────────────
+let room = null;                 // Telnyx Room
+let localStream = null;          // getUserMedia MediaStream
+let roomId = null, refreshTok = null, visitId = VISIT_ID || null;
+let micOn = true, camOn = true;
+let ended = false, connected = false;
+let pollTimer = null, refreshTimer = null;
+let sdk = null;
+let patientLink = '';
+const remoteMedia = new MediaStream();
+
+// ── small helpers ────────────────────────────────────────────────────────────
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function setState(txt, cls){ $('stateTxt').textContent = txt; $('stateChip').className = 'chip' + (cls ? ' ' + cls : ''); }
+function showCard(html){ cardBox.innerHTML = html; card.classList.add('show'); }
+function hideCard(){ card.classList.remove('show'); }
+function placeholder(title, body){ $('phTitle').textContent = title; $('phBody').innerHTML = body; $('remotePlaceholder').style.display = ''; remoteVideo.style.display = 'none'; }
+
+// A dead end the user can actually act on: what happened, and who to call.
+function fatal(title, body, eyebrow){
+  stopTimers();
+  $('controls').style.display = 'none';
+  showCard(`
+    <div class="eyebrow">${esc(eyebrow || 'Video visit')}</div>
+    <h1>${esc(title)}</h1>
+    <p>${body}</p>
+    <div class="note">Need a hand? Call us at <b>${CLINIC_TEL}</b> and we will sort it out.</div>`);
+}
+function stopTimers(){ clearInterval(pollTimer); clearInterval(refreshTimer); pollTimer = refreshTimer = null; }
+
+async function api(path, body, bearer){
+  const headers = { 'content-type': 'application/json' };
+  if (bearer) headers.authorization = `Bearer ${bearer}`;
+  const r = await fetch(CONVEX_URL + path, { method: 'POST', headers, body: JSON.stringify(body) });
+  return await r.json().catch(() => ({ ok:false, error:'bad response' }));
+}
+
+// Staff bearer, resolved the same way crm.html does it.
+let staffToken = null;
+async function staffBearer(){
+  if (staffToken) return staffToken;
+  const { getToken, STORE_STAFF } = await import('./auth-convex.js');
+  staffToken = await getToken(STORE_STAFF);
+  return staffToken;
+}
+const staffApi = async (body) => noteTel(await api('/video', body, await staffBearer()));
+const joinApi  = async (body) => noteTel(await api('/video-join', { token: TOKEN, ...body }));
+
+// ── media ────────────────────────────────────────────────────────────────────
+// Asks for camera + mic, and degrades honestly: audio-only beats a dead call, and a
+// hard refusal gets a real explanation rather than a spinner that never resolves.
+async function getMedia(){
+  try {
+    return await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+    });
+  } catch (e) {
+    if (e && (e.name === 'NotFoundError' || e.name === 'OverconstrainedError')) {
+      try {
+        const audioOnly = await navigator.mediaDevices.getUserMedia({ audio: true });
+        camOn = false;
+        return audioOnly;
+      } catch (_) { /* fall through */ }
+    }
+    throw e;
+  }
+}
+
+function mediaErrorHtml(e){
+  const name = (e && e.name) || '';
+  if (name === 'NotAllowedError' || name === 'SecurityError') {
+    return `Your browser is blocking the camera and microphone for this page. Look for the camera icon in the
+            address bar, choose <b>Allow</b>, then reload. On an iPhone, open the link in Safari rather than
+            inside another app's browser.`;
+  }
+  if (name === 'NotFoundError') return `We could not find a camera or microphone on this device.`;
+  if (name === 'NotReadableError') return `Another app is already using the camera. Close Zoom, FaceTime or
+            any other video app, then reload this page.`;
+  return `We could not start your camera. ${esc((e && e.message) || '')}`;
+}
+
+// ── Telnyx room ──────────────────────────────────────────────────────────────
+function attachRemote(changed){
+  if (remoteMedia.getTracks().length){
+    if (changed || remoteVideo.srcObject !== remoteMedia) remoteVideo.srcObject = remoteMedia;
+    remoteVideo.style.display = 'block';   // NOT '' — the stylesheet hides #remoteVideo by default
+    $('remotePlaceholder').style.display = 'none';
+    remoteVideo.play().catch(() => {});
+  } else {
+    remoteVideo.style.display = 'none';
+    $('remotePlaceholder').style.display = '';
+  }
+}
+
+// SDK v1.0.2 ships room.getParticipantStreams() as a stub that throws "Not implemented",
+// which silently killed every subscription until we caught it. The published stream keys
+// live on the participant itself, so read them from state and use getParticipantStream()
+// (which IS implemented) to resolve each one.
+const streamKeysOf = (state, pid) => Object.keys(state.participants.get(pid)?.streams || {});
+
+// Subscribe to everything anyone else publishes. A two-party clinical visit has no reason
+// to be selective, and a family member or interpreter on a third device just works.
+async function subscribeAll(){
+  if (!room) return;
+  const state = room.getState();
+  for (const [pid] of state.participants){
+    if (pid === state.localParticipantId) continue;
+    const already = state.subscriptions.get(pid);
+    for (const key of streamKeysOf(state, pid)){
+      if (already && already.has(key)) continue;
+      try { await room.addSubscription(pid, key, { audio: true, video: true }); }
+      catch (e) { console.warn('[video] subscribe', pid, key, e && e.message); }
+    }
+  }
+}
+
+function pullRemoteTracks(){
+  if (!room) return;
+  const state = room.getState();
+  const wanted = [];
+  for (const [pid] of state.participants){
+    if (pid === state.localParticipantId) continue;
+    for (const key of streamKeysOf(state, pid)){
+      const s = room.getParticipantStream(pid, key);
+      if (!s) continue;
+      if (s.videoTrack) wanted.push(s.videoTrack);
+      if (s.audioTrack) wanted.push(s.audioTrack);
+    }
+  }
+  // Only touch the MediaStream when the track set actually changed: swapping tracks under a
+  // live srcObject makes the picture flicker, and these events fire in bursts.
+  const have = remoteMedia.getTracks();
+  const same = have.length === wanted.length && have.every((t) => wanted.includes(t));
+  if (!same){
+    have.forEach((t) => remoteMedia.removeTrack(t));
+    wanted.forEach((t) => remoteMedia.addTrack(t));
+  }
+  attachRemote(!same);
+}
+
+async function joinRoom({ room_id, client_token, refresh_token, context }){
+  roomId = room_id; refreshTok = refresh_token || null;
+  if (!sdk) sdk = await import(SDK_URL);
+
+  room = await sdk.initialize({ roomId: room_id, clientToken: client_token, context, logLevel: 'ERROR' });
+  window.__room = room;   // support handle: lets us inspect a live call from the console
+
+  room.on('connected', async () => {
+    connected = true;
+    setState(IS_PATIENT ? 'Connected' : 'In visit', 'live');
+    hideCard();
+    $('controls').style.display = 'flex';
+    try {
+      await room.addStream('self', {
+        audio: localStream.getAudioTracks()[0],
+        video: localStream.getVideoTracks()[0],
+      });
+    } catch (e) { console.error('publish', e); }
+    await subscribeAll();
+    pullRemoteTracks();
+  });
+
+  room.on('participant_joined', async () => { await subscribeAll(); pullRemoteTracks(); });
+  room.on('stream_published',   async () => { await subscribeAll(); pullRemoteTracks(); });
+  room.on('subscription_started', () => pullRemoteTracks());
+  room.on('subscription_ended',   () => pullRemoteTracks());
+  room.on('stream_unpublished',   () => pullRemoteTracks());
+  room.on('track_enabled',        () => pullRemoteTracks());
+  room.on('track_disabled',       () => pullRemoteTracks());
+
+  room.on('participant_left', () => {
+    pullRemoteTracks();
+    if (!remoteMedia.getTracks().length && !ended){
+      placeholder(
+        IS_PATIENT ? 'Your provider stepped away' : 'The patient left the visit',
+        IS_PATIENT
+          ? 'Stay on this page. If they do not come back in a minute or two, call us and we will find them.'
+          : 'They may be reconnecting. Their link still works until the visit is ended.',
+      );
+    }
+  });
+
+  room.on('disconnected', (reason) => {
+    connected = false;
+    if (ended) return;
+    setState('Reconnecting', '');
+    placeholder('Connection dropped', 'Trying to get you back in. Keep this page open.');
+    console.warn('[video] disconnected', reason);
+  });
+
+  await room.connect();
+
+  // Client tokens are short-lived by design. Swap in a fresh one well before expiry so a
+  // long visit never falls over mid-sentence.
+  clearInterval(refreshTimer);
+  refreshTimer = setInterval(refreshClientToken, 7 * 60 * 1000);
+}
+
+async function refreshClientToken(){
+  if (!room || !roomId || !refreshTok || ended) return;
+  try {
+    const r = IS_PATIENT
+      ? await joinApi({ action: 'refresh', room_id: roomId, refresh_token: refreshTok })
+      : await staffApi({ action: 'refresh', room_id: roomId, refresh_token: refreshTok });
+    if (r && r.ok && r.client_token) await room.updateClientToken(r.client_token);
+  } catch (e) { console.warn('[video] token refresh', e); }
+}
+
+// ── controls ─────────────────────────────────────────────────────────────────
+window.toggleMic = function(){
+  micOn = !micOn;
+  localStream?.getAudioTracks().forEach((t) => { t.enabled = micOn; });
+  const b = $('micBtn');
+  b.classList.toggle('off', !micOn);
+  b.title = b.ariaLabel = micOn ? 'Mute' : 'Unmute';
+};
+
+window.toggleCam = function(){
+  camOn = !camOn;
+  localStream?.getVideoTracks().forEach((t) => { t.enabled = camOn; });
+  $('localWrap').classList.toggle('camoff', !camOn);
+  const b = $('camBtn');
+  b.classList.toggle('off', !camOn);
+  b.title = b.ariaLabel = camOn ? 'Turn camera off' : 'Turn camera on';
+};
+
+window.hangUp = async function(){
+  if (ended) return;
+  if (!IS_PATIENT && !confirm('End this visit for everyone? The patient link stops working straight away.')) return;
+  ended = true;
+  stopTimers();
+  try { await room?.disconnect(); } catch (_) {}
+  localStream?.getTracks().forEach((t) => t.stop());
+
+  if (!IS_PATIENT && visitId){
+    try { await staffApi({ action: 'end', visit_id: visitId }); } catch (_) {}
+  }
+  $('controls').style.display = 'none';
+  showCard(`
+    <div class="eyebrow">Visit ended</div>
+    <h1>${IS_PATIENT ? 'Thanks for coming in' : 'Visit ended'}</h1>
+    <p>${IS_PATIENT
+      ? `You can close this window. Anything your provider wrote up will show in your portal, and we will call you if there is a next step.`
+      : `The room is closed and the patient link is dead. A note has been written to the chart with the connected time.`}</p>
+    ${IS_PATIENT ? '' : '<button class="btn ghost" style="margin-top:18px" onclick="window.close()">Close this tab</button>'}`);
+};
+
+// ── provider flow ────────────────────────────────────────────────────────────
+window.toggleRail = function(){ $('rail').classList.toggle('show'); };
+
+window.copyLink = async function(){
+  try {
+    await navigator.clipboard.writeText(patientLink);
+    railMsg('Link copied. Paste it wherever the patient will see it.', 'good');
+  } catch (_) {
+    $('linkInput').select();
+    railMsg('Press Cmd-C (or Ctrl-C) to copy the selected link.', '');
+  }
+};
+
+function railMsg(txt, cls){ const el = $('railMsg'); el.textContent = txt; el.className = cls || ''; }
+
+window.sendLink = async function(via){
+  const btn = via === 'sms' ? $('sendSmsBtn') : $('sendEmailBtn');
+  const label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Sending…';
+  railMsg('');
+  try {
+    const r = await staffApi({ action: 'send_link', visit_id: visitId, via });
+    if (r.ok) railMsg(`Sent to ${r.to}.`, 'good');
+    else railMsg(r.error || 'That did not send.', 'bad');
+  } catch (e) {
+    railMsg(String(e.message || e), 'bad');
+  }
+  btn.disabled = false; btn.textContent = label;
+};
+
+window.admit = async function(){
+  const b = $('admitBtn');
+  b.disabled = true; b.textContent = 'Letting them in…';
+  try {
+    await staffApi({ action: 'admit', visit_id: visitId });
+    $('knock').classList.remove('show');
+    placeholder('Bringing them in', 'They are joining now.');
+  } catch (e) {
+    b.disabled = false; b.textContent = 'Let them in';
+    railMsg(String(e.message || e), 'bad');
+  }
+};
+
+// Shared tail for both provider entry points (fresh open, or reopen of an existing visit).
+async function afterProviderOpen(r){
+  visitId = r.visit_id;
+  patientLink = r.patient_link;
+  $('linkInput').value = patientLink;
+  $('railName').textContent = r.patient_name || 'Video visit';
+  $('railWhen').textContent = r.scheduled_at
+    ? new Date(r.scheduled_at).toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })
+    : 'Unscheduled';
+  $('whoTxt').textContent = r.patient_name ? `Visit with ${r.patient_name}` : '';
+  $('rail').classList.add('show');
+  $('railToggle').classList.add('show');
+  $('endLbl').textContent = 'End visit';
+  if (r.enable_recording) $('recChip').style.display = '';
+  if (!r.patient_email) $('sendEmailBtn').disabled = true;
+  if (!r.patient_phone) $('sendSmsBtn').disabled = true;
+
+  try {
+    localStream = await getMedia();
+    localVideo.srcObject = localStream;
+    if (!camOn || !localStream.getVideoTracks().length) $('localWrap').classList.add('camoff');
+  } catch (e) {
+    return fatal('We could not start your camera', mediaErrorHtml(e), 'Video visit');
+  }
+
+  placeholder('Waiting for your patient', 'Send them the link from the panel on the right if they do not have it yet.');
+  await joinRoom({
+    room_id: r.room_id,
+    client_token: r.client_token,
+    refresh_token: r.refresh_token,
+    context: JSON.stringify({ role: 'provider', name: r.provider || 'Provider' }),
+  });
+
+  // Poll for the knock. Cheap query, and it is the only way the provider learns the patient
+  // is sitting in the waiting room without a socket we do not need.
+  clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    if (ended) return;
+    try {
+      const st = await staffApi({ action: 'status', visit_id: visitId });
+      if (!st.ok) return;
+      if (st.ended && !ended) { ended = true; stopTimers(); return; }
+      if (st.patient_arrived && !st.admitted){
+        $('knock').classList.add('show');
+        const mins = st.patient_arrived_at ? Math.round((Date.now() - st.patient_arrived_at) / 60000) : 0;
+        $('knockSince').textContent = mins < 1 ? 'just arrived' : `waiting ${mins} min`;
+      } else {
+        $('knock').classList.remove('show');
+      }
+    } catch (_) {}
+  }, 4000);
+}
+
+// ── patient flow ─────────────────────────────────────────────────────────────
+let consentNeeded = false, consentGiven = false;
+
+function waitingCard(st){
+  const who = st.provider ? ` with <b>${esc(st.provider)}</b>` : '';
+  showCard(`
+    <div class="eyebrow">You're checked in</div>
+    <h1>${st.first_name ? esc(st.first_name) + ', you' : 'You'}'re in the waiting room</h1>
+    <p>Your visit${who} is set for <b>${esc(st.when_label)}</b>. Your provider will let you in as soon as they are ready.
+       Keep this page open, we will bring you straight through.</p>
+    <p style="display:flex;align-items:center;gap:8px;color:var(--blue-hi)">
+      Waiting for your provider <span class="dots"><i></i><i></i><i></i></span>
+    </p>
+    <div class="note">Running late or need to reschedule? Call <b>${CLINIC_TEL}</b>.</div>`);
+}
+
+function prejoinCard(st){
+  consentNeeded = !!st.enable_recording && !st.recording_consent;
+  const who = st.provider ? ` with ${esc(st.provider)}` : '';
+  showCard(`
+    <div class="eyebrow">Video visit${esc(who)}</div>
+    <h1>${st.first_name ? 'Hi ' + esc(st.first_name) + ', ready' : 'Ready'} when you are</h1>
+    <p>Check you can see yourself and that you are somewhere private. When you are set, let your provider know you are here.</p>
+    <div class="preview"><video id="pvVideo" autoplay playsinline muted></video><div class="msg" id="pvMsg">Starting your camera…</div></div>
+    ${consentNeeded ? `
+      <div class="consent">
+        <input type="checkbox" id="consentBox" onchange="window.__consent(this.checked)">
+        <label for="consentBox">I agree to this visit being recorded.
+          <span>The recording is kept in your medical record and is used to write your visit note. Your provider will explain how it is used.</span>
+        </label>
+      </div>` : ''}
+    <div id="pvErr"></div>
+    <button class="btn" id="readyBtn" style="margin-top:18px" onclick="window.__ready()" disabled>Let my provider know I'm here</button>
+    <div class="note">Nothing to install and no account needed. Trouble getting in? Call <b>${CLINIC_TEL}</b>.</div>`);
+}
+
+window.__consent = function(checked){
+  consentGiven = checked;
+  const b = document.getElementById('readyBtn');
+  if (b) b.disabled = !localStream || (consentNeeded && !consentGiven);
+};
+
+window.__ready = async function(){
+  const b = document.getElementById('readyBtn');
+  b.disabled = true; b.textContent = 'Checking you in…';
+  try {
+    await joinApi({ action: 'arrive', consent: consentGiven });
+    const st = await joinApi({});
+    waitingCard(st);
+    startPatientPoll();
+  } catch (e) {
+    b.disabled = false; b.textContent = "Let my provider know I'm here";
+    document.getElementById('pvErr').innerHTML = `<div class="err">${esc(e.message || e)}</div>`;
+  }
+};
+
+function startPatientPoll(){
+  clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    if (ended || connected) return;
+    try {
+      const st = await joinApi({});
+      if (!st.ok) return renderPatientState(st);
+      if (st.state === 'ready') { clearInterval(pollTimer); await patientEnter(); }
+      else if (st.state === 'ended' || st.state === 'expired' || st.state === 'cancelled') renderPatientState(st);
+    } catch (_) {}
+  }, 3500);
+}
+
+async function patientEnter(){
+  setState('Joining', '');
+  const r = await joinApi({ action: 'join' });
+  if (!r.ok || r.state !== 'join') return renderPatientState(r);
+  if (r.enable_recording) $('recChip').style.display = '';
+  $('endLbl').textContent = 'Leave';
+  $('whoTxt').textContent = r.provider ? `Visit with ${r.provider}` : '';
+  placeholder('Connecting you now', 'Hold tight, this only takes a moment.');
+  await joinRoom({
+    room_id: r.room_id,
+    client_token: r.client_token,
+    refresh_token: r.refresh_token,
+    context: JSON.stringify({ role: 'patient', name: r.first_name || 'Patient' }),
+  });
+}
+
+// Every not-yet and no-longer case gets a page that says something true and useful.
+function renderPatientState(st){
+  const s = st && st.state;
+  if (s === 'waiting'){ waitingCard(st); return; }
+  if (s === 'early'){
+    stopTimers();
+    const opens = st.opens_at ? new Date(st.opens_at).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }) : null;
+    showCard(`
+      <div class="eyebrow">Video visit</div>
+      <h1>${st.first_name ? esc(st.first_name) + ", you're" : "You're"} a little early</h1>
+      <p>Your visit${st.provider ? ` with <b>${esc(st.provider)}</b>` : ''} is <b>${esc(st.when_label)}</b>.
+         This link opens${opens ? ` at about <b>${opens}</b>` : ' shortly before your time'}, so bookmark it and come back then.</p>
+      <button class="btn ghost" style="margin-top:16px" onclick="location.reload()">Check again</button>
+      <div class="note">Need to move your appointment? Call <b>${CLINIC_TEL}</b>.</div>`);
+    return;
+  }
+  if (s === 'ended'){
+    ended = true;
+    fatal('This visit has ended',
+      `${st.first_name ? esc(st.first_name) + ', your' : 'Your'} visit is finished and this link is now closed.
+       Anything your provider wrote up will appear in your portal.`, 'Video visit');
+    return;
+  }
+  if (s === 'expired'){
+    fatal('This link has expired',
+      `Video links only work around the time of the appointment. Give us a call and we will send you a fresh one.`, 'Video visit');
+    return;
+  }
+  if (s === 'cancelled'){
+    fatal('This appointment was cancelled',
+      `This visit is no longer on the schedule. If that is a surprise, call us and we will find you a new time.`, 'Video visit');
+    return;
+  }
+  fatal('We could not find this visit',
+    `This link may have been mistyped, or it belongs to an appointment that has moved. Call us and we will send a new one.`, 'Video visit');
+}
+
+async function startPatient(){
+  setState('Checking your link', '');
+  const st = await joinApi({});
+  if (!st.ok && st.state !== 'waiting') return renderPatientState(st);
+  if (st.state !== 'waiting' && st.state !== 'ready') return renderPatientState(st);
+
+  // Already admitted (they refreshed mid-visit): skip the lobby and go straight in.
+  if (st.state === 'ready'){
+    try { localStream = await getMedia(); localVideo.srcObject = localStream; }
+    catch (e) { return fatal('We could not start your camera', mediaErrorHtml(e), 'Video visit'); }
+    if (!camOn || !localStream.getVideoTracks().length) $('localWrap').classList.add('camoff');
+    return patientEnter();
+  }
+
+  prejoinCard(st);
+  setState('Waiting room', '');
+  try {
+    localStream = await getMedia();
+    localVideo.srcObject = localStream;
+    const pv = document.getElementById('pvVideo');
+    if (pv){ pv.srcObject = localStream; document.getElementById('pvMsg').style.display = 'none'; }
+    if (!camOn || !localStream.getVideoTracks().length) $('localWrap').classList.add('camoff');
+    const b = document.getElementById('readyBtn');
+    if (b) b.disabled = consentNeeded && !consentGiven;
+  } catch (e) {
+    const msg = document.getElementById('pvMsg');
+    if (msg) msg.textContent = 'Camera unavailable';
+    document.getElementById('pvErr').innerHTML = `<div class="err">${mediaErrorHtml(e)}</div>`;
+    // They can still check in and be admitted; a phone-only fallback beats being stuck here.
+    const b = document.getElementById('readyBtn');
+    if (b){ b.disabled = consentNeeded && !consentGiven; b.textContent = "Let my provider know I'm here"; }
+  }
+}
+
+// ── boot ─────────────────────────────────────────────────────────────────────
+window.addEventListener('beforeunload', () => {
+  try { room?.disconnect(); } catch (_) {}
+  localStream?.getTracks().forEach((t) => t.stop());
+});
+
+// getUserMedia is https-only. Say that plainly rather than throwing a NotAllowedError at them.
+if (!window.isSecureContext){
+  fatal('This page needs a secure connection',
+    'Open the link exactly as it was sent to you, starting with <b>https://</b>.', 'Video visit');
+} else if (!navigator.mediaDevices?.getUserMedia){
+  fatal('This browser cannot do video calls',
+    'Open the link in Safari, Chrome, Edge or Firefox. If you are inside another app, choose "Open in browser".', 'Video visit');
+} else if (IS_PATIENT){
+  startPatient().catch((e) => fatal('Something went wrong', esc(e.message || e), 'Video visit'));
+} else {
+  // Provider entry. The CRM passes the appointment id; we resolve or create the visit from it.
+  const apptId = qs.get('appt') || '';
+  (async () => {
+    const bearer = await staffBearer();
+    if (!bearer) return fatal('Your session has expired',
+      `Sign in again and reopen the visit from the appointment. <a href="login.html" style="color:var(--blue-hi)">Go to sign in</a>.`, 'Video visit');
+    if (!apptId) return fatal('No appointment on this link',
+      'Open the video visit from the appointment inside the CRM so we know who you are seeing.', 'Video visit');
+    setState('Opening the room', '');
+    const r = await staffApi({ action: 'open', appointment_id: apptId, enable_recording: qs.get('rec') === '1' });
+    if (!r.ok) return fatal('Could not open the room', esc(r.error || 'Unknown error'), 'Video visit');
+    await afterProviderOpen(r);
+  })().catch((e) => fatal('Something went wrong', esc(e.message || e), 'Video visit'));
+}
+</script>
+</body>
+</html>
