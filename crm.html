@@ -378,6 +378,7 @@
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div><label class="text-xs text-[#6b7280] font-semibold">Email</label><input id="apEmail" type="email" class="field mt-1" placeholder="jane@email.com"></div>
+        <div><label class="text-xs text-[#6b7280] font-semibold">SSN <span class="font-normal text-[#9aa0ab]">(optional)</span></label><input id="apSsn" class="field mt-1" inputmode="numeric" maxlength="11" placeholder="###-##-####" autocomplete="off"></div>
         <div><label class="text-xs text-[#6b7280] font-semibold">Sex *</label><select id="apSex" class="field mt-1"><option value="">Select</option><option value="F">Female</option><option value="M">Male</option></select></div>
       </div>
       <div><label class="text-xs text-[#6b7280] font-semibold">Street address *</label><input id="apAddr1" class="field mt-1" placeholder="123 Main St" autocomplete="off"></div>
@@ -1609,6 +1610,32 @@
     const g=p.guardian_name?('Guardian: '+esc(p.guardian_name)+(p.guardian_relationship?' ('+esc(p.guardian_relationship)+')':'')+(p.guardian_phone?' · '+esc(p.guardian_phone):'')):'<b>No guardian on file.</b> Add one under Contacts before the visit.';
     return `<div class="rounded-xl border border-amber-300 bg-amber-50 text-amber-800 px-4 py-2.5 mb-4 text-sm"><b>Minor, age ${a}.</b> ${g}</div>`;
   }
+  // SSN (Luis 9/23): the chart shows the last 4; Reveal fetches the full number for 30 seconds and the backend logs every
+  // reveal. Never printed anywhere else (notes, exports, emails, Vee).
+  function ssnRow(p){
+    const has=!!p.ssn_last4;
+    return `<div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">SSN</span><span class="text-sm text-[#16201d] flex items-center gap-2"><span id="ssn-${p.id}" class="font-mono">${has?'•••-••-'+esc(p.ssn_last4):'<span class="text-[#9aa0ab] italic font-sans">not on file</span>'}</span>${has?`<button onclick="revealSsn('${p.id}')" class="text-[11px] font-semibold hover:underline" style="color:#0a6cf5">Reveal</button>`:''}<button onclick="editSsn('${p.id}')" class="text-[11px] text-[#6b7280] hover:underline">${has?'Edit':'Add'}</button></span></div>`;
+  }
+  window.revealSsn=async function(pid){
+    const el=document.getElementById('ssn-'+pid); if(!el) return;
+    const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'ssn_reveal',patient_id:pid})}); const j=await r.json().catch(()=>({ok:false}));
+    if(!j.ok){ alert('Could not reveal: '+(j.error||'unknown')); return; }
+    el.textContent=j.ssn||'not on file';
+    setTimeout(()=>{ const p=patients.find(x=>x.id===pid); const e2=document.getElementById('ssn-'+pid); if(e2&&p) e2.textContent=p.ssn_last4?'•••-••-'+p.ssn_last4:'not on file'; },30000);
+  };
+  window.editSsn=function(pid){
+    const el=document.getElementById('ssn-'+pid); if(!el) return;
+    const inp=document.createElement('input'); inp.className='field font-mono'; inp.style.maxWidth='140px'; inp.placeholder='###-##-####'; inp.inputMode='numeric'; inp.maxLength=11;
+    el.replaceWith(inp); inp.focus();
+    let done=false;
+    const finish=async(save)=>{ if(done) return; done=true;
+      if(save&&inp.value.trim()!==''){ const d=inp.value.replace(/\D/g,''); if(d.length!==9){ alert('An SSN is 9 digits.'); renderDetail(); return; }
+        const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'ssn_set',patient_id:pid,ssn:d})}); const j=await r.json().catch(()=>({ok:false}));
+        if(!j.ok){ alert('Could not save: '+(j.error||'unknown')); } else { const p=patients.find(x=>x.id===pid); if(p) p.ssn_last4=j.last4; } }
+      renderDetail(); };
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); finish(true); } else if(e.key==='Escape') finish(false); });
+    inp.addEventListener('blur',()=>finish(true));
+  };
   function infoRow(p, field, label){
     if(field==='program'){
       return `<div class="flex items-center justify-between gap-3 px-4 py-2"><span class="text-xs text-[#6b7280]">${label}</span>
@@ -2063,6 +2090,7 @@
           ${infoRow(p,'email','Email')}
           ${infoRow(p,'phone','Phone')}
           ${infoRow(p,'dob','Date of birth')}
+          ${ssnRow(p)}
           ${infoRow(p,'sex','Sex')}
           ${infoRow(p,'program','Program')}
           ${infoRow(p,'address_line1','Address')}
@@ -2336,6 +2364,7 @@
               ${infoRow(p,'email','Email')}
               ${infoRow(p,'phone','Phone')}
               ${infoRow(p,'dob','Date of birth')}
+          ${ssnRow(p)}
               ${infoRow(p,'program','Program')}
               <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Referred by</span><span class="text-sm cursor-pointer hover:bg-[#f4f6f8] rounded px-1.5 py-0.5 -mr-1 ${p.referred_by?'text-[#0a6cf5] font-medium':'text-[#9aa0ab] italic'}" title="Click to set the referral source" onclick="openReferPicker('${p.id}')">${p.referred_by?esc(p.referred_by.practice_name+(p.referred_by.provider_name?' · '+p.referred_by.provider_name:'')):'set referral source…'}</span></div>
               <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Portal login</span><span class="text-sm ${p.has_login?'text-[#0a7a3d]':'text-[#9aa0ab]'}">${p.has_login?'Active':'Not set up'}</span></div>
@@ -4476,7 +4505,7 @@ HARD RULES:
     dsel.disabled=!docs.length;
   };
   window.openAddPatient = function(){
-    ['apFirst','apLast','apPhone','apDob','apEmail','apNote','apSex','apAddr1','apAddr2','apCity','apZip'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+    ['apFirst','apLast','apPhone','apDob','apEmail','apNote','apSex','apAddr1','apAddr2','apCity','apZip','apSsn'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
     { const st=document.getElementById('apState'); if(st) st.value='NV'; }
     document.getElementById('apProgram').value='glp1';
     document.getElementById('apStatus').value='lead';
@@ -6321,9 +6350,10 @@ HARD RULES:
     if(wantLogin && !v('apEmail')){ err.textContent='An email is required to create a portal login.'; err.classList.remove('hidden'); return; }
     const missing=[['apSex','sex'],['apAddr1','street address'],['apCity','city'],['apState','state'],['apZip','ZIP']].filter(([id])=>!v(id)).map(([,l])=>l);
     if(missing.length){ err.textContent='Still needed: '+missing.join(', ')+'.'; err.classList.remove('hidden'); return; }
+    const ssnD=v('apSsn').replace(/\D/g,''); if(ssnD&&ssnD.length!==9){ err.textContent='An SSN is 9 digits.'; err.classList.remove('hidden'); return; }
     err.classList.add('hidden'); btn.disabled=true; btn.textContent='Adding…';
     const payload={ action:'add', first_name:first, last_name:last, email:v('apEmail'), phone:v('apPhone'), dob:v('apDob')||null, program:v('apProgram'), status:v('apStatus'), note:v('apNote'),
-      sex:v('apSex'), address_line1:v('apAddr1'), address_line2:v('apAddr2')||undefined, address_city:v('apCity'), address_state:v('apState').toUpperCase(), address_zip:v('apZip') };
+      sex:v('apSex'), address_line1:v('apAddr1'), address_line2:v('apAddr2')||undefined, address_city:v('apCity'), address_state:v('apState').toUpperCase(), address_zip:v('apZip'), ssn:ssnD||undefined };
     try{
       let r, j;
       if (USE_CONVEX) {
