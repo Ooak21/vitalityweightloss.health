@@ -5455,7 +5455,7 @@ HARD RULES:
       const bg=active?'#eaf7ef':bad?'#fef2f2':'#fff7ed';
       const fg=active?'#0a7a3d':bad?'#be123c':'#9a5a00';
       const when=el.checked_at?new Date(el.checked_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
-      eligChip=`<span class="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold" style="background:${bg};color:${fg}">Stedi ${esc(el.status)}${el.plan_name?' · '+esc(el.plan_name):''}${el.error_code?' · AAA '+esc(el.error_code):''}${when?' · '+when:''}</span>`;
+      eligChip=`<span class="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold" style="background:${bg};color:${fg}">Stedi ${esc(el.status)}${el.plan_name?' · '+esc(el.plan_name):''}${el.error_code?' · AAA '+esc(el.error_code):''}${when?' · '+when:''}</span>${(el.status==='error'&&AAA_PLAIN[el.error_code])?'<div class="text-[11px] text-[#be123c] mt-0.5">'+esc(AAA_PLAIN[el.error_code])+'</div>':''}`;
     }
     const acts=j_canWriteIns()?`<button onclick="openCoverageModal('${c.id}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="runCoverageEligibility('${c.id}')" class="text-[#0a7a3d] hover:underline">check eligibility</button> · <button onclick="deleteCoverage('${c.id}')" class="text-[#be123c] hover:underline">delete</button>`:'';
     return `<div class="flex items-start justify-between gap-3 py-2 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm ${inactive?'text-[#9aa0ab]':'text-[#16201d] font-medium'}">${esc(line)}</div><div class="mt-1">${eligChip}</div><div class="text-[11px] text-[#9aa0ab] mt-0.5">Member ${memberEl}</div><div class="text-[11px] text-[#9aa0ab]">${esc(meta)}</div></div><div class="text-[11px] whitespace-nowrap pt-0.5">${acts}</div></div>`;
@@ -5467,13 +5467,16 @@ HARD RULES:
       const el=document.getElementById('mem-'+id); if(el) el.textContent=r.member_id;
     }catch(e){ alert('Could not reveal: '+e.message); }
   };
+  // Payer reject codes in plain words (same table as convex/lib/aaa.ts). Netty 9/23: "AAA 72" alone read as
+  // our system rejecting a correct member ID.
+  const AAA_PLAIN = {"15": "The payer says required information is missing from the request.", "41": "The payer has not authorized this provider to check eligibility.", "42": "The payer could not answer right now. Try again later.", "43": "The payer does not recognize the provider NPI.", "44": "The payer does not recognize the provider name.", "50": "The payer says this provider cannot check eligibility.", "51": "The provider is not on file with this payer.", "56": "The payer rejected the date sent with the check.", "57": "The payer rejected the date of service.", "58": "The payer says the date of birth is missing or invalid.", "62": "The payer has a date of death on file before the date of service.", "63": "The date of service is outside the period this payer allows checking.", "64": "The payer does not recognize the patient ID.", "65": "The patient name does not match the payer's records. Use the name exactly as on the card.", "67": "The payer could not find this patient. Check the member ID, name and date of birth against the card.", "71": "The date of birth does not match the payer's records.", "72": "The payer does not recognize this member ID. Check the letters at the start and any suffix on the card.", "73": "The subscriber name does not match the payer's records. Use the name exactly as on the card.", "75": "The payer could not find this subscriber. Check the member ID, name and date of birth against the card.", "76": "The payer has more than one member with this ID. Add the group number or check the card.", "78": "This member is not in the plan or group on file.", "79": "The payer on file is wrong for this card. Check the payer.", "80": "The payer did not respond. Try again later."};
   window.openCoverageModal=function(insId){
     const c=insId?(window.__coverages||[]).find(x=>x.id===insId):null;
     const sel=(id,label,map,cur,blank)=>`<label class="block text-xs font-semibold text-[#3d4a45]">${label}<select id="${id}" class="field mt-1 block w-full">${blank?`<option value="">${blank}</option>`:''}${Object.entries(map).map(([k,vv])=>`<option value="${k}" ${cur===k?'selected':''}>${vv}</option>`).join('')}</select></label>`;
     const half='grid grid-cols-2 gap-3';
     const body=`<div class="${half}">${sel('inRank','Rank',RANKS,c?c.rank:'primary')}${sel('inPlanType','Plan type',PLAN_TYPES,c?c.plan_type:'','Not recorded')}</div>`
       +`<label class="block text-xs font-semibold text-[#3d4a45]">Payer<div class="relative mt-1"><input id="inPayer" type="text" value="${esc(c?c.payer_name:'')}" placeholder="type to search Stedi payers, e.g. UMR" class="field block w-full" autocomplete="off"><div id="inPayerList" hidden class="absolute left-0 right-0 top-full z-30 mt-1 bg-white border border-[#e6e9ee] rounded-xl max-h-56 overflow-auto shadow-lg"></div></div></label>`
-      +`<div class="${half}">${_lf('inMember','Member ID','',c?'leave blank to keep current':'as printed on the card')}${_lf('inGroup','Group number (optional)',c?c.group_number:'')}</div>`
+      +`<div class="${half}">${_lf('inMember','Member ID','',c?(c.member_id_masked?'On file: '+c.member_id_masked+'. Leave blank to keep it':'Leave blank to keep current'):'as printed on the card')}${_lf('inGroup','Group number (optional)',c?c.group_number:'')}</div>`
       +(c?`<div class="text-[11px] text-[#9aa0ab] -mt-1">Member ID on file: <span class="font-mono">${esc(c.member_id_masked||'')}</span>. Typing a new one replaces it.</div>`:'')
       +_lf('inPlanName','Plan name (optional)',c?c.plan_name:'','e.g., Sierra PPO Select')
       +_lf('inPayerId','Payer ID (optional)',c?c.payer_id:'','clearinghouse trading partner id')
@@ -5538,7 +5541,7 @@ HARD RULES:
     const st=el.status||'';
     if(st==='active') return 'Stedi: active coverage'+(el.plan_name?(' · '+el.plan_name):'')+(el.cached?' (already checked in the last 24 hours)':'');
     if(st==='inactive') return 'Stedi: inactive / no active coverage'+(el.error_code?(' · AAA '+el.error_code):'');
-    if(st==='error') return 'Stedi returned an error'+(el.error_code?(' · AAA '+el.error_code):'')+(el.error_desc?(' · '+el.error_desc):'');
+    if(st==='error') return (AAA_PLAIN[el.error_code]?AAA_PLAIN[el.error_code]+' (AAA '+el.error_code+')':'Stedi returned an error'+(el.error_code?(' · AAA '+el.error_code):'')+(el.error_desc?(' · '+el.error_desc):''));
     return 'Stedi: '+(st||'submitted')+(el.plan_name?(' · '+el.plan_name):'');
   }
   window.runCoverageEligibility=async function(id){
