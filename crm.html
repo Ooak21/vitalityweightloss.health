@@ -371,7 +371,17 @@
         <div><label class="text-xs text-[#6b7280] font-semibold">Phone</label><input id="apPhone" type="tel" class="field mt-1" placeholder="(702) 555-0123"></div>
         <div><label class="text-xs text-[#6b7280] font-semibold">Date of birth</label><input id="apDob" type="date" class="field mt-1"></div>
       </div>
-      <div><label class="text-xs text-[#6b7280] font-semibold">Email</label><input id="apEmail" type="email" class="field mt-1" placeholder="jane@email.com"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-xs text-[#6b7280] font-semibold">Email</label><input id="apEmail" type="email" class="field mt-1" placeholder="jane@email.com"></div>
+        <div><label class="text-xs text-[#6b7280] font-semibold">Sex *</label><select id="apSex" class="field mt-1"><option value="">Select</option><option value="F">Female</option><option value="M">Male</option></select></div>
+      </div>
+      <div><label class="text-xs text-[#6b7280] font-semibold">Street address *</label><input id="apAddr1" class="field mt-1" placeholder="123 Main St" autocomplete="off"></div>
+      <div class="grid grid-cols-6 gap-3">
+        <div class="col-span-2"><label class="text-xs text-[#6b7280] font-semibold">Apt / unit</label><input id="apAddr2" class="field mt-1" autocomplete="off"></div>
+        <div class="col-span-2"><label class="text-xs text-[#6b7280] font-semibold">City *</label><input id="apCity" class="field mt-1" placeholder="Las Vegas" autocomplete="off"></div>
+        <div><label class="text-xs text-[#6b7280] font-semibold">State *</label><input id="apState" class="field mt-1" maxlength="2" value="NV" autocomplete="off"></div>
+        <div><label class="text-xs text-[#6b7280] font-semibold">ZIP *</label><input id="apZip" class="field mt-1" inputmode="numeric" maxlength="10" autocomplete="off"></div>
+      </div>
       <div class="grid grid-cols-2 gap-3">
         <div><label class="text-xs text-[#6b7280] font-semibold">Program</label><select id="apProgram" class="field mt-1"><option value="glp1">GLP-1 weight loss</option><option value="medicare_glp1">Medicare GLP-1 Bridge</option><option value="metabolic">Metabolic &amp; hormone</option><option value="coaching">Coaching &amp; nutrition</option><option value="unsure">Not sure yet</option></select></div>
         <div><label class="text-xs text-[#6b7280] font-semibold">Status</label><select id="apStatus" class="field mt-1"><option value="lead">Lead</option><option value="new_patient">New Patient</option><option value="active">Active</option></select></div>
@@ -380,7 +390,7 @@
         <div><label class="text-xs text-[#6b7280] font-semibold">Referred by (optional)</label><select id="apReferPractice" onchange="apReferProviderOpts()" class="field mt-1"><option value="">— none —</option></select></div>
         <div><label class="text-xs text-[#6b7280] font-semibold">Referring doctor</label><select id="apReferProvider" class="field mt-1"><option value="">— any / unspecified —</option></select></div>
       </div>
-      <div><label class="text-xs text-[#6b7280] font-semibold">First note (optional)</label><textarea id="apNote" rows="2" class="field mt-1" placeholder="How they came in, what they want…"></textarea></div>
+      <div><label class="text-xs text-[#6b7280] font-semibold">First note (optional)</label><textarea id="apNote" data-grow rows="2" class="field mt-1" placeholder="How they came in, what they want…"></textarea></div>
       <label class="flex items-start gap-2 text-sm text-[#3d4a45] cursor-pointer mt-1"><input id="apLogin" type="checkbox" class="w-4 h-4 mt-0.5 accent-[#0a6cf5]"><span>Create a patient portal login <span class="text-[#9aa0ab]">(needs an email · generates a temporary password to hand over)</span></span></label>
       <div id="apErr" class="text-sm text-rose-600 hidden"></div>
     </div>
@@ -595,7 +605,7 @@
     body.innerHTML='<div class="bg-white rounded-2xl p-6 space-y-4">'+
       '<button onclick="loadBloomQueue()" class="text-xs text-[#0a6cf5] font-semibold">&larr; Back to queue</button>'+
       '<div class="font-display text-xl font-semibold">'+besc(((x.first_name||'')+' '+(x.last_name||'')).trim()||'Patient')+'</div>'+
-      '<div class="space-y-1">'+row('Email',x.email)+row('Phone',x.phone)+row('DOB',x.dob)+row('State',x.state)+row('Sex',x.sex)+row('Plan',(x.plan||'')+' · '+price+'/mo')+row('Consent',x.consent_signed_at)+row('Card on file',x.card_on_file?'Yes (authorize-only, not yet charged)':'No')+'</div>'+
+      '<div class="space-y-1">'+row('Email',x.email)+row('Phone',x.phone)+row('DOB',dobUS(x.dob))+row('State',x.state)+row('Sex',x.sex)+row('Plan',(x.plan||'')+' · '+price+'/mo')+row('Consent',x.consent_signed_at)+row('Card on file',x.card_on_file?'Yes (authorize-only, not yet charged)':'No')+'</div>'+
       (x.red_flag?'<div class="rounded-xl bg-rose-50 border border-rose-200 p-3 text-sm text-rose-700">⚑ Red flag — routed to a live visit. Not eligible for async approval.</div>':'')+
       (x.non_nevada?'<div class="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">⚑ Outside Nevada — not serviceable async.</div>':'')+
       '<div><div class="text-xs font-semibold uppercase tracking-wide text-[#0a6cf5] mb-1">Questionnaire</div>'+ans+'</div>'+
@@ -858,7 +868,7 @@
     body.innerHTML='<div class="bg-white rounded-2xl p-6 space-y-4">'+
       '<button onclick="loadGlp1Queue()" class="text-xs text-[#0a6cf5] font-semibold">&larr; Back to queue</button>'+
       '<div class="font-display text-xl font-semibold">'+besc(((x.first_name||'')+' '+(x.last_name||'')).trim()||'Patient')+'</div>'+
-      '<div class="space-y-1">'+row('Email',x.email)+row('Phone',x.phone)+row('DOB',x.dob)+row('Medication',x.drug_label)+'</div>'+
+      '<div class="space-y-1">'+row('Email',x.email)+row('Phone',x.phone)+row('DOB',dobUS(x.dob))+row('Medication',x.drug_label)+'</div>'+
       (contraHtml?'<div><div class="text-xs font-semibold uppercase tracking-wide text-rose-600 mb-1">Contraindication flags</div>'+contraHtml+'</div>':'')+
       '<div><div class="text-xs font-semibold uppercase tracking-wide text-[#0a6cf5] mb-1">Intake screening</div><div class="space-y-2">'+qa+'</div></div>'+
       (labs?'<div><div class="text-xs font-semibold uppercase tracking-wide text-[#0a6cf5] mb-1">Labs</div>'+labs+'</div>':'')+
@@ -919,7 +929,7 @@
         <div style="font-size:13px">To: ${e(pcp.name||'[Provider Name]')}</div>
         ${pcp.practice?`<div style="font-size:13px">${e(pcp.practice)}</div>`:''}
         ${pcp.phone?`<div style="font-size:13px">Phone / Fax: ${e(pcp.phone)}</div>`:''}
-        <div style="font-size:13px;margin:12px 0">Re: <b>${full}</b> &nbsp; DOB: ${e(p.dob||'____')}</div>
+        <div style="font-size:13px;margin:12px 0">Re: <b>${full}</b> &nbsp; DOB: ${e(dobUS(p.dob)||'____')}</div>
         <p style="margin:12px 0">Dear Dr. ${e(drLast)},</p>
         <p style="margin:12px 0">I am writing to update you regarding <b>${full}</b>, who is currently under care at Vitality Weight Loss, a physician-supervised medical weight management program. The clinical information below is provided for your awareness and to support continuity of care.</p>
         <table style="width:100%;border-collapse:collapse;margin:14px 0;font-size:13px">
@@ -1490,12 +1500,12 @@
     const digits=q.replace(/\D/g,'');
     const rows=patients.filter(p=>{
       const name=((p.first||'')+' '+(p.last||'')).toLowerCase();
-      const hay=(name+' '+(p.email||'')+' '+(p.dob||'')+' '+(p.id||'')+' '+(p.display_id||'')).toLowerCase();
+      const hay=(name+' '+(p.email||'')+' '+dobKeys(p.dob)+' '+(p.id||'')+' '+(p.display_id||'')).toLowerCase();
       if(hay.includes(q)) return true;
-      if(digits.length>=3){ const pd=(p.phone||'').replace(/\D/g,''), dd=(p.dob||'').replace(/\D/g,''); if((pd&&pd.includes(digits))||(dd&&dd.includes(digits))) return true; }
+      if(digits.length>=3){ const pd=(p.phone||'').replace(/\D/g,''), dd=dobKeys(p.dob).replace(/[^\d ]/g,''); if((pd&&pd.includes(digits))||(dd&&dd.split(' ').some(k=>k.includes(digits)))) return true; }
       return false;
     }).slice(0,8);
-    box.innerHTML=rows.length?rows.map(p=>{ const nm=((p.first||'')+' '+(p.last||'')).trim()||p.display_id||'Patient'; return `<div onclick="apptPickSelect('${p.id}')" class="px-2.5 py-1.5 cursor-pointer hover:bg-[#f4f6f8] text-[13px] border-b border-[#f1f3f7] last:border-0"><span class="font-semibold text-[#16201d]">${esc(nm)}</span> <span class="text-[11px] text-[#6b7280]">DOB ${esc(p.dob||'n/a')}</span></div>`; }).join(''):'<div class="px-2.5 py-2 text-[12px] text-[#9aa0ab]">No patient matches</div>';
+    box.innerHTML=rows.length?rows.map(p=>{ const nm=((p.first||'')+' '+(p.last||'')).trim()||p.display_id||'Patient'; return `<div onclick="apptPickSelect('${p.id}')" class="px-2.5 py-1.5 cursor-pointer hover:bg-[#f4f6f8] text-[13px] border-b border-[#f1f3f7] last:border-0"><span class="font-semibold text-[#16201d]">${esc(nm)}</span> <span class="text-[11px] text-[#6b7280]">DOB ${esc(dobUS(p.dob)||'n/a')}</span></div>`; }).join(''):'<div class="px-2.5 py-2 text-[12px] text-[#9aa0ab]">No patient matches</div>';
     box.classList.remove('hidden');
   };
   window.apptPickSelect=function(pid){
@@ -1527,9 +1537,9 @@
     const digits=ql.replace(/\D/g,'');
     const rows = patients.filter(p=>{
       const name=((p.first||'')+' '+(p.last||'')).toLowerCase();
-      const hay=(name+' '+(p.email||'')+' '+(p.dob||'')+' '+(p.id||'')+' '+(p.display_id||'')).toLowerCase();
+      const hay=(name+' '+(p.email||'')+' '+dobKeys(p.dob)+' '+(p.id||'')+' '+(p.display_id||'')).toLowerCase();
       if(hay.includes(ql)) return true;
-      if(digits.length>=3){ const pd=(p.phone||'').replace(/\D/g,''), dd=(p.dob||'').replace(/\D/g,''); if((pd&&pd.includes(digits))||(dd&&dd.includes(digits))) return true; }
+      if(digits.length>=3){ const pd=(p.phone||'').replace(/\D/g,''), dd=dobKeys(p.dob).replace(/[^\d ]/g,''); if((pd&&pd.includes(digits))||(dd&&dd.split(' ').some(k=>k.includes(digits)))) return true; }
       return false;
     }).sort((a,b)=> new Date(lastActivity(b)).getTime()-new Date(lastActivity(a)).getTime()).slice(0,40);
     const __todayStart=(()=>{const d=new Date();d.setHours(0,0,0,0);return d.getTime();})();
@@ -1543,7 +1553,7 @@
           <div class="flex items-center gap-1 shrink-0">${arrived?`<span class="badge" style="background:#10b981;color:#fff" title="Checked in ${new Date(p.checked_in_at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}">✓ Arrived</span>`:''}<span class="badge b-${p.status}">${STAT[p.status]||p.status}</span></div>
         </div>
         <div class="flex items-center justify-between mt-0.5 text-[11px] text-[#6b7280]">
-          <span>DOB ${p.dob||'—'}</span><span>${PROG[p.program]||'-'}</span>
+          <span>DOB ${esc(dobUS(p.dob))||'—'}</span><span>${PROG[p.program]||'-'}</span>
         </div>
       </div>`;}).join('')
       : '<div class="text-center text-[#9aa0ab] text-sm py-10">No patient matches "'+esc(ql)+'"</div>';
@@ -1571,12 +1581,21 @@
   }
 
   // compact, click-to-edit contact rows
+  // Note boxes grow with their text (Netty 9/23: "can't see what I'm typing"). Any textarea marked data-grow.
+  function growTa(t){ if(!t||t.tagName!=='TEXTAREA'||!t.hasAttribute('data-grow')) return; t.style.height='auto'; t.style.height=Math.min(t.scrollHeight+2, 600)+'px'; }
+  document.addEventListener('input', e=>growTa(e.target));
+  document.addEventListener('focusin', e=>growTa(e.target));
+  // DOB is stored ISO (yyyy-mm-dd). Staff read, copy and search it as mm/dd/yyyy (payer portals, eligibility).
+  function dobUS(s){ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s||'')); return m?m[2]+'/'+m[3]+'/'+m[1]:(s||''); }
+  function dobKeys(s){ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s||'')); if(!m) return ''; const [,y,mo,d]=m, mn=String(+mo), dn=String(+d), yy=y.slice(2);
+    return [y+'-'+mo+'-'+d, mo+'/'+d+'/'+y, mn+'/'+dn+'/'+y, mo+'/'+d+'/'+yy, mn+'/'+dn+'/'+yy, y+mo+d, mo+d+y, mo+d+yy, mn+dn+y].join(' '); }
+  function ageOf(s){ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s||'')); if(!m) return null; const t=new Date(); let a=t.getFullYear()-(+m[1]); if(t.getMonth()+1<+m[2]||(t.getMonth()+1===+m[2]&&t.getDate()<+m[3])) a--; return a; }
   function infoRow(p, field, label){
     if(field==='program'){
       return `<div class="flex items-center justify-between gap-3 px-4 py-2"><span class="text-xs text-[#6b7280]">${label}</span>
         <select class="field w-auto py-1 text-sm" onchange="saveInfo('${p.id}','program',this.value)">${Object.entries(PROG).map(([k,v])=>`<option value="${k}" ${k===p.program?'selected':''}>${v}</option>`).join('')}</select></div>`;
     }
-    const v=p[field]; const disp=v?String(v):'<span class="text-[#9aa0ab] italic">add…</span>';
+    const v=p[field]; const disp=v?esc(field==='dob'?dobUS(v):String(v)):'<span class="text-[#9aa0ab] italic">add…</span>';
     return `<div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">${label}</span>
       <span class="text-sm text-[#16201d] cursor-text hover:bg-[#f4f6f8] rounded px-1.5 py-0.5 -mr-1" title="Click to edit" onclick="editInfo(this,'${p.id}','${field}')">${disp}</span></div>`;
   }
@@ -1802,7 +1821,7 @@
   }
 
   function renderProviderView(p){
-    const age = p.dob ? (new Date().getFullYear()-new Date(p.dob).getFullYear()) : '-';
+    const age = ageOf(p.dob) ?? '-';
     const tlHtml = (()=>{ try { return timeline(p); } catch(e){ console.error('provider timeline failed', e); return '<div class="text-xs text-[#be123c]">Timeline unavailable.</div>'; } })();
     try {
     $('#detailMain').innerHTML = `
@@ -2005,7 +2024,7 @@
           <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-4">Chart timeline</div>
           <div class="overflow-y-auto scroll -mr-2 pr-2" style="max-height:420px">${tlHtml}</div>
           <div class="flex gap-2 mt-2 pt-3 border-t border-[#e6e9ee]">
-            <input id="noteInput" class="field" placeholder="Add a note to the chart…" onkeydown="if(event.key==='Enter')addNote('${p.id}')">
+            <textarea id="noteInput" data-grow rows="1" class="field resize-none" placeholder="Add a note to the chart… (Shift+Enter for a new line)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addNote('${p.id}')}"></textarea>
             <button onclick="addNote('${p.id}')" class="px-4 py-2 rounded-lg bg-[#f1f3f7] border border-[#e6e9ee] text-sm font-medium hover:border-[#0a6cf5]/40">Add</button>
           </div>
         </div>
@@ -2055,7 +2074,7 @@
   function ic(name, size){ size=size||20; return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="${size}" height="${size}" style="display:inline-block;vertical-align:middle;flex:0 0 auto">${ICON_PATH[name]||''}</svg>`; }
 
   function renderCrmView(p){
-    const age = p.dob ? (new Date().getFullYear()-new Date(p.dob).getFullYear()) : '-';
+    const age = ageOf(p.dob) ?? '-';
     const initials = (((p.first||'')[0]||'?')+((p.last||'')[0]||'')).toUpperCase();
     const telHref = p.phone ? 'tel:'+String(p.phone).replace(/[^0-9+]/g,'') : '';
     window.__crmP = p; window.__actFilter = 'all'; window.__crmTasks = null; window.__crmEmails = null;
@@ -2115,7 +2134,7 @@
           </div>
           <div id="actFeed" class="flex-1 overflow-y-auto scroll -mr-2 pr-2" style="max-height:440px"></div>
           <div id="noteComposer" class="flex gap-2 mt-3 pt-3 border-t border-[#e6e9ee]">
-            <input id="noteInput" class="field" placeholder="Add a note…" onkeydown="if(event.key==='Enter')addNote('${p.id}')">
+            <textarea id="noteInput" data-grow rows="1" class="field resize-none" placeholder="Add a note… (Shift+Enter for a new line)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addNote('${p.id}')}"></textarea>
             <button onclick="addNote('${p.id}')" class="px-4 py-2 rounded-lg bg-[#0a6cf5] text-white text-sm font-medium">Add</button>
           </div>
         </div>
@@ -3877,7 +3896,7 @@
     finally{ if(btn){ btn.disabled=false; btn.textContent='✨ Generate chart note'; } }
   };
   function buildVeeInstructions(p, mode){
-    const ib=p.inbody, age=p.dob?(new Date().getFullYear()-new Date(p.dob).getFullYear()):'unknown';
+    const ib=p.inbody, age=ageOf(p.dob) ?? 'unknown';
     const stats = ib ? [
       `Latest InBody scan (${ib.model||'InBody'})`, `weight ${ib.weight_lb} pounds`, `body fat ${ib.pbf_pct} percent`,
       `skeletal muscle mass ${ib.smm_lb} pounds`, `BMI ${ib.bmi}`, `lean body mass ${ib.lean_body_mass_lb} pounds`,
@@ -4137,7 +4156,8 @@ HARD RULES:
     dsel.disabled=!docs.length;
   };
   window.openAddPatient = function(){
-    ['apFirst','apLast','apPhone','apDob','apEmail','apNote'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+    ['apFirst','apLast','apPhone','apDob','apEmail','apNote','apSex','apAddr1','apAddr2','apCity','apZip'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+    { const st=document.getElementById('apState'); if(st) st.value='NV'; }
     document.getElementById('apProgram').value='glp1';
     document.getElementById('apStatus').value='lead';
     document.getElementById('apLogin').checked=false;
@@ -4280,7 +4300,7 @@ HARD RULES:
       <div class="r"><label class="k">Name</label>${fld(patName)}</div>
       <div class="r"><label class="k">Member MBI</label>${fld(mb.mbi)}</div>
       <div class="r"><label class="k">Group number</label>${fld(mb.group_number)}</div>
-      <div class="r"><label class="k">Date of birth</label>${fld(dob)}</div>
+      <div class="r"><label class="k">Date of birth</label>${fld(dobUS(dob))}</div>
       <div class="r"><label class="k">Address</label>${fld(addr)}</div>
       <div class="r"><label class="k">City, State</label>${fld(pcity)}</div>
       <div class="r"><label class="k">ZIP</label>${fld(pzip)}</div>
@@ -4395,7 +4415,7 @@ HARD RULES:
     const n=(window.__chartNotes||[]).find(x=>x.id===noteId); if(!n){ alert('Note not found - reload the record.'); return; }
     const p=(patients||[]).find(x=>x.id===n.patient_id)||{};
     const nm=((p.first||'')+' '+(p.last||'')).trim()||p.name||'Patient';
-    const dob=p.dob?new Date(p.dob).toLocaleDateString('en-US'):'n/a';
+    const dob=p.dob?dobUS(p.dob):'n/a';
     const dos=(typeof fmtNoteDate==='function')?fmtNoteDate(n):(n.encounter_date||'');
     const typeLabel=(typeof NOTE_TYPE_LABELS!=='undefined'&&NOTE_TYPE_LABELS[n.encounter_type])||'Clinical note';
     const signed=n.status==='signed';
@@ -4470,7 +4490,7 @@ HARD RULES:
     const pid=n.patient_id;
     const p=(patients||[]).find(x=>x.id===pid)||{};
     const nm=((p.first||'')+' '+(p.last||'')).trim()||p.name||'Patient';
-    const dob=p.dob?new Date(p.dob).toLocaleDateString('en-US'):'Not recorded';
+    const dob=p.dob?dobUS(p.dob):'Not recorded';
     // Make sure the chart context is loaded even when the packet is printed straight off the Notes tab.
     if(!window.__chartProblems) { try{ await loadChartLists(pid); }catch(e){} }
     let coverages=window.__coverages;
@@ -4620,7 +4640,7 @@ HARD RULES:
     box.innerHTML=chartSection('Encounter notes', newBtn, `<div class="space-y-3">${list}</div>`);
   }
   function soapFields(){
-    const f=(id,label,ph)=>`<div><div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mb-1">${label}</div><textarea id="${id}" rows="4" class="field w-full resize-y" placeholder="${ph}"></textarea></div>`;
+    const f=(id,label,ph)=>`<div><div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mb-1">${label}</div><textarea id="${id}" data-grow rows="4" class="field w-full resize-y" placeholder="${ph}"></textarea></div>`;
     return f('noteSubjective','Subjective','Patient-reported: symptoms, tolerability, adherence…')+f('noteObjective','Objective','Vitals, weight, InBody, exam…')+f('noteAssessment','Assessment','Clinical impression + ICD-10 (e.g., E66.811)…')+f('notePlan','Plan','Medication/dose, counseling, labs, follow-up…');
   }
 
@@ -5210,7 +5230,7 @@ HARD RULES:
   window.deleteVitals=async function(id){ if(!confirm('Delete this vitals entry?')) return; try{ const r=await postLists({action:'vitals_delete',vitals_id:id}); if(!r.ok) throw new Error(r.error||'failed'); document.getElementById('listOverlay')?.remove(); await loadChartLists(selId);}catch(e){ alert('Could not delete: '+e.message);} };
 
   // ================= Documents vault =================
-  const DOC_TYPE_LABELS = { id:'ID', insurance_card:'Insurance card', insurance_card_front:'Insurance card (front)', insurance_card_back:'Insurance card (back)', authorization:'Authorization', referral:'Referral', lab:'Lab result', inbody:'InBody scan', consent:'Consent form', records_request:'Records request', correspondence:'Correspondence', eligibility:'Eligibility check', other:'Other' };
+  const DOC_TYPE_LABELS = { id:'ID', insurance_card:'Insurance card', insurance_card_front:'Insurance card (front)', insurance_card_back:'Insurance card (back)', authorization:'Authorization', referral:'Referral', lab:'Lab result', inbody:'InBody scan', consent:'Consent form', records_request:'Records request', correspondence:'Correspondence', eligibility:'Eligibility check', intake_packet:'Intake packet', other:'Other' };
   async function postDocs(payload){ const r=await fetch(CONVEX_URL+'/chart-docs',{ method:'POST', headers:await convexHeaders(), body:JSON.stringify(payload) }); return await r.json().catch(()=>({ ok:false, error:'bad response' })); }
   function fmtBytes(n){ if(n==null) return ''; if(n<1024) return n+' B'; if(n<1048576) return (n/1024).toFixed(0)+' KB'; return (n/1048576).toFixed(1)+' MB'; }
   async function loadChartDocs(pid){
@@ -5886,8 +5906,11 @@ HARD RULES:
     if(!first && !last){ err.textContent='Enter at least a first or last name.'; err.classList.remove('hidden'); return; }
     const wantLogin=document.getElementById('apLogin').checked;
     if(wantLogin && !v('apEmail')){ err.textContent='An email is required to create a portal login.'; err.classList.remove('hidden'); return; }
+    const missing=[['apSex','sex'],['apAddr1','street address'],['apCity','city'],['apState','state'],['apZip','ZIP']].filter(([id])=>!v(id)).map(([,l])=>l);
+    if(missing.length){ err.textContent='Still needed: '+missing.join(', ')+'.'; err.classList.remove('hidden'); return; }
     err.classList.add('hidden'); btn.disabled=true; btn.textContent='Adding…';
-    const payload={ action:'add', first_name:first, last_name:last, email:v('apEmail'), phone:v('apPhone'), dob:v('apDob')||null, program:v('apProgram'), status:v('apStatus'), note:v('apNote') };
+    const payload={ action:'add', first_name:first, last_name:last, email:v('apEmail'), phone:v('apPhone'), dob:v('apDob')||null, program:v('apProgram'), status:v('apStatus'), note:v('apNote'),
+      sex:v('apSex'), address_line1:v('apAddr1'), address_line2:v('apAddr2')||undefined, address_city:v('apCity'), address_state:v('apState').toUpperCase(), address_zip:v('apZip') };
     try{
       let r, j;
       if (USE_CONVEX) {
