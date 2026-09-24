@@ -137,6 +137,7 @@
     <button onclick="openReferralQueue()" title="Referred patients to call, and referral documents to review" class="pt-only px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7] inline-flex items-center">Referral queue<span id="refQCount" class="hidden ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] text-white" style="background:#0a6cf5">0</span></button>
     <button onclick="openScrubQueue()" title="Charts missing what billing needs" class="pt-only px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7] inline-flex items-center">Missing info<span id="scrubCount" class="hidden ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] text-white bg-amber-500">0</span></button>
     <button onclick="openFrontDesk()" title="Today's appointments: check in, change, cancel, running late" class="pt-only px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7] inline-flex items-center">Today<span id="todayCount" data-bg="#0a6cf5" class="hidden ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] text-white" style="background:#0a6cf5">0</span></button>
+    <button onclick="openAR()" title="Accounts receivable: open balances by age (admin and billing)" class="pt-only px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7]">A/R</button>
     <button onclick="addPractice()" class="rf-only hidden px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add practice</button>
     <button onclick="openImportPartners()" title="Import a HubSpot list (CSV)" class="rf-only hidden px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">⬆ Import list</button>
     <div class="pt-only flex items-center rounded-xl border border-[#e6e9ee] overflow-hidden text-xs font-semibold" id="viewModeTabs" title="Switch what you see for the selected patient">
@@ -1612,6 +1613,86 @@
   }
   // SSN (Luis 9/23): the chart shows the last 4; Reveal fetches the full number for 30 seconds and the backend logs every
   // reveal. Never printed anywhere else (notes, exports, emails, Vee).
+  // ---- Patient ledger + A/R (Netty 9/23: cash pay, accounts receivable). Any staff records a payment; charges, write-offs,
+  // refunds and voids are admin/billing. Square is a payment method with its receipt id until the Square account is connected. ----
+  const $$m=(c)=>'$'+((c||0)/100).toFixed(2);
+  const LEDGER_KIND={charge:'Charge',payment:'Payment',adjustment:'Write-off',refund:'Refund'};
+  const PAY_METHODS=[['cash','Cash'],['card','Card'],['square','Square'],['check','Check'],['insurance','Insurance'],['other','Other']];
+  function ledgerRow(p){
+    const bal=p.balance_cents||0;
+    return `<div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Balance</span><span class="text-sm flex items-center gap-2"><span class="font-semibold ${bal>0?'text-[#be123c]':'text-[#16201d]'}">${$$m(bal)}</span>${p.billing_intent==='self_pay'?'<span class="text-[10px] font-semibold rounded-full px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200">Cash pay</span>':''}<button onclick="openLedger('${p.id}')" class="text-[11px] font-semibold hover:underline" style="color:#0a6cf5">Payments</button></span></div>`;
+  }
+  async function ledgerPost(body){ const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify(body)}); return await r.json().catch(()=>({ok:false,error:'bad response'})); }
+  const toCents=(x)=>{ const n=parseFloat(String(x||'').replace(/[$,\s]/g,'')); return isNaN(n)?NaN:Math.round(n*100); };
+  window.openLedger=async function(pid){
+    const p=patients.find(x=>x.id===pid); if(!p) return;
+    listModalShell('Payments: '+esc(((p.first||'')+' '+(p.last||'')).trim()),'<div id="lgBody" class="text-sm text-[#9aa0ab]">Loading…</div>','<button onclick="document.getElementById(\'listOverlay\').remove()" class="px-4 py-2 rounded-xl border border-[#e6e9ee] text-sm">Close</button>','max-w-3xl');
+    await renderLedger(pid);
+  };
+  async function renderLedger(pid){
+    const box=document.getElementById('lgBody'); if(!box) return;
+    const j=await ledgerPost({action:'ledger_list',patient_id:pid});
+    if(!j.ok){ box.innerHTML='<div class="text-rose-600">Could not load: '+esc(j.error||'unknown')+'</div>'; return; }
+    const p=patients.find(x=>x.id===pid); if(p){ p.balance_cents=j.balance_cents; p.billing_intent=j.cash_pay?'self_pay':(p.billing_intent==='self_pay'?'insurance':p.billing_intent); }
+    const fmt=(ms)=>new Date(ms).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    const opt=(arr)=>arr.map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+    const inp='field py-1.5 text-sm'; const btnP='px-3 py-1.5 rounded-lg text-white text-xs font-semibold';
+    const row=(e)=>{ const sgn=(e.kind==='charge'||e.kind==='refund')?'+':'−'; const v=!!e.voided_at;
+      return `<tr class="border-b border-[#f1f3f7] ${v?'opacity-50':''}"><td class="py-2 pr-2 whitespace-nowrap text-[#6b7280]">${fmt(e.created_at)}</td><td class="py-2 pr-2">${LEDGER_KIND[e.kind]}${e.method?' · '+esc(e.method):''}<div class="text-[11px] text-[#9aa0ab]">${esc(e.description||'')}${e.reference?' · ref '+esc(e.reference):''}${e.service_date?' · DOS '+esc(dobUS(e.service_date)):''} · ${esc(e.created_by)}${v?'<br><b>Voided</b> by '+esc(e.voided_by||'')+': '+esc(e.void_reason||''):''}</div></td><td class="py-2 pr-2 text-right font-semibold whitespace-nowrap ${v?'line-through':''}">${sgn} ${$$m(e.amount_cents)}</td><td class="py-2 text-right whitespace-nowrap">${(!v&&e.kind==='payment')?`<button onclick="printReceipt('${pid}','${e.id}')" class="text-[11px] hover:underline" style="color:#0a6cf5">Receipt</button>`:''}${(!v&&j.can_manage)?` <input id="lgv-${e.id}" class="field w-28 py-0.5 text-[11px]" placeholder="Void reason"><button onclick="voidLedger('${pid}','${e.id}')" class="text-[11px] text-[#be123c] hover:underline ml-1">Void</button>`:''}</td></tr>`; };
+    window.__ledger={pid, entries:j.entries};
+    box.innerHTML=`<div class="flex items-center justify-between gap-3 mb-3 flex-wrap"><div><div class="text-xs text-[#6b7280]">Balance</div><div class="text-2xl font-semibold ${j.balance_cents>0?'text-[#be123c]':'text-[#16201d]'}">${$$m(j.balance_cents)}</div></div>
+        <label class="flex items-center gap-2 text-sm text-[#16201d]"><input type="checkbox" class="w-4 h-4" ${j.cash_pay?'checked':''} onchange="setCashPay('${pid}',this.checked)"> Cash pay (self-pay patient)</label></div>
+      <div class="rounded-xl border border-[#e6e9ee] p-3 mb-3"><div class="text-xs font-semibold text-[#3d4a45] mb-2">Record a payment</div>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2"><input id="lgPayAmt" class="${inp}" inputmode="decimal" placeholder="Amount $"><select id="lgPayMethod" class="${inp}">${opt(PAY_METHODS)}</select><input id="lgPayRef" class="${inp}" placeholder="Receipt / check #"><input id="lgPayNote" class="${inp}" placeholder="Note (e.g., copay)"><button onclick="addLedger('${pid}','payment')" class="${btnP}" style="background:#0a6cf5">Record payment</button></div></div>
+      ${j.can_manage?`<div class="rounded-xl border border-[#e6e9ee] p-3 mb-3"><div class="text-xs font-semibold text-[#3d4a45] mb-2">Charge, write-off or refund <span class="font-normal text-[#9aa0ab]">(admin and billing)</span></div>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2"><select id="lgKind" class="${inp}" onchange="document.getElementById('lgMethodWrap').classList.toggle('hidden',this.value!=='refund')"><option value="charge">Charge</option><option value="adjustment">Write-off</option><option value="refund">Refund</option></select><input id="lgAmt" class="${inp}" inputmode="decimal" placeholder="Amount $"><input id="lgDesc" class="${inp}" placeholder="What for (e.g., Psych New)"><input id="lgDos" type="date" class="${inp}" title="Date of service (charges)"><button onclick="addLedger('${pid}','other')" class="${btnP}" style="background:#16201d">Add</button></div>
+        <div id="lgMethodWrap" class="hidden mt-2"><select id="lgRefundMethod" class="${inp}">${opt(PAY_METHODS)}</select> <span class="text-[11px] text-[#9aa0ab]">how the refund was paid back</span></div></div>`:''}
+      <div id="lgErr" class="text-sm text-rose-600 hidden mb-2"></div>
+      ${j.entries.length?`<table class="w-full text-sm"><tbody>${j.entries.map(row).join('')}</tbody></table>`:'<div class="py-6 text-center text-[#9aa0ab]">No charges or payments yet.</div>'}`;
+  }
+  function lgErr(t){ const e=document.getElementById('lgErr'); if(e){ e.textContent=t; e.classList.remove('hidden'); } }
+  window.addLedger=async function(pid,which){
+    const g=(id)=>((document.getElementById(id)||{}).value||'').trim();
+    let body;
+    if(which==='payment'){ const c=toCents(g('lgPayAmt')); if(!(c>0)) return lgErr('Enter the payment amount.'); body={action:'ledger_add',patient_id:pid,kind:'payment',amount_cents:c,method:g('lgPayMethod'),reference:g('lgPayRef')||undefined,description:g('lgPayNote')||undefined}; }
+    else { const k=g('lgKind'), c=toCents(g('lgAmt')); if(!(c>0)) return lgErr('Enter the amount.'); body={action:'ledger_add',patient_id:pid,kind:k,amount_cents:c,description:g('lgDesc')||undefined,service_date:(k==='charge'&&g('lgDos'))||undefined,method:k==='refund'?g('lgRefundMethod'):undefined}; }
+    const j=await ledgerPost(body); if(!j.ok) return lgErr('Could not save: '+(j.error||'unknown'));
+    await renderLedger(pid); if(selId===pid) renderDetail();
+  };
+  window.voidLedger=async function(pid,id){
+    const reason=((document.getElementById('lgv-'+id)||{}).value||'').trim(); if(!reason) return lgErr('Type a void reason next to the entry first.');
+    const j=await ledgerPost({action:'ledger_void',entry_id:id,reason}); if(!j.ok) return lgErr('Could not void: '+(j.error||'unknown'));
+    await renderLedger(pid); if(selId===pid) renderDetail();
+  };
+  window.setCashPay=async function(pid,on){
+    const r=await postBilling({action:'set_billing_intent',patient_id:pid,intent:on?'self_pay':'insurance'}).catch(e=>({ok:false,error:e.message}));
+    if(!r||!r.ok) return lgErr('Could not change cash pay: '+((r&&r.error)||'unknown'));
+    const p=patients.find(x=>x.id===pid); if(p) p.billing_intent=on?'self_pay':'insurance';
+    await renderLedger(pid); if(selId===pid) renderDetail();
+  };
+  window.printReceipt=function(pid,id){
+    const p=patients.find(x=>x.id===pid)||{}; const e=((window.__ledger||{}).entries||[]).find(x=>x.id===id); if(!e) return;
+    const practice=(document.title.split(',').pop()||'').trim();
+    const w=window.open('','_blank','width=520,height=640'); if(!w) return;
+    w.document.write(`<!doctype html><html><head><title>Receipt</title><style>body{font-family:Georgia,serif;padding:32px;color:#16201d}h1{font-size:20px;margin:0 0 4px}td{padding:6px 0;font-size:14px}td:first-child{color:#6b7280;width:40%}.amt{font-size:26px;font-weight:bold;margin:18px 0}</style></head><body><h1>${esc(practice)}</h1><div style="color:#6b7280;font-size:13px">Payment receipt</div><div class="amt">${$$m(e.amount_cents)}</div><table><tr><td>Patient</td><td>${esc(((p.first||'')+' '+(p.last||'')).trim())}</td></tr><tr><td>Date</td><td>${new Date(e.created_at).toLocaleString('en-US')}</td></tr><tr><td>Paid by</td><td>${esc((PAY_METHODS.find(m=>m[0]===e.method)||[0,e.method||''])[1])}</td></tr>${e.reference?`<tr><td>Reference</td><td>${esc(e.reference)}</td></tr>`:''}${e.description?`<tr><td>For</td><td>${esc(e.description)}</td></tr>`:''}<tr><td>Received by</td><td>${esc(e.created_by)}</td></tr></table><p style="margin-top:28px;font-size:12px;color:#6b7280">Thank you.</p><script>setTimeout(()=>window.print(),300)<\/script></body></html>`);
+    w.document.close();
+  };
+  window.openAR=async function(){
+    listModalShell('Accounts receivable','<div id="arBody" class="text-sm text-[#9aa0ab]">Loading…</div>','<button onclick="exportArCsv()" class="mr-auto px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm">Export CSV</button><button onclick="document.getElementById(\'listOverlay\').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm">Close</button>','max-w-4xl');
+    const j=await ledgerPost({action:'ar_report'}); window.__ar=j;
+    const box=document.getElementById('arBody'); if(!box) return;
+    if(!j.ok){ box.innerHTML='<div class="py-8 text-center">'+esc(j.error||'Could not load the report.')+'</div>'; return; }
+    const t=j.totals, card=(l,v,red)=>`<div class="rounded-xl border border-[#e6e9ee] p-3"><div class="text-[11px] text-[#6b7280]">${l}</div><div class="text-lg font-semibold ${red?'text-[#be123c]':'text-[#16201d]'}">${$$m(v)}</div></div>`;
+    const fmt=(ms)=>ms?new Date(ms).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'none';
+    box.innerHTML=`<div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">${card('Total owed',t.total,true)}${card('0 to 30 days',t.current)}${card('31 to 60',t.d31_60)}${card('61 to 90',t.d61_90)}${card('Over 90',t.d90_plus,t.d90_plus>0)}</div>
+      ${j.rows.length?`<table class="w-full text-sm"><thead><tr class="text-[11px] text-[#6b7280] text-left border-b border-[#e6e9ee]"><th class="py-1.5">Patient</th><th class="text-right">Balance</th><th class="text-right">0-30</th><th class="text-right">31-60</th><th class="text-right">61-90</th><th class="text-right">90+</th><th class="text-right">Last payment</th></tr></thead><tbody>${j.rows.map(r=>`<tr class="border-b border-[#f1f3f7]"><td class="py-2"><button onclick="document.getElementById('listOverlay')?.remove();${r.archived?'':`openFromBoard('${r.patient_id}')`}" class="font-semibold text-[#16201d] hover:underline text-left">${esc(r.name||'Patient')}</button>${r.cash_pay?' <span class="text-[10px] text-amber-800">cash pay</span>':''}${r.archived?' <span class="text-[10px] text-[#9aa0ab]">archived</span>':''}</td><td class="text-right font-semibold">${$$m(r.balance_cents)}</td><td class="text-right">${$$m(r.current)}</td><td class="text-right">${$$m(r.d31_60)}</td><td class="text-right">${$$m(r.d61_90)}</td><td class="text-right ${r.d90_plus>0?'text-[#be123c]':''}">${$$m(r.d90_plus)}</td><td class="text-right text-[#6b7280]">${fmt(r.last_payment_at)}</td></tr>`).join('')}</tbody></table>`:'<div class="py-8 text-center">Nobody owes a balance.</div>'}`;
+  };
+  window.exportArCsv=function(){
+    const j=window.__ar; if(!j||!j.ok) return;
+    const cell=(v)=>{ let x=String(v==null?'':v); if(/^[=+\-@]/.test(x)) x="'"+x; return '"'+x.replace(/"/g,'""')+'"'; }; const d=(c)=>((c||0)/100).toFixed(2);
+    const lines=[['Patient','Phone','Cash pay','Balance','0-30','31-60','61-90','90+','Last payment'].map(cell).join(',')].concat(j.rows.map(r=>[r.name,r.phone,r.cash_pay?'yes':'no',d(r.balance_cents),d(r.current),d(r.d31_60),d(r.d61_90),d(r.d90_plus),r.last_payment_at?new Date(r.last_payment_at).toLocaleDateString('en-US'):''].map(cell).join(',')));
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'})); a.download='accounts-receivable-'+new Date().toISOString().slice(0,10)+'.csv'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500);
+  };
   function ssnRow(p){
     const has=!!p.ssn_last4;
     return `<div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">SSN</span><span class="text-sm text-[#16201d] flex items-center gap-2"><span id="ssn-${p.id}" class="font-mono">${has?'•••-••-'+esc(p.ssn_last4):'<span class="text-[#9aa0ab] italic font-sans">not on file</span>'}</span>${has?`<button onclick="revealSsn('${p.id}')" class="text-[11px] font-semibold hover:underline" style="color:#0a6cf5">Reveal</button>`:''}<button onclick="editSsn('${p.id}')" class="text-[11px] text-[#6b7280] hover:underline">${has?'Edit':'Add'}</button></span></div>`;
@@ -2091,6 +2172,7 @@
           ${infoRow(p,'phone','Phone')}
           ${infoRow(p,'dob','Date of birth')}
           ${ssnRow(p)}
+          ${ledgerRow(p)}
           ${infoRow(p,'sex','Sex')}
           ${infoRow(p,'program','Program')}
           ${infoRow(p,'address_line1','Address')}
@@ -2365,6 +2447,7 @@
               ${infoRow(p,'phone','Phone')}
               ${infoRow(p,'dob','Date of birth')}
           ${ssnRow(p)}
+          ${ledgerRow(p)}
               ${infoRow(p,'program','Program')}
               <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Referred by</span><span class="text-sm cursor-pointer hover:bg-[#f4f6f8] rounded px-1.5 py-0.5 -mr-1 ${p.referred_by?'text-[#0a6cf5] font-medium':'text-[#9aa0ab] italic'}" title="Click to set the referral source" onclick="openReferPicker('${p.id}')">${p.referred_by?esc(p.referred_by.practice_name+(p.referred_by.provider_name?' · '+p.referred_by.provider_name:'')):'set referral source…'}</span></div>
               <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Portal login</span><span class="text-sm ${p.has_login?'text-[#0a7a3d]':'text-[#9aa0ab]'}">${p.has_login?'Active':'Not set up'}</span></div>
