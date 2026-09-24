@@ -4179,6 +4179,40 @@
     }catch(e){ alert('Could not generate note: '+e.message); }
     finally{ if(btn){ btn.disabled=false; btn.textContent='✨ Generate chart note'; } }
   };
+  // Staff-mode status for Vee (Netty 9/23: "provide status of a patient, any pending appointments"): what the record says
+  // is scheduled and pending, from data already loaded in the CRM. Vee answers from this and nothing else.
+  function veeStatusBlock(p){
+    const now=Date.now();
+    const up=(p.appts||[]).map(a=>({a,t:typeof a.when==='number'?a.when:Date.parse(a.when)})).filter(x=>x.t>now&&x.a.status!=='cancelled').sort((x,y)=>x.t-y.t);
+    const al=(window.__chartAlerts||{})[p.id];
+    const flags=al?(al.flags||[]).filter(f=>!f.resolved_at).map(f=>(f.important?'IMPORTANT: ':'')+f.text):[];
+    const tasks=al?(al.open_tasks||[]).map(t=>t.title):(window.__crmTasks||[]).filter(t=>t.status!=='done').map(t=>t.title);
+    const pend=(typeof pendingItems==='function')?pendingItems(p,al):[];
+    const when=(t)=>new Date(t).toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+    return `
+STATUS ON FILE (answer questions about status, appointments and what is pending from this, and only this):
+- Status: ${STAT[p.status]||p.status}.
+- Upcoming appointments: ${up.length?up.slice(0,5).map(x=>(x.a.type||'Appointment')+' on '+when(x.t)+(x.a.provider?' with '+x.a.provider:'')+(x.a.status==='confirmed'?' (confirmed)':'')).join('; '):'none scheduled'}.
+- Open tasks: ${tasks.length?tasks.slice(0,6).join('; '):'none'}.
+- Chart flags: ${flags.length?flags.join('; '):'none'}.
+- Pending items: ${pend.length?pend.join('; '):'none'}.
+- Insurance on file: ${p.has_coverage?'yes':(p.billing_intent==='self_pay'?'self-pay':'no')}. Portal login: ${p.has_login?'yes':'no'}.
+OTHER PATIENTS: if staff ask about a different patient, call the lookup_patient tool with the name they give. Use only what it returns. If it finds nobody or several people, say so and ask for the full name. Never guess.`;
+  }
+  // lookup_patient (Vee staff mode): the same kind of status for any patient on the board, by name. Real records only.
+  function veeLookup(name){
+    const q=String(name||'').toLowerCase().replace(/[^a-z\s'-]/g,' ').split(/\s+/).filter(Boolean);
+    if(!q.length) return { found:false, reason:'no name given' };
+    const hits=(patients||[]).filter(p=>{ const full=((p.first||'')+' '+(p.last||'')).toLowerCase(); return q.every(w=>full.includes(w)); });
+    if(!hits.length) return { found:false, reason:'no patient with that name on the board' };
+    if(hits.length>1) return { found:false, reason:'several patients match', matches:hits.slice(0,5).map(p=>((p.first||'')+' '+(p.last||'')).trim()) };
+    const p=hits[0], now=Date.now();
+    const up=(p.appts||[]).map(a=>({a,t:typeof a.when==='number'?a.when:Date.parse(a.when)})).filter(x=>x.t>now&&x.a.status!=='cancelled').sort((x,y)=>x.t-y.t);
+    return { found:true, name:((p.first||'')+' '+(p.last||'')).trim(), status:STAT[p.status]||p.status,
+      upcoming_appointments: up.slice(0,5).map(x=>({ type:x.a.type||'Appointment', when:new Date(x.t).toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}), provider:x.a.provider||null, status:x.a.status })),
+      pending: (typeof pendingItems==='function')?pendingItems(p,(window.__chartAlerts||{})[p.id]):[],
+      insurance_on_file: !!p.has_coverage, self_pay: p.billing_intent==='self_pay', portal_login: !!p.has_login, unread_messages: p.unread_msgs||0 };
+  }
   function buildVeeInstructions(p, mode){
     const ib=p.inbody, age=ageOf(p.dob) ?? 'unknown';
     const stats = ib ? [
@@ -4238,7 +4272,7 @@ PATIENT: ${p.first} ${p.last}, age ${age}, ${({glp1:'GLP-1',metabolic:'Metabolic
 ${stats}
 Next appointment: ${appt? (appt.type+' on '+new Date(appt.when).toLocaleString()+' with '+appt.provider):'none scheduled'}.
 Recent chart notes: ${notes||'none'}.
-${engagementSignals}
+${engagementSignals}${mode==='patient'?'':veeStatusBlock(p)}
 
 INBODY PUBLISHED REFERENCE RANGES (these are printed facts from InBody, cite them as "InBody's published range", never as a verdict on this person): visceral fat level healthy under 10; ECW to TBW ratio healthy between 0.36 and 0.39; BMI normal 18.5 to 25.
 ${staffGuidance}
@@ -4283,7 +4317,7 @@ HARD RULES:
         // In consult mode Vee stays SILENT and only transcribes (create_response:false), so dictation is not
         // interrupted by spoken replies. Provider/patient modes keep the conversational default.
         const veeTurnDet=Object.assign({type:'server_vad',threshold:0.8,silence_duration_ms:800}, mode==='consult'?{create_response:false,interrupt_response:false}:{});
-        veeWs.send(JSON.stringify({type:'session.update',session:{voice:'ara',instructions:buildVeeInstructions(p,mode),turn_detection:veeTurnDet,audio:{input:{format:{type:'audio/pcm',rate:24000},transcription:{model:'grok-transcribe'}},output:{format:{type:'audio/pcm',rate:24000}}}}}));
+        veeWs.send(JSON.stringify({type:'session.update',session:{voice:'ara',instructions:buildVeeInstructions(p,mode),turn_detection:veeTurnDet,...(mode==='provider'?{tools:[{type:'function',name:'lookup_patient',description:'Look up another patient on the board by name: status, upcoming appointments, and pending items. Use only what it returns.',parameters:{type:'object',properties:{name:{type:'string',description:'The patient name the staff member said'}},required:['name']}}]}:{}),audio:{input:{format:{type:'audio/pcm',rate:24000},transcription:{model:'grok-transcribe'}},output:{format:{type:'audio/pcm',rate:24000}}}}}));
         if(mode==='patient'){ veeWs.send(JSON.stringify({type:'conversation.item.create',item:{type:'message',role:'user',content:[{type:'input_text',text:'Please give me a brief overview of my results.'}]}})); veeWs.send(JSON.stringify({type:'response.create'})); }
         const src=veeCtx.createMediaStreamSource(veeMic); veeProc=veeCtx.createScriptProcessor(4096,1,1);
         src.connect(veeProc); veeProc.connect(veeCtx.destination);
@@ -4293,6 +4327,8 @@ HARD RULES:
           veeWs.send(JSON.stringify({type:'input_audio_buffer.append',audio:btoa(String.fromCharCode(...new Uint8Array(pcm.buffer)))})); };
       };
       veeWs.onmessage=(m)=>{ const ev=JSON.parse(m.data);
+        // Staff asked about another patient: answer from the board (lookup_patient), then let Vee continue.
+        if(ev.type==='response.function_call_arguments.done'&&ev.name==='lookup_patient'){ let args={}; try{ args=JSON.parse(ev.arguments||'{}'); }catch(_){ } const out=veeLookup(args.name); try{ veeWs.send(JSON.stringify({type:'conversation.item.create',item:{type:'function_call_output',call_id:ev.call_id,output:JSON.stringify(out)}})); veeWs.send(JSON.stringify({type:'response.create'})); }catch(_){ } return; }
         // In consult (dictation) mode Vee never speaks: suppress audio playback and cancel any response
         // she starts (create_response:false is not always honored, so we cancel as a hard backstop).
         if(ev.type==='response.output_audio.delta'&&ev.delta){ if(veeMode!=='consult') veePlay(ev.delta); return; }
