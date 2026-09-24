@@ -135,6 +135,7 @@
     <button onclick="openAddPatient()" class="pt-only px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add patient</button>
     <button onclick="openReferPatient()" class="pt-only px-3 py-2 rounded-xl border border-[#e6e9ee] text-xs font-semibold hover:bg-[#f1f3f7]" style="color:#0a6cf5">+ Refer patient</button>
     <button onclick="openReferralQueue()" title="Referred patients to call, and referral documents to review" class="pt-only px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7] inline-flex items-center">Referral queue<span id="refQCount" class="hidden ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] text-white" style="background:#0a6cf5">0</span></button>
+    <button onclick="openScrubQueue()" title="Charts missing what billing needs" class="pt-only px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7] inline-flex items-center">Missing info<span id="scrubCount" class="hidden ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] text-white bg-amber-500">0</span></button>
     <button onclick="addPractice()" class="rf-only hidden px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add practice</button>
     <button onclick="openImportPartners()" title="Import a HubSpot list (CSV)" class="rf-only hidden px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">⬆ Import list</button>
     <div class="pt-only flex items-center rounded-xl border border-[#e6e9ee] overflow-hidden text-xs font-semibold" id="viewModeTabs" title="Switch what you see for the selected patient">
@@ -1613,16 +1614,22 @@
     }
     const v=p[field]; const disp=v?esc(field==='dob'?dobUS(v):String(v)):'<span class="text-[#9aa0ab] italic">add…</span>';
     return `<div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">${label}</span>
-      <span class="text-sm text-[#16201d] cursor-text hover:bg-[#f4f6f8] rounded px-1.5 py-0.5 -mr-1" title="Click to edit" onclick="editInfo(this,'${p.id}','${field}')">${disp}</span></div>`;
+      <span class="text-sm text-[#16201d] cursor-text hover:bg-[#f4f6f8] rounded px-1.5 py-0.5 -mr-1" title="Click to edit" tabindex="0" data-edit="${field}" onkeydown="if(event.key==='Enter'){event.preventDefault();editInfo(this,'${p.id}','${field}')}" onclick="editInfo(this,'${p.id}','${field}')">${disp}</span></div>`;
   }
   window.editInfo = function(el,id,field){
     const p=patients.find(x=>x.id===id)||{}; const cur=p[field]||'';
     const inp=document.createElement('input'); inp.value=cur; inp.className='field'; inp.style.maxWidth='240px'; inp.style.textAlign='right';
     if(field==='dob') inp.type='date'; else if(/email$/.test(field)) inp.type='email'; else if(/phone$/.test(field)) inp.type='tel';
+    // Tab / Shift+Tab save this field and open the next / previous one, in the order they sit on screen
+    // (Netty 9/23: tab through the address instead of clicking every box).
+    const order=[...document.querySelectorAll('#detailMain [data-edit]')].map(x=>x.dataset.edit);
     el.replaceWith(inp); inp.focus(); try{inp.select();}catch(e){}
     let done=false;
-    const finish=async(save)=>{ if(done)return; done=true; if(save) await saveInfo(id,field,inp.value.trim()); renderDetail(); };
-    inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();finish(true);} else if(e.key==='Escape')finish(false); });
+    const finish=async(save,move)=>{ if(done)return; done=true; const val=inp.value.trim();
+      if(save && val!==String(cur)) await saveInfo(id,field,val);
+      renderDetail();
+      if(move){ const next=order[order.indexOf(field)+move]; const t=next&&document.querySelector('#detailMain [data-edit="'+next+'"]'); if(t) editInfo(t,id,next); } };
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();finish(true);} else if(e.key==='Tab'){e.preventDefault();finish(true,e.shiftKey?-1:1);} else if(e.key==='Escape')finish(false); });
     inp.addEventListener('blur',()=>finish(true));
   };
   window.saveInjectionRx = async function(id){
@@ -1779,6 +1786,7 @@
     if(!p.dob) miss.push('date of birth'); if(!p.sex) miss.push('sex');
     if(!p.address_line1||!p.address_city||!p.address_state||!p.address_zip) miss.push('complete address');
     if(!p.phone) miss.push('phone');
+    if(['new_patient','active','rx_written'].includes(p.status)&&p.has_coverage===false&&p.billing_intent!=='self_pay') miss.push('insurance');
     if(miss.length) out.push('Missing for billing: '+miss.join(', '));
     const age=ageOf(p.dob); if(age!=null&&age<18&&!p.guardian_name) out.push('Minor (age '+age+') with no guardian on file');
     const t=(a&&a.open_tasks)||[]; if(t.length) out.push(t.length+' open task'+(t.length===1?'':'s')+': '+t.slice(0,3).map(x=>x.title).join('; ')+(t.length>3?' …':''));
@@ -1817,6 +1825,46 @@
     openChartAlerts(pid);
   }
   window.chartAlertsOnOpen=chartAlertsOnOpen;
+  // ---- Missing-info queue (Netty 9/23: "a queue that will scrub every chart ... that does not have the information we
+  // need so we can extract it"). Every open chart missing what billing needs, what exactly is missing, one click to it. ----
+  const SCRUB_ITEMS=[['name','Full name'],['dob','Date of birth'],['sex','Sex'],['address','Address'],['phone','Phone'],['insurance','Insurance'],['guardian','Guardian (minor)'],['emergency','Emergency contact']];
+  function scrubMissing(p){
+    const m=[];
+    if(!String(p.first||'').trim()||!String(p.last||'').trim()) m.push('name');
+    if(!p.dob) m.push('dob'); if(!p.sex) m.push('sex');
+    if(!p.address_line1||!p.address_city||!p.address_state||!p.address_zip) m.push('address');
+    if(!p.phone) m.push('phone');
+    if(!p.has_coverage && p.billing_intent!=='self_pay') m.push('insurance');
+    const age=ageOf(p.dob); if(age!=null&&age<18&&!p.guardian_name) m.push('guardian');
+    if(!p.ec_name||!p.ec_phone) m.push('emergency');
+    return m;
+  }
+  const SCRUB_GROUPS={patients:['new_patient','active','rx_written'],open:['new_patient','active','rx_written','referral','lead']};
+  function scrubRows(){ const g=SCRUB_GROUPS[window.__scrubGroup||'patients']; const item=window.__scrubItem||''; return (patients||[]).filter(p=>g.includes(p.status)).map(p=>({p,m:scrubMissing(p)})).filter(r=>r.m.length&&(!item||r.m.includes(item))).sort((x,y)=>y.m.length-x.m.length); }
+  function updateScrubCount(){ const el=document.getElementById('scrubCount'); if(!el) return; const n=(patients||[]).filter(p=>SCRUB_GROUPS.patients.includes(p.status)&&scrubMissing(p).length).length; el.textContent=String(n); el.classList.toggle('hidden',!n); }
+  setTimeout(updateScrubCount,1500); setInterval(updateScrubCount,5000);
+  window.openScrubQueue=function(){ listModalShell('Charts missing information','<div id="scrubBody"></div>','<button onclick="exportScrubCsv()" class="mr-auto px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm">Export CSV</button><button onclick="document.getElementById(\'listOverlay\').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm">Close</button>','max-w-3xl'); renderScrub(); };
+  window.renderScrub=function(){
+    const box=document.getElementById('scrubBody'); if(!box) return;
+    const g=window.__scrubGroup||'patients', item=window.__scrubItem||'';
+    const all=(patients||[]).filter(p=>SCRUB_GROUPS[g].includes(p.status)).map(scrubMissing);
+    const cnt=(k)=>all.filter(m=>m.includes(k)).length;
+    const LBL=Object.fromEntries(SCRUB_ITEMS);
+    const rows=scrubRows();
+    const chip=(k,l,n)=>`<button onclick="window.__scrubItem='${k}';renderScrub()" class="px-2.5 py-1 rounded-lg text-xs font-semibold ${item===k?'bg-[#16201d] text-white':'border border-[#e6e9ee] text-[#4b5563] hover:bg-[#f1f3f7]'}">${l}${n!==undefined?' <span class="opacity-70">'+n+'</span>':''}</button>`;
+    box.innerHTML=`<div class="flex items-center justify-between gap-2 mb-2 flex-wrap"><div class="text-xs text-[#6b7280]">Open a chart to fill in what is missing. The list updates as charts are completed.</div>
+      <select onchange="window.__scrubGroup=this.value;renderScrub()" class="field w-auto py-1 text-xs"><option value="patients" ${g==='patients'?'selected':''}>Patients (New Patient, Active)</option><option value="open" ${g==='open'?'selected':''}>All open, incl. New Inquiry + Referral</option></select></div>
+      <div class="flex flex-wrap gap-1.5 mb-3">${chip('','Everything')}${SCRUB_ITEMS.map(([k,l])=>chip(k,l,cnt(k))).join('')}</div>
+      <div class="text-xs text-[#9aa0ab] mb-1">${rows.length} chart${rows.length===1?'':'s'}</div>
+      <div>${rows.length?rows.map(({p,m})=>`<div class="py-2.5 border-b border-[#f1f3f7] flex items-start justify-between gap-3"><div class="min-w-0"><button onclick="document.getElementById('listOverlay')?.remove();openFromBoard('${p.id}')" class="font-semibold text-[#16201d] hover:underline text-left">${esc(((p.first||'')+' '+(p.last||'')).trim()||'Patient')}</button> <span class="text-[11px] text-[#9aa0ab]">${esc(STAT[p.status]||p.status)}${p.phone?' · '+esc(p.phone):''}</span>
+        <div class="flex flex-wrap gap-1 mt-1">${m.map(k=>`<span class="text-[10px] font-semibold rounded-full px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200">${esc(LBL[k])}</span>`).join('')}</div></div>
+        <span class="text-xs font-semibold shrink-0" style="color:#0a6cf5">${m.length} missing</span></div>`).join(''):'<div class="py-10 text-center text-[#9aa0ab] text-sm">Nothing missing here.</div>'}</div>`;
+  };
+  window.exportScrubCsv=function(){
+    const LBL=Object.fromEntries(SCRUB_ITEMS); const cell=(v)=>{ let x=String(v==null?'':v); if(/^[=+\-@]/.test(x)) x="'"+x; return '"'+x.replace(/"/g,'""')+'"'; };
+    const lines=[['Patient','Status','Phone','Email','Missing'].map(cell).join(',')].concat(scrubRows().map(({p,m})=>[((p.first||'')+' '+(p.last||'')).trim(),STAT[p.status]||p.status,p.phone||'',p.email||'',m.map(k=>LBL[k]).join('; ')].map(cell).join(',')));
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'})); a.download='charts-missing-info-'+new Date().toISOString().slice(0,10)+'.csv'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500);
+  };
   window.openChartAlerts=async function(pid){
     const p=patients.find(x=>x.id===pid); if(!p) return;
     const a=window.__chartAlerts[pid]||await fetchChartAlerts(pid)||{flags:[],open_tasks:[],docs_to_review:0,can_flag:false};
