@@ -133,6 +133,8 @@
       <button onclick="setSection('referrals')" data-sec="referrals" class="sec-btn px-3 py-2 text-[#4b5563] border-l border-[#e6e9ee]">Partners</button>
     </div>
     <button onclick="openAddPatient()" class="pt-only px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add patient</button>
+    <button onclick="openReferPatient()" class="pt-only px-3 py-2 rounded-xl border border-[#e6e9ee] text-xs font-semibold hover:bg-[#f1f3f7]" style="color:#0a6cf5">+ Refer patient</button>
+    <button onclick="openReferralQueue()" title="Referred patients to call, and referral documents to review" class="pt-only px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-xs font-semibold hover:bg-[#f1f3f7] inline-flex items-center">Referral queue<span id="refQCount" class="hidden ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] text-white" style="background:#0a6cf5">0</span></button>
     <button onclick="addPractice()" class="rf-only hidden px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">+ Add practice</button>
     <button onclick="openImportPartners()" title="Import a HubSpot list (CSV)" class="rf-only hidden px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">⬆ Import list</button>
     <div class="pt-only flex items-center rounded-xl border border-[#e6e9ee] overflow-hidden text-xs font-semibold" id="viewModeTabs" title="Switch what you see for the selected patient">
@@ -384,7 +386,7 @@
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div><label class="text-xs text-[#6b7280] font-semibold">Program</label><select id="apProgram" class="field mt-1"><option value="glp1">GLP-1 weight loss</option><option value="medicare_glp1">Medicare GLP-1 Bridge</option><option value="metabolic">Metabolic &amp; hormone</option><option value="coaching">Coaching &amp; nutrition</option><option value="unsure">Not sure yet</option></select></div>
-        <div><label class="text-xs text-[#6b7280] font-semibold">Status</label><select id="apStatus" class="field mt-1"><option value="lead">Lead</option><option value="new_patient">New Patient</option><option value="active">Active</option></select></div>
+        <div><label class="text-xs text-[#6b7280] font-semibold">Status</label><select id="apStatus" class="field mt-1" onchange="document.getElementById('apRefRow').classList.toggle('hidden',this.value!=='referral')"><option value="lead">New Inquiry</option><option value="referral">Referral</option><option value="new_patient">New Patient</option><option value="active">Active</option></select></div>
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div><label class="text-xs text-[#6b7280] font-semibold">Referred by (optional)</label><select id="apReferPractice" onchange="apReferProviderOpts()" class="field mt-1"><option value="">— none —</option></select></div>
@@ -392,6 +394,7 @@
       </div>
       <div><label class="text-xs text-[#6b7280] font-semibold">First note (optional)</label><textarea id="apNote" data-grow rows="2" class="field mt-1" placeholder="How they came in, what they want…"></textarea></div>
       <label class="flex items-start gap-2 text-sm text-[#3d4a45] cursor-pointer mt-1"><input id="apLogin" type="checkbox" class="w-4 h-4 mt-0.5 accent-[#0a6cf5]"><span>Create a patient portal login <span class="text-[#9aa0ab]">(needs an email · generates a temporary password to hand over)</span></span></label>
+      <div id="apRefRow" class="hidden rounded-xl border border-[#e6e9ee] p-3"><label class="text-xs text-[#6b7280] font-semibold">Referral or intake packet (optional)</label><div class="grid grid-cols-3 gap-2 mt-1"><select id="apRefType" class="field"><option value="referral">Referral</option><option value="intake_packet">Intake packet</option></select><input id="apRefFile" type="file" accept="application/pdf,image/*" class="field col-span-2 text-sm"></div><div class="text-[11px] text-[#9aa0ab] mt-1">Saved to the chart and listed in the referral queue under Documents to review.</div></div>
       <div id="apErr" class="text-sm text-rose-600 hidden"></div>
     </div>
     <div class="p-5 border-t border-[#e6e9ee] flex justify-end gap-2 items-center shrink-0">
@@ -1002,7 +1005,7 @@
   // and other funnels use medicare_glp1 / bloom / total_male — all were missing here, so those patients
   // rendered as "-". Keep every real program value mapped so the field shows what a patient is actually on.
   const PROG = {glp1:'GLP-1',sema:'GLP-1 · Semaglutide',tirz:'GLP-1 · Tirzepatide',oral:'GLP-1 · Oral semaglutide',medicare_glp1:'Medicare GLP-1 Bridge',bloom:'Bloom · Hair loss',total_male:'Total Male · TRT',metabolic:'Metabolic',coaching:'Coaching',unsure:'Undecided'};
-  const STAT = {lead:'Lead',new_patient:'New Patient',active:'Active',inactive:'Inactive',rx_written:'Rx written',rx_declined:'Rx declined'};
+  const STAT = {lead:'New Inquiry',referral:'Referral',new_patient:'New Patient',active:'Active',inactive:'Inactive',rx_written:'Rx written',rx_declined:'Rx declined'};
   function isProvider(){
     const r = (window.__vca && window.__vca.role) || (window.__vitUser && window.__vitUser.app_metadata && window.__vitUser.app_metadata.role) || '';
     return r === 'vitality_provider' || r === 'provider';
@@ -4235,6 +4238,7 @@ HARD RULES:
     { const st=document.getElementById('apState'); if(st) st.value='NV'; }
     document.getElementById('apProgram').value='glp1';
     document.getElementById('apStatus').value='lead';
+    document.getElementById('apRefRow')?.classList.add('hidden'); { const rf=document.getElementById('apRefFile'); if(rf) rf.value=''; const h=document.querySelector('#addModal h3'); if(h) h.textContent='Add patient'; }
     document.getElementById('apLogin').checked=false;
     const rp=document.getElementById('apReferPractice'); if(rp) rp.value='';
     populateAddReferPicker();
@@ -5336,6 +5340,93 @@ HARD RULES:
   };
   // iPhone photos are HEIC, which Chrome/Firefox can't render. Lazily load a converter only when needed.
   function loadHeic2any(){ if(window.heic2any) return Promise.resolve(window.heic2any); return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js'; s.onload=()=>res(window.heic2any); s.onerror=()=>rej(new Error('converter load failed')); document.head.appendChild(s); }); }
+  // Upload one file to a patient's chart (used by "Refer a patient").
+  async function uploadChartFile(pid, f, doc_type, note){
+    const u=await postDocs({action:'upload_url'}); if(!u.ok||!u.uploadUrl) throw new Error(u.error||'could not start upload');
+    const ct=f.type||'application/octet-stream';
+    const up=await fetch(u.uploadUrl,{method:'POST',headers:{'Content-Type':ct},body:f}); if(!up.ok) throw new Error('upload failed ('+up.status+')');
+    const { storageId }=await up.json();
+    const r=await postDocs({action:'record',patient_id:pid,storage_id:storageId,filename:f.name,content_type:ct,size:f.size,doc_type,note});
+    if(!r.ok) throw new Error(r.error||'could not save document'); return r;
+  }
+  window.uploadChartFile=uploadChartFile;
+  // ---- Referral queue (Netty 9/23). Referred patients (status "referral") are worked by phone: every attempt
+  // is logged (outcome + chart note); after 3 they move to "Not reached". Scheduled -> New Patient, closed ->
+  // Inactive, or archive. Referral letters and intake packets wait under Documents to review. ----
+  window.openReferPatient=function(){
+    openAddPatient();
+    document.getElementById('apStatus').value='referral';
+    document.getElementById('apRefRow').classList.remove('hidden');
+    const h=document.querySelector('#addModal h3'); if(h) h.textContent='Refer a patient';
+  };
+  function refQueueRows(){ const R=(patients||[]).filter(p=>p.status==='referral'&&!p.archived); return { contact:R.filter(p=>(p.referral_attempts||0)<3), unreached:R.filter(p=>(p.referral_attempts||0)>=3) }; }
+  function updateRefQCount(){ const el=document.getElementById('refQCount'); if(!el) return; const n=(patients||[]).filter(p=>p.status==='referral'&&!p.archived).length; el.textContent=String(n); el.classList.toggle('hidden',!n); }
+  window.updateRefQCount=updateRefQCount; setTimeout(updateRefQCount,1500); setInterval(updateRefQCount,4000);
+  async function crmPost(body){ const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify(body)}); return await r.json().catch(()=>({ok:false,error:'bad response'})); }
+  window.openReferralQueue=async function(tab){
+    window.__refTab=tab||window.__refTab||'contact';
+    listModalShell('Referral queue','<div id="refQBody" class="text-sm text-[#9aa0ab]">Loading…</div>','<button onclick="document.getElementById(\'listOverlay\').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm">Close</button>','max-w-4xl');
+    await renderRefQueue(true);
+  };
+  window.renderRefQueue=renderRefQueue;
+  async function renderRefQueue(refetch){
+    const box=document.getElementById('refQBody'); if(!box) return;
+    const {contact,unreached}=refQueueRows(); const tab=window.__refTab;
+    if(refetch||!window.__refDocs){ try{ const j=await postDocs({action:'review_queue'}); window.__refDocs=j.ok?(j.docs||[]):[]; window.__refDocsDenied=!j.ok; }catch(e){ window.__refDocs=[]; } }
+    const docs=window.__refDocs||[];
+    const tb=(k,l,n)=>`<button onclick="window.__refTab='${k}';renderRefQueue()" class="px-3 py-1.5 rounded-lg text-xs font-semibold ${tab===k?'bg-[#16201d] text-white':'text-[#4b5563] hover:bg-[#f1f3f7]'}">${l} <span class="opacity-70">${n}</span></button>`;
+    const fmt=(ms)=>ms?new Date(ms).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+    const nm=(x)=>esc(String(x||'').trim()||'Patient');
+    const OUT=['No answer','Left voicemail','Wrong number','Spoke, not ready','Spoke, will call back'];
+    const btn='px-2.5 py-1 rounded-lg border border-[#e6e9ee] text-xs font-semibold hover:bg-[#f1f3f7]';
+    const prow=(p)=>{ const n=p.referral_attempts||0; return `<div class="py-3 border-b border-[#f1f3f7]"><div class="flex items-start justify-between gap-3 flex-wrap">
+      <div class="min-w-0"><button onclick="refOpen('${p.id}')" class="font-semibold text-[#16201d] hover:underline text-left">${nm((p.first||'')+' '+(p.last||''))}</button>
+        <div class="text-[11px] text-[#6b7280]">${p.phone?esc(p.phone)+' · ':''}${p.referred_by?'from '+esc(p.referred_by)+' · ':''}added ${fmt(p.created)}</div>
+        <div class="text-[11px] mt-0.5 ${n>=3?'text-[#be123c]':'text-[#6b7280]'}">${n?`${n} attempt${n===1?'':'s'} · last ${fmt(p.referral_last_attempt_at)}${p.referral_last_outcome?' ('+esc(p.referral_last_outcome)+')':''}`:'Not contacted yet'}</div></div>
+      <div class="flex flex-wrap gap-1.5 justify-end items-center">
+        <select id="rqo-${p.id}" class="field w-auto py-1 text-xs">${OUT.map(o=>`<option>${o}</option>`).join('')}</select>
+        <input id="rqn-${p.id}" class="field w-40 py-1 text-xs" placeholder="Note (optional)">
+        <button onclick="refAttempt('${p.id}')" class="${btn}">Log attempt</button>
+        <button onclick="refBook('${p.id}')" class="${btn}">Book</button>
+        <button onclick="refClose('${p.id}','scheduled')" class="px-2.5 py-1 rounded-lg text-xs font-semibold text-white" style="background:#0a6cf5">Scheduled</button>
+        <button onclick="refClose('${p.id}','not_scheduled')" class="${btn} text-[#be123c]">Close, not scheduled</button>
+        ${n>=3?`<button onclick="refArchive('${p.id}')" class="${btn} text-[#6b7280]">Archive</button>`:''}
+      </div></div></div>`; };
+    const TYPE={referral:'Referral',intake_packet:'Intake packet'};
+    const drow=(d)=>`<div class="py-3 border-b border-[#f1f3f7] flex items-start justify-between gap-3 flex-wrap"><div class="min-w-0"><button onclick="refOpen('${d.patient_id}')" class="font-semibold text-[#16201d] hover:underline text-left">${nm(d.patient_name)}</button>
+        <div class="text-[11px] text-[#6b7280]">${esc(TYPE[d.doc_type]||d.doc_type)} · ${d.url?`<a href="${esc(d.url)}" target="_blank" rel="noopener" class="underline">${esc(d.filename)}</a>`:esc(d.filename)}${d.note?' · '+esc(d.note):''}</div>
+        <div class="text-[11px] text-[#9aa0ab]">uploaded ${fmt(d.created_at)} by ${esc(d.uploaded_by||'')}</div></div>
+      <button onclick="refReviewed('${d.id}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold text-white" style="background:#0a6cf5">Mark reviewed</button></div>`;
+    const empty=(t)=>`<div class="py-10 text-center text-[#9aa0ab]">${t}</div>`;
+    let list='', help='';
+    if(tab==='contact'){ help='Referred patients to reach. Log every call; after the third attempt they move to Not reached.'; list=contact.length?contact.map(prow).join(''):empty('No referrals waiting. Use "+ Refer patient" to add one.'); }
+    else if(tab==='unreached'){ help='Three or more attempts with no appointment. Keep trying, close as not scheduled (moves to Inactive), or archive.'; list=unreached.length?unreached.map(prow).join(''):empty('Nobody here.'); }
+    else { help='Referral letters and intake packets on any chart that nobody has reviewed yet.'; list=window.__refDocsDenied?empty('Documents are limited to clinical and admin staff.'):(docs.length?docs.map(drow).join(''):empty('Nothing to review.')); }
+    box.innerHTML=`<div class="flex flex-wrap gap-1.5 mb-2">${tb('contact','To contact',contact.length)}${tb('unreached','Not reached (3+ tries)',unreached.length)}${tb('docs','Documents to review',window.__refDocsDenied?'':docs.length)}</div>
+      <div class="text-xs text-[#6b7280] mb-1">${help}</div><div class="text-[#16201d]">${list}</div>`;
+  }
+  window.refAttempt=async function(pid){
+    const o=(document.getElementById('rqo-'+pid)||{}).value||'', n=((document.getElementById('rqn-'+pid)||{}).value||'').trim();
+    const j=await crmPost({action:'referral_attempt',patient_id:pid,outcome:o,note:n||undefined});
+    if(!j.ok){ alert('Could not log the attempt: '+(j.error||'unknown')); return; }
+    const p=patients.find(x=>x.id===pid); if(p){ p.referral_attempts=j.attempts; p.referral_last_attempt_at=j.at; p.referral_last_outcome=j.outcome; }
+    renderRefQueue();
+  };
+  window.refClose=async function(pid,result){
+    if(result==='not_scheduled' && !confirm('Close this referral as not scheduled? The patient moves to Inactive.')) return;
+    const j=await crmPost({action:'referral_close',patient_id:pid,result});
+    if(!j.ok){ alert('Could not update: '+(j.error||'unknown')); return; }
+    const p=patients.find(x=>x.id===pid); if(p){ p.status=j.status; p.pipeline_stage=null; }
+    renderRefQueue(); renderList(); updateRefQCount();
+  };
+  window.refBook=function(pid){ document.getElementById('listOverlay')?.remove(); bookAppt(pid); };
+  window.refOpen=function(pid){ document.getElementById('listOverlay')?.remove(); openFromBoard(pid); };
+  window.refArchive=async function(pid){ document.getElementById('listOverlay')?.remove(); await archivePatient(pid); updateRefQCount(); };
+  window.refReviewed=async function(id){
+    const j=await postDocs({action:'mark_reviewed',document_id:id});
+    if(!j.ok){ alert('Could not mark reviewed: '+(j.error||'unknown')); return; }
+    window.__refDocs=(window.__refDocs||[]).filter(d=>d.id!==id); renderRefQueue();
+  };
   window.uploadDoc=async function(){
     const fileEl=document.getElementById('docFile'); const f=fileEl&&fileEl.files&&fileEl.files[0]; if(!f){ alert('Choose a file first.'); return; }
     const doc_type=(document.getElementById('docType')||{}).value||'other'; const note=(document.getElementById('docNote')||{}).value||undefined;
@@ -6013,6 +6104,9 @@ HARD RULES:
         try{ await fetch(`${CONVEX_URL}/referral-data`,{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'set_referred_by',patient_id:j.id,practice_id:rPid,provider_id:rProv||undefined})}); }
         catch(e){ console.warn('set referred_by',e); }
       }
+      // Referral packet picked on "Refer a patient": filed on the new chart, then listed under Documents to review.
+      { const rf=document.getElementById('apRefFile'); const rfile=rf&&rf.files&&rf.files[0];
+        if(j.id && rfile && v('apStatus')==='referral'){ try{ await uploadChartFile(j.id, rfile, (document.getElementById('apRefType')||{}).value||'referral'); window.__refDocs=null; }catch(e){ alert('Patient added, but the referral file did not upload: '+e.message); } } }
       let loginMsg='';
       if(wantLogin && j.id){
         const lj=await provisionLogin(j.id);
