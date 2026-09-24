@@ -5455,7 +5455,7 @@ HARD RULES:
       const bg=active?'#eaf7ef':bad?'#fef2f2':'#fff7ed';
       const fg=active?'#0a7a3d':bad?'#be123c':'#9a5a00';
       const when=el.checked_at?new Date(el.checked_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
-      eligChip=`<span class="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold" style="background:${bg};color:${fg}">Stedi ${esc(el.status)}${el.plan_name?' · '+esc(el.plan_name):''}${el.error_code?' · AAA '+esc(el.error_code):''}${when?' · '+when:''}</span>${(el.status==='error'&&AAA_PLAIN[el.error_code])?'<div class="text-[11px] text-[#be123c] mt-0.5">'+esc(AAA_PLAIN[el.error_code])+'</div>':''}`;
+      eligChip=`<span class="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold" style="background:${bg};color:${fg}">Stedi ${esc(el.status)}${el.plan_name?' · '+esc(el.plan_name):''}${el.error_code?' · AAA '+esc(el.error_code):''}${when?' · '+when:''}</span>${(el.status==='error'&&AAA_PLAIN[el.error_code])?'<div class="text-[11px] text-[#be123c] mt-0.5">'+esc(AAA_PLAIN[el.error_code])+'</div>':''}${el.status==='refer'?'<div class="text-[11px] text-[#9a5a00] mt-0.5">The payer says another plan holds this member\'s benefits'+(el.refer_to?' ('+esc(el.refer_to)+')':'')+'. Check eligibility with that plan.</div>':''}${el.status==='unverified'?'<div class="text-[11px] text-[#9a5a00] mt-0.5">The payer answered without a coverage status. Verify on the payer\'s portal.</div>':''}`;
     }
     const acts=j_canWriteIns()?`<button onclick="openCoverageModal('${c.id}')" class="text-[#0a6cf5] hover:underline">edit</button> · <button onclick="runCoverageEligibility('${c.id}')" class="text-[#0a7a3d] hover:underline">check eligibility</button> · <button onclick="deleteCoverage('${c.id}')" class="text-[#be123c] hover:underline">delete</button>`:'';
     return `<div class="flex items-start justify-between gap-3 py-2 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm ${inactive?'text-[#9aa0ab]':'text-[#16201d] font-medium'}">${esc(line)}</div><div class="mt-1">${eligChip}</div><div class="text-[11px] text-[#9aa0ab] mt-0.5">Member ${memberEl}</div><div class="text-[11px] text-[#9aa0ab]">${esc(meta)}</div></div><div class="text-[11px] whitespace-nowrap pt-0.5">${acts}</div></div>`;
@@ -5541,6 +5541,8 @@ HARD RULES:
     const st=el.status||'';
     if(st==='active') return 'Stedi: active coverage'+(el.plan_name?(' · '+el.plan_name):'')+(el.cached?' (already checked in the last 24 hours)':'');
     if(st==='inactive') return 'Stedi: inactive / no active coverage'+(el.error_code?(' · AAA '+el.error_code):'');
+    if(st==='refer') return 'The payer says another plan holds this member\'s benefits'+(el.refer_to?(' ('+el.refer_to+')'):'')+'. Check eligibility with that plan.';
+    if(st==='unverified') return 'The payer answered without a coverage status. Verify on the payer\'s portal.';
     if(st==='error') return (AAA_PLAIN[el.error_code]?AAA_PLAIN[el.error_code]+' (AAA '+el.error_code+')':'Stedi returned an error'+(el.error_code?(' · AAA '+el.error_code):'')+(el.error_desc?(' · '+el.error_desc):''));
     return 'Stedi: '+(st||'submitted')+(el.plan_name?(' · '+el.plan_name):'');
   }
