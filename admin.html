@@ -187,6 +187,14 @@ function viewAudit(){
   </section>`;
 }
 
+// Task board as a spreadsheet (Netty 9/23 "file export ... for tasks tracking"). Clinical tasks export as the redacted stub.
+window.__tbCsv=()=>{
+  const rows=(TASKS&&TASKS.tasks)||[]; const who=(t)=>((t.assignees&&t.assignees.length)?t.assignees:(t.assignee?[t.assignee]:[])).join(', ');
+  const cell=(v)=>{ let x=String(v==null?'':v); if(/^[=+\-@]/.test(x)) x="'"+x; return '"'+x.replace(/"/g,'""')+'"'; };
+  const d=(ms)=>ms?new Date(ms).toLocaleString('en-US'):'';
+  const lines=[['Task','Patient','Assigned to','Status','Priority','Due','Created by','Created','Completed','Details'].map(cell).join(',')].concat(rows.map(t=>[t.title,t.patient_ref||'',who(t),{todo:'To do',doing:'In progress',done:'Done'}[t.status]||t.status,t.priority==='high'?'Urgent':(t.priority||'normal'),t.due||'',t.by||'',d(t.created_at||Date.parse(t.ts||'')),d(t.completed_at),t.locked?'':(t.notes||'')].map(cell).join(',')));
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'})); a.download='tasks-'+new Date().toISOString().slice(0,10)+'.csv'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500);
+};
 function viewTasks(){
   if(!TASKS){ (async()=>{ await loadTasks(); render(); })(); return '<div class="card p-8 text-center text-[#9aa0ab] text-sm">Loading tasks…</div>'; }
   const tasks=TASKS.tasks||[], assignees=TASKS.assignees||['Front Desk'];
@@ -202,7 +210,7 @@ function viewTasks(){
     return `<div class="rounded-lg border ${t.clinical?'border-[#dbe7f5]':'border-[#eef0f4]'} bg-white p-2.5">
     <div class="flex items-start gap-2">
       <span class="w-2 h-2 rounded-full ${pri[t.priority]||pri.normal} mt-1.5 shrink-0" title="${esc(t.priority)}"></span>
-      <div class="flex-1 min-w-0"><div class="text-sm font-medium ${t.status==='done'?'line-through text-[#9aa0ab]':''}">${esc(t.title)}</div><div class="text-[11px] text-[#9aa0ab]">${t.assignee?esc(t.assignee):'unassigned'}${t.due?' · due '+esc(t.due):''} ${badge}</div>${clinNotes}</div>
+      <div class="flex-1 min-w-0"><div class="text-sm font-medium ${t.status==='done'?'line-through text-[#9aa0ab]':''}">${esc(t.title)}</div><div class="text-[11px] text-[#9aa0ab]">${((t.assignees&&t.assignees.length)?t.assignees:(t.assignee?[t.assignee]:[])).length?esc(((t.assignees&&t.assignees.length)?t.assignees:[t.assignee]).join(', ')):'unassigned'}${t.due?' · due '+esc(t.due):''} ${badge}</div>${clinNotes}</div>
       ${delBtn}
     </div>
     <select data-move="${t.id}" class="field text-[11px] mt-2 w-full">${cols.map(c=>`<option value="${c[0]}" ${t.status===c[0]?'selected':''}>${c[1]}</option>`).join('')}</select>
@@ -230,7 +238,7 @@ function viewTasks(){
       + '<div class="space-y-2">' + body + more + '</div></div>';
   };
   return `<section class="card p-6">
-    <h2 class="font-display text-lg font-semibold mb-3">Task board</h2>
+    <div class="flex items-center justify-between mb-3"><h2 class="font-display text-lg font-semibold">Task board</h2><button onclick="window.__tbCsv()" class="text-xs font-semibold text-[#0a6cf5] hover:underline">Export CSV</button></div>
     <div class="flex flex-wrap gap-2 items-center mb-4 pb-4 border-b border-[#f1f3f7]">
       <input id="tTitle" class="field flex-1" placeholder="New task…" style="min-width:160px">
       <select id="tAssignee" class="field text-sm">${assignees.map(a=>`<option>${esc(a)}</option>`).join('')}</select>

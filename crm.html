@@ -1590,6 +1590,19 @@
   function dobKeys(s){ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s||'')); if(!m) return ''; const [,y,mo,d]=m, mn=String(+mo), dn=String(+d), yy=y.slice(2);
     return [y+'-'+mo+'-'+d, mo+'/'+d+'/'+y, mn+'/'+dn+'/'+y, mo+'/'+d+'/'+yy, mn+'/'+dn+'/'+yy, y+mo+d, mo+d+y, mo+d+yy, mn+dn+y].join(' '); }
   function ageOf(s){ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s||'')); if(!m) return null; const t=new Date(); let a=t.getFullYear()-(+m[1]); if(t.getMonth()+1<+m[2]||(t.getMonth()+1===+m[2]&&t.getDate()<+m[3])) a--; return a; }
+  // Emergency contact, guardian and preferred pharmacy as chart fields (Netty 9/23), same keys as Bloom's intake
+  // e-form (ec_*, pharmacy_*). A patient under 18 gets a banner until a guardian is on file.
+  function contactRows(p){
+    const h=(t)=>`<div class="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-[#9aa0ab]">${t}</div>`;
+    return h('Emergency contact')+infoRow(p,'ec_name','Name')+infoRow(p,'ec_relationship','Relationship')+infoRow(p,'ec_phone','Phone')
+      +h('Guardian'+((ageOf(p.dob)??99)<18?' (required, minor)':' (if a minor)'))+infoRow(p,'guardian_name','Name')+infoRow(p,'guardian_relationship','Relationship')+infoRow(p,'guardian_phone','Phone')+infoRow(p,'guardian_email','Email')
+      +h('Preferred pharmacy')+infoRow(p,'pharmacy_name','Pharmacy')+infoRow(p,'pharmacy_phone','Phone')+infoRow(p,'pharmacy_address','Address');
+  }
+  function minorBanner(p){
+    const a=ageOf(p.dob); if(a==null||a>=18) return '';
+    const g=p.guardian_name?('Guardian: '+esc(p.guardian_name)+(p.guardian_relationship?' ('+esc(p.guardian_relationship)+')':'')+(p.guardian_phone?' · '+esc(p.guardian_phone):'')):'<b>No guardian on file.</b> Add one under Contacts before the visit.';
+    return `<div class="rounded-xl border border-amber-300 bg-amber-50 text-amber-800 px-4 py-2.5 mb-4 text-sm"><b>Minor, age ${a}.</b> ${g}</div>`;
+  }
   function infoRow(p, field, label){
     if(field==='program'){
       return `<div class="flex items-center justify-between gap-3 px-4 py-2"><span class="text-xs text-[#6b7280]">${label}</span>
@@ -1602,7 +1615,7 @@
   window.editInfo = function(el,id,field){
     const p=patients.find(x=>x.id===id)||{}; const cur=p[field]||'';
     const inp=document.createElement('input'); inp.value=cur; inp.className='field'; inp.style.maxWidth='240px'; inp.style.textAlign='right';
-    if(field==='dob') inp.type='date'; else if(field==='email') inp.type='email'; else if(field==='phone') inp.type='tel';
+    if(field==='dob') inp.type='date'; else if(/email$/.test(field)) inp.type='email'; else if(/phone$/.test(field)) inp.type='tel';
     el.replaceWith(inp); inp.focus(); try{inp.select();}catch(e){}
     let done=false;
     const finish=async(save)=>{ if(done)return; done=true; if(save) await saveInfo(id,field,inp.value.trim()); renderDetail(); };
@@ -1836,6 +1849,7 @@
           </select>
         </div>
 
+        ${minorBanner(p)}
         <div class="border border-[#e6e9ee] rounded-2xl mb-6 divide-y divide-[#eef1f4]">
           ${infoRow(p,'email','Email')}
           ${infoRow(p,'phone','Phone')}
@@ -1847,6 +1861,9 @@
           ${infoRow(p,'address_city','City')}
           ${infoRow(p,'address_state','State')}
           ${infoRow(p,'address_zip','ZIP')}
+        </div>
+        <div class="border border-[#e6e9ee] rounded-2xl mb-6 divide-y divide-[#eef1f4]">
+          ${contactRows(p)}
         </div>
 
         ${p.medicare_bridge ? `<div class="mb-6">${medicareBridgeCard(p)}</div>` : ''}
@@ -2117,6 +2134,13 @@
               ${p.tags&&p.tags.length?`<div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Tags</span><span class="text-sm text-[#16201d] flex flex-wrap gap-1 justify-end">${p.tags.map(t=>`<span class="badge b-active">${t}</span>`).join('')}</span></div>`:''}
             </div>
           </div>
+          ${minorBanner(p)}
+          <div class="glass rounded-2xl overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 cursor-pointer" onclick="this.nextElementSibling.classList.toggle('hidden')">
+              <span class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Contacts &amp; pharmacy</span><span class="text-[#9aa0ab] text-sm">▾</span>
+            </div>
+            <div class="divide-y divide-[#eef1f4]">${contactRows(p)}</div>
+          </div>
         </div>
 
         <!-- CENTER: activity -->
@@ -2186,12 +2210,12 @@
     const done=t.status==='done'; const pr={urgent:'#be123c',high:'#9a5a00'}[t.priority];
     return `<div class="border border-[#e6e9ee] rounded-xl p-3 mb-2">
       <div class="flex items-center justify-between gap-2">
-        <div class="text-sm text-[#6b7280]"><b class="text-[#16201d]">Task</b>${t.assignee?' assigned to '+esc(t.assignee):''}</div>
+        <div class="text-sm text-[#6b7280]"><b class="text-[#16201d]">Task</b>${taskWho(t)?' assigned to '+esc(taskWho(t)):''}</div>
         <div class="text-xs text-[#6b7280] flex items-center gap-1">${ic('cal',13)} ${t.due?esc(t.due):'no due date'}</div>
       </div>
       <div class="flex items-center gap-2 mt-2">
         <input type="checkbox" ${done?'checked':''} ${t.locked?'disabled':''} onchange="toggleTask('${t.id}',this.checked)" class="accent-[#0a6cf5] w-4 h-4 shrink-0">
-        <span class="text-sm ${done?'line-through text-[#9aa0ab]':'text-[#16201d] font-medium'}">${esc(t.title)}${t.clinical?'<span class="badge ml-1" style="background:rgba(244,63,94,.15);color:#be123c">clinical</span>':''}</span>
+        <span onclick="openTaskModal(null,'${t.id}')" title="Open the task" class="cursor-pointer hover:underline text-sm ${done?'line-through text-[#9aa0ab]':'text-[#16201d] font-medium'}">${esc(t.title)}${t.clinical?'<span class="badge ml-1" style="background:rgba(244,63,94,.15);color:#be123c">clinical</span>':''}</span>
         ${!done&&pr?`<span class="text-[11px] font-semibold ml-auto" style="color:${pr}">${t.priority}</span>`:''}
       </div>
     </div>`;
@@ -2276,9 +2300,9 @@
     return `<div class="flex items-start gap-3 px-4 py-3 border-b border-[#f1f3f7] last:border-0">
       <input type="checkbox" ${done?'checked':''} ${t.locked?'disabled':''} onchange="toggleTask('${t.id}',this.checked)" class="accent-[#0a6cf5] w-4 h-4 mt-0.5">
       <div class="flex-1 min-w-0">
-        <div class="text-sm ${done?'line-through text-[#9aa0ab]':'text-[#16201d]'}">${esc(t.title)}${t.clinical?'<span class="badge ml-1" style="background:rgba(244,63,94,.15);color:#be123c">clinical</span>':''}</div>
+        <div onclick="openTaskModal(null,'${t.id}')" title="Open the task" class="cursor-pointer hover:underline text-sm ${done?'line-through text-[#9aa0ab]':'text-[#16201d]'}">${esc(t.title)}${t.clinical?'<span class="badge ml-1" style="background:rgba(244,63,94,.15);color:#be123c">clinical</span>':''}</div>
         ${t.notes?`<div class="text-xs text-[#6b7280] mt-0.5">${esc(t.notes)}</div>`:''}
-        <div class="text-[11px] text-[#9aa0ab] mt-0.5">${t.assignee?esc(t.assignee)+' · ':''}${t.due?'due '+t.due:'no due date'} · ${rel(t.ts)}</div>
+        <div class="text-[11px] text-[#9aa0ab] mt-0.5">${taskWho(t)?esc(taskWho(t))+' · ':''}${t.due?'due '+t.due:'no due date'} · ${rel(t.ts)}</div>
       </div>
       <span class="text-[11px] font-semibold" style="color:${prColor}">${t.priority||'normal'}</span>
     </div>`;
@@ -2296,39 +2320,90 @@
     const cnt=document.getElementById('taskTabCnt'); if(cnt) cnt.textContent=String(open.length);
     // right-rail open tasks
     const rt=document.getElementById('rightTasks');
-    if(rt) rt.innerHTML = open.length ? open.map(t=>`<div class="flex items-start gap-2"><input type="checkbox" ${t.locked?'disabled':''} onchange="toggleTask('${t.id}',this.checked)" class="accent-[#0a6cf5] w-4 h-4 mt-0.5 shrink-0"><div><div class="text-[#16201d]">${esc(t.title)}</div><div class="text-[11px] text-[#9aa0ab]">${t.due?'due '+esc(t.due):'no due date'}${t.assignee?' · '+esc(t.assignee):''}</div></div></div>`).join('') : '<div class="text-[#9aa0ab]">No open tasks.</div>';
+    if(rt) rt.innerHTML = open.length ? open.map(t=>`<div class="flex items-start gap-2"><input type="checkbox" ${t.locked?'disabled':''} onchange="toggleTask('${t.id}',this.checked)" class="accent-[#0a6cf5] w-4 h-4 mt-0.5 shrink-0"><div><div onclick="openTaskModal(null,'${t.id}')" title="Open the task" class="text-[#16201d] cursor-pointer hover:underline">${esc(t.title)}</div><div class="text-[11px] text-[#9aa0ab]">${t.due?'due '+esc(t.due):'no due date'}${taskWho(t)?' · '+esc(taskWho(t)):''}</div></div></div>`).join('') : '<div class="text-[#9aa0ab]">No open tasks.</div>';
     // feed, if the Tasks tab is the active one
     if(window.__actFilter==='task'){ const f=document.getElementById('actFeed'); if(f) f.innerHTML=renderTaskFeed(tasks); }
   }
   const TASK_GROUPS = ['All staff','Providers','Front desk','Billing','Admin'];
-  window.addTask = async function(pid){
-    const p = patients.find(x=>x.id===pid); if(!p) return;
-    // Staff list for the assignee dropdown (cached after first open). tasks-data 'load' returns `assignees`.
-    if(!window.__assignees){
-      try{ const r=await fetch(CONVEX_URL+'/tasks-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'load'})}); const j=await r.json(); window.__assignees=(j&&j.assignees)||['Front Desk']; }
-      catch(e){ window.__assignees=['Front Desk']; }
-    }
-    const glow = TASK_GROUPS.map(g=>g.toLowerCase());
-    const staff = (window.__assignees||[]).filter(a=>!glow.includes(String(a).toLowerCase()));
-    const assigneeOpts = [{v:'',t:'Unassigned'}]
-      .concat(TASK_GROUPS.map(g=>({v:g,t:'Group · '+g})))
-      .concat(staff.map(s=>({v:s,t:s})));
-    openFormModal({
-      title:'New task', subtitle:`${p.first||''} ${p.last||''}`.trim(),
-      fields:[
-        {key:'title',label:'Task',required:true,placeholder:'What needs to be done?'},
-        {key:'notes',label:'Details',type:'textarea',rows:6,placeholder:'Add any detail, context, or instructions for whoever picks this up.'},
-        {key:'assignee',label:'Assign to (employee or group)',type:'select',options:assigneeOpts},
-        {key:'priority',label:'Priority',type:'select',value:'normal',options:[{v:'normal',t:'Normal'},{v:'high',t:'High'},{v:'low',t:'Low'}]},
-        {key:'due_date',label:'Due date',type:'date'},
-      ],
-      submitLabel:'Create task',
-      onSubmit: async (v)=>{
-        const r = await fetch(CONVEX_URL+'/tasks-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'create',title:v.title,notes:v.notes||undefined,assignee:v.assignee||undefined,priority:v.priority||'normal',due_date:v.due_date||undefined,patient_id:pid,patient_ref:`${p.first||''} ${p.last||''}`.trim()})});
-        const j = await r.json(); if(!j.ok) throw new Error(j.error||'create failed');
-        loadPatientTasks(pid);
-      }
-    });
+  // One window to create, open, edit and reassign a task (Netty 9/23): several people or groups at once,
+  // the full details, status. A clinical task stays read-only for anyone but a provider.
+  function taskWho(t){ const a=(t&&t.assignees&&t.assignees.length)?t.assignees:(t&&t.assignee?[t.assignee]:[]); return a.join(', '); }
+  window.taskWho=taskWho;
+  async function loadTaskBoard(){
+    try{ const r=await fetch(CONVEX_URL+'/tasks-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'load'})}); const j=await r.json(); if(j&&j.ok){ window.__assignees=j.assignees||window.__assignees; window.__allTasks=j.tasks||[]; } }catch(e){ console.warn('loadTaskBoard',e); }
+    return window.__allTasks||[];
+  }
+  async function findTask(id){
+    for(const pool of [window.__crmTasks||[], window.__allTasks||[]]){ const t=pool.find(x=>x.id===id); if(t) return t; }
+    return (await loadTaskBoard()).find(x=>x.id===id)||null;
+  }
+  window.openTaskModal = async function(pid, taskId){
+    if(!window.__assignees) await loadTaskBoard();
+    const t = taskId ? await findTask(taskId) : null;
+    if(taskId && !t){ alert('That task was not found. Reload the page and try again.'); return; }
+    pid = pid || (t && t.patient_id) || null;
+    const p = pid ? patients.find(x=>x.id===pid) : null;
+    const glow=TASK_GROUPS.map(g=>g.toLowerCase());
+    const staff=(window.__assignees||[]).filter(a=>!glow.includes(String(a).toLowerCase()));
+    const cur=(t&&t.assignees&&t.assignees.length)?t.assignees:(t&&t.assignee?[t.assignee]:[]);
+    const extra=cur.filter(c=>!TASK_GROUPS.concat(staff).some(x=>x.toLowerCase()===String(c).toLowerCase()));
+    const locked=!!(t&&t.locked), dis=locked?'disabled':'';
+    const chk=(name)=>`<label class="flex items-center gap-2 text-sm py-0.5 cursor-pointer"><input type="checkbox" class="taChk accent-[#0a6cf5] w-4 h-4" value="${esc(name)}" ${cur.some(c=>String(c).toLowerCase()===String(name).toLowerCase())?'checked':''} ${dis}> ${esc(name)}</label>`;
+    const opt=(v,l,sel)=>`<option value="${v}" ${sel?'selected':''}>${l}</option>`;
+    const fmt=(ms)=>ms?new Date(ms).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}):'';
+    const body=`<div class="space-y-3">
+      ${locked?'<div class="text-xs rounded-lg bg-[#f7f8fa] border border-[#e6e9ee] p-2 text-[#6b7280]">Clinical task: only a provider can see its details or change it.</div>':''}
+      <label class="block text-xs font-semibold text-[#3d4a45]">Task<input id="taTitle" class="field mt-1 block w-full" value="${esc(t?t.title:'')}" placeholder="What needs to be done?" ${dis}></label>
+      <label class="block text-xs font-semibold text-[#3d4a45]">Details<textarea id="taNotes" data-grow rows="4" class="field mt-1 block w-full resize-y" placeholder="Context or instructions for whoever picks this up" ${dis}>${esc(t&&!locked?(t.notes||''):'')}</textarea></label>
+      <div><div class="text-xs font-semibold text-[#3d4a45] mb-1">Assign to <span class="font-normal text-[#9aa0ab]">(pick as many as needed)</span></div>
+        <div class="grid grid-cols-2 gap-x-4 rounded-lg border border-[#e6e9ee] p-2.5 max-h-56 overflow-y-auto">
+          <div><div class="text-[10px] uppercase tracking-wide text-[#9aa0ab] mb-1">Groups</div>${TASK_GROUPS.map(chk).join('')}</div>
+          <div><div class="text-[10px] uppercase tracking-wide text-[#9aa0ab] mb-1">People</div>${staff.concat(extra).map(chk).join('')||'<div class="text-xs text-[#9aa0ab]">No staff listed</div>'}</div>
+        </div></div>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="block text-xs font-semibold text-[#3d4a45]">Priority<select id="taPri" class="field mt-1 block w-full" ${dis}>${opt('normal','Normal',!t||t.priority==='normal')}${opt('high','Urgent',t&&t.priority==='high')}${opt('low','Low',t&&t.priority==='low')}</select></label>
+        <label class="block text-xs font-semibold text-[#3d4a45]">Due date<input id="taDue" type="date" class="field mt-1 block w-full" value="${esc(t&&t.due?t.due:'')}" ${dis}></label>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        ${t?`<label class="block text-xs font-semibold text-[#3d4a45]">Status<select id="taStatus" class="field mt-1 block w-full" ${dis}>${opt('todo','To do',t.status==='todo')}${opt('doing','In progress',t.status==='doing')}${opt('done','Done',t.status==='done')}</select></label>`:''}
+        <label class="block text-xs font-semibold text-[#3d4a45]">${t?'Alert anyone newly added':'Alert the people picked'}<select id="taNotify" class="field mt-1 block w-full" ${dis}>${opt('bell','Bell only')}${opt('email','Bell and email now')}</select></label>
+      </div>
+      ${t?`<div class="text-[11px] text-[#9aa0ab]">${p?'Patient: '+esc(((p.first||'')+' '+(p.last||'')).trim())+' · ':(t.patient_ref?'Patient: '+esc(t.patient_ref)+' · ':'')}Created by ${esc(t.by||'')}${t.created_at?' · '+fmt(t.created_at):(t.ts?' · '+fmt(Date.parse(t.ts)):'')}${t.completed_at?' · done '+fmt(t.completed_at):''}</div>`:(p?`<div class="text-[11px] text-[#9aa0ab]">Patient: ${esc(((p.first||'')+' '+(p.last||'')).trim())}</div>`:'')}
+      <div id="taErr" class="text-sm text-rose-600 hidden"></div>
+    </div>`;
+    const footer=`<button onclick="document.getElementById('listOverlay').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm">${locked?'Close':'Cancel'}</button>${locked?'':`<button id="taSave" onclick="saveTaskModal(${pid?`'${pid}'`:'null'},${t?`'${t.id}'`:'null'})" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold">${t?'Save changes':'Create task'}</button>`}`;
+    listModalShell(t?'Task':'New task', body, footer, 'max-w-lg');
+  };
+  window.saveTaskModal = async function(pid, taskId){
+    const g=(id)=>((document.getElementById(id)||{}).value||'').trim();
+    const err=document.getElementById('taErr'), btn=document.getElementById('taSave');
+    const title=g('taTitle'); if(!title){ err.textContent='Enter the task.'; err.classList.remove('hidden'); return; }
+    const assignees=[...document.querySelectorAll('.taChk:checked')].map(x=>x.value);
+    const pri=g('taPri')||'normal', p=pid?patients.find(x=>x.id===pid):null;
+    const body=taskId
+      ? { action:'update', id:taskId, title, notes:g('taNotes'), assignees, priority:pri, urgent:pri==='high', due_date:g('taDue')||'', status:g('taStatus')||undefined, notify:g('taNotify')==='email' }
+      : { action:'create', title, notes:g('taNotes')||undefined, assignees, priority:pri, urgent:pri==='high', due_date:g('taDue')||undefined, notify:g('taNotify')==='email', kind:'note', patient_id:pid||undefined, patient_ref:p?`${p.first||''} ${p.last||''}`.trim():undefined };
+    if(btn){ btn.disabled=true; btn.textContent='Saving…'; }
+    try{
+      const r=await fetch(CONVEX_URL+'/tasks-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify(body)}); const j=await r.json();
+      if(!j.ok) throw new Error(j.error||'save failed');
+      window.__allTasks=j.tasks||window.__allTasks; window.__assignees=j.assignees||window.__assignees;
+      document.getElementById('listOverlay')?.remove();
+      if(selId) loadPatientTasks(selId); if(window.refreshBell) refreshBell();
+      if(j.notified&&j.notified.failed&&j.notified.failed.length) alert('Saved. The email alert did not go to: '+j.notified.failed.join(', '));
+    }catch(e){ if(err){ err.textContent='Could not save: '+e.message; err.classList.remove('hidden'); } if(btn){ btn.disabled=false; btn.textContent=taskId?'Save changes':'Create task'; } }
+  };
+  window.addTask = function(pid){ return openTaskModal(pid, null); };
+  // Every task the signed-in person can see, as a spreadsheet (Netty 9/23 "file export ... for tasks tracking").
+  // Clinical tasks export as the same redacted stub the board shows.
+  window.exportTasksCsv = async function(){
+    const rows=await loadTaskBoard();
+    const cell=(v)=>{ let x=String(v==null?'':v); if(/^[=+\-@]/.test(x)) x="'"+x; return '"'+x.replace(/"/g,'""')+'"'; };
+    const d=(ms)=>ms?new Date(ms).toLocaleString('en-US'):'';
+    const head=['Task','Patient','Assigned to','Status','Priority','Due','Created by','Created','Completed','Details'];
+    const lines=[head.map(cell).join(',')].concat(rows.map(t=>[t.title,t.patient_ref||'',taskWho(t),{todo:'To do',doing:'In progress',done:'Done'}[t.status]||t.status,t.priority==='high'?'Urgent':(t.priority||'normal'),t.due||'',t.by||'',d(t.created_at||Date.parse(t.ts||'')),d(t.completed_at),t.locked?'':(t.notes||'')].map(cell).join(',')));
+    const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='tasks-'+new Date().toISOString().slice(0,10)+'.csv'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500);
   };
   window.toggleTask = async function(id, done){
     try{
