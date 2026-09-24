@@ -5727,6 +5727,7 @@ HARD RULES:
     const box=document.getElementById('refQBody'); if(!box) return;
     const {contact,unreached}=refQueueRows(); const tab=window.__refTab;
     if(refetch||!window.__refDocs){ try{ const j=await postDocs({action:'review_queue'}); window.__refDocs=j.ok?(j.docs||[]):[]; window.__refDocsDenied=!j.ok; }catch(e){ window.__refDocs=[]; } }
+    if(refetch||!window.__faxQ){ try{ const j=await postDocs({action:'fax_queue'}); window.__faxQ=j.ok?(j.faxes||[]):[]; }catch(e){ window.__faxQ=[]; } }
     const docs=window.__refDocs||[];
     const tb=(k,l,n)=>`<button onclick="window.__refTab='${k}';renderRefQueue()" class="px-3 py-1.5 rounded-lg text-xs font-semibold ${tab===k?'bg-[#16201d] text-white':'text-[#4b5563] hover:bg-[#f1f3f7]'}">${l} <span class="opacity-70">${n}</span></button>`;
     const fmt=(ms)=>ms?new Date(ms).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
@@ -5752,11 +5753,24 @@ HARD RULES:
         <div class="text-[11px] text-[#9aa0ab]">uploaded ${fmt(d.created_at)} by ${esc(d.uploaded_by||'')}</div></div>
       <button onclick="refReviewed('${d.id}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold text-white" style="background:#0a6cf5">Mark reviewed</button></div>`;
     const empty=(t)=>`<div class="py-10 text-center text-[#9aa0ab]">${t}</div>`;
+    const inp='field py-1 text-xs';
+    const faxRow=(x)=>{ const pt=x.patient||{}; const who=((pt.first_name||'')+' '+(pt.last_name||'')).trim();
+      return `<div class="py-3 border-b border-[#f1f3f7]"><div class="flex items-start justify-between gap-3 flex-wrap"><div class="min-w-0"><div class="font-semibold text-[#16201d]">${esc(x.summary||'Inbound fax')}</div>
+        <div class="text-[11px] text-[#6b7280]">${fmt(x.created_at)}${x.practice?' · from '+esc(x.practice):''}${who?' · names '+esc(who)+(pt.dob?' ('+esc(dobUS(pt.dob))+')':''):''} · ${esc(x.reason||'')}</div>
+        ${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener" class="text-[11px] underline" style="color:#0a6cf5">View fax</a>`:''}</div></div>
+        <div class="grid sm:grid-cols-3 gap-2 mt-2">
+          <div class="flex gap-1"><input id="fqa-${x.id}" list="fqaList" class="${inp} flex-1" placeholder="Patient name"><button onclick="faxAssign('${x.id}')" class="${btn}">Assign</button></div>
+          <div class="flex gap-1 flex-wrap"><input id="fqf-${x.id}" class="${inp} w-20" placeholder="First" value="${esc(pt.first_name||'')}"><input id="fql-${x.id}" class="${inp} w-24" placeholder="Last" value="${esc(pt.last_name||'')}"><input id="fqd-${x.id}" type="date" class="${inp} w-32" value="${esc(pt.dob||'')}"><input id="fqp-${x.id}" class="${inp} w-28" placeholder="Phone" value="${esc(pt.phone||'')}"><button onclick="faxCreate('${x.id}')" class="${btn}">New patient</button></div>
+          <div class="flex gap-1"><input id="fqr-${x.id}" class="${inp} flex-1" placeholder="Why dismiss (e.g., junk)"><button onclick="faxDismiss('${x.id}')" class="${btn} text-[#be123c]">Dismiss</button></div>
+        </div></div>`; };
+    if(!document.getElementById('fqaList')){ const dl=document.createElement('datalist'); dl.id='fqaList'; document.body.appendChild(dl); }
+    document.getElementById('fqaList').innerHTML=(patients||[]).map(p=>`<option value="${esc(((p.first||'')+' '+(p.last||'')).trim())}${p.dob?' · '+esc(dobUS(p.dob)):''}"></option>`).join('');
     let list='', help='';
     if(tab==='contact'){ help='Referred patients to reach. Log every call; after the third attempt they move to Not reached.'; list=contact.length?contact.map(prow).join(''):empty('No referrals waiting. Use "+ Refer patient" to add one.'); }
     else if(tab==='unreached'){ help='Three or more attempts with no appointment. Keep trying, close as not scheduled (moves to Inactive), or archive.'; list=unreached.length?unreached.map(prow).join(''):empty('Nobody here.'); }
+    else if(tab==='fax'){ help='Faxes the fax agent could not place on a chart. Assign each to a patient, create a new patient from it, or dismiss it.'; const fx=window.__faxQ||[]; list=fx.length?fx.map(faxRow).join(''):empty('No unmatched faxes.'); }
     else { help='Referral letters and intake packets on any chart that nobody has reviewed yet.'; list=window.__refDocsDenied?empty('Documents are limited to clinical and admin staff.'):(docs.length?docs.map(drow).join(''):empty('Nothing to review.')); }
-    box.innerHTML=`<div class="flex flex-wrap gap-1.5 mb-2">${tb('contact','To contact',contact.length)}${tb('unreached','Not reached (3+ tries)',unreached.length)}${tb('docs','Documents to review',window.__refDocsDenied?'':docs.length)}</div>
+    box.innerHTML=`<div class="flex flex-wrap gap-1.5 mb-2">${tb('contact','To contact',contact.length)}${tb('unreached','Not reached (3+ tries)',unreached.length)}${tb('docs','Documents to review',window.__refDocsDenied?'':docs.length)}${tb('fax','Unmatched faxes',(window.__faxQ||[]).length)}</div>
       <div class="text-xs text-[#6b7280] mb-1">${help}</div><div class="text-[#16201d]">${list}</div>`;
   }
   window.refAttempt=async function(pid){
@@ -5776,6 +5790,26 @@ HARD RULES:
   window.refBook=function(pid){ document.getElementById('listOverlay')?.remove(); bookAppt(pid); };
   window.refOpen=function(pid){ document.getElementById('listOverlay')?.remove(); openFromBoard(pid); };
   window.refArchive=async function(pid){ document.getElementById('listOverlay')?.remove(); await archivePatient(pid); updateRefQCount(); };
+  // Unmatched-fax actions (Netty/Michelle 9/23). The typed name must match exactly one patient ("Name · DOB" from the list).
+  function faxPick(v){ const t=String(v||'').trim().toLowerCase(); if(!t) return null; const hits=(patients||[]).filter(p=>{ const n=((p.first||'')+' '+(p.last||'')).trim().toLowerCase(); const withDob=n+(p.dob?' · '+dobUS(p.dob):''); return withDob.toLowerCase()===t||n===t; }); return hits.length===1?hits[0]:(hits.length>1?'many':null); }
+  window.faxAssign=async function(id){
+    const p=faxPick((document.getElementById('fqa-'+id)||{}).value);
+    if(p==='many'){ alert('More than one patient has that name. Pick the one with the date of birth from the list.'); return; }
+    if(!p){ alert('Pick the patient from the list.'); return; }
+    const j=await postDocs({action:'fax_assign',queue_id:id,patient_id:p.id}); if(!j.ok){ alert('Could not assign: '+(j.error||'unknown')); return; }
+    await renderRefQueue(true);
+  };
+  window.faxCreate=async function(id){
+    const g=(k)=>((document.getElementById(k+id)||{}).value||'').trim();
+    if(!g('fqf-')||!g('fql-')){ alert('First and last name are needed to create the patient.'); return; }
+    const j=await postDocs({action:'fax_create_patient',queue_id:id,first_name:g('fqf-'),last_name:g('fql-'),dob:g('fqd-')||undefined,phone:g('fqp-')||undefined}); if(!j.ok){ alert('Could not create: '+(j.error||'unknown')); return; }
+    if(typeof loadData==='function') await loadData(); await renderRefQueue(true);
+  };
+  window.faxDismiss=async function(id){
+    const r=((document.getElementById('fqr-'+id)||{}).value||'').trim(); if(!r){ alert('Say why it is being dismissed.'); return; }
+    const j=await postDocs({action:'fax_dismiss',queue_id:id,reason:r}); if(!j.ok){ alert('Could not dismiss: '+(j.error||'unknown')); return; }
+    await renderRefQueue(true);
+  };
   window.refReviewed=async function(id){
     const j=await postDocs({action:'mark_reviewed',document_id:id});
     if(!j.ok){ alert('Could not mark reviewed: '+(j.error||'unknown')); return; }
