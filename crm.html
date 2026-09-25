@@ -1778,14 +1778,34 @@
     else if(USE_SUPABASE && window.__vitSb){ try{ await window.__vitSb.from('vit_patients').update({[col]:v}).eq('id',id); }catch(e){ console.warn('saveInfo',e); } }
     renderList();
   };
+  // Admin and billing remove a note entered in error (Netty 9/25). The server checks the role too.
+  // Asked once per page load; the chart re-renders when the answer is yes.
+  let __canFixNotes=null;
+  function canFixNotes(){
+    if(__canFixNotes===null){ __canFixNotes=false;
+      (async()=>{ try{ const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'note_access'})}); const j=await r.json(); if(j&&j.can_fix){ __canFixNotes=true; try{ renderDetail(); }catch(e){} } }catch(e){ __canFixNotes=null; } })(); }
+    return __canFixNotes===true;
+  }
+  window.voidNote = async function(pid,noteId){
+    const p=patients.find(x=>x.id===pid); if(!p) return;
+    const reason=prompt('Remove this note from the chart? It is kept in the record history, not shown on the chart.\n\nReason (for example: wrong patient):',''); if(reason===null) return;
+    if(!reason.trim()){ alert('A reason is required.'); return; }
+    try{ const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'void_note',note_id:noteId,reason:reason.trim()})}); const j=await r.json().catch(()=>({}));
+      if(!r.ok||j.ok===false){ alert('Not removed: '+(j.error||r.status)); return; }
+      p.notes=(p.notes||[]).filter(n=>n.id!==noteId); p.notes.push({type:'system',author:'You',auto:true,ts:Date.now(),body:'Removed a note (entered in error): '+reason.trim()+'.'}); renderDetail();
+    }catch(e){ alert('Not removed: '+((e&&e.message)||'network error')); }
+  };
   window.editName = function(id){
     const p=patients.find(x=>x.id===id); if(!p)return; const h=document.getElementById('patName'); if(!h)return;
     const inp=document.createElement('input'); inp.value=`${p.first||''} ${p.last||''}`.trim(); inp.className='field'; inp.style.maxWidth='260px';
     h.replaceWith(inp); inp.focus(); try{inp.select();}catch(e){}
     let done=false;
     const finish=async(save)=>{ if(done)return; done=true;
-      if(save){ const parts=inp.value.trim().split(/\s+/); p.first=parts[0]||''; p.last=parts.slice(1).join(' ');
-        if(USE_CONVEX){ try{ await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'update_patient',patient_id:id,fields:{first_name:p.first,last_name:p.last}})});}catch(e){console.warn('editName',e);} }
+      const parts=inp.value.trim().split(/\s+/).filter(Boolean);
+      // First AND last name, or nothing is saved (a blank save used to wipe the name for good).
+      if(save && parts.length<2){ if(parts.length) alert('Enter first and last name. The name was not changed.'); save=false; }
+      if(save){ const f0=p.first, l0=p.last; p.first=parts[0]; p.last=parts.slice(1).join(' ');
+        if(USE_CONVEX){ try{ const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'update_patient',patient_id:id,fields:{first_name:p.first,last_name:p.last}})}); const j=await r.json().catch(()=>({})); if(!r.ok||j.ok===false){ p.first=f0; p.last=l0; alert('Name not saved: '+(j.error||r.status)); } }catch(e){ p.first=f0; p.last=l0; console.warn('editName',e);} }
         else if(USE_SUPABASE&&window.__vitSb){ try{ await window.__vitSb.from('vit_patients').update({first_name:p.first,last_name:p.last}).eq('id',id);}catch(e){console.warn(e);} } }
       renderDetail(); renderList(); };
     inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();finish(true);} else if(e.key==='Escape')finish(false); });
@@ -1805,7 +1825,7 @@
     return `
       <div class="flex items-start justify-between gap-4 mb-6">
         <div>
-          <h2 id="patName" onclick="editName('${p.id}')" title="Click to edit name" class="font-display text-2xl font-semibold tracking-[-1px] cursor-text hover:bg-[#f4f6f8] rounded px-1 -ml-1 inline-block">${p.first} ${p.last}</h2>
+          <h2 id="patName" onclick="editName('${p.id}')" title="Click to edit name" class="font-display text-2xl font-semibold tracking-[-1px] cursor-text hover:bg-[#f4f6f8] rounded px-1 -ml-1 inline-block">${(`${p.first||''} ${p.last||''}`).trim()?`${p.first||''} ${p.last||''}`:'<span class="text-[#9aa0ab]">Add name</span>'}</h2>
           <div class="text-sm text-[#6b7280] mt-1">${PROG[p.program]||'-'} program · age ${age} · patient since ${fmtDate(p.created)}</div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
@@ -2158,7 +2178,7 @@
       <div class="p-6 max-w-3xl">
         <div class="flex items-start justify-between gap-4 mb-6">
           <div>
-            <h2 id="patName" onclick="editName('${p.id}')" title="Click to edit name" class="font-display text-2xl font-semibold tracking-[-1px] cursor-text hover:bg-[#f4f6f8] rounded px-1 -ml-1 inline-block">${p.first} ${p.last}</h2>
+            <h2 id="patName" onclick="editName('${p.id}')" title="Click to edit name" class="font-display text-2xl font-semibold tracking-[-1px] cursor-text hover:bg-[#f4f6f8] rounded px-1 -ml-1 inline-block">${(`${p.first||''} ${p.last||''}`).trim()?`${p.first||''} ${p.last||''}`:'<span class="text-[#9aa0ab]">Add name</span>'}</h2>
             <div class="text-sm text-[#6b7280] mt-1">${PROG[p.program]||'-'} program · age ${age} · patient since ${fmtDate(p.created)}</div>
           </div>
           <select class="field w-auto" onchange="changeStatus('${p.id}',this.value)">
@@ -2423,7 +2443,7 @@
             <div class="flex items-center gap-3 mb-3">
               <div class="crm-avatar">${initials||'?'}</div>
               <div class="min-w-0">
-                <span id="patName" onclick="editName('${p.id}')" title="Click to edit name" class="font-display text-xl font-semibold tracking-[-.5px] leading-tight cursor-text hover:bg-[#f4f6f8] rounded px-1 -ml-1 inline-block">${p.first||''} ${p.last||''}</span>
+                <span id="patName" onclick="editName('${p.id}')" title="Click to edit name" class="font-display text-xl font-semibold tracking-[-.5px] leading-tight cursor-text hover:bg-[#f4f6f8] rounded px-1 -ml-1 inline-block">${(`${p.first||''} ${p.last||''}`).trim()?`${p.first||''} ${p.last||''}`:'<span class="text-[#9aa0ab]">Add name</span>'}</span>
                 <div class="mt-1"><span class="badge b-${p.status}">${STAT[p.status]||p.status}</span></div>
               </div>
             </div>
@@ -2501,7 +2521,7 @@
   // ---- condensed record: activity model (filter tabs over the pieces we already have) ----
   function actItems(p){
     return [
-      ...(p.notes||[]).map(n=>({fam:'note',ts:n.ts,auto:n.auto,author:n.author,body:n.body,ntype:n.type})),
+      ...(p.notes||[]).map(n=>({fam:'note',ts:n.ts,auto:n.auto,author:n.author,body:n.body,ntype:n.type,noteId:n.id,pid:p.id})),
       ...(p.calls||[]).map(cc=>({fam:'call',ts:cc.ts,author:'Receptionist',body:`${cc.dir==='inbound'?'Inbound':'Outbound'} call · ${cc.intent} · ${cc.outcome} · ${Math.floor(cc.dur/60)}m${cc.dur%60}s`})),
       ...(p.appts||[]).map(a=>({fam:'appt',ts:a.when||a.created,author:a.provider||'Phone',body:apptLine(a),pid:p.id,apptId:a.id})),
     ].sort((x,y)=> new Date(y.ts).getTime() - new Date(x.ts).getTime());
@@ -2520,7 +2540,7 @@
         <div class="flex flex-col items-center"><div style="width:9px;height:9px;border-radius:9999px;background:${d};margin-top:5px"></div><div style="width:1px;flex:1;background:#e6e9ee;margin-top:4px"></div></div>
         <div class="flex-1 -mt-0.5 ${clin?'border-l-2 border-rose-500/40 pl-3 -ml-1':''}">
           <div class="flex items-center gap-2 text-xs text-[#6b7280]"><span class="font-semibold text-[#3d4a45]">${it.author||'—'}</span>${clin?'<span class="badge" style="background:rgba(244,63,94,.15);color:#be123c">⚑ Clinical · provider</span>':(it.auto?'<span class="badge b-active">auto</span>':'')}<span>·</span><span>${rel(it.ts)}</span></div>
-          <div class="text-sm ${clin?'text-[#9f1239]':'text-[#16201d]'} mt-1 leading-relaxed">${it.body}${it.fam==='appt'?` <button onclick="editAppt('${it.pid}','${it.apptId}')" class="text-[#0a6cf5] text-xs font-semibold ml-1 hover:underline">edit</button>`:''}</div>
+          <div class="text-sm ${clin?'text-[#9f1239]':'text-[#16201d]'} mt-1 leading-relaxed">${it.body}${it.fam==='appt'?` <button onclick="editAppt('${it.pid}','${it.apptId}')" class="text-[#0a6cf5] text-xs font-semibold ml-1 hover:underline">edit</button>`:''}${(it.fam==='note'&&!it.auto&&it.ntype==='staff'&&it.noteId&&canFixNotes())?` <button onclick="voidNote('${it.pid}','${it.noteId}')" title="Entered in error: remove this note from the chart" class="text-[#be123c] text-xs font-semibold ml-1 hover:underline">remove</button>`:''}</div>
         </div>
       </div>`;
     }
