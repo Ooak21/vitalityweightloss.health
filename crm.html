@@ -153,6 +153,7 @@
       <button onclick="openMyAlerts()" class="text-xs font-medium text-[#6b7280] hover:text-[#0a6cf5] transition-colors" title="Choose which alert emails you get">My alerts</button>
     </div>
     <div class="flex items-center gap-3 pl-4 ml-1 border-l border-[#e6e9ee]">
+      <div class="relative"><button id="bellBtn" onclick="toggleBell()" title="My tasks and messages" class="relative w-8 h-8 rounded-lg border border-[#e6e9ee] text-[#6b7280] hover:text-[#0a6cf5] text-sm leading-none">🔔<span id="bellBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#0a6cf5] text-white text-[10px] font-bold items-center justify-center" style="display:none">0</span></button><div id="bellPanel" class="hidden absolute right-0 top-10 w-[380px] max-h-[70vh] overflow-y-auto bg-white border border-[#e6e9ee] rounded-2xl shadow-xl z-[70] text-left"></div></div>
       <button onclick="(window.__vca?window.__vca.signOut():(window.__vitSb?window.__vitSb.auth.signOut():Promise.resolve())).then(()=>location.replace('login.html'))" class="text-xs font-medium text-[#6b7280] hover:text-[#0a6cf5] transition-colors">Sign out</button>
       <div id="userAvatar" title="Signed in" class="w-8 h-8 rounded-full bg-[#f1f3f7] border border-[#e6e9ee] flex items-center justify-center text-xs font-semibold text-[#4b5563]">··</div>
     </div>
@@ -2707,7 +2708,7 @@
       </div>
       <div class="grid grid-cols-2 gap-3">
         ${t?`<label class="block text-xs font-semibold text-[#3d4a45]">Status<select id="taStatus" class="field mt-1 block w-full" ${dis}>${opt('todo','To do',t.status==='todo')}${opt('doing','In progress',t.status==='doing')}${opt('done','Done',t.status==='done')}</select></label>`:''}
-        <label class="block text-xs font-semibold text-[#3d4a45]">${t?'Alert anyone newly added':'Alert the people picked'}<select id="taNotify" class="field mt-1 block w-full" ${dis}>${opt('bell','Bell only')}${opt('email','Bell and email now')}</select></label>
+        <label class="block text-xs font-semibold text-[#3d4a45]">${t?'Alert anyone newly added':'Alert the people picked'}<select id="taNotify" class="field mt-1 block w-full" ${dis}>${opt('bell','Bell only')}${opt('email','Bell and email now',true)}</select></label>
       </div>
       ${t?`<div class="text-[11px] text-[#9aa0ab]">${p?'Patient: '+esc(((p.first||'')+' '+(p.last||'')).trim())+' · ':(t.patient_ref?'Patient: '+esc(t.patient_ref)+' · ':'')}Created by ${esc(t.by||'')}${t.created_at?' · '+fmt(t.created_at):(t.ts?' · '+fmt(Date.parse(t.ts)):'')}${t.completed_at?' · done '+fmt(t.completed_at):''}</div>`:(p?`<div class="text-[11px] text-[#9aa0ab]">Patient: ${esc(((p.first||'')+' '+(p.last||'')).trim())}</div>`:'')}
       <div id="taErr" class="text-sm text-rose-600 hidden"></div>
@@ -3690,6 +3691,48 @@
       alert(decision === 'approved' ? 'Approved — Rx marked written and task completed.' : 'Declined — note saved to chart.');
     } catch (e) { alert('Network error: ' + e.message); }
   };
+
+  // ---- Alerts bell (Netty + Ana 9/29: no bell, no way to see tasks assigned to them). Same as Bloom.
+  // My open tasks, by my name or my group, urgent first, plus unread patient messages. Polls the task
+  // board every 60 s; the badge counts what arrived since the bell was last opened on this browser. ----
+  let __bellTasks=[], __bellMe=null;
+  const GROUP_FOR_ROLE={ vitality_provider:'Providers', provider:'Providers', vitality_front_desk:'Front desk', front_desk:'Front desk', vitality_biller:'Billing', biller:'Billing', vitality_admin:'Admin', admin:'Admin', vitality_staff:'All staff', staff:'All staff' };
+  function bellMine(){
+    const me=__bellMe||{}; const myName=String(me.name||'').trim().toLowerCase();
+    const grp=GROUP_FOR_ROLE[me.role]||GROUP_FOR_ROLE[(window.__vca||{}).role]||'';
+    const who=(t)=>((t.assignees&&t.assignees.length)?t.assignees:(t.assignee?[t.assignee]:[])).map(x=>String(x).trim().toLowerCase());
+    return __bellTasks.filter(t=>{ if(t.status==='done') return false; const w=who(t); return w.includes(myName) || w.includes('all staff') || (grp && w.includes(grp.toLowerCase())); });
+  }
+  async function refreshBell(){
+    try{ const r=await fetch(CONVEX_URL+'/tasks-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'load'})}); const j=await r.json(); if(j&&j.ok){ __bellTasks=j.tasks||[]; window.__allTasks=__bellTasks; __bellMe=j.me||null; window.__assignees=j.assignees||window.__assignees; window.__bellMe=__bellMe; } }catch(e){}
+    renderBellBadge();
+  }
+  window.refreshBell=refreshBell; window.bellMine=bellMine;
+  function bellSeen(){ try{ return Number(localStorage.getItem('vit_bell_seen')||0); }catch(_){ return 0; } }
+  function renderBellBadge(){
+    const mine=bellMine(); const seen=bellSeen();
+    const fresh=mine.filter(t=>(t.created_at||0)>seen).length + (patients||[]).reduce((n,p)=>n+(p.unread_msgs||0),0);
+    const urgent=mine.some(t=>t.urgent||t.priority==='high');
+    const b=document.getElementById('bellBadge'); if(!b) return; b.textContent=String(fresh); b.style.display=fresh?'flex':'none'; b.style.background=urgent?'#be123c':'#0a6cf5';
+    const btn=document.getElementById('bellBtn'); if(btn) btn.title=`${mine.length} open task${mine.length===1?'':'s'} for you`;
+  }
+  window.toggleBell=function(){
+    const pnl=document.getElementById('bellPanel'); if(!pnl) return;
+    if(!pnl.classList.contains('hidden')){ pnl.classList.add('hidden'); return; }
+    const hot=t=>(t.urgent||t.priority==='high')?1:0;
+    const mine=bellMine().sort((a,b)=>hot(b)-hot(a) || (b.created_at||0)-(a.created_at||0));
+    const msgs=(patients||[]).filter(p=>(p.unread_msgs||0)>0);
+    const row=(t)=>`<div class="px-3 py-2 border-b border-[#f1f3f7] ${hot(t)?'bg-[#fef2f2]':''}"><div class="flex items-start gap-2"><span class="mt-1.5 w-2 h-2 rounded-full shrink-0" style="background:${hot(t)?'#be123c':'#0a6cf5'}"></span><div class="min-w-0 flex-1"><div onclick="document.getElementById('bellPanel')?.classList.add('hidden');openTaskModal(null,'${t.id}')" title="Open the task" class="text-sm text-[#16201d] cursor-pointer hover:underline">${esc(t.title)}</div><div class="text-[11px] text-[#6b7280]">${t.patient_ref?esc(t.patient_ref)+' · ':''}${t.due?'due '+esc(t.due)+' · ':''}from ${esc(t.by||'')}</div>${t.notes&&!t.locked?`<div class="text-[11px] text-[#3d4a45] mt-0.5 whitespace-pre-wrap">${esc(String(t.notes).slice(0,240))}</div>`:''}</div><div class="flex flex-col gap-1 shrink-0 items-end">${t.patient_id?`<button onclick="bellOpen('${t.patient_id}')" class="text-[11px] font-semibold text-[#0a6cf5] hover:underline">Open</button>`:''}<button onclick="bellDone('${t.id}')" class="text-[11px] text-[#6b7280] hover:underline">Done</button></div></div></div>`;
+    const mrow=(p)=>`<div class="px-3 py-2 border-b border-[#f1f3f7] flex items-center justify-between gap-2"><div class="text-sm text-[#16201d]">${esc(((p.first||'')+' '+(p.last||'')).trim())} <span class="text-[11px] text-[#6b7280]">· ${p.unread_msgs} unread</span></div><button onclick="bellOpen('${p.id}',true)" class="text-[11px] font-semibold text-[#0a6cf5] hover:underline">Open</button></div>`;
+    pnl.innerHTML=`<div class="px-3 py-2 border-b border-[#e6e9ee] flex items-center justify-between"><span class="text-xs font-semibold uppercase tracking-wide text-[#6b7280]">My tasks (${mine.length})</span><span class="flex items-center gap-2"><button onclick="exportTasksCsv()" title="Download every task as a spreadsheet" class="text-[11px] font-semibold text-[#0a6cf5] hover:underline">Export CSV</button><span class="text-[11px] text-[#9aa0ab]">${esc((__bellMe&&__bellMe.name)||'')}</span></span></div>${mine.length?mine.map(row).join(''):'<div class="px-3 py-4 text-sm text-[#9aa0ab]">Nothing assigned to you.</div>'}${msgs.length?`<div class="px-3 py-2 border-b border-[#e6e9ee] text-xs font-semibold uppercase tracking-wide text-[#6b7280]">Patient messages</div>${msgs.map(mrow).join('')}`:''}`;
+    pnl.classList.remove('hidden');
+    try{ localStorage.setItem('vit_bell_seen', String(Date.now())); }catch(_){}
+    renderBellBadge();
+  };
+  window.bellOpen=function(pid,msg){ document.getElementById('bellPanel')?.classList.add('hidden'); if(boardOpen) toggleBoard(); window.openFromBoard(pid); if(msg&&window.openMessages) setTimeout(()=>window.openMessages(pid),700); };
+  window.bellDone=async function(id){ try{ await fetch(CONVEX_URL+'/tasks-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'update',id,status:'done'})}); }catch(_){} await refreshBell(); const pnl=document.getElementById('bellPanel'); if(pnl&&!pnl.classList.contains('hidden')){ pnl.classList.add('hidden'); toggleBell(); } if(selId) loadPatientTasks(selId); };
+  document.addEventListener('click',(e)=>{ const pnl=document.getElementById('bellPanel'); if(pnl&&!pnl.classList.contains('hidden')&&!e.target.closest('#bellPanel')&&!e.target.closest('#bellBtn')) pnl.classList.add('hidden'); });
+  setTimeout(refreshBell, 2500); setInterval(refreshBell, 60000);
 
   // ---------------- actions ----------------
   // Persists to Convex (Ana 9/29: the change used to live only in the browser, so the next board load put it back).
