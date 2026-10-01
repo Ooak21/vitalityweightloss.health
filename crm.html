@@ -2713,8 +2713,15 @@
       ${t?`<div class="text-[11px] text-[#9aa0ab]">${p?'Patient: '+esc(((p.first||'')+' '+(p.last||'')).trim())+' · ':(t.patient_ref?'Patient: '+esc(t.patient_ref)+' · ':'')}Created by ${esc(t.by||'')}${t.created_at?' · '+fmt(t.created_at):(t.ts?' · '+fmt(Date.parse(t.ts)):'')}${t.completed_at?' · done '+fmt(t.completed_at):''}</div>`:(p?`<div class="text-[11px] text-[#9aa0ab]">Patient: ${esc(((p.first||'')+' '+(p.last||'')).trim())}</div>`:'')}
       <div id="taErr" class="text-sm text-rose-600 hidden"></div>
     </div>`;
-    const footer=`<button onclick="document.getElementById('listOverlay').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm">${locked?'Close':'Cancel'}</button>${locked?'':`<button id="taSave" onclick="saveTaskModal(${pid?`'${pid}'`:'null'},${t?`'${t.id}'`:'null'})" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold">${t?'Save changes':'Create task'}</button>`}`;
+    const footer=`${t&&t.patient_id?`<button onclick="taskOpenChart('${t.patient_id}')" class="mr-auto px-3 py-2 rounded-xl border border-[#cfe0ff] text-[#0a6cf5] text-sm font-semibold hover:bg-[#eef4ff]">Open chart</button>`:''}<button onclick="document.getElementById('listOverlay').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm">${locked?'Close':'Cancel'}</button>${locked?'':`<button id="taSave" onclick="saveTaskModal(${pid?`'${pid}'`:'null'},${t?`'${t.id}'`:'null'})" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold">${t?'Save changes':'Create task'}</button>`}`;
     listModalShell(t?'Task':'New task', body, footer, 'max-w-lg');
+    window.__taDirty=false; const tov=document.getElementById('listOverlay');
+    if(tov){ tov.addEventListener('input',()=>{ window.__taDirty=true; }); tov.addEventListener('change',()=>{ window.__taDirty=true; }); }
+  };
+  // Open the task's chart straight from the task window (Netty 10/1: staff left the task list and searched).
+  window.taskOpenChart=function(pid){
+    if(window.__taDirty && !confirm('Leave this task without saving your changes?')) return;
+    document.getElementById('listOverlay')?.remove(); window.bellOpen(pid);
   };
   window.saveTaskModal = async function(pid, taskId){
     const g=(id)=>((document.getElementById(id)||{}).value||'').trim();
@@ -5510,6 +5517,15 @@ HARD RULES:
     ov.innerHTML=`<div class="bg-white rounded-2xl shadow-2xl w-full ${maxW||'max-w-md'} my-8"><div class="flex items-center justify-between p-4 border-b border-[#e6e9ee]"><div class="font-display text-lg font-semibold">${title}</div><button onclick="document.getElementById('listOverlay').remove()" class="text-[#9aa0ab] hover:text-[#16201d] text-2xl leading-none">×</button></div><div class="p-5 space-y-3">${bodyHtml}</div><div class="flex justify-end gap-2 p-4 border-t border-[#e6e9ee]">${footerHtml}</div></div>`;
     document.body.appendChild(ov);
   }
+  // Pop-ups close on a click on the dark background. Selecting text and letting go past the white box
+  // fires that click on the background too, which closed the task / note and lost what was typed
+  // (Netty 10/1). Only a press that STARTED on the background closes it. Covers every fixed inset-0 overlay.
+  let __downT=null;
+  document.addEventListener('mousedown',e=>{ __downT=e.target; },true);
+  document.addEventListener('click',e=>{
+    const t=e.target;
+    if(__downT && t!==__downT && t.classList && t.classList.contains('fixed') && t.classList.contains('inset-0') && t.contains(__downT)){ e.stopImmediatePropagation(); e.preventDefault(); }
+  },true);
   const _lf=(id,label,val,ph,type)=>`<label class="block text-xs font-semibold text-[#3d4a45]">${label}<input id="${id}" type="${type||'text'}" value="${esc(val||'')}" placeholder="${esc(ph||'')}" class="field mt-1 block w-full"></label>`;
   window.openProblemModal=function(problemId){
     const p=problemId?(window.__chartProblems||[]).find(x=>x.id===problemId):null;
