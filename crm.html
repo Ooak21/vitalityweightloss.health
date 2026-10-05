@@ -1016,6 +1016,10 @@
     const r = (window.__vca && window.__vca.role) || (window.__vitUser && window.__vitUser.app_metadata && window.__vitUser.app_metadata.role) || '';
     return r === 'vitality_provider' || r === 'provider';
   }
+  // Patient number = the same ref the Google Calendar events and task titles carry ("Patient #8G8KD"):
+  // last 5 of the record key, uppercased. Shown beside the name so DeBry can dictate by number.
+  function patRef(pid){ return String(pid||'').slice(-5).toUpperCase(); }
+  function patRefChip(pid){ return pid?`<span class="inline-block font-mono text-[12px] font-semibold text-[#0a6cf5] bg-[#eef4ff] border border-[#d6e4ff] rounded px-1.5 py-0.5 align-middle select-all" title="Patient number (same as the calendar)">Patient #${patRef(pid)}</span>`:''; }
   // Provider-facing decode for intake review flags. Data layer carries only the neutral code
   // (e.g. tag "review:thyroid"); the clinical reason is decoded here so the provider knows WHY.
   const REVIEW_DECODE = {
@@ -1218,7 +1222,7 @@
       <span onclick="select('${a.pid}')" class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
         <span class="text-[12px] font-semibold text-[#0a6cf5] w-14 shrink-0 whitespace-nowrap">${time}</span>
         <span class="w-2 h-2 rounded-full shrink-0" style="background:${provColor(a.provider)}" title="${a.provider||''}"></span>
-        <span class="text-[13px] text-[#16201d] truncate">${a.name}</span></span>
+        <span class="text-[13px] text-[#16201d] truncate">${a.name}</span><span class="font-mono text-[11px] font-semibold text-[#0a6cf5] shrink-0">#${patRef(a.pid)}</span></span>
       ${eligPill(a)}
       <span class="text-[11px] text-[#6b7280] shrink-0">${a.type||''}</span>
       <button onclick="editAppt('${a.pid}','${a.id}')" title="Edit appointment" class="shrink-0 text-[#9aa0ab] hover:text-[#0a6cf5] px-1 leading-none">✎</button></div>`;
@@ -1573,7 +1577,7 @@
           <div class="flex items-center gap-1 shrink-0">${arrived?`<span class="badge" style="background:#10b981;color:#fff" title="Checked in ${new Date(p.checked_in_at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}">✓ Arrived</span>`:''}<span class="badge b-${p.status}">${STAT[p.status]||p.status}</span></div>
         </div>
         <div class="flex items-center justify-between mt-0.5 text-[11px] text-[#6b7280]">
-          <span>DOB ${esc(dobUS(p.dob))||'—'}</span><span>${PROG[p.program]||'-'}</span>
+          <span>DOB ${esc(dobUS(p.dob))||'—'} · <b class="font-mono text-[#0a6cf5]">#${patRef(p.id)}</b></span><span>${PROG[p.program]||'-'}</span>
         </div>
       </div>`;}).join('')
       : '<div class="text-center text-[#9aa0ab] text-sm py-10">No patient matches "'+esc(ql)+'"</div>';
@@ -1838,7 +1842,7 @@
       <div class="flex items-start justify-between gap-4 mb-6">
         <div>
           <h2 id="patName" onclick="editName('${p.id}')" title="Click to edit name" class="font-display text-2xl font-semibold tracking-[-1px] cursor-text hover:bg-[#f4f6f8] rounded px-1 -ml-1 inline-block">${(`${p.first||''} ${p.last||''}`).trim()?`${p.first||''} ${p.last||''}`:'<span class="text-[#9aa0ab]">Add name</span>'}</h2>
-          <div class="text-sm text-[#6b7280] mt-1">${PROG[p.program]||'-'} program · age ${age} · patient since ${fmtDate(p.created)}</div>
+          <div class="text-sm text-[#6b7280] mt-1">${patRefChip(p.id)} ${PROG[p.program]||'-'} program · age ${age} · patient since ${fmtDate(p.created)}</div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
           <button onclick="openMessages('${p.id}')" title="Secure in-portal messages" class="relative px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-sm font-semibold hover:bg-[#0a6cf5]/10">💬 Messages${unread?`<span class="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center text-[10px] font-bold bg-[#e11d48] text-white rounded-full h-4 min-w-[16px] px-1">${unread}</span>`:''}</button>
@@ -2035,7 +2039,7 @@
     const pill={in:'bg-emerald-50 text-emerald-700 border-emerald-200',late:'bg-rose-50 text-rose-700 border-rose-200',up:'bg-[#f1f3f7] text-[#4b5563] border-[#e6e9ee]',done:'bg-[#f1f3f7] text-[#6b7280] border-[#e6e9ee]',ns:'bg-amber-50 text-amber-800 border-amber-200'};
     box.innerHTML=`<div class="text-xs text-[#6b7280] mb-2">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})} · ${rows.length} appointment${rows.length===1?'':'s'}. A visit reads as late ${LATE_AFTER_MIN} minutes after its start without a check-in.</div>`
       +(rows.length?rows.map(({p,a,t})=>{ const st=apptState(a,t); const lbl=`${tm(t)} ${a.type||'Appointment'}`.replace(/'/g,'');
-        return `<div class="py-3 border-b border-[#f1f3f7] flex items-start justify-between gap-3 flex-wrap"><div class="min-w-0"><div class="flex items-center gap-2"><span class="text-sm font-semibold text-[#16201d] w-16 shrink-0">${tm(t)}</span><button onclick="document.getElementById('listOverlay')?.remove();openFromBoard('${p.id}')" class="font-semibold text-[#16201d] hover:underline text-left">${esc(((p.first||'')+' '+(p.last||'')).trim()||'Patient')}</button><span class="text-[10px] font-semibold rounded-full px-2 py-0.5 border ${pill[st.k]}">${esc(st.l)}</span></div>
+        return `<div class="py-3 border-b border-[#f1f3f7] flex items-start justify-between gap-3 flex-wrap"><div class="min-w-0"><div class="flex items-center gap-2"><span class="text-sm font-semibold text-[#16201d] w-16 shrink-0">${tm(t)}</span><button onclick="document.getElementById('listOverlay')?.remove();openFromBoard('${p.id}')" class="font-semibold text-[#16201d] hover:underline text-left">${esc(((p.first||'')+' '+(p.last||'')).trim()||'Patient')}</button><span class="font-mono text-[11px] font-semibold text-[#0a6cf5]">#${patRef(p.id)}</span><span class="text-[10px] font-semibold rounded-full px-2 py-0.5 border ${pill[st.k]}">${esc(st.l)}</span></div>
           <div class="text-[11px] text-[#6b7280] ml-[4.5rem]">${esc(a.type||'')}${a.provider?' · '+esc(a.provider):''}${p.phone?' · '+esc(p.phone):''} ${eligPill(a)}</div></div>
           <div class="flex flex-wrap gap-1.5 justify-end items-center">
             ${a.checked_in_at?'':`<button onclick="fdCheckin('${p.id}','${a.id}','${esc(lbl)}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold text-white" style="background:#0a6cf5">Check in</button>`}
@@ -2191,7 +2195,7 @@
         <div class="flex items-start justify-between gap-4 mb-6">
           <div>
             <h2 id="patName" onclick="editName('${p.id}')" title="Click to edit name" class="font-display text-2xl font-semibold tracking-[-1px] cursor-text hover:bg-[#f4f6f8] rounded px-1 -ml-1 inline-block">${(`${p.first||''} ${p.last||''}`).trim()?`${p.first||''} ${p.last||''}`:'<span class="text-[#9aa0ab]">Add name</span>'}</h2>
-            <div class="text-sm text-[#6b7280] mt-1">${PROG[p.program]||'-'} program · age ${age} · patient since ${fmtDate(p.created)}</div>
+            <div class="text-sm text-[#6b7280] mt-1">${patRefChip(p.id)} ${PROG[p.program]||'-'} program · age ${age} · patient since ${fmtDate(p.created)}</div>
           </div>
           <select class="field w-auto" onchange="changeStatus('${p.id}',this.value)">
             ${Object.entries(STAT).map(([k,v])=>`<option value="${k}" ${k===p.status?'selected':''}>${v}</option>`).join('')}
@@ -2403,7 +2407,7 @@
       console.error('renderProviderView failed', e);
       $('#detailMain').innerHTML = `<div class="p-6 max-w-3xl">
         <h2 class="font-display text-2xl font-semibold tracking-[-1px]">${(p.first||'')+' '+(p.last||'')}</h2>
-        <div class="text-sm text-[#6b7280] mt-1 mb-4">${PROG[p.program]||'-'} program · age ${age}</div>
+        <div class="text-sm text-[#6b7280] mt-1 mb-4">${patRefChip(p.id)} ${PROG[p.program]||'-'} program · age ${age}</div>
         ${p.medicare_bridge ? medicareBridgeCard(p) : '<div class="text-sm text-[#be123c]">Some chart sections could not render. Reload the page.</div>'}
       </div>`;
     }
@@ -2457,7 +2461,7 @@
               <div class="crm-avatar">${initials||'?'}</div>
               <div class="min-w-0">
                 <span id="patName" onclick="editName('${p.id}')" title="Click to edit name" class="font-display text-xl font-semibold tracking-[-.5px] leading-tight cursor-text hover:bg-[#f4f6f8] rounded px-1 -ml-1 inline-block">${(`${p.first||''} ${p.last||''}`).trim()?`${p.first||''} ${p.last||''}`:'<span class="text-[#9aa0ab]">Add name</span>'}</span>
-                <div class="mt-1"><span class="badge b-${p.status}">${STAT[p.status]||p.status}</span></div>
+                <div class="mt-1"><span class="badge b-${p.status}">${STAT[p.status]||p.status}</span> ${patRefChip(p.id)}</div>
               </div>
             </div>
             <div class="text-xs text-[#6b7280] mb-4">${PROG[p.program]||'-'} program · age ${age} · since ${fmtDate(p.created)}</div>
