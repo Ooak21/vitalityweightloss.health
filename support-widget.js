@@ -10,7 +10,7 @@
     "How do I create a patient portal login?",
     "Where do patients see their tasks?",
     "What is a Sequence and how do I use it?",
-    "How does a patient book a free InBody scan?"
+    "How does a patient book an InBody scan?"
   ];
 
   var css = ""

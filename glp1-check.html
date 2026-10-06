@@ -289,7 +289,7 @@
       <div class="step" data-step="7">
         <div class="q-eyebrow">Almost done</div>
         <div class="q-title">Where should we send your results?</div>
-        <div class="q-help">See your personalized eligibility snapshot — and we'll hold a free consultation spot for you.</div>
+        <div class="q-help">See your personalized eligibility snapshot — and we'll hold a consultation spot for you.</div>
         <div class="field">
           <label>Your name</label>
           <input type="text" id="fname" placeholder="First & last name"/>
@@ -314,7 +314,7 @@
       <div class="step" data-step="8">
         <div id="resultMount"></div>
         <div class="cta-row">
-          <a class="btn btn-cta" id="consultBtn" href="/intake">Book In-Person Visit<small>Free consult + InBody scan</small></a>
+          <a class="btn btn-cta" id="consultBtn" href="/intake">Book In-Person Visit<small>Consult + InBody scan</small></a>
           <a class="btn btn-async" id="asyncBtn" href="/care-intake" target="_blank" rel="noopener">See If I Qualify<small>Start online — no office visit</small></a>
         </div>
         <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--muted)">or call <b style="color:var(--navy)">(702) 602-5002</b></div>
@@ -474,17 +474,17 @@ function renderResult(){
     badge='res-strong'; var icon='✓';
     title=`You look like a strong candidate${name}.`;
     sub='Based on your answers, GLP-1 therapy is commonly appropriate at your profile.';
-    body=`<p>Your responses line up well with the clinical criteria physicians use for GLP-1 weight-loss therapy. The next step is a <b>free consultation and InBody 570 scan</b>, where Dr. DeBry confirms eligibility on real data and tailors your plan.</p>`;
+    body=`<p>Your responses line up well with the clinical criteria physicians use for GLP-1 weight-loss therapy. The next step is a <b>consultation and InBody 570 scan</b>, where Dr. DeBry confirms eligibility on real data and tailors your plan.</p>`;
   } else if(tier==='maybe'){
     badge='res-maybe'; var icon='~';
     title=`You may be a candidate${name}.`;
     sub='A quick physician review will confirm the right path for you.';
-    body=`<p>You're in the range where a physician's evaluation makes the call. At your <b>free consultation and InBody 570 scan</b>, we measure your true body composition and review your history — so your plan is built on facts, not averages.</p>`;
+    body=`<p>You're in the range where a physician's evaluation makes the call. At your <b>consultation and InBody 570 scan</b>, we measure your true body composition and review your history — so your plan is built on facts, not averages.</p>`;
   } else {
     badge='res-alt'; var icon='♥';
     title=`Let's find your best path${name}.`;
     sub='GLP-1 may not be the right fit — but you have great options.';
-    body=`<p>Based on your answers, GLP-1 medication may not be the right starting point for you. That's exactly why Vitality is built around <b>five forms of structure</b> — physician care, coaching, nutrition, fitness, and behavioral therapy — not just an injection. A free consultation will map the safest, most effective path for your goals.</p>`;
+    body=`<p>Based on your answers, GLP-1 medication may not be the right starting point for you. That's exactly why Vitality is built around <b>five forms of structure</b> — physician care, coaching, nutrition, fitness, and behavioral therapy — not just an injection. A consultation will map the safest, most effective path for your goals.</p>`;
   }
 
   const bmiLine = bmi ? `<div class="stat-line"><span>Estimated BMI</span><b>${bmi}</b></div>` : '';

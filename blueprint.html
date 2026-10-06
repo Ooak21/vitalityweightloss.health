@@ -638,10 +638,10 @@ svg.chart{display:block;width:100%;height:auto;}
         <div id="inbody-schedule-panel" class="inbody-panel" style="display:none">
           <div class="inbody-cta">
             <div class="inbody-cta-text">
-              <strong>Get your most accurate baseline — free.</strong>
+              <strong>Get your most accurate baseline.</strong>
               Without an InBody scan, body fat and visceral fat are <em>estimated</em> from weight and height. With one, we <em>measure</em> them directly — plus skeletal muscle, total body water, and segmental balance. We take your blood pressure at the same visit. Your blueprint becomes dramatically more accurate, and your physician finalizes your plan on real data — not averages.
             </div>
-            <a class="inbody-cta-btn" href="#" id="inbody-book-link" target="_blank" rel="noopener">Schedule My Free InBody&nbsp;→</a>
+            <a class="inbody-cta-btn" href="#" id="inbody-book-link" target="_blank" rel="noopener">Schedule My InBody&nbsp;→</a>
           </div>
         </div>
       </div>
@@ -1020,7 +1020,7 @@ svg.chart{display:block;width:100%;height:auto;}
       </div>
 
       <div class="notebox" style="margin-top:22px;background:var(--tint-green);border-color:var(--green)">
-        <b style="color:var(--green-dark)">Most of your program may be covered by insurance.</b> Vitality is in-network with Medicare, Medicaid, and Cigna — with more carriers coming online. Many patients pay only their medication track while insurance covers the program. Choose "Verify My Insurance" below and our team checks your exact benefits — free, no commitment.
+        <b style="color:var(--green-dark)">Most of your program may be covered by insurance.</b> Vitality is in-network with Medicare, Medicaid, and Cigna — with more carriers coming online. Many patients pay only their medication track while insurance covers the program. Choose "Verify My Insurance" below and our team checks your exact benefits, no commitment.
       </div>
 
       <h2 class="title" style="margin-top:28px;font-size:19px">How would you like to start?</h2>
@@ -1029,7 +1029,7 @@ svg.chart{display:block;width:100%;height:auto;}
           <svg class="pc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
           <h4>Verify My Insurance</h4>
           <p>Add your insurance details and our team confirms your benefits and calls you within 24 hours.</p>
-          <div class="pc-tag">✓ Free benefits check · no commitment</div>
+          <div class="pc-tag">✓ Benefits check · no commitment</div>
         </div>
         <div class="paycard green" id="pc-self" data-path="selfpay">
           <svg class="pc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/><circle cx="12" cy="12" r="10"/></svg>
@@ -1041,7 +1041,7 @@ svg.chart{display:block;width:100%;height:auto;}
 
       <!-- INSURANCE FORM -->
       <div class="payform show" id="form-ins">
-        <h2 class="title" style="font-size:17px">Your details for a free benefits check</h2>
+        <h2 class="title" style="font-size:17px">Your details for a benefits check</h2>
         <div class="grid2">
           <div class="field"><label>Full name</label><input type="text" id="i-name"/></div>
           <div class="field"><label>Date of birth</label><input type="text" id="i-dob" placeholder="MM/DD/YYYY"/></div>
@@ -1071,7 +1071,7 @@ svg.chart{display:block;width:100%;height:auto;}
         </label>
         <div style="font-size:12px;color:var(--faint);margin:4px 0 0 26px">See our <a href="/terms.html" target="_blank" rel="noopener">SMS Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</div>
         <div class="err" id="err-ins">Please add your name, phone, and insurance carrier so our team can reach you.</div>
-        <button class="btn btn-primary btn-lg btn-block" id="submit-ins" style="margin-top:18px">Verify My Benefits — Free →</button>
+        <button class="btn btn-primary btn-lg btn-block" id="submit-ins" style="margin-top:18px">Verify My Benefits →</button>
       </div>
 
       <!-- SELF-PAY FORM -->
@@ -1144,8 +1144,8 @@ const CONFIG = {
   stripePaymentLink: "",
   // Lead capture posts to our own Convex CRM in finishLead(). Not configurable
   // to an off-platform webhook: patient data stays on our infrastructure.
-  // Where the free InBody scan button goes.
-  // Leave "" and the "Schedule My Free InBody" button falls back to call (702) 602-5002.
+  // Where the InBody scan button goes.
+  // Leave "" and the "Schedule My InBody" button falls back to call (702) 602-5002.
   inbodyBookingUrl: "/intake",
   // Lead capture posts to our own Convex CRM in finishLead() and pingLead().
   // Strategic source tag — every lead in the CRM gets this so you can filter on it.
@@ -1268,7 +1268,7 @@ wireChoices("f-obstacle","obstacle");
 wireChoices("f-attempts","attempts");
 wireChoices("f-support","support");
 
-// InBody toggle (have results vs schedule a free scan)
+// InBody toggle (have results vs schedule a scan)
 (function(){
   const c=document.getElementById("f-inbody-toggle");
   if(c){
@@ -1642,7 +1642,7 @@ function buildCurrentReality(){
 
   $("cr-precision").innerHTML = hasIB
     ? "<b>Your blueprint is built from measured InBody data</b> — the most accurate baseline obesity-medicine practices use today. Your physician will refine the plan in the consult with full labs and history."
-    : "<b>Your blueprint is built from estimates today.</b> When you come in for your free InBody scan, we capture your real body composition, take your blood pressure, and your physician finalizes the plan. The chart and milestones in this blueprint will be refined to your actual numbers at that visit.";
+    : "<b>Your blueprint is built from estimates today.</b> When you come in for your InBody scan, we capture your real body composition, take your blood pressure, and your physician finalizes the plan. The chart and milestones in this blueprint will be refined to your actual numbers at that visit.";
 }
 
 function buildCostOfInaction(){
@@ -1987,7 +1987,7 @@ function buildConfirm(lead){
     ["Selected program", TIER_META[S.tier].name+" · "+trackName]
   ];
   if(ins){
-    rows.push(["Charged today","$0 — pending free benefits verification"]);
+    rows.push(["Charged today","$0 — pending benefits verification"]);
     rows.push(["Monthly once verified","Copay" + (hasMed?" + medication track (if approved by Dr. DeBry)":"")]);
   } else {
     rows.push(["Charged today","$"+tp+" — "+TIER_META[S.tier].name+" tier"]);
@@ -2007,12 +2007,12 @@ function buildConfirm(lead){
     '<div class="summary-line"><span class="sl-k">'+r[0]+'</span><span class="sl-v">'+r[1]+'</span></div>').join("");
 
   $("cf-next").innerHTML = ins ? (
-    nsCard(1,"Benefits check","We verify your coverage — free, within 24 hours.")+
-    nsCard(2,"Free consult","Meet Dr. DeBry and review your blueprint together.")+
+    nsCard(1,"Benefits check","We verify your coverage within 24 hours.")+
+    nsCard(2,"Consult","Meet Dr. DeBry and review your blueprint together.")+
     nsCard(3,"InBody scan & start","Your precise baseline — then your journey begins.")
   ) : (
     nsCard(1,"Coordinator call","We confirm your plan and complete secure enrollment.")+
-    nsCard(2,"Free consult","Meet Dr. DeBry and review your blueprint together.")+
+    nsCard(2,"Consult","Meet Dr. DeBry and review your blueprint together.")+
     nsCard(3,"InBody scan & start","Your precise baseline — then your journey begins.")
   );
   $("disc-2").textContent=DISCLAIMER;
