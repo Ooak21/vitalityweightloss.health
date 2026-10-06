@@ -1736,7 +1736,7 @@
   function infoRow(p, field, label){
     if(field==='program'){
       return `<div class="flex items-center justify-between gap-3 px-4 py-2"><span class="text-xs text-[#6b7280]">${label}</span>
-        <select class="field w-auto py-1 text-sm" onchange="saveInfo('${p.id}','program',this.value)">${Object.entries(PROG).map(([k,v])=>`<option value="${k}" ${k===p.program?'selected':''}>${v}</option>`).join('')}</select></div>`;
+        <select class="field w-auto py-1 text-sm" onchange="saveProgram('${p.id}',this)">${Object.entries(PROG).map(([k,v])=>`<option value="${k}" ${k===p.program?'selected':''}>${v}</option>`).join('')}</select></div>`;
     }
     const v=p[field]; const disp=v?esc(field==='dob'?dobUS(v):String(v)):'<span class="text-[#9aa0ab] italic">add…</span>';
     return `<div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">${label}</span>
@@ -1749,10 +1749,12 @@
     // Tab / Shift+Tab save this field and open the next / previous one, in the order they sit on screen
     // (Netty 9/23: tab through the address instead of clicking every box).
     const order=[...document.querySelectorAll('#detailMain [data-edit]')].map(x=>x.dataset.edit);
+    const label=(((el.parentElement&&el.parentElement.querySelector('span'))||{}).textContent||field).trim();
     el.replaceWith(inp); inp.focus(); try{inp.select();}catch(e){}
     let done=false;
     const finish=async(save,move)=>{ if(done)return; done=true; const val=inp.value.trim();
-      if(save && val!==String(cur)) await saveInfo(id,field,val);
+      const show=(x)=>field==='dob'&&x?dobUS(x):x;
+      if(save && val!==String(cur) && confirmChange(p,label,show(cur),show(val))) await saveInfo(id,field,val);
       renderDetail();
       if(move){ const next=order[order.indexOf(field)+move]; const t=next&&document.querySelector('#detailMain [data-edit="'+next+'"]'); if(t) editInfo(t,id,next); } };
     inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();finish(true);} else if(e.key==='Tab'){e.preventDefault();finish(true,e.shiftKey?-1:1);} else if(e.key==='Escape')finish(false); });
@@ -1787,6 +1789,19 @@
       if(msg){ msg.style.color='#0a7a3d'; msg.textContent='Saved ✓'; } }
     catch(e){ if(msg){ msg.style.color='#b3261e'; msg.textContent='Could not save ('+((e&&e.message)||'error')+')'; } }
   };
+  // Fred 10/5: confirm before a saved value changes or is deleted (Ana cleared a phone number by accident).
+  // Filling an empty field saves without asking, so tabbing through a new chart stays quick.
+  function confirmChange(p, label, oldV, newV){
+    const name=`${p.first||''} ${p.last||''}`.trim()||'this patient';
+    if(String(oldV||'').trim()==='') return true;
+    if(String(newV||'').trim()==='') return confirm(`Delete ${label} for ${name}?\n\n${oldV}\n\nThis removes it from the chart.`);
+    return confirm(`Save this change for ${name}?\n\n${label}\nFrom: ${oldV}\nTo: ${newV}`);
+  }
+  window.saveProgram = function(id,sel){
+    const p=patients.find(x=>x.id===id); if(!p) return;
+    if(!confirmChange(p,'Program',PROG[p.program]||p.program||'',PROG[sel.value]||sel.value)){ sel.value=p.program||''; return; }
+    saveInfo(id,'program',sel.value);
+  };
   window.saveInfo = async function(id,field,v){
     const p=patients.find(x=>x.id===id); if(!p)return; p[field]=v;
     const col={first:'first_name',last:'last_name'}[field]||field;
@@ -1820,6 +1835,9 @@
       const parts=inp.value.trim().split(/\s+/).filter(Boolean);
       // First AND last name, or nothing is saved (a blank save used to wipe the name for good).
       if(save && parts.length<2){ if(parts.length) alert('Enter first and last name. The name was not changed.'); save=false; }
+      const was=`${p.first||''} ${p.last||''}`.trim();
+      if(save && parts.join(' ')===was) save=false;
+      if(save && !confirm(`Change this patient's name?\n\nFrom: ${was}\nTo: ${parts.join(' ')}`)) save=false;
       if(save){ const f0=p.first, l0=p.last; p.first=parts[0]; p.last=parts.slice(1).join(' ');
         if(USE_CONVEX){ try{ const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'update_patient',patient_id:id,fields:{first_name:p.first,last_name:p.last}})}); const j=await r.json().catch(()=>({})); if(!r.ok||j.ok===false){ p.first=f0; p.last=l0; alert('Name not saved: '+(j.error||r.status)); } }catch(e){ p.first=f0; p.last=l0; console.warn('editName',e);} }
         else if(USE_SUPABASE&&window.__vitSb){ try{ await window.__vitSb.from('vit_patients').update({first_name:p.first,last_name:p.last}).eq('id',id);}catch(e){console.warn(e);} } }
