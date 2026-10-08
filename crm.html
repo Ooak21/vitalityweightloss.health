@@ -93,6 +93,9 @@
     if(el && window.__vitUserEmail){ el.textContent = vitInitials(window.__vitUserEmail); el.title = window.__vitUserEmail; }
   };
   document.addEventListener('DOMContentLoaded', function(){ if(window.__vitUserEmail) window.setUserAvatar(); });
+  // Alert emails link to crm.html?patient=<id> (Netty 10/8: the button only opened the home page). Keep the id for this
+  // tab so it survives a trip through login.html, drop it from the address bar, and open that chart after the first load.
+  try { const q=new URLSearchParams(location.search).get('patient'); if(q){ sessionStorage.setItem('vitOpenPatient',q); history.replaceState(null,'',location.pathname); } } catch(_){}
   try {
     if (USE_CONVEX_AUTH) {
       const { staffInfo, signOut, getToken, STORE_STAFF } = await import('./auth-convex.js');
@@ -4701,6 +4704,8 @@ HARD RULES:
           // present; if they vanished (or none selected yet), fall back to the empty state.
           if (selId && !patients.find(p => p.id === selId)) selId = null;
           kpis(); renderList(); renderDetail();
+          let want=null; try{ want=sessionStorage.getItem('vitOpenPatient'); sessionStorage.removeItem('vitOpenPatient'); }catch(_){}
+          if (want && window.bellOpen) window.bellOpen(want);
         }
       } catch (e) { console.warn('convex load failed:', e.message); }
       return;
