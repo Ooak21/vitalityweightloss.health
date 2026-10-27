@@ -351,7 +351,7 @@
         </div>
         <label id="apptVideoRecWrap" class="flex items-start gap-2 mt-2 text-xs text-[#6b7280] cursor-pointer">
           <input type="checkbox" id="apptVideoRec" class="mt-0.5 accent-[#0a6cf5]">
-          <span>Record this visit. The patient is asked to consent in the waiting room before they can join.</span>
+          <span>Record this visit. The visit is transcribed into a draft note and the recording is deleted. The patient agrees in the waiting room before they can join.</span>
         </label>
       </div>
     </div>
@@ -4108,6 +4108,7 @@
     document.getElementById('apptModalTitle').textContent='Book appointment';
     document.getElementById('apptCancelBtn').style.display='none';
     document.getElementById('apptVideoWrap').classList.add('hidden');
+    document.getElementById('apptVideoBtn').classList.remove('hidden');
     openApptModal(p);
   };
   // "Video visit" from the patient record: the same booking modal, prefilled for right now, and
@@ -4122,6 +4123,11 @@
     document.getElementById('apptType').value='Video visit';
     document.getElementById('apptStatus').value='confirmed';
     document.getElementById('apptModalTitle').textContent='Start a video visit';
+    document.getElementById('apptVideoWrap').classList.remove('hidden');
+    document.getElementById('apptVideoBtn').classList.add('hidden');
+    document.getElementById('apptVideoHint').textContent='Saving opens the room. Uncheck Record if this visit should not be transcribed.';
+    document.getElementById('apptVideoRec').checked=true;
+    document.getElementById('apptVideoRecWrap').classList.remove('hidden');
     apptEdit.videoNow=true;
   };
   window.editAppt=function(pid, apptId){
@@ -4141,7 +4147,8 @@
     document.getElementById('apptDur').value=String(a.duration_min||30);
     document.getElementById('apptModalTitle').textContent=isRequest?('Schedule the request'+(a.notes?' · prefers '+reqPref(a.notes):'')):'Edit appointment';
     const cb=document.getElementById('apptCancelBtn'); cb.style.display=''; cb.textContent=isRequest?'Dismiss request':'Cancel appt';
-    document.getElementById('apptVideoRec').checked=false;
+    document.getElementById('apptVideoBtn').classList.remove('hidden');
+    document.getElementById('apptVideoRec').checked=/video/i.test(a.type||'');
     document.getElementById('apptVideoWrap').classList.toggle('hidden', isRequest);
     if(!isRequest) refreshVideoState(apptId);
     openApptModal(p);
@@ -4164,7 +4171,9 @@
       const r=await fetch(`${CONVEX_URL}/video`,{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'for_appointment',appointment_id:apptId})});
       const j=await r.json();
       if(!j.ok || !j.visit) return;
-      recWrap.classList.add('hidden');   // recording is fixed when the room is created
+      // Recording is fixed once the Telnyx room exists. Until then a booked video visit can still be recorded.
+      if(j.visit.recording_locked) recWrap.classList.add('hidden');
+      else recWrap.classList.remove('hidden');
       if(j.visit.ended){ hint.textContent='This visit has already ended.'; btn.textContent='Open again'; return; }
       btn.textContent=j.visit.status==='created'?'Start':'Rejoin';
       hint.textContent = j.visit.link_sent_at
@@ -4195,7 +4204,8 @@
         if(j.error==='conflict' && j.conflict){ const c=j.conflict; alert(`${provider} is already booked at ${new Date(c.when).toLocaleString()} (${c.type} · ${c.patient}). Pick a different time or provider. Slots are 30 minutes.`); sb.disabled=false; sb.textContent=o; return; }
         throw new Error(j.error||'save failed');
       }
-      if(videoTab){ if(j.id) videoTab.location=`visit.html?appt=${encodeURIComponent(j.id)}&rec=0`; else videoTab.close(); }
+      const recOn=!!(document.getElementById('apptVideoRec')&&document.getElementById('apptVideoRec').checked);
+      if(videoTab){ if(j.id) videoTab.location=`visit.html?appt=${encodeURIComponent(j.id)}&rec=${recOn?'1':'0'}`; else videoTab.close(); }
       closeAppt(); await loadData();
       const so=document.getElementById('schedOverlay'); if(so && !so.classList.contains('hidden')) renderSchedule();
     }catch(e){ if(videoTab && !videoTab.closed && !videoTab.location.href.includes('visit.html')) videoTab.close(); alert('Could not save the appointment: '+e.message); }
@@ -5367,7 +5377,17 @@ HARD RULES:
     + emSection('Education, prevention &amp; follow-up',
         emTa('notePatientEducation','Patient education','Counseling performed, materials provided…',2)
       + emTa('notePreventive','Preventive services','Immunizations, screenings, lifestyle counseling, health maintenance…',2)
-      + emTa('noteFollowup','Follow-up','Return timeframe and the warning signs that should prompt earlier evaluation…',2), false);
+      + emTa('noteFollowup','Follow-up','Return timeframe and the warning signs that should prompt earlier evaluation…',2), false)
+    + `<details id="noteTranscriptSec" class="hidden border border-[#e6e9ee] rounded-xl"><summary class="cursor-pointer select-none px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-[#3d4a45]">Visit transcript<span class="ml-2 normal-case tracking-normal font-normal text-[#9aa0ab]">what was said on the visit, read-only</span></summary>
+        <div class="px-3 pb-3 pt-1"><div class="flex justify-end mb-1"><button type="button" onclick="noteCopyTranscript(this)" class="px-2.5 py-1 rounded-lg border border-[#e6e9ee] text-[#3d4a45] text-[11px] font-semibold hover:bg-[#f1f3f7]">Copy transcript</button></div>
+        <div id="noteTranscriptBox" class="text-[14px] text-[#3d4a45] whitespace-pre-wrap leading-relaxed bg-[#f7f8fa] rounded-lg p-3"></div></div></details>`;
+  }
+  window.noteCopyTranscript=function(btn){ const t=(document.getElementById('noteTranscriptBox')||{}).textContent||''; navigator.clipboard.writeText(t).then(()=>{ const o=btn.textContent; btn.textContent='Copied'; setTimeout(()=>btn.textContent=o,1500); }).catch(()=>alert('Could not copy the transcript.')); };
+  function noteTranscriptReadonly(n){
+    if(!n||!n.transcript) return '';
+    return `<details class="border border-[#e6e9ee] rounded-xl" open><summary class="cursor-pointer select-none px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-[#3d4a45]">Visit transcript<span class="ml-2 normal-case tracking-normal font-normal text-[#9aa0ab]">what was said on the visit, read-only</span></summary>
+      <div class="px-3 pb-3 pt-1"><div class="flex justify-end mb-1"><button type="button" onclick="noteCopyTranscript(this)" class="px-2.5 py-1 rounded-lg border border-[#e6e9ee] text-[#3d4a45] text-[11px] font-semibold hover:bg-[#f1f3f7]">Copy transcript</button></div>
+      <div id="noteTranscriptBox" class="text-[14px] text-[#3d4a45] whitespace-pre-wrap leading-relaxed bg-[#f7f8fa] rounded-lg p-3">${esc(n.transcript)}</div></div></details>`;
   }
 
   /** Read every E/M field out of the open editor into the shape /chart-notes expects. */
@@ -5455,7 +5475,7 @@ HARD RULES:
     if(signed && !editable){
       const adHtml=(note.addenda&&note.addenda.length)?`<div class="pt-3 border-t border-[#e6e9ee]"><div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mb-2">Addenda</div>${note.addenda.map(ad=>`<div class="bg-[#f7f8fa] border border-[#e6e9ee] rounded-lg p-3 mb-2"><div class="text-[11px] text-[#6b7280] mb-1">${esc(ad.author)} · ${new Date(ad.at).toLocaleString('en-US')}</div><div class="text-sm text-[#16201d] whitespace-pre-wrap">${esc(ad.text)}</div></div>`).join('')}</div>`:'';
       const amend=note.canAmend?`<div class="pt-3 border-t border-[#e6e9ee]"><div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mb-2">Add addendum</div><textarea id="noteAddText" rows="3" class="field w-full resize-none" placeholder="Appended and attributed; the signed note itself stays unchanged."></textarea><div class="flex justify-end mt-2"><button onclick="addNoteAddendum('${note.id}')" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Add addendum</button></div></div>`:'';
-      ov.innerHTML=`<div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-6"><div class="flex items-center justify-between p-4 border-b border-[#e6e9ee]"><div><div class="font-display text-lg font-semibold">${NOTE_TYPE_LABELS[note.encounter_type]||'Clinical note'} · ${fmtNoteDate(note)}</div><div class="text-xs text-[#6b7280]">🔒 Signed by ${esc(note.signed_by||note.author)} · ${esc(pname)}</div></div><button onclick="document.getElementById('noteOverlay').remove()" class="text-[#9aa0ab] hover:text-[#16201d] text-2xl leading-none">×</button></div><div class="p-5 space-y-4">${soapReadonly(note)}${adHtml}${amend}</div></div>`;
+      ov.innerHTML=`<div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-6"><div class="flex items-center justify-between p-4 border-b border-[#e6e9ee]"><div><div class="font-display text-lg font-semibold">${NOTE_TYPE_LABELS[note.encounter_type]||'Clinical note'} · ${fmtNoteDate(note)}</div><div class="text-xs text-[#6b7280]">🔒 Signed by ${esc(note.signed_by||note.author)} · ${esc(pname)}</div></div><button onclick="document.getElementById('noteOverlay').remove()" class="text-[#9aa0ab] hover:text-[#16201d] text-2xl leading-none">×</button></div><div class="p-5 space-y-4">${soapReadonly(note)}${noteTranscriptReadonly(note)}${adHtml}${amend}</div></div>`;
       document.body.appendChild(ov); return;
     }
     const typeVal=note?note.encounter_type:'follow_up', dateVal=note?(note.encounter_date||today):today;
@@ -5475,6 +5495,7 @@ HARD RULES:
     window.__mdmSel = note&&note.mdm ? { problems:note.mdm.problems, data:note.mdm.data, risk:note.mdm.risk, total_time_min:note.mdm.total_time_min } : {};
     const set=(id,val)=>{ const e=document.getElementById(id); if(e) e.value=val||''; };
     if(note){ set('noteSubjective',note.subjective); set('noteObjective',note.objective); set('noteAssessment',note.assessment); set('notePlan',note.plan); fillEmFields(note); }
+    if(note && note.transcript){ const sec=document.getElementById('noteTranscriptSec'), box=document.getElementById('noteTranscriptBox'); if(sec&&box){ box.textContent=note.transcript; sec.classList.remove('hidden'); } }
     else if(patient.inbody && patient.inbody.weight_lb!=null){ set('noteObjective', `Weight: ${patient.inbody.weight_lb} lb (InBody ${fmtDate(patient.inbody.test_date)})\n`); }
     // MDM table is fetched once per session, then the badge paints. Failure here must not break the
     // editor. The note still saves, the server just computes the level without a live preview.
