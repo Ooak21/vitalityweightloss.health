@@ -57,6 +57,96 @@
     .strip>*:nth-child(-n+2){border-bottom:1px solid #eef0f4}
     .pair{grid-template-columns:1fr}
   }
+  /* Action buttons: same-color top light, four-layer shadow, press flips the highlight off.
+     Segmented pills stay quiet so a row of choices does not glow into itself.
+     Nav and the status strip are not these buttons. */
+  button.bg-\[\#0a6cf5\]:not(.ci-tit):not(.se-sev):not(.ci-en):not(.pim):not(.fb),
+  a.bg-\[\#0a6cf5\]{
+    background-color:#0a6cf5;
+    background-image:linear-gradient(180deg,#6aabff 0%,#2b86f8 16%,#0a6cf5 48%,#085ed6 100%);
+    border:0;
+    box-shadow:
+      inset 0 1px 0 #ffffff59,
+      inset 0 -2px 0 #0003,
+      0 1px 2px #0006,
+      0 8px 24px -6px #0a6cf599;
+    transition:translate .12s ease,box-shadow .12s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  button.bg-\[\#0a6cf5\]:not(.ci-tit):not(.se-sev):not(.ci-en):not(.pim):not(.fb):hover,
+  a.bg-\[\#0a6cf5\]:hover{
+    background-image:linear-gradient(180deg,#7eb6ff 0%,#3b92ff 16%,#1474ff 48%,#0a6cf5 100%);
+  }
+  button.bg-\[\#0a6cf5\]:not(.ci-tit):not(.se-sev):not(.ci-en):not(.pim):not(.fb):active,
+  a.bg-\[\#0a6cf5\]:active{
+    translate:0 1px;
+    background-image:linear-gradient(180deg,#0a6cf5,#0856c4);
+    box-shadow:inset 0 2px 4px #0004;
+  }
+  button.bg-\[\#0a6cf5\]:disabled,
+  button.bg-\[\#0a6cf5\]:disabled:hover,
+  button.bg-\[\#0a6cf5\]:disabled:active{
+    translate:none;
+    opacity:.55;
+    box-shadow:inset 0 1px 0 #ffffff40;
+    cursor:default;
+  }
+  button.fb.bg-\[\#0a6cf5\]{
+    background-color:#0a6cf5;
+    background-image:linear-gradient(180deg,#4c97ff 0%,#0a6cf5 55%);
+    border:0;
+    box-shadow:inset 0 1px 0 #ffffff59,inset 0 -1px 0 #0003,0 1px 2px #0006,0 4px 10px -4px #0a6cf599;
+    transition:translate .12s ease,box-shadow .12s ease;
+  }
+  button.fb.bg-\[\#0a6cf5\]:active{translate:0 1px;box-shadow:inset 0 2px 3px #0004}
+  button.border-\[\#0a6cf5\]\/40{
+    background-color:#fff;
+    background-image:linear-gradient(#fff,#eef5ff);
+    box-shadow:inset 0 1px 0 #fff,inset 0 -2px 0 #0a6cf524,0 1px 2px #00000026,0 8px 18px -8px #0a6cf555;
+    transition:translate .12s ease,box-shadow .12s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  button.border-\[\#0a6cf5\]\/40:hover{background-image:linear-gradient(#fff,#e4efff)}
+  button.border-\[\#0a6cf5\]\/40:active{translate:0 1px;box-shadow:inset 0 2px 4px #0a6cf52e}
+  button.bg-white.border{
+    background-image:linear-gradient(#fff,#f3f5f8);
+    box-shadow:inset 0 1px 0 #fff,inset 0 -2px 0 #00000014,0 1px 2px #0000001f;
+    transition:translate .12s ease,box-shadow .12s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  button.bg-white.border:hover{border-color:#0a6cf5}
+  button.bg-white.border:active{translate:0 1px;background-image:none;box-shadow:inset 0 2px 3px #0000001a}
+  button.ci-tit.bg-\[\#0a6cf5\],
+  button.se-sev.bg-\[\#0a6cf5\],
+  button.ci-en.bg-\[\#0a6cf5\],
+  button.pim.bg-\[\#0a6cf5\]{
+    background-image:linear-gradient(180deg,#4c97ff 0%,#0a6cf5 58%);
+    box-shadow:inset 0 1px 0 #ffffff73,inset 0 -2px 0 #0003;
+    transition:translate .12s ease,box-shadow .12s ease;
+  }
+  button.ci-tit.bg-\[\#0a6cf5\]:active,
+  button.se-sev.bg-\[\#0a6cf5\]:active,
+  button.ci-en.bg-\[\#0a6cf5\]:active,
+  button.pim.bg-\[\#0a6cf5\]:active{translate:0 1px;box-shadow:inset 0 2px 3px #0004}
+  button.ci-mood.border-\[\#0a6cf5\]{box-shadow:inset 0 1px 0 #fff,inset 0 -2px 0 #0a6cf533,0 1px 2px #0a6cf526}
+  button.ci-mood:active{translate:0 1px}
+  #ciWaterMinus,#ciWaterPlus{
+    background-color:#fff;
+    background-image:linear-gradient(#fff,#f3f5f8);
+    box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 #0002,0 1px 2px #0003;
+    transition:translate .12s ease,box-shadow .12s ease;
+  }
+  #ciWaterMinus:active,#ciWaterPlus:active{translate:0 1px;box-shadow:inset 0 2px 3px #0003}
+  button.bg-\[\#0a6cf5\]:focus-visible,
+  a.bg-\[\#0a6cf5\]:focus-visible,
+  button.border-\[\#0a6cf5\]\/40:focus-visible,
+  button.bg-white.border:focus-visible,
+  button.ci-mood:focus-visible,
+  #ciWaterMinus:focus-visible,#ciWaterPlus:focus-visible{outline:2px solid #0a3d7a;outline-offset:3px}
+  @media (prefers-reduced-motion:reduce){
+    button.bg-\[\#0a6cf5\],a.bg-\[\#0a6cf5\],button.border-\[\#0a6cf5\]\/40,button.bg-white.border,button.ci-mood,#ciWaterMinus,#ciWaterPlus{transition:none}
+    button.bg-\[\#0a6cf5\]:active,a.bg-\[\#0a6cf5\]:active,button.border-\[\#0a6cf5\]\/40:active,button.bg-white.border:active,button.ci-mood:active,#ciWaterMinus:active,#ciWaterPlus:active{translate:none}
+  }
   ::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#d7dbe2;border-radius:8px}
   .print-only{display:none}
   @media print{
