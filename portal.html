@@ -20,9 +20,43 @@
   .seg{font-variant-numeric:tabular-nums}
   .tab{padding:.5rem .9rem;border-radius:999px;font-size:.85rem;font-weight:600;color:#6b7280;cursor:pointer;white-space:nowrap}
   .tab.on{background:#0a6cf5;color:#fff}
+  /* main portal section tabs (distinct from the legacy .tab/#ptabs plan tabs) */
+  .mtab{padding:.55rem 1.1rem;border-radius:999px;font-size:.9rem;font-weight:600;color:#6b7280;cursor:pointer;white-space:nowrap;background:#fff;border:1px solid #e6e9ee}
+  .mtab:hover{color:#16201d}
+  .mtab.on{background:#0a6cf5;border-color:#0a6cf5;color:#fff}
+  .mtab .tabbadge{display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;border-radius:999px;height:18px;min-width:18px;padding:0 5px;margin-left:5px;vertical-align:middle;background:#e11d48}
+  .mtab .tabbadge.blue{background:#0a6cf5}
+  .mtab.on .tabbadge.blue{background:rgba(255,255,255,.28)}
   details>summary{list-style:none;cursor:pointer}details>summary::-webkit-details-marker{display:none}
   details[open] .chev{transform:rotate(90deg)}
   .chev{transition:transform .18s}
+  /* Patient dashboard shell. Side navigation uses the empty margins; the reading column stays narrow. */
+  .dash-wrap{width:100%;max-width:1180px;margin:0 auto;padding-left:1.25rem;padding-right:1.25rem}
+  .dash{display:grid;grid-template-columns:200px minmax(0,1fr);gap:1.75rem;align-items:start}
+  .dash-nav{position:sticky;top:80px;display:flex;flex-direction:column;gap:.25rem;min-width:0}
+  .navbtn{display:flex;align-items:center;justify-content:space-between;gap:.5rem;width:100%;text-align:left;padding:.72rem .9rem;border-radius:12px;border:0;background:transparent;color:#3d4a45;font-weight:600;font-size:.95rem;cursor:pointer}
+  .navbtn:hover{background:rgba(255,255,255,.75);color:#16201d}
+  .navbtn.on{background:#fff;color:#0a6cf5;box-shadow:0 1px 2px rgba(16,24,40,.05),0 0 0 1px #e6e9ee}
+  .navbtn:focus-visible{outline:2px solid #0a6cf5;outline-offset:2px}
+  .navbadge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#e11d48;color:#fff;font-size:10px;font-weight:700}
+  .navbadge.blue{background:#0a6cf5}
+  .strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:#fff;border:1px solid #e6e9ee;border-radius:16px;overflow:hidden}
+  .strip>*{padding:.95rem 1.05rem;text-align:left;background:transparent;border:0;border-right:1px solid #eef0f4;min-width:0}
+  .strip>*:last-child{border-right:0}
+  .strip button{cursor:pointer;font:inherit;color:inherit}
+  .strip button:hover{background:#f7f8fa}
+  .strip button:focus-visible{outline:2px solid #0a6cf5;outline-offset:-2px}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start}
+  @media (max-width:900px){
+    .dash{grid-template-columns:1fr;gap:.75rem}
+    .dash-nav{position:sticky;top:64px;z-index:15;flex-direction:row;overflow-x:auto;background:#f7f8fa;margin:0 -1.25rem;padding:.4rem 1.25rem .65rem}
+    .navbtn{width:auto;white-space:nowrap;padding:.5rem .85rem;background:#fff;box-shadow:0 0 0 1px #e6e9ee}
+    .navbtn.on{box-shadow:0 0 0 1px #0a6cf5}
+    .strip{grid-template-columns:1fr 1fr}
+    .strip>*:nth-child(2){border-right:0}
+    .strip>*:nth-child(-n+2){border-bottom:1px solid #eef0f4}
+    .pair{grid-template-columns:1fr}
+  }
   ::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#d7dbe2;border-radius:8px}
   .print-only{display:none}
   @media print{
@@ -40,7 +74,7 @@
 <body class="min-h-screen">
 
 <header class="sticky top-0 z-20 bg-white/85 backdrop-blur border-b border-[#e6e9ee]">
-  <div class="max-w-5xl mx-auto px-5 h-16 flex items-center justify-between">
+  <div class="dash-wrap h-16 flex items-center justify-between">
     <div class="flex items-center gap-2.5">
       <img src="assets/logo-icon.png" alt="Vitality" class="h-8 w-auto">
       <span class="font-display font-semibold text-xl tracking-[-.5px]">My Vitality</span>
@@ -52,7 +86,7 @@
   </div>
 </header>
 
-<main id="app" class="max-w-5xl mx-auto px-5 py-8">
+<main id="app" class="dash-wrap py-8">
   <div id="loading" class="text-center text-[#6b7280] py-24 text-sm">Loading your dashboard…</div>
   <div id="content" class="hidden space-y-6"></div>
   <div id="nolink" class="hidden card p-8 text-center max-w-md mx-auto mt-10">
@@ -202,6 +236,25 @@ async function toUploadableImage(file){
 }
 const PROGRAMS = { glp1:'GLP-1 Weight Loss', metabolic:'Metabolic & Hormone', coaching:'Coaching & Nutrition', unsure:'Getting started' };
 const fmtDate = (s)=>{ if(!s) return ''; const d=new Date(s); return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); };
+// Scan dates arrive in two formats depending on ingest path: "06.19.2026 11:06" (InBody export)
+// and "2026-08-26" (LookinBody webhook). Both parse, but go through one helper so a bad date
+// never silently becomes NaN and wins a comparison.
+const scanTime = (s)=>{ const t=new Date(s).getTime(); return isNaN(t)?null:t; };
+// Current weight = the most RECENT measurement, whichever source it came from. A manual
+// weigh-in does not outrank a newer InBody scan (that is how a stale July log was showing
+// as "current" over an August scan).
+function currentWeight(ib, logs, start){
+  const wl=(logs||[]).filter(l=>l.kind==='weigh_in'&&l.value_num!=null)
+    .slice().sort((a,b)=>(b.logged_at||0)-(a.logged_at||0));
+  const lastLog=wl[0]||null;
+  let lastScan=null;
+  (ib||[]).forEach(s=>{ const t=scanTime(s.test_date); if(s.weight_lb!=null&&t!=null&&(!lastScan||t>lastScan.t)) lastScan={t,w:+s.weight_lb}; });
+  if(!lastScan&&(ib||[]).length){ const s=ib[ib.length-1]; if(s&&s.weight_lb!=null) lastScan={t:0,w:+s.weight_lb}; }
+  if(lastLog&&lastScan) return (lastLog.logged_at||0)>=lastScan.t ? +lastLog.value_num : lastScan.w;
+  if(lastLog) return +lastLog.value_num;
+  if(lastScan) return lastScan.w;
+  return start!=null?start:null;
+}
 const fmtWhen = (s)=>{ if(!s) return ''; const d=new Date(s); return d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})+' at '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); };
 // --- injection dose tube (desktop, mirrors the Thrive app) ---
 const P_MEDS=['Semaglutide','Tirzepatide','Oral Semaglutide']; const PMAX=50;
@@ -269,16 +322,62 @@ function reportHTML(ib){
 }
 
 // ---- handbook tab renderers ----
+// The plan card, its print view, and the progress hero were written for the ORIGINAL portal
+// plan shape (hb.meals / hb.workouts.phases / hb.roadmap / nutrition.calories). Handbooks
+// generated by the VBIS engine (convex handbook.ts) use a different shape
+// (nutrition.daily_targets, week_one_meal_plan, workout.phases, monthly_roadmap,
+// timeline_projections). This adapter maps VBIS -> the legacy shape so one set of renderers
+// serves both eras of plan data.
+function vbisToPortal(hb){
+  if(!hb) return hb;
+  const n=hb.nutrition||{};
+  if(!n.daily_targets && !n.week_one_meal_plan && !hb.timeline_projections) return hb; // already legacy-shaped
+  const out=Object.assign({},hb);
+  const dt=n.daily_targets||{};
+  out.nutrition={ calories:dt.calories, protein:dt.protein_g, carbs:dt.carbs_g, fat:dt.fat_g, fiber:dt.fiber_g, water:dt.water_oz, tags:n.condition_tags||[] };
+  const SLOTS=[['breakfast','Breakfast'],['lunch','Lunch'],['dinner','Dinner'],['snack','Snack']];
+  out.meals=(n.week_one_meal_plan||[]).map((d,i)=>({
+    day:(typeof d.day==='string'&&d.day)||('Day '+(d.day||i+1)),
+    kcal:d.daily_total_calories||SLOTS.reduce((s,sl)=>s+((d[sl[0]]&&+d[sl[0]].calories)||0),0),
+    items:SLOTS.filter(sl=>d[sl[0]]).map(sl=>{ const m=d[sl[0]]; return {
+      meal:sl[1], name:m.name, kcal:m.calories, protein:m.protein_g,
+      ingredients:Array.isArray(m.ingredients)?m.ingredients.join(', '):(m.ingredients||''),
+      instructions:m.prep||'', image:m.image }; })
+  }));
+  const w=hb.workout||{};
+  out.workouts={ phases:(w.phases||[]).map(ph=>{ const sd=ph.sample_day||{}; return {
+    name:ph.phase, weeks:ph.weeks, focus:ph.focus,
+    structure:ph.weekly_structure||sd.title||'',
+    burn:sd.estimated_calorie_burn?('~'+sd.estimated_calorie_burn+' kcal/session'):'',
+    exercises:(sd.exercises||[]).map(x=>({
+      name:x.name,
+      scheme:[x.sets?x.sets+' sets':'',x.reps?x.reps+' reps':'',x.tempo?'tempo '+x.tempo:''].filter(Boolean).join(' · '),
+      detail:x.instructions||'', easier:x.easier, harder:x.harder,
+      watch:x.common_mistakes, safety:x.safety, image:x.image }))
+  }; }) };
+  out.roadmap=(n.monthly_roadmap||[]).map((m,i)=>({
+    month:i+1, title:(m.focus||'').split(':')[0], calories:'',
+    swaps:(m.calorie_adjustment?[m.calorie_adjustment]:[]).concat(m.key_swaps||[])
+  }));
+  out.habits=(hb.habits||[]).map((h,i)=>({ week:h.week||i+1, title:h.habit||'', benefit:h.expected_benefit||h.why_it_matters||'' }));
+  out.substitutions=n.substitution_guide||[];
+  out.projections=(hb.timeline_projections||[]).filter(t=>t.projected_weight_lb!=null).map(t=>({label:'Day '+t.day, weight:+t.projected_weight_lb}));
+  out.milestones=(hb.timeline_projections||[]).filter(t=>t.milestone).map(t=>({day:t.day, text:t.milestone}));
+  if(hb.next_inbody_recommendation_days) out.rescanDays=+hb.next_inbody_recommendation_days;
+  return out;
+}
 function tabOverview(hb){
-  const n=hb.nutrition||{}, s=hb.summary||{};
+  const n=hb.nutrition||{}, s=hb.summary||{}, ai=hb.ai_analysis||{};
+  // Only render macro tiles that actually have a value — no "undefined" or bare units.
+  const mac=[['Calories',n.calories,''],['Protein',n.protein,'g'],['Carbs',n.carbs,'g'],['Fat',n.fat,'g'],['Fiber',n.fiber,'g'],['Water',n.water,'oz']].filter(m=>m[1]!=null&&m[1]!=='');
   return `<div class="space-y-5">
     <p class="text-sm text-[#4b5563] leading-relaxed">${esc(hb.executive_summary||'')}</p>
     <div>
       <div class="flex flex-wrap gap-1.5 mb-3">${(n.tags||[]).map(t=>`<span class="chip bg-[#eaf2ff] text-[#0a3d7a]">${esc(t)}</span>`).join('')}</div>
-      <div class="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
-        ${macro('Calories',n.calories)}${macro('Protein',(n.protein||'')+'g')}${macro('Carbs',(n.carbs||'')+'g')}${macro('Fat',(n.fat||'')+'g')}${macro('Fiber',(n.fiber||'')+'g')}${macro('Water',(n.water||'')+'oz')}
-      </div>
+      ${mac.length?`<div class="text-[11px] uppercase tracking-wide text-[#9aa0ab] font-semibold mb-2">Your daily targets</div><div class="grid grid-cols-3 sm:grid-cols-6 gap-2.5">${mac.map(m=>macro(m[0],m[1]+m[2])).join('')}</div>`:''}
     </div>
+    ${(ai.strengths&&ai.strengths.length)?`<div class="rounded-xl bg-[#eafaf0] border border-[#d3f0de] p-4"><div class="text-[11px] uppercase tracking-wide text-[#0a7a3d] font-semibold mb-1">Working in your favor</div><ul class="space-y-1">${ai.strengths.map(t=>`<li class="text-sm text-[#1c5c38] flex gap-2"><span>✓</span><span>${esc(t)}</span></li>`).join('')}</ul></div>`:''}
+    ${(ai.areas_for_improvement&&ai.areas_for_improvement.length)?`<div class="rounded-xl bg-[#eaf2ff] border border-[#d6e6ff] p-4"><div class="text-[11px] uppercase tracking-wide text-[#0a3d7a] font-semibold mb-1">What this plan targets</div><ul class="space-y-1">${ai.areas_for_improvement.map(t=>`<li class="text-sm text-[#123c6b] flex gap-2"><span class="text-[#0a6cf5]">→</span><span>${esc(t)}</span></li>`).join('')}</ul></div>`:''}
     ${s.medical&&s.medical.length?`<div class="rounded-xl bg-[#fff8f0] border border-[#f3e6d6] p-4"><div class="text-[11px] uppercase tracking-wide text-[#9a7b4f] font-semibold mb-1">Your care team is accounting for</div><div class="text-sm text-[#6b5535]">${s.medical.map(esc).join(' · ')}</div></div>`:''}
   </div>`;
 }
@@ -308,12 +407,12 @@ function tabWorkouts(hb){
     ${w.channel?`<a href="https://${esc(w.channel)}" target="_blank" rel="noopener" class="flex items-center gap-2 rounded-xl bg-[#fff1f1] border border-[#ffd9d9] p-3 text-sm hover:border-[#ff9d9d]"><span class="text-[#e23] text-lg">▶</span><span><span class="font-semibold">Form videos on our YouTube channel</span><span class="text-[#9aa0ab]"> · ${esc(w.channel)}</span></span></a>`:''}
     ${(w.phases||[]).map((ph,i)=>`<details ${i===0?'open':''} class="rounded-xl border border-[#eef0f4] bg-[#fbfcfe]">
       <summary class="flex items-center justify-between p-3.5">
-        <span class="flex items-center gap-2"><span class="chev text-[#0a6cf5]">▸</span><span class="font-semibold">${esc(ph.name)}</span><span class="chip bg-[#f1f3f7] text-[#6b7280]">Weeks ${esc(ph.weeks)}</span></span>
+        <span class="flex items-center gap-2"><span class="chev text-[#0a6cf5]">▸</span><span class="font-semibold">${esc(ph.name)}</span>${ph.weeks?`<span class="chip bg-[#f1f3f7] text-[#6b7280]">Weeks ${esc(ph.weeks)}</span>`:''}</span>
         <span class="text-xs text-[#9aa0ab]">${esc(ph.burn||'')}</span>
       </summary>
       <div class="px-3.5 pb-3.5">
-        <div class="text-xs text-[#6b7280] mb-1"><b>Focus:</b> ${esc(ph.focus)}</div>
-        <div class="text-xs text-[#6b7280] mb-3"><b>Structure:</b> ${esc(ph.structure)}</div>
+        ${ph.focus?`<div class="text-xs text-[#6b7280] mb-1"><b>Focus:</b> ${esc(ph.focus)}</div>`:''}
+        ${ph.structure?`<div class="text-xs text-[#6b7280] mb-3"><b>Structure:</b> ${esc(ph.structure)}</div>`:''}
         <div class="space-y-2.5">${(ph.exercises||[]).map(x=>`<div class="border-l-2 border-[#d6e6ff] pl-3 ${x.image?'flex gap-3':''}">
           ${x.image?`<img src="${esc(x.image)}" alt="" loading="lazy" data-zoom data-cap="${esc(x.name)}" class="w-16 h-16 rounded-lg object-cover shrink-0 border border-[#eee] bg-white cursor-zoom-in">`:''}
           <div class="min-w-0">
@@ -337,8 +436,12 @@ function fmtSwap(s){
 }
 function tabRoadmap(hb){
   return `<div class="space-y-4">
+    ${(hb.milestones&&hb.milestones.length)?`<div>
+      <div class="text-sm font-semibold mb-2">Your 90-day milestones</div>
+      <div class="space-y-2">${hb.milestones.map(m=>`<div class="rounded-xl border border-[#d6e6ff] bg-[#f5f9ff] p-3.5"><div class="text-[11px] uppercase tracking-wide text-[#0a6cf5] font-semibold mb-1">Day ${m.day}</div><div class="text-sm text-[#123c6b] leading-relaxed">${esc(m.text)}</div></div>`).join('')}</div>
+    </div>`:''}
     <div class="space-y-2.5">${(hb.roadmap||[]).map(m=>`<div class="rounded-xl border border-[#eef0f4] bg-[#fbfcfe] p-3.5">
-      <div class="flex items-center justify-between"><div class="font-semibold text-sm">Month ${m.month} · ${esc(m.title)}</div><span class="chip bg-[#eaf2ff] text-[#0a3d7a]">${esc(m.calories)}</span></div>
+      <div class="flex items-center justify-between gap-2"><div class="font-semibold text-sm">Month ${m.month}${m.title?` · ${esc(m.title)}`:''}</div>${m.calories?`<span class="chip bg-[#eaf2ff] text-[#0a3d7a]">${esc(m.calories)}</span>`:''}</div>
       <ul class="mt-2 space-y-1">${(m.swaps||[]).map(s=>`<li class="text-xs text-[#6b7280] flex gap-2"><span class="text-[#0a6cf5]">•</span>${esc(fmtSwap(s))}</li>`).join('')}</ul>
     </div>`).join('')}</div>
     <div>
@@ -364,9 +467,7 @@ function gamify(){
   let week=0; for(let i=0;i<7;i++){ const d=new Date(); d.setDate(d.getDate()-i); if(dates.has(d.toDateString())) week++; }
   const start=(hb&&hb.summary&&hb.summary.weight)||(ib[0]&&+ib[0].weight_lb)||null;
   const goal=(plan&&plan.goal_weight)||(hb&&hb.summary&&hb.summary.goal_weight)||null;
-  const wlogs=logs.filter(l=>l.kind==='weigh_in'&&l.value_num!=null);
-  const cw=wlogs.length?+wlogs[0].value_num:(latestW()!=null?latestW():start);
-  function latestW(){ return ib.length?+ib[ib.length-1].weight_lb:null; }
+  const cw=currentWeight(ib, logs, start);
   const lost=(start!=null&&cw!=null)?(start-cw):0, n=logs.length;
   const B=(id,icon,label,earned)=>({id,icon,label,earned:!!earned});
   const badges=[
@@ -389,35 +490,45 @@ function gamify(){
 
 function render(){
   const p=DATA.patient, ib=DATA.inbody||[], latest=ib[ib.length-1];
-  const plan=DATA.plan, hb=plan&&plan.handbook? plan.handbook : null;
+  const plan=DATA.plan, hb=plan&&plan.handbook? vbisToPortal(plan.handbook) : null;
   const goal = (plan&&plan.goal_weight)||(hb&&hb.summary&&hb.summary.goal_weight)||null;
   const start = (hb&&hb.summary&&hb.summary.weight)|| (ib[0]&&+ib[0].weight_lb) || null;
-  // current weight: latest weigh-in log beats InBody
-  const wLogs=(DATA.logs||[]).filter(l=>l.kind==='weigh_in'&&l.value_num!=null);
-  const current = wLogs.length? +wLogs[0].value_num : (latest? +latest.weight_lb : start);
+  // current weight: whichever measurement is most recent (scan or manual weigh-in)
+  const current = currentWeight(ib, DATA.logs, start);
   $('hello').textContent = 'Hi, '+esc(p.first);
 
-  // progress hero
+  // progress hero — three states: scans + goal, scans without a goal (trend view), no scans yet.
+  // "First scan will appear here" must ONLY show when there truly are no scans.
   let progress='';
-  if (start&&goal){
-    const lost = (start-current), totalToGo=(start-goal)||1, pct=Math.max(0,Math.min(100, (lost/totalToGo)*100));
+  const _proj=hb&&hb.projections&&hb.projections.length>=2?hb.projections:null;
+  let _rescan=hb&&hb.rescan?hb.rescan:null;
+  if(!_rescan && hb&&hb.rescanDays&&latest&&latest.test_date){
+    const _lastT=new Date(latest.test_date).getTime();
+    if(!isNaN(_lastT)) _rescan={ next:_lastT+hb.rescanDays*86400000, interval_days:hb.rescanDays };
+  }
+  if (start){
+    const lost=(start-current), hasGoal=goal!=null;
+    const pct=hasGoal?Math.max(0,Math.min(100,(lost/((start-goal)||1))*100)):null;
     progress=`<section class="card p-6">
       <div class="flex items-center justify-between mb-4"><h2 class="font-display text-lg font-semibold">Your transformation</h2><span class="chip bg-[#eaf2ff] text-[#0a3d7a]">${hb?esc(hb.system||'VBIS'):'InBody'}</span></div>
       <div class="grid grid-cols-3 gap-3 mb-4 text-center">
         <div><div class="text-[11px] uppercase tracking-wide text-[#9aa0ab] font-semibold">Start</div><div class="font-display text-2xl font-semibold seg">${start.toFixed(1)}</div></div>
         <div><div class="text-[11px] uppercase tracking-wide text-[#0a6cf5] font-semibold">Current</div><div class="font-display text-3xl font-semibold seg text-[#0a6cf5]">${current.toFixed(1)}</div></div>
-        <div><div class="text-[11px] uppercase tracking-wide text-[#9aa0ab] font-semibold">Goal</div><div class="font-display text-2xl font-semibold seg">${(+goal).toFixed(0)}</div></div>
+        ${hasGoal
+          ?`<div><div class="text-[11px] uppercase tracking-wide text-[#9aa0ab] font-semibold">Goal</div><div class="font-display text-2xl font-semibold seg">${(+goal).toFixed(0)}</div></div>`
+          :`<div><div class="text-[11px] uppercase tracking-wide text-[#9aa0ab] font-semibold">Change</div><div class="font-display text-2xl font-semibold seg ${lost>0?'text-[#0a7a3d]':''}">${lost>0?'-':'+'}${Math.abs(lost).toFixed(1)}</div></div>`}
       </div>
-      <div class="h-2 rounded-full bg-[#eef0f4] overflow-hidden mb-1"><div class="h-full bg-[#0a6cf5] rounded-full" style="width:${pct.toFixed(0)}%"></div></div>
-      <div class="text-xs text-[#6b7280] mb-4">${lost>0?`<b class="text-[#0a6cf5]">${lost.toFixed(1)} lb</b> down · ${(current-goal).toFixed(0)} lb to goal`:`${(start-goal).toFixed(0)} lb to your goal`}</div>
-      ${hb&&hb.projections? `<div class="text-[11px] uppercase tracking-wide text-[#9aa0ab] font-semibold mb-1">Your projected path</div>`+projChart(start, hb.projections, current):''}
+      ${hasGoal?`<div class="h-2 rounded-full bg-[#eef0f4] overflow-hidden mb-1"><div class="h-full bg-[#0a6cf5] rounded-full" style="width:${pct.toFixed(0)}%"></div></div>
+      <div class="text-xs text-[#6b7280] mb-4">${lost>0?`<b class="text-[#0a6cf5]">${lost.toFixed(1)} lb</b> down · ${(current-goal).toFixed(0)} lb to goal`:`${(start-goal).toFixed(0)} lb to your goal`}</div>`
+      :`<div class="text-xs text-[#6b7280] mb-4">${lost>0?`<b class="text-[#0a6cf5]">${lost.toFixed(1)} lb</b> down since your first scan.`:'Tracking since your first scan.'} Your care team sets your goal weight with you at your next visit.</div>`}
+      ${_proj? `<div class="text-[11px] uppercase tracking-wide text-[#9aa0ab] font-semibold mb-1">Your projected path</div>`+projChart(start, _proj, current):''}
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
         ${latest?stat('Weight',(+latest.weight_lb).toFixed(1)+' lb'):''}
         ${latest&&latest.pbf_pct!=null?stat('Body fat',(+latest.pbf_pct).toFixed(1)+'%'):''}
         ${latest&&latest.smm_lb!=null?stat('Muscle',(+latest.smm_lb).toFixed(1)+' lb'):''}
         ${latest&&latest.visceral_fat_level!=null?stat('Visceral fat',(+latest.visceral_fat_level).toFixed(0)):''}
       </div>
-      ${hb&&hb.rescan?`<div class="mt-4 rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 flex items-center justify-between"><span class="text-sm text-[#6b7280]">Next InBody scan</span><span class="text-sm font-semibold">${fmtDate(hb.rescan.next)} <span class="text-[#9aa0ab] font-normal">· every ${hb.rescan.interval_days} days</span></span></div>`:''}
+      ${_rescan?`<div class="mt-4 rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 flex items-center justify-between"><span class="text-sm text-[#6b7280]">Next InBody scan</span><span class="text-sm font-semibold">${fmtDate(_rescan.next)} <span class="text-[#9aa0ab] font-normal">· every ${_rescan.interval_days} days</span></span></div>`:''}
     </section>`;
   } else {
     progress=`<section class="card p-6"><h2 class="font-display text-lg font-semibold mb-2">Your progress</h2><p class="text-sm text-[#6b7280]">Your first InBody scan will appear here and start your trend line.</p></section>`;
@@ -463,11 +574,12 @@ function render(){
       <div class="flex items-center justify-between mb-1 flex-wrap gap-2">
         <h2 class="font-display text-lg font-semibold">${esc(plan.title||'Your plan')}</h2>
         <div class="flex items-center gap-2">
-          <span class="chip bg-[#eaf2ff] text-[#0a3d7a]">${esc(hb.type||'')}</span>
+          ${hb.type?`<span class="chip bg-[#eaf2ff] text-[#0a3d7a]">${esc(hb.type)}</span>`:''}
+          <button onclick="openMyHandbook()" class="no-print px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">📖 Open full plan</button>
           <button onclick="printPlan()" class="no-print px-3 py-2 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-xs font-semibold hover:bg-[#0a6cf5]/10">🖨 Print plan</button>
         </div>
       </div>
-      <p class="text-xs text-[#9aa0ab] mb-4">Issued ${fmtDate(hb.issued)} · ${esc(hb.provider||'Vitality')}</p>
+      <p class="text-xs text-[#9aa0ab] mb-4">Issued ${fmtDate(hb.issued||plan.published_at||plan._creationTime)} · ${esc(hb.provider||'Vitality')}</p>
       <div class="screen-only">
         <div id="ptabs" class="flex gap-1.5 overflow-x-auto pb-3 mb-1">
           <span class="tab on" data-t="overview">Overview</span>
@@ -493,8 +605,8 @@ function render(){
 
   // next appointment
   const na=DATA.nextAppt;
-  const appt=`<details class="card overflow-hidden"><summary class="flex items-center justify-between p-5"><div><h2 class="font-display text-lg font-semibold">Next appointment</h2>${na?`<div class="text-xs text-[#6b7280] mt-.5">${fmtWhen(na.when)}</div>`:''}</div><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
-    ${na?`<div class="rounded-xl bg-[#eaf2ff] border border-[#d6e6ff] p-3"><div class="font-semibold text-[#0a3d7a] text-sm">${esc(na.type||'Visit')}</div><div class="text-sm">${fmtWhen(na.when)}</div><div class="text-xs text-[#6b7280] mt-.5">${na.provider?'with '+esc(na.provider)+' · ':''}(702) 602-5002 to change</div></div>`:`<p class="text-sm text-[#6b7280]">No upcoming appointment. Call (702) 602-5002 to schedule.</p>`}
+  const appt=`<details class="card overflow-hidden"><summary class="flex items-center justify-between p-5"><div><h2 class="font-display text-lg font-semibold">Next appointment</h2><div class="text-xs text-[#6b7280] mt-.5">${na?fmtWhen(na.when):'None scheduled · tap to book'}</div></div><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
+    ${na?`<div class="rounded-xl bg-[#eaf2ff] border border-[#d6e6ff] p-3"><div class="font-semibold text-[#0a3d7a] text-sm">${esc(na.type||'Visit')}</div><div class="text-sm">${fmtWhen(na.when)}</div><div class="text-xs text-[#6b7280] mt-.5">${na.provider?'with '+esc(na.provider)+' · ':''}(702) 602-5002 to change</div></div>`:`<p class="text-sm text-[#6b7280] mb-3">No upcoming appointment. Call <a class="text-[#0a6cf5] font-semibold" href="tel:+17026025002">(702) 602-5002</a> or message your care team and we'll get you scheduled.</p><button type="button" class="goto-tab w-full py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-sm font-semibold hover:bg-[#0a6cf5]/10" data-goto="messages">Message my care team</button>`}
   </div></details>`;
 
   // logging
@@ -538,7 +650,7 @@ function render(){
 
   // Trainer-assigned tasks (portal + Thrive). Complete -> logs kind=task -> points via the one engine.
   const _tt=(DATA.trainer_tasks||[]); const _ttOpen=_tt.filter(t=>!t.done), _ttDone=_tt.filter(t=>t.done);
-  const _ttRow=t=>`<div class="flex items-center justify-between gap-3 rounded-xl border border-[#eef0f4] ${t.done?'bg-[#f0fdf4]':'bg-[#f7f8fa]'} p-3"><div class="min-w-0"><div class="text-sm font-semibold ${t.done?'line-through text-[#9aa0ab]':''}">${esc(t.title)}</div>${t.detail?`<div class="text-xs text-[#6b7280] mt-0.5">${esc(t.detail)}</div>`:''}<div class="text-[11px] text-[#9aa0ab] mt-1">From ${esc(t.from||'your trainer')}${t.recurrence&&t.recurrence!=='once'?' · '+esc(t.recurrence):''} · +${t.points} pts</div></div>${t.done?`<span class="shrink-0 text-[#16a34a] text-sm font-semibold">Done ✓</span>`:`<button data-tt="${t.id}" class="ttBtn shrink-0 px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">Mark complete</button>`}</div>`;
+  const _ttRow=t=>`<div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#eef0f4] ${t.done?'bg-[#f0fdf4]':'bg-[#f7f8fa]'} p-3"><div class="min-w-0"><div class="text-sm font-semibold ${t.done?'line-through text-[#9aa0ab]':''}">${esc(t.title)}</div>${t.detail?`<div class="text-xs text-[#6b7280] mt-0.5">${esc(t.detail)}</div>`:''}<div class="text-[11px] text-[#9aa0ab] mt-1">From ${esc(t.from||'your trainer')}${t.recurrence&&t.recurrence!=='once'?' · '+esc(t.recurrence):''} · +${t.points} pts</div></div>${t.done?`<span class="shrink-0 text-[#16a34a] text-sm font-semibold">Done ✓</span>`:`<button data-tt="${t.id}" class="ttBtn shrink-0 px-3 py-2 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">Mark complete</button>`}</div>`;
   const trainerTasks=_tt.length?`<details class="card overflow-hidden" open><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">From your trainer${_ttOpen.length?` <span class="ml-1 inline-flex items-center justify-center text-[10px] font-bold bg-[#0a6cf5] text-white rounded-full h-5 min-w-[20px] px-1.5 align-middle">${_ttOpen.length}</span>`:''}</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5 space-y-2">${[..._ttOpen,..._ttDone].map(_ttRow).join('')}</div></details>`:'';
 
   const injLogs=logs.filter(l=>l.kind==='injection');
@@ -585,7 +697,7 @@ function render(){
         <div><label class="text-[11px] font-semibold text-[#6b7280]">Any side effects or concerns?</label><input id="ciSide" class="field mt-1 w-full" placeholder="Leave blank if none"></div>
         <div><label class="text-[11px] font-semibold text-[#6b7280]">Your dose plan</label><div class="flex gap-2 mt-1"><button type="button" data-tit="continue" class="ci-tit flex-1 py-2 rounded-xl border text-xs font-semibold bg-[#0a6cf5] text-white border-[#0a6cf5]">Continue my schedule</button><button type="button" data-tit="hold" class="ci-tit flex-1 py-2 rounded-xl border text-xs font-semibold bg-white text-[#6b7280] border-[#e6e9ee]">Hold at this dose</button></div></div>
         <label class="flex items-center gap-2 text-sm text-[#16201d] pt-1"><input type="checkbox" id="ciRefill" class="accent-[#0a6cf5] w-4 h-4">I need a refill</label>
-        <button id="ciBtn" class="w-full py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Send check-in to Dr. DeBry</button>
+        <button id="injCiBtn" class="w-full py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Send check-in to Dr. DeBry</button>
         <button id="ciConsultBtn" class="w-full py-2.5 rounded-xl border border-[#0a6cf5]/40 text-[#0a6cf5] text-sm font-semibold hover:bg-[#0a6cf5]/10">Request a consult with the doctor</button>
         <p id="ciMsg" class="text-[11px] text-[#9aa0ab] text-center"></p>
       </div>
@@ -610,7 +722,7 @@ function render(){
     else if(daysLeft<=10){ rf={box:'bg-[#fff4ed] border-[#ffe2cf]',ink:'text-[#9a5a00]',label:'Time to reorder',sub:daysLeft+' day'+(daysLeft===1?'':'s')+' of medication left'}; }
     else { rf={box:'bg-[#eafaf0] border-[#cdeedd]',ink:'text-[#0a7a3d]',label:daysLeft+' days left',sub:'Enough through '+runOutTxt}; }
   }
-  const refill=`<details class="card overflow-hidden" open><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Medication &amp; refills</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
+  const refill=`<details class="card overflow-hidden"><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Medication &amp; refills</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
     ${daysLeft!=null?`<div class="rounded-xl ${rf.box} border p-3 mb-3"><div class="text-[10px] uppercase tracking-wide ${rf.ink} font-semibold">${esc((lastRefill&&lastRefill.body)||curMed||'Your medication')}</div><div class="font-display text-lg font-semibold ${rf.ink}">${rf.label}</div><div class="text-xs text-[#6b7280]">${rf.sub}</div></div>`:`<p class="text-sm text-[#6b7280] mb-3">When you pick up a new supply, log how many weeks it covers and we'll count down to your reorder date so you never run out mid program.</p>`}
     ${reqPending?`<div class="rounded-xl bg-[#eaf2ff] border border-[#d6e6ff] p-2.5 mb-3 text-xs text-[#0a3d7a]"><span class="font-semibold">Refill requested ${fmtAgo(lastReq.logged_at)}.</span> Your care team will reach out to get it on the way.</div>`:''}
     <div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 space-y-2">
@@ -626,7 +738,7 @@ function render(){
   // Side-effect log (GLP-1): patient reports symptoms; each one also drops a note on the provider's CRM record.
   const SYMPTOMS=['Nausea','Vomiting','Constipation','Diarrhea','Fatigue','Headache','Injection-site reaction','Appetite loss','Heartburn / reflux','Dizziness','Other'];
   const seLogs=logs.filter(l=>l.kind==='side_effect');
-  const sideEffects=`<details class="card overflow-hidden" open><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Side effects</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
+  const sideEffects=`<details class="card overflow-hidden"><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Side effects</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
     <p class="text-sm text-[#6b7280] mb-3">Report any side effects so your care team can adjust your plan. Anything you log here is shared with Dr. DeBry.</p>
     <div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 space-y-2">
       <div><label class="text-[11px] font-semibold text-[#6b7280]">Symptom</label><select id="seSym" class="field mt-1 w-full">${SYMPTOMS.map(s=>`<option>${esc(s)}</option>`).join('')}</select></div>
@@ -640,7 +752,7 @@ function render(){
   // Daily check-in: hydration, sleep, energy, mood in one quick log (absorbs Thrive's daily trackers).
   const ciLogs=logs.filter(l=>l.kind==='checkin');
   const _ciToday=ciLogs.find(l=>new Date(l.logged_at).toDateString()===new Date().toDateString());
-  const checkin=`<details class="card overflow-hidden" open><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Daily check-in</h2>${_ciToday?'<span class="chip bg-[#eafaf0] text-[#0a7a3d]">Done today ✓</span>':'<span class="chev text-[#0a6cf5]">▸</span>'}</summary><div class="px-5 pb-5">
+  const checkin=`<details class="card overflow-hidden" ${_ciToday?'':'open'}><summary class="flex items-center justify-between p-5"><div class="flex items-center gap-2"><h2 class="font-display text-lg font-semibold">Daily check-in</h2>${_ciToday?'<span class="chip bg-[#eafaf0] text-[#0a7a3d]">Done today</span>':''}</div><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
     ${_ciToday?`<div class="rounded-xl bg-[#eafaf0] border border-[#cdeedd] p-3 mb-3 text-sm text-[#0a7a3d]">${esc(_ciToday.body||'')}</div>`:''}
     <div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 space-y-3">
       <div class="flex items-end justify-between gap-3">
@@ -664,7 +776,7 @@ function render(){
     const chgTxt=chg==null?'':(chg<0?'<span class="text-[#0a7a3d] font-semibold">'+chg.toFixed(1)+'"</span>':chg>0?'<span class="text-rose-600 font-semibold">+'+chg.toFixed(1)+'"</span>':'<span class="text-[#9aa0ab]">0"</span>');
     return '<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-2.5 text-center"><div class="text-[10px] uppercase tracking-wide text-[#9aa0ab] font-semibold">'+esc(site)+'</div><div class="font-display text-lg font-semibold seg">'+latest+'"</div><div class="text-[11px]">'+chgTxt+'</div></div>';
   }).filter(Boolean).join('');
-  const measurements=`<details class="card overflow-hidden" open><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Body measurements</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
+  const measurements=`<details class="card overflow-hidden" ${measTiles?'open':''}><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Body measurements</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
     ${measTiles?`<div class="grid grid-cols-3 gap-2 mb-3">${measTiles}</div>`:`<p class="text-sm text-[#6b7280] mb-3">Track waist and other measurements between InBody scans to watch the inches come off.</p>`}
     <div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 flex items-end gap-2">
       <div class="flex-1"><label class="text-[11px] font-semibold text-[#6b7280]">Measurement</label><select id="mSite" class="field mt-1 w-full">${MEAS_SITES.map(s=>`<option>${esc(s)}</option>`).join('')}</select></div>
@@ -681,7 +793,7 @@ function render(){
     const badge=i===0?'Latest':(i===photos.length-1?'Start':'');
     return '<div class="relative rounded-xl overflow-hidden border border-[#eef0f4] bg-[#f7f8fa] aspect-[3/4]"><img src="'+ph.url+'" alt="Progress photo '+esc(dt)+'" class="h-full w-full object-cover"><div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1 flex items-center justify-between"><span class="text-[10px] text-white/90 font-medium">'+esc(dt)+'</span>'+(badge?'<span class="text-[9px] uppercase tracking-wide bg-white/90 text-[#0a6cf5] font-bold px-1.5 py-0.5 rounded-full">'+badge+'</span>':'')+'</div></div>';
   }).join(''):'';
-  const progressPhotos=`<details class="card overflow-hidden" open><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Progress photos</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
+  const progressPhotos=`<details class="card overflow-hidden" ${photos.length?'open':''}><summary class="flex items-center justify-between p-5"><h2 class="font-display text-lg font-semibold">Progress photos</h2><span class="chev text-[#0a6cf5]">▸</span></summary><div class="px-5 pb-5">
     ${photoGrid?`<div class="grid grid-cols-3 gap-2 mb-3">${photoGrid}</div>`:`<p class="text-sm text-[#6b7280] mb-3">Your private before-and-after gallery. Add a photo every couple of weeks to see the change the scale can't. Only you and your Vitality care team can ever see these.</p>`}
     <input id="phFile" type="file" accept="image/*,.heic,.heif" class="hidden">
     <button id="phBtn" class="w-full px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Add a progress photo</button>
@@ -749,13 +861,107 @@ function render(){
       </div>
     </section>`;
   }
+  // Dashboard pages. Every tool still renders (handlers below find their DOM). The menu only shows one job at a time.
+  const planCta=`<section class="card p-6 flex items-center justify-between gap-3"><div><h2 class="font-display text-lg font-semibold">Your Personal Transformation Plan</h2><p class="text-sm text-[#6b7280] mt-0.5">Your complete Personal Transformation Plan: InBody breakdown, every metric decoded, nutrition, workouts, and habits.</p></div><button onclick="openMyHandbook()" class="shrink-0 px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Open</button></section>`;
+  const TAB_KEY='vit-portal-tab';
+  const TAB_IDS=['home','body','medication','plan','messages'];
+  const TAB_ALIAS={today:'home',progress:'body'};
+  let _tab='home';
+  try{ const saved=localStorage.getItem(TAB_KEY)||'home'; _tab=TAB_ALIAS[saved]||saved; }catch(e){}
+  if(!TAB_IDS.includes(_tab)) _tab='home';
+  let wtDelta='Open your scans', wtGood=false;
+  if(start!=null&&current!=null){ const d=start-current; wtGood=d>0.05; wtDelta=Math.abs(d)<0.05?'No change yet':((d>0?'−':'+')+Math.abs(d).toFixed(1)+' lb'); }
+  else if(current!=null) wtDelta='Latest weight';
+  const doseSub=injStatus?(nextDueTxt||'Open medication'):'Waiting on your provider';
+  const _nav=(id,label,badge,blue)=>`<button type="button" data-tab="${id}" class="navbtn ${_tab===id?'on':''}">${label}${badge?`<span class="navbadge${blue?' blue':''}"${id==='messages'?' id="msgTabBadge"':''}>${badge}</span>`:''}</button>`;
+  const planSide=companion?`<div class="pair">${team}${companion}</div>`:team;
   $('content').innerHTML=`
-    <div><h1 class="font-display text-2xl font-semibold tracking-[-.5px]">Welcome back, ${esc(p.first)}</h1>
-    <p class="text-sm text-[#6b7280] mt-1">${PROGRAMS[p.program]||'Your program'} · <span class="capitalize">${esc((p.status||'').replace('_',' '))}</span></p></div>
-    <div class="grid lg:grid-cols-3 gap-6 items-start">
-      <div class="lg:col-span-2 space-y-6">${approved}${team}${progress}${inbodyReport}${scanHistory}<section class="card p-6 flex items-center justify-between gap-3"><div><h2 class="font-display text-lg font-semibold">Your Personal Transformation Plan</h2><p class="text-sm text-[#6b7280] mt-0.5">Your complete Personal Transformation Plan: InBody breakdown, every metric decoded, nutrition, workouts, and habits.</p></div><button onclick="openMyHandbook()" class="shrink-0 px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">📖 Open</button></section></div>
-      <div class="space-y-6">${appt}${messages}${trainerTasks}${injection}${refill}${labs}${sideEffects}${checkin}${measurements}${progressPhotos}${logging}${rewards}${companion}</div>
+    <div class="dash">
+      <nav id="dashNav" class="dash-nav" aria-label="Portal sections">
+        ${_nav('home','Home', _ttOpen.length||'', true)}
+        ${_nav('body','Your body','')}
+        ${_nav('medication','Medication','')}
+        ${_nav('plan','Your plan','')}
+        ${_nav('messages','Messages', unread||'')}
+      </nav>
+      <div class="min-w-0">
+        <div class="mpanel space-y-5 ${_tab==='home'?'':'hidden'}" data-panel="home">
+          <div>
+            <h1 class="font-display text-2xl font-semibold tracking-[-.5px]">Welcome back, ${esc(p.first)}</h1>
+            <p class="text-sm text-[#6b7280] mt-1">${PROGRAMS[p.program]||'Your program'} · <span class="capitalize">${esc((p.status||'').replace(/_/g,' '))}</span></p>
+          </div>
+          <div class="strip">
+            <button type="button" class="goto-tab" data-goto="body">
+              <div class="text-sm text-[#6b7280]">Weight</div>
+              <div class="font-display text-2xl font-semibold seg mt-0.5">${current!=null?current.toFixed(1):'—'}<span class="text-sm font-medium text-[#9aa0ab]"> lb</span></div>
+              <div class="text-xs mt-0.5 ${wtGood?'text-[#0a7a3d]':'text-[#6b7280]'}">${wtDelta}</div>
+            </button>
+            <div>
+              <div class="text-sm text-[#6b7280]">Next visit</div>
+              <div class="font-display text-lg font-semibold mt-1 leading-snug">${na?fmtWhen(na.when):'None booked'}</div>
+              <div class="text-xs text-[#6b7280] mt-0.5">${na?esc(na.type||'Visit'):'Call (702) 602-5002'}</div>
+            </div>
+            <button type="button" class="goto-tab" data-goto="medication">
+              <div class="text-sm text-[#6b7280]">Next dose</div>
+              <div class="font-display text-lg font-semibold mt-1 leading-snug ${injStatus==='Due now'?'text-[#c2410c]':''}">${injStatus||'Not set'}</div>
+              <div class="text-xs text-[#6b7280] mt-0.5">${doseSub}</div>
+            </button>
+            <button type="button" class="goto-tab" data-goto="messages">
+              <div class="text-sm text-[#6b7280]">Messages</div>
+              <div class="font-display text-2xl font-semibold seg mt-0.5 ${unread?'text-[#e11d48]':''}">${unread||0}</div>
+              <div class="text-xs text-[#6b7280] mt-0.5">${unread?'New from your care team':'Nothing waiting'}</div>
+            </button>
+          </div>
+          ${trainerTasks}
+          <div class="pair">${checkin}${appt}</div>
+          <div class="pair">${logging}${rewards}</div>
+        </div>
+        <div class="mpanel space-y-5 ${_tab==='body'?'':'hidden'}" data-panel="body">
+          <div>
+            <h1 class="font-display text-2xl font-semibold tracking-[-.5px]">Your body</h1>
+            <p class="text-sm text-[#6b7280] mt-1">Scans, tape measurements, and progress photos for this chart.</p>
+          </div>
+          ${progress}${inbodyReport}${scanHistory}
+          <div class="pair">${measurements}${progressPhotos}</div>
+        </div>
+        <div class="mpanel space-y-5 ${_tab==='medication'?'':'hidden'}" data-panel="medication">
+          <div>
+            <h1 class="font-display text-2xl font-semibold tracking-[-.5px]">Medication</h1>
+            <p class="text-sm text-[#6b7280] mt-1">Log a shot, check your supply, report a side effect, or upload labs.</p>
+          </div>
+          ${injection}
+          <div class="pair">${refill}${sideEffects}</div>
+          ${labs}
+        </div>
+        <div class="mpanel space-y-5 ${_tab==='plan'?'':'hidden'}" data-panel="plan">
+          <div>
+            <h1 class="font-display text-2xl font-semibold tracking-[-.5px]">Your plan</h1>
+            <p class="text-sm text-[#6b7280] mt-1">The program your care team built, and the people on it.</p>
+          </div>
+          ${approved}${hb?'':planCta}${planHtml}
+          ${planSide}
+        </div>
+        <div class="mpanel ${_tab==='messages'?'':'hidden'}" data-panel="messages">
+          <div class="max-w-2xl">${messages}</div>
+        </div>
+      </div>
     </div>`;
+  { const _navEl=document.getElementById('dashNav');
+    const _showTab=(id)=>{
+      if(!TAB_IDS.includes(id)) id='home';
+      _tab=id; try{ localStorage.setItem(TAB_KEY,id); }catch(e){}
+      document.querySelectorAll('.mpanel').forEach(pn=>pn.classList.toggle('hidden', pn.dataset.panel!==id));
+      _navEl.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('on', b.dataset.tab===id));
+      if(id==='messages'){
+        const t=document.getElementById('msgThread'); if(t) t.scrollTop=t.scrollHeight;
+        // care-team messages count as read only once the patient actually opens Messages
+        if((DATA.unreadForPatient||0)>0){ api({action:'mark_messages_read'}).catch(()=>{}); DATA.unreadForPatient=0; const bb=document.getElementById('msgTabBadge'); if(bb) bb.remove(); }
+      }
+    };
+    _navEl.querySelectorAll('.navbtn').forEach(b=>b.onclick=()=>{ _showTab(b.dataset.tab); window.scrollTo({top:0,behavior:'smooth'}); });
+    document.querySelectorAll('.goto-tab').forEach(b=>b.onclick=()=>{ _showTab(b.dataset.goto); window.scrollTo({top:0,behavior:'smooth'}); });
+    if(_tab==='messages') _showTab('messages');
+  }
   document.querySelectorAll('.reqBtn').forEach(b=>b.onclick=async()=>{
     b.disabled=true; b.textContent='Sending to Dr. DeBry…';
     try{ await api({action:'add_log', kind:'journal', body:'Requested '+b.dataset.name+' sent to Dr. DeBry for asynchronous review, then checkout.'}); }catch(e){}
@@ -773,7 +979,7 @@ function render(){
     });
   }
   // logging wire
-  const refresh=async()=>{ DATA=await api({action:'load'}); render(); };
+  const refresh=async()=>{ DATA=await api({action:'load'}); window.__PORTAL_DATA=DATA; render(); };
   document.querySelectorAll('.ttBtn').forEach(b=>{ b.onclick=async()=>{ b.disabled=true; b.textContent='…'; try{ await api({action:'complete_task', task_id:b.dataset.tt}); await refresh(); }catch(e){ b.disabled=false; b.textContent='Mark complete'; } }; });
   $('wBtn').onclick=async()=>{ const v=parseFloat($('wIn').value); if(isNaN(v))return; $('wBtn').disabled=true; await api({action:'add_log',kind:'weigh_in',value_num:v,unit:' lb'}); await refresh(); };
   $('jBtn').onclick=async()=>{ const t=$('jIn').value.trim(); if(!t)return; $('jBtn').disabled=true; await api({action:'add_log',kind:'journal',body:t}); await refresh(); };
@@ -795,7 +1001,7 @@ function render(){
     const _nbb=document.getElementById('nbBtn'); if(_nbb) _nbb.onclick=async()=>{ const lot=($('nbLot').value||'').trim(), med=($('nbMed').value||'').trim(), str=parseFloat($('nbStr').value), vol=parseFloat($('nbVol').value); const _m=document.getElementById('nbMsg'); if(!lot||!med||!(str>0)){ if(_m) _m.textContent='Please enter the lot number, medication, and strength.'; return; } _nbb.disabled=true; _nbb.textContent='Saving…'; try{ await api({action:'inj_start_bottle',lot,medication:med,strength_mg_ml:str,volume_ml:isNaN(vol)?undefined:vol}); await refresh(); }catch(e){ _nbb.disabled=false; _nbb.textContent='Save this bottle'; if(_m) _m.textContent='Could not save. Please try again.'; } };
     let _tit='continue';
     document.querySelectorAll('.ci-tit').forEach(b=>{ b.onclick=()=>{ _tit=b.dataset.tit; document.querySelectorAll('.ci-tit').forEach(x=>{ const on=x===b; x.classList.toggle('bg-[#0a6cf5]',on); x.classList.toggle('text-white',on); x.classList.toggle('border-[#0a6cf5]',on); x.classList.toggle('bg-white',!on); x.classList.toggle('text-[#6b7280]',!on); x.classList.toggle('border-[#e6e9ee]',!on); }); }; });
-    const _ci=document.getElementById('ciBtn'); if(_ci) _ci.onclick=async()=>{ const side=($('ciSide').value||'').trim(), refill=$('ciRefill').checked; const _m=document.getElementById('ciMsg'); _ci.disabled=true; _ci.textContent='Sending…'; try{ const r=await api({action:'inj_checkin',side_effects:side||undefined,titration_pref:_tit,needs_refill:refill}); if(_m) _m.textContent=(r&&r.flagged)?'Sent to Dr. DeBry, he will follow up.':'Thanks, your check-in was recorded.'; await refresh(); }catch(e){ _ci.disabled=false; _ci.textContent='Send check-in to Dr. DeBry'; if(_m) _m.textContent='Could not send. Please try again.'; } };
+    const _ci=document.getElementById('injCiBtn'); if(_ci) _ci.onclick=async()=>{ const side=($('ciSide').value||'').trim(), refill=$('ciRefill').checked; const _m=document.getElementById('ciMsg'); _ci.disabled=true; _ci.textContent='Sending…'; try{ const r=await api({action:'inj_checkin',side_effects:side||undefined,titration_pref:_tit,needs_refill:refill}); if(_m) _m.textContent=(r&&r.flagged)?'Sent to Dr. DeBry, he will follow up.':'Thanks, your check-in was recorded.'; await refresh(); }catch(e){ _ci.disabled=false; _ci.textContent='Send check-in to Dr. DeBry'; if(_m) _m.textContent='Could not send. Please try again.'; } };
     const _cc=document.getElementById('ciConsultBtn'); if(_cc) _cc.onclick=async()=>{ _cc.disabled=true; _cc.textContent='Requesting…'; try{ await api({action:'inj_checkin',needs_consult:true}); const _m=document.getElementById('ciMsg'); if(_m) _m.textContent='Consult requested, Dr. DeBry will reach out.'; await refresh(); }catch(e){ _cc.disabled=false; _cc.textContent='Request a consult with the doctor'; } }; }
   { const _rf=document.getElementById('rfBtn'); if(_rf) _rf.onclick=async()=>{ const med=$('rfMed').value, wk=parseInt($('rfWeeks').value,10); if(isNaN(wk)||wk<1) return; _rf.disabled=true; _rf.textContent='Saving…'; await api({action:'add_log',kind:'refill',value_num:wk,unit:'weeks',body:med}); await refresh(); }; }
   { const _rr=document.getElementById('rrBtn'); if(_rr) _rr.onclick=async()=>{ _rr.disabled=true; _rr.textContent='Sending…'; const m=document.getElementById('rfMed'); await api({action:'add_log',kind:'refill_request',body:(m&&m.value)||'medication'}); await refresh(); }; }
@@ -807,7 +1013,7 @@ function render(){
       _mgi.onkeydown=(e)=>{ if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){ e.preventDefault(); sendMsg(); } };
     }
     if(_mgt) _mgt.scrollTop=_mgt.scrollHeight;
-    if((DATA.unreadForPatient||0)>0){ api({action:'mark_messages_read'}).catch(()=>{}); }
+    // mark-read moved to the Messages tab-open handler: unread only clears when the tab is viewed
   }
   { let seSev=1, seSevLabel='Mild';
     document.querySelectorAll('.se-sev').forEach(btn=>btn.onclick=()=>{ document.querySelectorAll('.se-sev').forEach(x=>{ x.classList.remove('bg-[#0a6cf5]','text-white','border-[#0a6cf5]'); x.classList.add('bg-white','text-[#6b7280]','border-[#e6e9ee]'); }); btn.classList.remove('bg-white','text-[#6b7280]','border-[#e6e9ee]'); btn.classList.add('bg-[#0a6cf5]','text-white','border-[#0a6cf5]'); seSev=+btn.dataset.sev; seSevLabel=btn.dataset.label; });
@@ -938,6 +1144,7 @@ window.printPlan=()=>doPrint(document.getElementById('planSection'));
 })();
 
 DATA = await api({action:'load'}).catch(()=>null);
+window.__PORTAL_DATA=DATA;
 if (!DATA || !DATA.ok){
   // NEVER auto-signout+redirect here: a failed load (staff account, network blip,
   // function error) would bounce straight back to portal-login and read as a login loop.
