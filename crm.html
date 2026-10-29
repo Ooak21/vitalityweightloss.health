@@ -4116,6 +4116,11 @@
   // normal Book appointment with type "Video visit": the patient is emailed the link on save and
   // sees it in Thrive and the portal; the provider starts it from the appointment when it is time.
   window.videoVisitNow=function(id){
+    // A video visit for this patient already covers right now (the tab dropped, the connection died,
+    // or it was booked for this slot): go back to that appointment, whose Video block offers Rejoin
+    // or Restart. Booking a second one would collide with the first one's own time slot.
+    const cur=currentVideoAppt(id);
+    if(cur){ editAppt(id, cur.id); if(apptEdit) document.getElementById('apptModalTitle').textContent='Video visit in progress'; return; }
     bookAppt(id); if(!apptEdit) return;
     const d=new Date(); d.setSeconds(0,0); d.setMinutes(Math.ceil(d.getMinutes()/5)*5); const pad=n=>String(n).padStart(2,'0');
     document.getElementById('apptDate').value=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
@@ -4159,8 +4164,20 @@
   window.startVideoVisit=function(){
     if(!apptEdit || apptEdit.isNew || !apptEdit.apptId) return;
     const rec = document.getElementById('apptVideoRec').checked ? '1' : '0';
-    window.open(`visit.html?appt=${encodeURIComponent(apptEdit.apptId)}&rec=${rec}`, '_blank', 'noopener');
+    window.open(`visit.html?appt=${encodeURIComponent(apptEdit.apptId)}&rec=${rec}${apptEdit.videoRestart?'&restart=1':''}`, '_blank', 'noopener');
   };
+  // The patient's video appointment whose join window covers right now (20 min early through 90 min
+  // after its slot, the same window the patient link uses), newest start first. Completed counts:
+  // it still holds the slot.
+  function currentVideoAppt(pid){
+    const p=patients.find(x=>x.id===pid); if(!p) return null;
+    const now=Date.now();
+    return (p.appts||[])
+      .filter(a=>a && a.when && /video/i.test(a.type||'') && !['cancelled','no_show','requested'].includes(a.status))
+      .map(a=>({a, t:typeof a.when==='number'?a.when:Date.parse(a.when)}))
+      .filter(x=>now>=x.t-20*60000 && now<=x.t+((x.a.duration_min||30)+90)*60000)
+      .sort((x,y)=>y.t-x.t).map(x=>x.a)[0] || null;
+  }
   // Tell the provider whether this appointment already has a visit, so "Start" does not
   // look like it will open a second room on an appointment that is already under way.
   async function refreshVideoState(apptId){
@@ -4174,7 +4191,10 @@
       // Recording is fixed once the Telnyx room exists. Until then a booked video visit can still be recorded.
       if(j.visit.recording_locked) recWrap.classList.add('hidden');
       else recWrap.classList.remove('hidden');
-      if(j.visit.ended){ hint.textContent='This visit has already ended.'; btn.textContent='Open again'; return; }
+      if(j.visit.ended){
+        hint.textContent="The last session ended. Restart opens a new room on this appointment and the patient's link works again.";
+        btn.textContent='Restart'; if(apptEdit && apptEdit.apptId===apptId) apptEdit.videoRestart=true; return;
+      }
       btn.textContent=j.visit.status==='created'?'Start':'Rejoin';
       hint.textContent = j.visit.link_sent_at
         ? `${j.visit.status==='created'?'Link sent':'Room is open. Link sent'} ${new Date(j.visit.link_sent_at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}.`

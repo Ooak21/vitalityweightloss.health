@@ -463,8 +463,10 @@ async function joinRoom({ room_id, client_token, refresh_token, context }){
     connected = false;
     if (ended) return;
     setState('Reconnecting', '');
-    placeholder('Connection dropped', 'Trying to get you back in. Keep this page open.');
+    placeholder('Connection dropped', 'Trying to get you back in. Keep this page open.'
+      + '<br><button class="btn ghost" style="width:auto;margin-top:16px" onclick="rejoin()">Rejoin now</button>');
     console.warn('[video] disconnected', reason);
+    scheduleRejoin();
   });
 
   await room.connect();
@@ -473,6 +475,29 @@ async function joinRoom({ room_id, client_token, refresh_token, context }){
   // long visit never falls over mid-sentence.
   clearInterval(refreshTimer);
   refreshTimer = setInterval(refreshClientToken, 7 * 60 * 1000);
+}
+
+// The SDK does not come back on its own after a drop. Reloading is the path that already works on
+// both doors: the provider's open mints a fresh token for the same room, and an admitted patient goes
+// straight back in. One automatic try 5 s after the drop (or once the network is back), at most 3 in
+// 2 minutes so a dead network cannot loop the page. The Rejoin button is always there.
+const REJOIN_KEY = 'vit-rejoin:' + (IS_PATIENT ? TOKEN.slice(0, 16) : (qs.get('appt') || ''));
+window.rejoin = function(){
+  const u = new URL(location.href);
+  u.searchParams.delete('restart');   // a reload rejoins; it never restarts a visit on its own
+  location.replace(u.toString());
+};
+function scheduleRejoin(){
+  let tries = [];
+  try { tries = JSON.parse(sessionStorage.getItem(REJOIN_KEY) || '[]').filter((t) => Date.now() - t < 120000); } catch (_) {}
+  if (tries.length >= 3) return;
+  const go = () => {
+    if (ended || connected) return;
+    try { sessionStorage.setItem(REJOIN_KEY, JSON.stringify([...tries, Date.now()])); } catch (_) {}
+    rejoin();
+  };
+  if (navigator.onLine) setTimeout(go, 5000);
+  else window.addEventListener('online', () => setTimeout(go, 1500), { once: true });
 }
 
 async function refreshClientToken(){
@@ -567,6 +592,31 @@ window.admit = async function(){
   }
 };
 
+// The session ended inside the appointment window: the tab dropped and Telnyx closed the empty room,
+// or End was pressed. One click starts a new session on the same appointment. Nothing is sent to
+// the patient until the provider presses Email it or Text it.
+function restartCard(r){
+  stopTimers();
+  $('controls').style.display = 'none';
+  setState('Session ended', '');
+  showCard(`
+    <div class="eyebrow">Video visit</div>
+    <h1>This session ended</h1>
+    <p>${esc(r.error || 'This visit has ended.')}</p>
+    <p>Restart opens a new session on the same appointment. The patient's link works again, and they check in and wait for you to let them in, the same as before.</p>
+    <button class="btn" id="restartBtn" style="margin-top:18px" onclick="restartVisit()">Restart and reinvite</button>`);
+}
+window.restartVisit = async function(){
+  const b = $('restartBtn');
+  if (b){ b.disabled = true; b.textContent = 'Restarting…'; }
+  try {
+    const r = await staffApi({ action: 'open', appointment_id: qs.get('appt') || '', enable_recording: qs.get('rec') === '1', restart: true });
+    if (!r.ok) return fatal('Could not restart the visit', esc(r.error || 'Unknown error'), 'Video visit');
+    hideCard();
+    await afterProviderOpen(r);
+  } catch (e) { fatal('Something went wrong', esc(e.message || e), 'Video visit'); }
+};
+
 // Shared tail for both provider entry points (fresh open, or reopen of an existing visit).
 async function afterProviderOpen(r){
   visitId = r.visit_id;
@@ -592,7 +642,14 @@ async function afterProviderOpen(r){
     return fatal('We could not start your camera', mediaErrorHtml(e), 'Video visit');
   }
 
-  placeholder('Waiting for your patient', 'Send them the link from the panel on the right if they do not have it yet.');
+  if (r.restarted){
+    // A reload of this tab rejoins the new session; it must not restart it a second time.
+    const u = new URL(location.href); u.searchParams.delete('restart'); history.replaceState(null, '', u.toString());
+    railMsg('New session started. Send the patient their link again so they can check in.', 'good');
+    placeholder('Waiting for your patient', 'Their link works again. Email it or Text it from the panel on the right.');
+  } else {
+    placeholder('Waiting for your patient', 'Send them the link from the panel on the right if they do not have it yet.');
+  }
   await joinRoom({
     room_id: r.room_id,
     client_token: r.client_token,
@@ -801,7 +858,9 @@ if (!window.isSecureContext){
     if (!apptId) return fatal('No appointment on this link',
       'Open the video visit from the appointment inside the CRM so we know who you are seeing.', 'Video visit');
     setState('Opening the room', '');
-    const r = await staffApi({ action: 'open', appointment_id: apptId, enable_recording: qs.get('rec') === '1' });
+    // restart=1 comes from the appointment's Restart button: that click is the go-ahead.
+    const r = await staffApi({ action: 'open', appointment_id: apptId, enable_recording: qs.get('rec') === '1', restart: qs.get('restart') === '1' });
+    if (!r.ok && r.ended && r.can_restart) return restartCard(r);
     if (!r.ok) return fatal('Could not open the room', esc(r.error || 'Unknown error'), 'Video visit');
     await afterProviderOpen(r);
   })().catch((e) => fatal('Something went wrong', esc(e.message || e), 'Video visit'));
