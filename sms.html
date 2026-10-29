@@ -115,6 +115,7 @@
     <p>There are four ways to join, and every one of them requires your own affirmative action:</p>
 
     <h3>1. Sign up on this page</h3>
+    <p>Leave your details below. The SMS consent box is optional and unchecked. The form submits without it, and we will not send you text messages unless you check it yourself.</p>
     <form id="optinForm" class="optin" novalidate>
       <div class="row">
         <div class="fld"><label for="fn">First name</label><input id="fn" name="fn" type="text" autocomplete="given-name"></div>
@@ -122,18 +123,21 @@
       </div>
       <div class="row">
         <div class="fld"><label for="em">Email</label><input id="em" name="em" type="email" autocomplete="email" placeholder="you@email.com"></div>
-        <div class="fld"><label for="ph">Mobile phone</label><input id="ph" name="ph" type="tel" autocomplete="tel" placeholder="(702) 000-0000"></div>
+        <div class="fld"><label for="ph">Mobile phone (optional)</label><input id="ph" name="ph" type="tel" autocomplete="tel" placeholder="(702) 000-0000"></div>
       </div>
       <label class="label" style="margin-top:.9rem">
         <input type="checkbox" id="ok">
-        <span>By providing your phone number and checking this box, you agree to receive SMS appointment reminders, care follow-ups, and account notifications from DeBry Vitality Academies PC (Vitality Weight Loss). Message frequency may vary. Standard Message and Data Rates may apply. Reply STOP to opt out. Reply HELP for help. Consent is not a condition of purchase or treatment. We will not share mobile information with third parties for promotional or marketing purposes. See our <a href="/terms.html" target="_blank" rel="noopener">SMS Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span>
+        <span>Optional: By providing your phone number and checking this box, you agree to receive SMS appointment reminders, care follow-ups, and account notifications from DeBry Vitality Academies PC (Vitality Weight Loss). Message frequency may vary. Standard Message and Data Rates may apply. Reply STOP to opt out. Reply HELP for help. Consent is not a condition of purchase or treatment. We will not share mobile information with third parties for promotional or marketing purposes. See our <a href="/terms.html" target="_blank" rel="noopener">SMS Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span>
       </label>
-      <p class="err" id="optinErr">Please add your email, your mobile number, and check the consent box.</p>
-      <button type="submit" id="optinBtn">Sign up for text messages</button>
+      <p class="err" id="optinErr">Please add a valid email address.</p>
+      <button type="submit" id="optinBtn">Submit</button>
       <p class="caption">You can stop at any time by replying STOP.</p>
     </form>
     <div id="optinDone" class="cta-box" style="display:none">
       <p style="margin:0;color:#16201d"><strong>You&rsquo;re signed up.</strong> Reply STOP to any message to unsubscribe, or HELP for help. Message frequency varies. Message and data rates may apply.</p>
+    </div>
+    <div id="optinDoneNoSms" class="cta-box" style="display:none">
+      <p style="margin:0;color:#16201d"><strong>Thank you, we have your details.</strong> You left the text message box blank, so we will not text you. You can opt in any time by texting START or YES to (702) 675-8982.</p>
     </div>
 
     <h3>2. Check the SMS consent box on one of our web forms</h3>
@@ -163,8 +167,8 @@
     </ul>
     <p>On <a href="/care-intake.html">care-intake.html</a> and <a href="/intake.html">intake.html</a> the consent box appears on the contact-information step, alongside the field where you enter your mobile number. On <a href="/glp1-check.html">glp1-check.html</a> and the other pages above it appears directly beneath the mobile phone field on the contact step of the form.</p>
 
-    <h3>3. Text START to (702) 675-8982</h3>
-    <p>Send the word <strong>START</strong> from the mobile number you want us to use. You will receive this confirmation and nothing further until you have a reason to hear from us:</p>
+    <h3>3. Text START or YES to (702) 675-8982</h3>
+    <p>Send the word <strong>START</strong> or <strong>YES</strong> from the mobile number you want us to use. Our appointment and care emails carry this invitation: <em>&ldquo;Get appointment reminders by text. Text YES to (702) 675-8982 to receive appointment reminders, care follow-ups, and account notifications from DeBry Vitality Academies PC (Vitality Weight Loss). Message frequency may vary. Standard Message and Data Rates may apply. Reply STOP to opt out. Reply HELP for help. Consent is not a condition of purchase or treatment. We will not share mobile information with third parties for promotional or marketing purposes.&rdquo;</em> with links to this page, our SMS Terms, and our Privacy Policy. You will receive this confirmation and nothing further until you have a reason to hear from us:</p>
     <p><em>&ldquo;Vitality Weight Loss: Thanks for subscribing to appointment and care reminders! Reply HELP for help. Message frequency may vary. Msg&amp;data rates may apply. Consent is not a condition of purchase. Reply STOP to opt out.&rdquo;</em></p>
 
     <h3>4. Ask us in person or by phone</h3>
@@ -212,8 +216,8 @@
 </footer>
 
 <script>
-// Opt-in page signup. The consent box is the whole point of this form, so it is required
-// here; nothing is being purchased or treated, so consent gates nothing but the texts.
+// Opt-in page signup. The SMS consent box is OPTIONAL: the form submits with it blank and
+// nothing is texted unless it is checked (a required box anywhere reads as forced opt-in, 10DLC 803).
 (function(){
   var f=document.getElementById('optinForm');
   if(!f) return;
@@ -223,24 +227,38 @@
     var ph=document.getElementById('ph').value.trim();
     var ok=document.getElementById('ok').checked;
     var digits=ph.replace(/\D/g,'');
-    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em) || digits.length<10 || !ok){
-      document.getElementById('optinErr').style.display='block';
+    var err=document.getElementById('optinErr');
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){
+      err.textContent='Please add a valid email address.';
+      err.style.display='block';
       return;
     }
+    if(ok && digits.length<10){
+      err.textContent='You checked the text message box. Please add the mobile number you want us to text, or leave the box blank.';
+      err.style.display='block';
+      return;
+    }
+    err.style.display='none';
     var btn=document.getElementById('optinBtn');
-    btn.disabled=true; btn.textContent='Signing you up…';
+    btn.disabled=true; btn.textContent='Sending…';
     fetch('https://quixotic-cat-492.convex.site/lead',{
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         first_name:document.getElementById('fn').value.trim(),
         last_name:document.getElementById('ln').value.trim(),
         email:em, phone:ph,
-        source:'sms_optin', source_detail:'SMS opt-in page (sms.html)',
-        consent:true, tags:['sms-consent']
+        source:'sms_optin', source_detail:ok ? 'SMS opt-in page (sms.html), SMS box checked' : 'SMS opt-in page (sms.html), SMS box left blank, do not text',
+        consent:ok, tags:ok ? ['sms-consent'] : []
       })
-    }).catch(function(){}).then(function(){
-      f.style.display='none';
-      document.getElementById('optinDone').style.display='block';
+    }).then(function(r){ return r.ok; }).catch(function(){ return false; }).then(function(saved){
+      if(saved){
+        f.style.display='none';
+        document.getElementById(ok?'optinDone':'optinDoneNoSms').style.display='block';
+        return;
+      }
+      btn.disabled=false; btn.textContent='Submit';
+      err.textContent='We could not save your details just now. Please try again'+(ok?', or text START to (702) 675-8982.':'.');
+      err.style.display='block';
     });
   });
 })();
