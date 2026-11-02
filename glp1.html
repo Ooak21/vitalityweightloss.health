@@ -2372,6 +2372,7 @@ function viewPaid(p, info) {
   const nextBill = (info && info.nextBillAt) ? new Date(info.nextBillAt) : new Date(Date.now() + 30 * 24 * 3600 * 1000);
   const nextBillLabel = nextBill.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   const card = h('div', { class:'center-card notrans' });
+  const homeLabel = (window.__LANG === 'es') ? 'Volver al inicio' : 'Back to home';
   let billingCta = '';
   if (needsBilling) {
     const calm = info && info.billingSetupUnavailable;
@@ -2393,6 +2394,7 @@ function viewPaid(p, info) {
     ${enrolledCopy}
     ${billingCta}
     <div class="skip-info">You&rsquo;ll get an email confirmation shortly.${ref ? ' Ref: ' + ref.slice(0,8) + '…' : ''}</div>
+    <a class="cta" href="/">${homeLabel}</a>
   `;
   p.appendChild(card);
   if (ref && needsBilling) {
