@@ -3121,6 +3121,11 @@
       return;
     }
     const p=patients.find(x=>x.id===id); if(!p||stageOf(p)===stage)return;
+    // Fred 10/30: a dragged card used to change the lead with no prompt. Name the person and both columns.
+    const nm=`${p.first||''} ${p.last||''}`.trim()||'this record';
+    const fromLbl=(PIPE.find(s=>s.k===stageOf(p))||{}).label||stageOf(p);
+    const toLbl=(PIPE.find(s=>s.k===stage)||{}).label||stage;
+    if(!confirm(`Move ${nm} on the board?\n\nFrom: ${fromLbl}\nTo: ${toLbl}`)) return;
     const prev=p.pipeline_stage, prevTb=p.touched_by, prevTa=p.touched_at;
     p.pipeline_stage=stage; p.touched_by=null; p.touched_at=null; renderBoard(); updateInquiryBadge(); // optimistic (moving clears the yellow touched flag)
     try{ const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'set_stage',patient_id:id,stage})}); const j=await r.json(); if(!j.ok)throw new Error(j.error||'failed'); }
@@ -3831,6 +3836,9 @@
   // ---------------- actions ----------------
   // Persists to Convex (Ana 9/29: the change used to live only in the browser, so the next board load put it back).
   async function changeStatus(id,val){ const p=patients.find(x=>x.id===id); if(!p) return; const old=p.status; if(old===val) return;
+    // Fred 10/30: the status dropdown used to save the moment it changed. Ask first, and put it back on cancel.
+    const nm=`${p.first||''} ${p.last||''}`.trim()||'this record';
+    if(!confirm(`Change status for ${nm}?\n\nFrom: ${STAT[old]||old}\nTo: ${STAT[val]||val}`)){ renderDetail(); return; }
     p.status=val; kpis(); renderList(); renderDetail();
     try{
       const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'set_status',patient_id:id,status:val})});

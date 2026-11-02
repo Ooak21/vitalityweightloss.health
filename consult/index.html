@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Free Consultation in Las Vegas | Vitality Weight Loss</title>
+<title>Book a program consultation | Vitality Weight Loss</title>
 <link rel="canonical" href="https://vitalityweightloss.health/consult/">
-<meta name="description" content="Book a free consultation with the physician-led team at Vitality Weight Loss in Las Vegas. About 30 minutes, no obligation. (702) 602-5002.">
+<meta name="description" content="Book a free program consultation with Fred Corona at Vitality Weight Loss in Las Vegas. About 30 minutes, in person or by video. Not a medical visit. (702) 602-5002.">
 <meta name="robots" content="index,follow">
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" type="image/png" href="/assets/favicon.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Vitality Weight Loss">
-<meta property="og:title" content="Book your free consultation | Vitality Weight Loss">
-<meta property="og:description" content="Pick a time that works. About 30 minutes, no obligation.">
+<meta property="og:title" content="Book your free program consultation | Vitality Weight Loss">
+<meta property="og:description" content="A conversation with Fred Corona about the program. In person or by video. About 30 minutes. Not a medical visit.">
 <meta property="og:url" content="https://vitalityweightloss.health/consult/">
 <meta property="og:image" content="https://vitalityweightloss.health/assets/og-image.jpg">
 
@@ -22,17 +22,17 @@
 <link rel="preconnect" href="https://quixotic-cat-492.convex.site" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- Free consultation booking (Fred 10/9, the home page "Book Free Consult" button). Built from
-     /scan/ and books through the same /book-slots + /book-claim routes with type "consult", so the
-     visit lands on the CRM schedule and the provider's Google Calendar, and the person on a lead.
-     No analytics on this page, deliberately, same reason as /scan/: "this person wants a visit at a
-     medical clinic" stays out of any system with no BAA. Do not add /ga.js. There is no Ads
-     conversion here either; add one only with its own label, never the InBody one.
+<!-- Program consultation booking (Fred 10/30). The first appointment is a conversation with
+     Fred Corona about the program, not a medical visit with a provider. In person uses type
+     "intro". Video uses "intro_video" and the clinic video tool, which emails a browser link.
+     Both book through /book-slots + /book-claim onto Fred's calendar and open a lead.
+     The medical "consult" type stays on Dr. DeBry and Richard DeVera and is not offered here.
+     No analytics on this page, deliberately, same reason as /scan/. Do not add /ga.js.
      The SMS box is OPTIONAL (10DLC/TCPA: consent is never a condition of booking). Its label is the
      consent record; the server stores its own copy of that text when the box is checked. -->
 
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebPage","@id":"https://vitalityweightloss.health/consult/#page","url":"https://vitalityweightloss.health/consult/","name":"Book your free consultation","description":"Online scheduling for a free medical weight loss consultation at Vitality Weight Loss in Las Vegas.","inLanguage":"en-US","isPartOf":{"@type":"WebSite","url":"https://vitalityweightloss.health/"},"about":{"@type":"Service","name":"Medical Weight Loss Consultation","provider":{"@type":"MedicalClinic","name":"Vitality Weight Loss","telephone":"+1-702-602-5002","address":{"@type":"PostalAddress","streetAddress":"6140 Brent Thurman Way, Suite 100","addressLocality":"Las Vegas","addressRegion":"NV","postalCode":"89148","addressCountry":"US"}}}}
+{"@context":"https://schema.org","@type":"WebPage","@id":"https://vitalityweightloss.health/consult/#page","url":"https://vitalityweightloss.health/consult/","name":"Book your free program consultation","description":"Online scheduling for a free program consultation with Fred Corona at Vitality Weight Loss in Las Vegas. Not a medical visit.","inLanguage":"en-US","isPartOf":{"@type":"WebSite","url":"https://vitalityweightloss.health/"},"about":{"@type":"Service","name":"Program consultation","provider":{"@type":"MedicalClinic","name":"Vitality Weight Loss","telephone":"+1-702-602-5002","address":{"@type":"PostalAddress","streetAddress":"6140 Brent Thurman Way, Suite 100","addressLocality":"Las Vegas","addressRegion":"NV","postalCode":"89148","addressCountry":"US"}}}}
 </script>
 
 <style>
@@ -134,6 +134,12 @@ h1{font-size:clamp(1.75rem,4.6vw,2.5rem)}
   transition:border-color var(--t) ease,box-shadow var(--t) ease}
 .f input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(10,108,245,.13)}
 .f input::placeholder{color:#b9bfc9}
+.meet{margin-bottom:16px}
+.meet label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);letter-spacing:.01em;margin-bottom:6px}
+.meet select{font:inherit;font-size:1rem;font-weight:600;padding:11px 13px;border:1px solid var(--border);
+  border-radius:var(--r-sm);background:#fff;color:var(--text);width:100%}
+.meet select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(10,108,245,.13)}
+.meet .hint{font-size:.84rem;color:var(--ink-2);margin-top:8px;line-height:1.5}
 
 .chosen{display:flex;align-items:center;gap:11px;background:var(--accent-soft);
   border:1px solid var(--accent-line);border-radius:var(--r);padding:12px 15px;margin-bottom:18px}
@@ -203,18 +209,27 @@ h1{font-size:clamp(1.75rem,4.6vw,2.5rem)}
 <main class="wrap">
   <div class="head">
     <span class="eyebrow">Las Vegas &middot; Brent Thurman Way</span>
-    <h1>Book your free consultation</h1>
-    <p class="lead">Sit down with our physician-led team, talk through your goals and your history, and find out which program fits you. Pick a time that works for you.</p>
+    <h1>Book your free program consultation</h1>
+    <p class="lead">This first conversation is with Fred Corona. He will explain the program, answer your questions, and help you enroll if you are ready. It is not a medical visit, and it is not with a physician. If you need a medical consultation with Dr. DeBry, that is booked separately.</p>
     <div class="facts">
-      <span class="fact">For new patients</span>
+      <span class="fact">With Fred Corona</span>
       <span class="fact">About 30 minutes</span>
       <span class="fact"><b>Free</b> &middot; no obligation</span>
+      <span class="fact">Not a medical visit</span>
     </div>
   </div>
 
   <!-- PICK -->
   <section id="pick" class="card">
-    <div class="step-label"><span class="step-n">1</span><span class="step-t">Choose a day and time</span></div>
+    <div class="step-label"><span class="step-n">1</span><span class="step-t">Choose how to meet, then a time</span></div>
+    <div class="meet">
+      <label for="meet">How would you like to meet?</label>
+      <select id="meet">
+        <option value="intro">In person at the clinic</option>
+        <option value="intro_video">Video visit in your browser</option>
+      </select>
+      <p class="hint" id="meetHint">At 6140 Brent Thurman Way, Suite 100. Please come about ten minutes early. This is a program conversation with Fred Corona, not a medical visit.</p>
+    </div>
     <div id="loading" class="state"><div class="spinner"></div>Loading available times&hellip;</div>
     <div id="picker" hidden>
       <div class="days" id="days" role="group" aria-label="Choose a day"></div>
@@ -234,7 +249,7 @@ h1{font-size:clamp(1.75rem,4.6vw,2.5rem)}
       <span class="ic" aria-hidden="true">&#128197;</span>
       <span>
         <span class="w" id="chosenWhen"></span>
-        <span class="sub">Free consultation &middot; about 30 minutes</span>
+        <span class="sub" id="chosenSub">In person with Fred Corona &middot; about 30 minutes</span>
       </span>
       <button type="button" id="changeBtn">Change</button>
     </div>
@@ -263,16 +278,9 @@ h1{font-size:clamp(1.75rem,4.6vw,2.5rem)}
       </div>
       <h2>You&rsquo;re booked</h2>
       <div class="when num" id="doneWhen"></div>
-      <p>We sent a confirmation to <b id="doneEmail"></b>. It has the address and a button to add the visit to your calendar.</p>
-      <p>We are at <b>6140 Brent Thurman Way, Suite 100</b>. Please come about ten minutes early.</p>
-      <div class="prep">
-        <h3>What to bring</h3>
-        <ul>
-          <li>A photo ID, and your insurance card if you have one</li>
-          <li>A list of the medications and supplements you take</li>
-          <li>Any recent lab results you already have</li>
-        </ul>
-      </div>
+      <p>We sent a confirmation to <b id="doneEmail"></b>.</p>
+      <p id="doneNext"></p>
+      <div class="prep" id="donePrep"></div>
       <p style="margin-top:18px;font-size:.88rem;color:var(--muted)">Need to change it? Call <a href="tel:+17026025002">(702) 602-5002</a>.</p>
     </div>
   </section>
@@ -290,7 +298,7 @@ h1{font-size:clamp(1.75rem,4.6vw,2.5rem)}
 (function () {
   "use strict";
   var API = "https://quixotic-cat-492.convex.site";
-  var TYPE = "consult";
+  var TYPE = "intro";
 
   var els = {
     loading: document.getElementById("loading"),
@@ -307,8 +315,25 @@ h1{font-size:clamp(1.75rem,4.6vw,2.5rem)}
     submit: document.getElementById("submitBtn"),
     change: document.getElementById("changeBtn"),
     doneWhen: document.getElementById("doneWhen"),
-    doneEmail: document.getElementById("doneEmail")
+    doneEmail: document.getElementById("doneEmail"),
+    doneNext: document.getElementById("doneNext"),
+    donePrep: document.getElementById("donePrep"),
+    chosenSub: document.getElementById("chosenSub"),
+    meet: document.getElementById("meet"),
+    meetHint: document.getElementById("meetHint")
   };
+
+  function isVideo() { return TYPE === "intro_video"; }
+  function setMeetCopy() {
+    els.meetHint.textContent = isVideo()
+      ? "A private link arrives by email. It opens in your browser. There is nothing to download. Fred Corona will meet you there. This is not a medical visit."
+      : "At 6140 Brent Thurman Way, Suite 100. Please come about ten minutes early. This is a program conversation with Fred Corona, not a medical visit.";
+    if (els.chosenSub) {
+      els.chosenSub.textContent = isVideo()
+        ? "Video visit with Fred Corona · about 30 minutes"
+        : "In person with Fred Corona · about 30 minutes";
+    }
+  }
 
   var days = [];        // [{date,label,slots:[{slot_id,time}]}]
   var dayIdx = 0;
@@ -360,6 +385,7 @@ h1{font-size:clamp(1.75rem,4.6vw,2.5rem)}
   els.times.addEventListener("click", function (e) {
     var b = e.target.closest(".time"); if (!b) return;
     chosen = { slot_id: b.dataset.slot, time: b.dataset.time, dayLabel: days[dayIdx].label };
+    setMeetCopy();
     renderTimes();
     els.chosenWhen.textContent = chosen.dayLabel + " at " + chosen.time;
     show(els.details, true);
@@ -371,6 +397,14 @@ h1{font-size:clamp(1.75rem,4.6vw,2.5rem)}
   els.change.addEventListener("click", function () {
     show(els.details, false);
     els.pick.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  els.meet.addEventListener("change", function () {
+    TYPE = els.meet.value === "intro_video" ? "intro_video" : "intro";
+    chosen = null;
+    show(els.details, false);
+    setMeetCopy();
+    load(false);
   });
 
   function load(keepChoice) {
@@ -415,6 +449,13 @@ h1{font-size:clamp(1.75rem,4.6vw,2.5rem)}
       if (j && j.ok) {
         els.doneWhen.textContent = j.when || (chosen.dayLabel + " at " + chosen.time);
         els.doneEmail.textContent = em;
+        if (isVideo()) {
+          els.doneNext.textContent = "Open the link in that email a few minutes before your time. It opens in your browser. There is nothing to download. Fred Corona will meet you there. This is a program conversation, not a medical visit.";
+          els.donePrep.innerHTML = "<h3>Before you join</h3><ul><li>A phone, tablet, or computer with a camera</li><li>A quiet spot and a good connection</li><li>Any questions you have about the program</li></ul>";
+        } else {
+          els.doneNext.textContent = "We are at 6140 Brent Thurman Way, Suite 100. Please come about ten minutes early. This is a program conversation with Fred Corona, not a medical visit.";
+          els.donePrep.innerHTML = "<h3>What to bring</h3><ul><li>A photo ID</li><li>Any questions you have about the program</li></ul>";
+        }
         show(els.pick, false); show(els.details, false); show(els.done, true);
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;

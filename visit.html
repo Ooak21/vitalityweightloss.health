@@ -544,7 +544,9 @@ window.hangUp = async function(){
     <div class="eyebrow">Visit ended</div>
     <h1>${IS_PATIENT ? 'Thanks for coming in' : 'Visit ended'}</h1>
     <p>${IS_PATIENT
-      ? `You can close this window. Anything your provider wrote up will show in your portal, and we will call you if there is a next step.`
+      ? (programVisit
+        ? `You can close this window. We will call you if there is a next step.`
+        : `You can close this window. Anything your provider wrote up will show in your portal, and we will call you if there is a next step.`)
       : `The room is closed and the patient link is dead. A note has been written to the chart with the connected time.`}</p>
     ${IS_PATIENT ? '' : '<button class="btn ghost" style="margin-top:18px" onclick="window.close()">Close this tab</button>'}`);
 };
@@ -679,37 +681,51 @@ async function afterProviderOpen(r){
 
 // ── patient flow ─────────────────────────────────────────────────────────────
 let consentNeeded = false, consentGiven = false;
+// A program consultation (Fred, /consult/) must not call the host a provider.
+let programVisit = false;
+function hostLabel(st){ return (st && st.program && st.provider) ? st.provider : ''; }
 
 function waitingCard(st){
+  programVisit = !!(st && st.program);
+  const host = hostLabel(st);
   const who = st.provider ? ` with <b>${esc(st.provider)}</b>` : '';
+  const lets = host ? `${esc(host)} will let you in when ready.` : 'Your provider will let you in as soon as they are ready.';
+  const waiting = host ? `Waiting for ${esc(host)}` : 'Waiting for your provider';
   showCard(`
     <div class="eyebrow">You're checked in</div>
     <h1>${st.first_name ? esc(st.first_name) + ', you' : 'You'}'re in the waiting room</h1>
-    <p>Your visit${who} is set for <b>${esc(st.when_label)}</b>. Your provider will let you in as soon as they are ready.
+    <p>Your visit${who} is set for <b>${esc(st.when_label)}</b>. ${lets}
        Keep this page open, we will bring you straight through.</p>
     <p style="display:flex;align-items:center;gap:8px;color:var(--blue-hi)">
-      Waiting for your provider <span class="dots"><i></i><i></i><i></i></span>
+      ${waiting} <span class="dots"><i></i><i></i><i></i></span>
     </p>
     <div class="note">Running late or need to reschedule? Call <b>${CLINIC_TEL}</b>.</div>`);
 }
 
 function prejoinCard(st){
+  programVisit = !!(st && st.program);
   consentNeeded = !!st.enable_recording && !st.recording_consent;
+  const host = hostLabel(st);
   const who = st.provider ? ` with ${esc(st.provider)}` : '';
+  const tell = host ? `let ${esc(host)} know you are here` : 'let your provider know you are here';
+  const ready = host ? `Let ${esc(host)} know I'm here` : "Let my provider know I'm here";
+  const consentNote = host
+    ? `The recording is used only to write up this conversation. The audio and video are deleted once the written transcript is made. ${esc(host)} will explain how it is used.`
+    : 'The recording is used only to write your visit note. The audio and video are deleted once the written transcript is made; the transcript is kept in your medical record. Your provider will explain how it is used.';
   showCard(`
-    <div class="eyebrow">Video visit${esc(who)}</div>
+    <div class="eyebrow">${host ? 'Program consultation' : 'Video visit'}${esc(who)}</div>
     <h1>${st.first_name ? 'Hi ' + esc(st.first_name) + ', ready' : 'Ready'} when you are</h1>
-    <p>Check you can see yourself and that you are somewhere private. When you are set, let your provider know you are here.</p>
+    <p>Check you can see yourself and that you are somewhere private. When you are set, ${tell}.</p>
     <div class="preview"><video id="pvVideo" autoplay playsinline muted></video><div class="msg" id="pvMsg">Starting your camera…</div></div>
     ${consentNeeded ? `
       <div class="consent">
         <input type="checkbox" id="consentBox" onchange="window.__consent(this.checked)">
         <label for="consentBox">I agree to this visit being recorded.
-          <span>The recording is used only to write your visit note. The audio and video are deleted once the written transcript is made; the transcript is kept in your medical record. Your provider will explain how it is used.</span>
+          <span>${consentNote}</span>
         </label>
       </div>` : ''}
     <div id="pvErr"></div>
-    <button class="btn" id="readyBtn" style="margin-top:18px" onclick="window.__ready()" disabled>Let my provider know I'm here</button>
+    <button class="btn" id="readyBtn" style="margin-top:18px" onclick="window.__ready()" disabled>${ready}</button>
     <div class="note">Nothing to install and no account needed. Trouble getting in? Call <b>${CLINIC_TEL}</b>.</div>`);
 }
 
@@ -728,7 +744,7 @@ window.__ready = async function(){
     waitingCard(st);
     startPatientPoll();
   } catch (e) {
-    b.disabled = false; b.textContent = "Let my provider know I'm here";
+    b.disabled = false; b.textContent = programVisit ? "Let them know I'm here" : "Let my provider know I'm here";
     document.getElementById('pvErr').innerHTML = `<div class="err">${esc(e.message || e)}</div>`;
   }
 };
@@ -764,13 +780,14 @@ async function patientEnter(){
 
 // Every not-yet and no-longer case gets a page that says something true and useful.
 function renderPatientState(st){
+  programVisit = !!(st && st.program);
   const s = st && st.state;
   if (s === 'waiting'){ waitingCard(st); return; }
   if (s === 'early'){
     stopTimers();
     const opens = st.opens_at ? new Date(st.opens_at).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }) : null;
     showCard(`
-      <div class="eyebrow">Video visit</div>
+      <div class="eyebrow">${st.program ? 'Program consultation' : 'Video visit'}</div>
       <h1>${st.first_name ? esc(st.first_name) + ", you're" : "You're"} a little early</h1>
       <p>Your visit${st.provider ? ` with <b>${esc(st.provider)}</b>` : ''} is <b>${esc(st.when_label)}</b>.
          This link opens${opens ? ` at about <b>${opens}</b>` : ' shortly before your time'}, so bookmark it and come back then.</p>
@@ -782,7 +799,7 @@ function renderPatientState(st){
     ended = true;
     fatal('This visit has ended',
       `${st.first_name ? esc(st.first_name) + ', your' : 'Your'} visit is finished and this link is now closed.
-       Anything your provider wrote up will appear in your portal.`, 'Video visit');
+       ${st.program ? 'We will call you if there is a next step.' : 'Anything your provider wrote up will appear in your portal.'}`, st.program ? 'Program consultation' : 'Video visit');
     return;
   }
   if (s === 'expired'){
@@ -829,7 +846,7 @@ async function startPatient(){
     document.getElementById('pvErr').innerHTML = `<div class="err">${mediaErrorHtml(e)}</div>`;
     // They can still check in and be admitted; a phone-only fallback beats being stuck here.
     const b = document.getElementById('readyBtn');
-    if (b){ b.disabled = consentNeeded && !consentGiven; b.textContent = "Let my provider know I'm here"; }
+    if (b){ b.disabled = consentNeeded && !consentGiven; b.textContent = programVisit ? "Let them know I'm here" : "Let my provider know I'm here"; }
   }
 }
 
