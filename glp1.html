@@ -811,20 +811,14 @@ const PRICING = {
 const PHARMACY = { name: 'a USA-licensed 503A compounding pharmacy', license: '', city: 'Las Vegas, NV' };
 const CLINICIAN = { name: 'Peter DeBry, MD', npi: '1831137991' };
 
-// --- Robust photo upload (HEIC-safe). iPhones shoot HEIC, which a bare new Image() cannot decode,
-// so the old ID upload silently failed on real phone photos. Convert HEIC to JPEG (heic2any), then
-// downscale via canvas. Ported from portal.html; used by ID + insurance-card capture. ---
-let __heicPromise = null;
-function ensureHeic2any(){
-  if (window.heic2any) return Promise.resolve(window.heic2any);
-  if (__heicPromise) return __heicPromise;
-  __heicPromise = new Promise((res)=>{
-    const s=document.createElement('script');
-    s.src='https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
-    s.onload=()=>res(window.heic2any||null); s.onerror=()=>res(null);
-    document.head.appendChild(s);
-  });
-  return __heicPromise;
+// --- Robust photo upload (HEIC-safe). iPhones shoot HEIC, which Chrome cannot decode.
+// heic2any 0.0.4 rejects current iPhone files ("format not supported") and the page used to
+// keep those bytes anyway. heic-to uses a current decoder. Canvas then downscales to JPEG.
+// Used by the ID and insurance-card capture. ---
+let __heicToPromise = null;
+function loadHeicTo(){
+  if (!__heicToPromise) __heicToPromise = import('https://cdn.jsdelivr.net/npm/heic-to@1.6.7/+esm').then(m => m.heicTo);
+  return __heicToPromise;
 }
 function reencodeToJpeg(blob, maxPx){
   return new Promise((resolve)=>{
@@ -840,15 +834,40 @@ function reencodeToJpeg(blob, maxPx){
     img.src=url;
   });
 }
-async function toUploadableImage(file){
-  let working=file;
-  const isHeic=/heic|heif/i.test(file.type||'')||/\.(heic|heif)$/i.test(file.name||'');
-  if (isHeic){
-    const heic=await ensureHeic2any();
-    if (heic){ try{ const out=await heic({ blob:file, toType:'image/jpeg', quality:0.9 }); working=new File([Array.isArray(out)?out[0]:out],'photo.jpg',{type:'image/jpeg'}); }catch(e){ console.warn('HEIC convert failed:', e); } }
+async function sniffUpload(file){
+  const buf=new Uint8Array(await file.slice(0,16).arrayBuffer());
+  if (buf.length>=3 && buf[0]===0xFF && buf[1]===0xD8 && buf[2]===0xFF) return 'jpeg';
+  if (buf.length>=8 && buf[0]===0x89 && buf[1]===0x50 && buf[2]===0x4E && buf[3]===0x47) return 'png';
+  if (buf.length>=12 && buf[4]===0x66 && buf[5]===0x74 && buf[6]===0x79 && buf[7]===0x70){
+    const brand=String.fromCharCode(buf[8],buf[9],buf[10],buf[11]);
+    if (/heic|heix|hevc|heim|heis|mif1|msf1|avif/i.test(brand)) return 'heic';
   }
-  try{ const jpeg=await reencodeToJpeg(working, 1600); if (jpeg && jpeg.size>0) return jpeg; }catch(e){}
-  return working;
+  if (/heic|heif/i.test(file.type||'')||/\.(heic|heif)$/i.test(file.name||'')) return 'heic';
+  return 'other';
+}
+async function isJpegFile(file){
+  const head=new Uint8Array(await file.slice(0,3).arrayBuffer());
+  return head.length===3 && head[0]===0xFF && head[1]===0xD8 && head[2]===0xFF;
+}
+// HEIC must become a real JPEG before it is accepted. A failed conversion used to keep the
+// original bytes, the page showed "ID photo added", and the chart link was a HEIC file labeled JPEG.
+async function toUploadableImage(file){
+  const kind=await sniffUpload(file);
+  let jpeg=null;
+  try{ jpeg=await reencodeToJpeg(file, 1600); }catch(e){}
+  if (kind==='heic' && (!jpeg || !(await isJpegFile(jpeg)))){
+    const heicTo=await loadHeicTo();
+    const blob=await heicTo({ blob:file, type:'image/jpeg', quality:0.9 });
+    if (!blob) throw new Error('HEIC convert failed');
+    const converted=new File([blob],'photo.jpg',{type:'image/jpeg'});
+    let scaled=null;
+    try{ scaled=await reencodeToJpeg(converted, 1600); }catch(e){}
+    jpeg=(scaled && scaled.size>0)?scaled:converted;
+  } else if (!jpeg && kind==='jpeg') {
+    jpeg=file;
+  }
+  if (!jpeg || !(await isJpegFile(jpeg))) throw new Error('could not read image');
+  return jpeg;
 }
 function fileToBase64(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=()=>rej(new Error('read failed')); r.readAsDataURL(file); }); }
 
@@ -1708,8 +1727,11 @@ const flow = [
         validateAll();
       } catch (err) {
         console.error('ID upload failed', err);
-        idStatus.textContent = 'Could not read that photo. Try again, or use a clear JPEG or PNG.';
+        state.idImageBase64 = '';
+        save();
+        idStatus.textContent = 'Could not read that photo. A HEIC from an iPhone has to convert before it can be saved. Try again, or upload a JPEG.';
         idStatus.style.color = '#c0392b';
+        idTile.style.borderStyle = 'dashed';
         validateAll();
       }
     };
@@ -1740,8 +1762,11 @@ const flow = [
         insTile.style.borderStyle = 'solid';
       } catch (err) {
         console.error('Insurance card upload failed', err);
-        insStatus.textContent = 'Could not read that photo. Try again, or use a clear JPEG or PNG.';
+        state.insuranceCardBase64 = '';
+        save();
+        insStatus.textContent = 'Could not read that photo. Try again, or upload a JPEG.';
         insStatus.style.color = '#c0392b';
+        insTile.style.borderStyle = 'dashed';
       }
     };
     insTile.appendChild(h('span', { style:'font-size:24px;flex:none;' }, ['💳']));
