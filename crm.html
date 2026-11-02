@@ -893,7 +893,7 @@
   };
   window.glp1Decide=async function(pid,decision){
     const noteEl=document.getElementById('glp1Note'); const note=noteEl?noteEl.value.trim():'';
-    if(decision==='approved'&&!confirm('Approve and write the Rx? This unlocks billing for this patient (no charge happens here).')) return;
+    if(decision==='approved'&&!confirm('Approve and mark the prescription written? The patient is emailed that it is being processed. This does not say it is ready or that they should pick it up.')) return;
     if(decision==='declined'&&!confirm('Decline this submission? The patient will not be billed.')) return;
     try{
       const r=await fetch(CONVEX_URL+'/record-rx-decision',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({patient_id:pid,decision,note:note||undefined})});
@@ -3770,7 +3770,7 @@
     const noteEl = document.getElementById('rxDecisionNote');
     const note = noteEl ? noteEl.value.trim() : '';
     if (decision === 'declined' && !note && !confirm('Decline without a note? The patient may need more information.')) return;
-    if (decision === 'approved' && !confirm('Approve and mark Rx written? This completes the clinical Rx task.')) return;
+    if (decision === 'approved' && !confirm('Approve and mark the prescription written? The patient is emailed that it is being processed. This does not say it is ready or that they should pick it up.')) return;
     try {
       const r = await fetch(`${CONVEX_URL}/record-rx-decision`, {
         method:'POST', headers: await convexHeaders(),
@@ -3785,7 +3785,7 @@
           body: `Rx ${decision}. ${note || ''}`.trim() });
       }
       await loadData();
-      alert(decision === 'approved' ? 'Approved — Rx marked written and task completed.' : 'Declined — note saved to chart.');
+      alert(decision === 'approved' ? 'Approved. The patient is emailed that the prescription is being processed.' : 'Declined — note saved to chart.');
     } catch (e) { alert('Network error: ' + e.message); }
   };
 
@@ -5015,6 +5015,36 @@ HARD RULES:
   }
   function chartShell(inner){ return chartSection('Encounter notes', '', inner); }
   function fmtNoteDate(n){ const t = n.encounter_date ? new Date(n.encounter_date+'T00:00:00') : new Date(n.created_at); return isNaN(t)?'':t.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+  function orderEmailControl(n){
+    if(!n || !n.canSendOrder) return '';
+    const when = n.order_email_at ? new Date(n.order_email_at).toLocaleString('en-US') : '';
+    const sent = n.order_email_at
+      ? `<div class="text-[11px] text-[#0a7a3d] mt-1">Ordered email sent ${esc(when)}${n.order_email_by ? ' by '+esc(n.order_email_by) : ''}.</div>`
+      : `<div class="text-[11px] text-[#6b7280] mt-1">Mails the patient that this visit’s prescription has been ordered. Any staff member can send it.</div>`;
+    return `<div class="mt-2 rounded-lg bg-[#f7fafd] border border-[#e6eef7] p-2.5">
+      <div class="text-[11px] font-semibold text-[#16201d]">${esc(n.rx_label||'Prescription on this note')}</div>
+      ${sent}
+      <button type="button" onclick="sendOrderEmail('${n.id}')" class="mt-1.5 px-3 py-1.5 rounded-lg bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">${n.order_email_at?'Send ordered email again':'Email patient: prescription ordered'}</button>
+    </div>`;
+  }
+  window.sendOrderEmail = async function(noteId){
+    const n=(window.__chartNotes||[]).find(x=>x.id===noteId);
+    if(!n){ alert('Note not found — reload the record.'); return; }
+    const med=n.rx_label||'the prescription on this note';
+    let msg='Email the patient that the prescription from this visit has been ordered and will be mailed?\n\n'+med+'\n\nThe email names the visit date. It does not name the drug or the dose.';
+    if(n.order_email_at){
+      const when=new Date(n.order_email_at).toLocaleString('en-US');
+      msg='An ordered email was already sent '+when+(n.order_email_by?' by '+n.order_email_by:'')+'.\n\nSend it again for:\n'+med;
+    }
+    if(!confirm(msg)) return;
+    try{
+      const r=await postChart({action:'send_order_email', note_id:noteId});
+      if(!r.ok) throw new Error(r.error||'could not send');
+      await loadChartNotes(n.patient_id||selId);
+      const ov=document.getElementById('noteOverlay');
+      if(ov){ ov.remove(); if((window.__chartNotes||[]).some(x=>x.id===noteId)) openNote(noteId); }
+    }catch(e){ alert('Could not send: '+e.message); }
+  };
   function renderNoteCard(n){
     const signed = n.status==='signed';
     const badge = signed ? '<span class="badge b-active" style="background:#eaf7ef;color:#0a7a3d">🔒 Signed</span>' : '<span class="badge b-active" style="background:#fff7ed;color:#b45309">Draft</span>';
@@ -5043,6 +5073,7 @@ HARD RULES:
         <div class="text-[11px] text-[#6b7280]">${esc(who)}${adn}</div></div><div class="flex items-center gap-1.5 shrink-0">${cptBadge}${badge}</div>
       </div>
       ${preview?`<div class="text-xs text-[#6b7280] mt-1.5">${preview}…</div>`:''}
+      ${orderEmailControl(n)}
       <div class="flex gap-3 mt-2">${acts.join('')}</div>
     </div>`;
   }
@@ -5503,7 +5534,7 @@ HARD RULES:
     if(signed && !editable){
       const adHtml=(note.addenda&&note.addenda.length)?`<div class="pt-3 border-t border-[#e6e9ee]"><div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mb-2">Addenda</div>${note.addenda.map(ad=>`<div class="bg-[#f7f8fa] border border-[#e6e9ee] rounded-lg p-3 mb-2"><div class="text-[11px] text-[#6b7280] mb-1">${esc(ad.author)} · ${new Date(ad.at).toLocaleString('en-US')}</div><div class="text-sm text-[#16201d] whitespace-pre-wrap">${esc(ad.text)}</div></div>`).join('')}</div>`:'';
       const amend=note.canAmend?`<div class="pt-3 border-t border-[#e6e9ee]"><div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mb-2">Add addendum</div><textarea id="noteAddText" rows="3" class="field w-full resize-none" placeholder="Appended and attributed; the signed note itself stays unchanged."></textarea><div class="flex justify-end mt-2"><button onclick="addNoteAddendum('${note.id}')" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Add addendum</button></div></div>`:'';
-      ov.innerHTML=`<div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-6"><div class="flex items-center justify-between p-4 border-b border-[#e6e9ee]"><div><div class="font-display text-lg font-semibold">${NOTE_TYPE_LABELS[note.encounter_type]||'Clinical note'} · ${fmtNoteDate(note)}</div><div class="text-xs text-[#6b7280]">🔒 Signed by ${esc(note.signed_by||note.author)} · ${esc(pname)}</div></div><button onclick="document.getElementById('noteOverlay').remove()" class="text-[#9aa0ab] hover:text-[#16201d] text-2xl leading-none">×</button></div><div class="p-5 space-y-4">${soapReadonly(note)}${noteTranscriptReadonly(note)}${adHtml}${amend}</div></div>`;
+      ov.innerHTML=`<div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-6"><div class="flex items-center justify-between p-4 border-b border-[#e6e9ee]"><div><div class="font-display text-lg font-semibold">${NOTE_TYPE_LABELS[note.encounter_type]||'Clinical note'} · ${fmtNoteDate(note)}</div><div class="text-xs text-[#6b7280]">🔒 Signed by ${esc(note.signed_by||note.author)} · ${esc(pname)}</div></div><button onclick="document.getElementById('noteOverlay').remove()" class="text-[#9aa0ab] hover:text-[#16201d] text-2xl leading-none">×</button></div><div class="p-5 space-y-4">${soapReadonly(note)}${orderEmailControl(note)}${noteTranscriptReadonly(note)}${adHtml}${amend}</div></div>`;
       document.body.appendChild(ov); return;
     }
     const typeVal=note?note.encounter_type:'follow_up', dateVal=note?(note.encounter_date||today):today;
