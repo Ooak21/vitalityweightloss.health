@@ -886,7 +886,7 @@
       (labs?'<div><div class="text-xs font-semibold uppercase tracking-wide text-[#0a6cf5] mb-1">Labs</div>'+labs+'</div>':'')+
       '<div><div class="text-xs font-semibold uppercase tracking-wide text-[#0a6cf5] mb-1">Attestation &amp; consent</div>'+attHtml+'</div>'+
       '<div><div class="text-xs font-semibold uppercase tracking-wide text-[#0a6cf5] mb-1">Government ID</div>'+idHtml+'</div>'+
-      (decided?'<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 text-sm">Decision: <b>'+besc(x.status==='rx_written'?'Approved / Rx written':x.status==='rx_declined'?'Declined':x.status)+'</b></div>':
+      (decided?'<div class="rounded-xl bg-[#f7f8fa] border border-[#eef0f4] p-3 text-sm">Decision: <b>'+besc(x.status==='rx_written'?'Approved / Rx written':x.status==='rx_declined'?'Declined':x.status)+'</b>'+(x.status==='rx_written'?' The prescription is on the signed Async review note in the chart. Any staff member can send the ordered email from that note.':'')+'</div>':
         '<div class="pt-2 border-t border-[#e6e9ee]"><textarea id="glp1Note" class="field w-full text-sm mb-2 mt-3" rows="2" placeholder="Optional provider note for the chart…"></textarea>'+
         '<div class="flex gap-2"><button onclick="glp1Decide(\''+x.id+'\',\'approved\')" class="px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700">✓ Approve &amp; prescribe</button><button onclick="glp1Decide(\''+x.id+'\',\'declined\')" class="px-5 py-2.5 rounded-xl border border-rose-300 text-rose-700 font-semibold text-sm hover:bg-rose-50">Decline / needs info</button></div></div>')+
     '</div>';
@@ -900,6 +900,7 @@
       const j=await r.json();
       if(!j.ok){ alert('Failed: '+(j.error||'unknown')); return; }
       await loadData();
+      if (decision === 'approved') await loadChartNotes(pid);
       await loadGlp1Queue();
     }catch(e){ alert('Error: '+besc(e.message)); }
   };
@@ -3730,8 +3731,9 @@
       const idHtml = rv.id_image_url
         ? `<div class="mt-3"><div class="text-xs font-semibold text-[#6b7280] uppercase tracking-wide mb-2">Government ID (verification)</div><img src="${esc(rv.id_image_url)}" alt="ID verification" class="max-w-full max-h-64 rounded-xl border border-[#e6e9ee] object-contain bg-[#f7f8fa]"></div>`
         : '<div class="text-xs text-[#9aa0ab] mt-2">No ID image on file.</div>';
-      const decided = ['rx_written','rx_declined'].includes((patients.find(x=>x.id===pid)||{}).status);
-      const actions = decided ? `<div class="text-xs text-[#6b7280] mt-3">Rx decision recorded — see chart timeline.</div>` : `
+      const chartStatus = (patients.find(x=>x.id===pid)||{}).status;
+      const decided = ['rx_written','rx_declined'].includes(chartStatus);
+      const actions = decided ? `<div class="text-xs text-[#6b7280] mt-3">${chartStatus==='rx_written' ? 'Approved. The prescription is on the signed Async review note. Any staff member can email from that note that it has been ordered.' : 'Rx decision recorded — see chart timeline.'}</div>` : `
         <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[#e6e9ee]">
           <button onclick="recordRxDecision('${pid}','approved')" class="px-4 py-2.5 rounded-xl bg-[#0a7a3d] text-white font-semibold text-sm hover:bg-[#066032]">Approve &amp; prescribe</button>
           <button onclick="recordRxDecision('${pid}','declined')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">Decline / needs info</button>
@@ -3785,7 +3787,8 @@
           body: `Rx ${decision}. ${note || ''}`.trim() });
       }
       await loadData();
-      alert(decision === 'approved' ? 'Approved. The patient is emailed that the prescription is being processed.' : 'Declined — note saved to chart.');
+      if (decision === 'approved') await loadChartNotes(pid);
+      alert(decision === 'approved' ? 'Approved. The patient is emailed that the prescription is being processed. The signed Async review note is on the chart. Any staff member can email from that note when it has been ordered.' : 'Declined — note saved to chart.');
     } catch (e) { alert('Network error: ' + e.message); }
   };
 
