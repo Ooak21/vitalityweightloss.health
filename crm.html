@@ -1581,7 +1581,7 @@
           <div class="flex items-center gap-1 shrink-0">${arrived?`<span class="badge" style="background:#10b981;color:#fff" title="Checked in ${new Date(p.checked_in_at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}">✓ Arrived</span>`:''}<span class="badge b-${p.status}">${STAT[p.status]||p.status}</span></div>
         </div>
         <div class="flex items-center justify-between mt-0.5 text-[11px] text-[#6b7280]">
-          <span>DOB ${esc(dobUS(p.dob))||'—'} · <b class="font-mono text-[#0a6cf5]">#${patRef(p.id)}</b></span><span>${PROG[p.program]||'-'}</span>
+          <span>DOB ${esc(dobUS(p.dob))||'—'} · <b class="font-mono text-[#0a6cf5]">#${patRef(p.id)}</b></span><span>${p.preferred_language==='Spanish'?'Spanish · ':''}${PROG[p.program]||'-'}</span>
         </div>
       </div>`;}).join('')
       : '<div class="text-center text-[#9aa0ab] text-sm py-10">No patient matches "'+esc(ql)+'"</div>';
@@ -1736,6 +1736,37 @@
       renderDetail(); };
     inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); finish(true); } else if(e.key==='Escape') finish(false); });
     inp.addEventListener('blur',()=>finish(true));
+  };
+  // Staff contact preferences. Empty means not set. Choosing Text does not opt the patient into texts.
+  const PREF_LANG=[['','Not set'],['English','English'],['Spanish','Spanish']];
+  const PREF_CONTACT=[['','Not set'],['phone','Phone call'],['text','Text message'],['email','Email']];
+  function prefLabel(field, val){
+    const opts=field==='preferred_language'?PREF_LANG:PREF_CONTACT;
+    const hit=opts.find(o=>o[0]===String(val||''));
+    return hit?hit[1]:String(val||'');
+  }
+  function prefContactLine(p){
+    const bits=[];
+    if(p.preferred_language) bits.push(p.preferred_language);
+    if(p.preferred_contact) bits.push('prefers '+prefLabel('preferred_contact', p.preferred_contact).toLowerCase());
+    return bits.length?' · '+bits.map(esc).join(' · '):'';
+  }
+  function prefSelect(p, field, label){
+    const opts=field==='preferred_language'?PREF_LANG:PREF_CONTACT;
+    const cur=p[field]||'';
+    const hint=field==='preferred_contact'
+      ? 'How they prefer to be reached. Texts still send only when they opted in.'
+      : 'Language to use when contacting this patient.';
+    return `<div class="flex items-center justify-between gap-3 px-4 py-2"><span class="text-xs text-[#6b7280]">${label}</span>
+      <select class="field w-auto py-1 text-sm" title="${hint}" onchange="savePref('${p.id}','${field}',this)">${opts.map(([k,v])=>`<option value="${k}" ${k===cur?'selected':''}>${v}</option>`).join('')}</select></div>`;
+  }
+  window.savePref=function(id, field, sel){
+    const p=patients.find(x=>x.id===id); if(!p) return;
+    const label=field==='preferred_language'?'Preferred language':'Preferred contact';
+    const oldV=p[field]?prefLabel(field, p[field]):'';
+    const newV=sel.value?prefLabel(field, sel.value):'';
+    if(!confirmChange(p, label, oldV, newV)){ sel.value=p[field]||''; return; }
+    saveInfo(id, field, sel.value);
   };
   function infoRow(p, field, label){
     if(field==='program'){
@@ -2062,7 +2093,7 @@
     box.innerHTML=`<div class="text-xs text-[#6b7280] mb-2">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})} · ${rows.length} appointment${rows.length===1?'':'s'}. A visit reads as late ${LATE_AFTER_MIN} minutes after its start without a check-in.</div>`
       +(rows.length?rows.map(({p,a,t})=>{ const st=apptState(a,t); const lbl=`${tm(t)} ${a.type||'Appointment'}`.replace(/'/g,'');
         return `<div class="py-3 border-b border-[#f1f3f7] flex items-start justify-between gap-3 flex-wrap"><div class="min-w-0"><div class="flex items-center gap-2"><span class="text-sm font-semibold text-[#16201d] w-16 shrink-0">${tm(t)}</span><button onclick="document.getElementById('listOverlay')?.remove();openFromBoard('${p.id}')" class="font-semibold text-[#16201d] hover:underline text-left">${esc(((p.first||'')+' '+(p.last||'')).trim()||'Patient')}</button><span class="font-mono text-[11px] font-semibold text-[#0a6cf5]">#${patRef(p.id)}</span><span class="text-[10px] font-semibold rounded-full px-2 py-0.5 border ${pill[st.k]}">${esc(st.l)}</span></div>
-          <div class="text-[11px] text-[#6b7280] ml-[4.5rem]">${esc(a.type||'')}${a.provider?' · '+esc(a.provider):''}${p.phone?' · '+esc(p.phone):''} ${eligPill(a)}</div></div>
+          <div class="text-[11px] text-[#6b7280] ml-[4.5rem]">${esc(a.type||'')}${a.provider?' · '+esc(a.provider):''}${p.phone?' · '+esc(p.phone):''}${prefContactLine(p)} ${eligPill(a)}</div></div>
           <div class="flex flex-wrap gap-1.5 justify-end items-center">
             ${a.checked_in_at?'':`<button onclick="fdCheckin('${p.id}','${a.id}','${esc(lbl)}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold text-white" style="background:#0a6cf5">Check in</button>`}
             ${a.checked_in_at?'':`<input id="fdEta-${a.id}" type="number" min="1" max="240" class="field w-16 py-1 text-xs" placeholder="min"><button onclick="fdLate('${a.id}','${esc(lbl)}')" title="Tell the provider the patient is running late" class="${btn} text-[#be123c]">Running late</button>`}
@@ -2228,6 +2259,8 @@
         <div class="border border-[#e6e9ee] rounded-2xl mb-6 divide-y divide-[#eef1f4]">
           ${infoRow(p,'email','Email')}
           ${infoRow(p,'phone','Phone')}
+          ${prefSelect(p,'preferred_language','Preferred language')}
+          ${prefSelect(p,'preferred_contact','Preferred contact')}
           ${infoRow(p,'dob','Date of birth')}
           ${ssnRow(p)}
           ${ledgerRow(p)}
@@ -2505,6 +2538,8 @@
             <div class="divide-y divide-[#eef1f4]">
               ${infoRow(p,'email','Email')}
               ${infoRow(p,'phone','Phone')}
+              ${prefSelect(p,'preferred_language','Preferred language')}
+              ${prefSelect(p,'preferred_contact','Preferred contact')}
               ${infoRow(p,'dob','Date of birth')}
           ${ssnRow(p)}
           ${ledgerRow(p)}
@@ -3085,7 +3120,7 @@
         <div class="text-sm font-semibold text-[#16201d] truncate">${esc(nm)}</div>
         <div class="flex items-center gap-1 flex-shrink-0">${badge}${ch?`<span title="${p.channel} inquiry">${ch}</span>`:''}</div>
       </div>
-      <div class="text-[11px] text-[#6b7280] mt-0.5 truncate">${PROG[p.program]||p.program||'No program'}</div>
+      <div class="text-[11px] text-[#6b7280] mt-0.5 truncate">${PROG[p.program]||p.program||'No program'}${p.preferred_language==='Spanish'?' · Spanish':''}</div>
       <div class="flex items-center justify-between mt-1.5 text-[10px] gap-1">${na?`<span class="text-[#0a6cf5] truncate">📅 ${na}</span>`:'<span></span>'}${ageHtml}</div>
     </div>`;
   }
@@ -3161,7 +3196,8 @@
     const ref=p.referred_by
       ? `<div class="mt-2 pt-2 border-t border-[#eef1f4] text-[11px] text-[#6b7280]">Referred by <span class="text-[#0a6cf5] font-medium">${esc(p.referred_by.practice_name)}${p.referred_by.provider_name?' · '+esc(p.referred_by.provider_name):''}</span></div>`
       : '';
-    pop.innerHTML=`<div class="text-sm font-semibold text-[#16201d] truncate mb-2">${esc(nm)}</div><div class="flex flex-col gap-1.5">${emailBlock}${phone}</div>${ref}`;
+    const reach=prefContactLine(p);
+    pop.innerHTML=`<div class="text-sm font-semibold text-[#16201d] truncate mb-2">${esc(nm)}</div><div class="flex flex-col gap-1.5">${emailBlock}${phone}${reach?`<div class="text-[12px] text-[#16201d]">${reach.replace(/^ · /,'')}</div>`:''}</div>${ref}`;
     const r=e.currentTarget.getBoundingClientRect();
     let left=r.right+8; if(left+240>window.innerWidth) left=r.left-248;
     pop.style.left=Math.max(8,left)+'px';
@@ -4102,7 +4138,8 @@
   // ---- appointments (book / reschedule / change / cancel) — persisted on Convex ----
   let apptEdit=null;
   function openApptModal(p){
-    document.getElementById('apptPatient').textContent=`${p.first} ${p.last}`;
+    const reach=prefContactLine(p).replace(/^ · /,'');
+    document.getElementById('apptPatient').textContent=`${p.first||''} ${p.last||''}`.trim()+(reach?' · '+reach:'');
     document.getElementById('apptPickWrap').classList.add('hidden');   // patient is fixed when opened from a record
     const mo=document.getElementById('apptModal'); mo.classList.remove('hidden'); mo.classList.add('flex');
   }
