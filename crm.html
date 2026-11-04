@@ -736,6 +736,7 @@
       if(!j.ok){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">'+besc(j.error||'Not permitted.')+'</div>'; return; }
       window.__claimQueue=j.queue||[];
       const nc=j.needs_coding||[];
+      const rj=j.rejected_claims||[];
       window.__claimsMode=j.claims_mode||'test';
       // Backend sorts oldest date of service first (timely filing runs on the oldest).
       const agingAlertDays=j.aging_alert_days||20;
@@ -786,15 +787,29 @@
             '<button onclick="cqCodeNote(\''+x.patient_id+'\',\''+x.note_id+'\')" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">Code visit</button>'+
           '</div></div>';
       };
+      // A claim Stedi or the payer rejected never reached adjudication, and timely filing keeps running.
+      const rjCard=(x)=>{
+        const aging=(x.aging_days!=null)?'<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ml-2 bg-slate-100 text-slate-600">'+x.aging_days+'d</span>':'';
+        return '<div class="bg-white rounded-2xl border border-rose-200 p-4 mb-2">'+
+          '<div class="flex items-start justify-between gap-3 flex-wrap">'+
+            '<div class="min-w-0"><div class="font-semibold text-[#16201d]">'+besc(x.patient)+'</div>'+
+            '<div class="text-xs text-[#6b7280] mt-0.5">DOS '+besc(x.date_of_service||'—')+aging+(x.payer_name?' · '+besc(x.payer_name):'')+(x.category?' · '+besc(x.category)+(x.status_code?':'+besc(x.status_code):''):'')+'</div>'+
+            '<div class="text-xs text-[#be123c] mt-1">'+besc(x.message||'Rejected. See the claim on the chart.')+'</div></div>'+
+            '<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-rose-100 text-rose-700">Rejected, not adjudicated</span>'+
+          '</div>'+
+          '<div class="text-[11px] text-[#6b7280] mt-2">Fix the problem, void the coded visit on the chart, code it again and send it through review.</div>'+
+          '<div class="flex gap-2 justify-end mt-3"><button onclick="cqOpenChart(\''+x.patient_id+'\')" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">Open chart</button></div></div>';
+      };
       const testBanner=window.__claimsMode==='test'?'<div class="rounded-2xl p-3 mb-3 text-xs font-semibold bg-[#fff7ed] border border-[#ffd9a8] text-[#9a5a00]">TEST MODE: Send to payer goes to the Stedi sandbox. No payer receives it and nothing is billed.</div>':'';
       body.innerHTML=
         testBanner+
         '<div class="bg-white rounded-2xl p-3 mb-3 text-xs text-[#6b7280]">Nothing is transmitted automatically. A claim only goes to the payer when someone presses <b>Send to payer</b> here.</div>'+
+        (rj.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pb-1 px-1">Rejected, needs fixing ('+rj.length+')</div>'+rj.map(rjCard).join(''):'')+
         (nc.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pb-1 px-1">Signed, needs coding ('+nc.length+')</div>'+nc.map(ncCard).join(''):'')+
         (ready.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pb-1 px-1">Insurance · waiting on review ('+ready.length+')</div>'+ready.map(card).join(''):'')+
         (appr.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-3 pb-1 px-1">Insurance · approved, ready to send ('+appr.length+')</div>'+appr.map(card).join(''):'')+
         (spReady.length||spAppr.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-4 pb-1 px-1">Self-pay visits · coded for records, retro coverage, and reimbursement ('+(spReady.length+spAppr.length)+')</div>'+spReady.map(card).join('')+spAppr.map(card).join(''):'')+
-        ((!nc.length&&!ready.length&&!appr.length&&!spReady.length&&!spAppr.length)?'<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Nothing waiting. 🎉</div>':'');
+        ((!rj.length&&!nc.length&&!ready.length&&!appr.length&&!spReady.length&&!spAppr.length)?'<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Nothing waiting. 🎉</div>':'');
     }catch(e){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">Error: '+besc(e.message)+'</div>'; }
   }
   window.cqMsg=function(id,html){ const el=document.getElementById('cq-'+id); if(el) el.innerHTML=html; };
@@ -811,6 +826,7 @@
     if(!(window.__chartNotes||[]).some(n=>n.id===noteId)){ alert('That note is not on this chart any more. Reload Billing review.'); return; }
     codeVisitFromNote(noteId);
   };
+  window.cqOpenChart=async function(pid){ document.getElementById('claimOverlay')?.remove(); await openFromBoard(pid); };
   window.cqNoBill=function(noteId){
     const el=document.getElementById('cqnb-'+noteId); if(!el) return;
     el.innerHTML='<div class="rounded-xl bg-[#f7f8fa] border border-[#e6e9ee] p-2.5 mt-1">'+
@@ -6329,7 +6345,7 @@ HARD RULES:
     box.innerHTML = insuranceCard(j) + superbillCard(j) + claimsCard(j);
   }
   // ---- Claims (837 out, 277CA + 835 back) ----
-  const CLAIM_STATUS={ submitted:['#eef4ff','#0a6cf5','Submitted'], accepted:['#eaf7ef','#0a7a3d','Accepted'], rejected:['#fef2f2','#be123c','Rejected'], paid:['#eaf7ef','#0a7a3d','Paid'], denied:['#fef2f2','#be123c','Denied'], error:['#fef2f2','#be123c','Error'] };
+  const CLAIM_STATUS={ submitted:['#eef4ff','#0a6cf5','Submitted'], accepted:['#eaf7ef','#0a7a3d','Accepted'], rejected:['#fef2f2','#be123c','Rejected'], paid:['#eaf7ef','#0a7a3d','Paid'], processed:['#eaf7ef','#0a7a3d','Processed'], reversed:['#fff7ed','#9a5a00','Reversed'], denied:['#fef2f2','#be123c','Denied'], error:['#fef2f2','#be123c','Error'] };
   function claimsCard(j){
     if(!j.canCode) return '';
     const rows=(window.__claims||[]).length?window.__claims.map(renderClaimRow).join('')
