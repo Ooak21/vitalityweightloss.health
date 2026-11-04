@@ -646,7 +646,7 @@
   window.openClaimQueue = async function(){
     let ov=document.getElementById('claimOverlay');
     if(!ov){ ov=document.createElement('div'); ov.id='claimOverlay'; ov.className='fixed inset-0 z-[70] bg-black/40 overflow-y-auto'; ov.onclick=e=>{ if(e.target===ov) ov.remove(); }; document.body.appendChild(ov); }
-    ov.innerHTML='<div class="max-w-4xl mx-auto my-8 px-3"><div class="flex justify-between items-center mb-3"><div class="font-display font-semibold text-lg text-white">🧾 Billing review — claims waiting to go out</div><button onclick="document.getElementById(\'claimOverlay\').remove()" class="w-9 h-9 rounded-full bg-white text-2xl leading-none text-[#16201d]">×</button></div><div id="claimBody"><div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Loading…</div></div></div>';
+    ov.innerHTML='<div class="max-w-4xl mx-auto my-8 px-3"><div class="flex justify-between items-center mb-3"><div class="font-display font-semibold text-lg text-white">🧾 Billing review — claims waiting to go out</div><div class="flex items-center gap-2"><button onclick="openVisitTracker()" class="px-3 py-2 rounded-xl bg-white text-[#16201d] text-xs font-semibold hover:bg-[#f1f3f7]">Visits and billing</button><button onclick="document.getElementById(\'claimOverlay\').remove()" class="w-9 h-9 rounded-full bg-white text-2xl leading-none text-[#16201d]">×</button></div></div><div id="claimBody"><div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Loading…</div></div></div>';
     await loadClaimQueue();
   };
   // ---- Calls: the catalog of every ring, patient or not. Reclassify callers and
@@ -735,6 +735,8 @@
       const j=await postClaimQ({ action:'claim_queue' });
       if(!j.ok){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">'+besc(j.error||'Not permitted.')+'</div>'; return; }
       window.__claimQueue=j.queue||[];
+      const nc=j.needs_coding||[];
+      window.__claimsMode=j.claims_mode||'test';
       // Backend sorts oldest date of service first (timely filing runs on the oldest).
       const agingAlertDays=j.aging_alert_days||20;
       const insQ=window.__claimQueue.filter(x=>!x.self_pay);
@@ -768,15 +770,61 @@
           '<div class="flex gap-2 justify-end mt-3">'+act+'</div>'+
         '</div>';
       };
+      // Netty 10/29: a signed note lands here the moment it is signed. Code it (it then moves to review) or mark no bill.
+      const ncCard=(x)=>{
+        const aging=(x.aging_days!=null)?'<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ml-2 bg-slate-100 text-slate-600">'+x.aging_days+'d</span>':'';
+        return '<div class="bg-white rounded-2xl border border-[#e6e9ee] p-4 mb-2">'+
+          '<div class="flex items-start justify-between gap-3 flex-wrap">'+
+            '<div><div class="font-semibold text-[#16201d]">'+besc(x.patient)+'</div>'+
+            '<div class="text-xs text-[#6b7280] mt-0.5">DOS '+besc(x.date_of_service||'—')+aging+' · '+besc((typeof NOTE_TYPE_LABELS!=='undefined'&&NOTE_TYPE_LABELS[x.encounter_type])||'Clinical note')+' · signed by '+besc(x.provider||'—')+'</div>'+
+            '<div class="text-xs text-[#6b7280] mt-1">'+(x.suggested?'Note supports CPT '+besc(x.suggested)+' · ':'')+'Dx '+((x.diagnoses||[]).map(besc).join(', ')||'none on the note')+'</div></div>'+
+            '<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-sky-100 text-sky-800">Signed, needs coding</span>'+
+          '</div>'+
+          '<div id="cqnb-'+x.note_id+'" class="text-xs mt-2"></div>'+
+          '<div class="flex gap-2 justify-end mt-3">'+
+            '<button onclick="cqNoBill(\''+x.note_id+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">No bill</button>'+
+            '<button onclick="cqCodeNote(\''+x.patient_id+'\',\''+x.note_id+'\')" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">Code visit</button>'+
+          '</div></div>';
+      };
+      const testBanner=window.__claimsMode==='test'?'<div class="rounded-2xl p-3 mb-3 text-xs font-semibold bg-[#fff7ed] border border-[#ffd9a8] text-[#9a5a00]">TEST MODE: Send to payer goes to the Stedi sandbox. No payer receives it and nothing is billed.</div>':'';
       body.innerHTML=
+        testBanner+
         '<div class="bg-white rounded-2xl p-3 mb-3 text-xs text-[#6b7280]">Nothing is transmitted automatically. A claim only goes to the payer when someone presses <b>Send to payer</b> here.</div>'+
+        (nc.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pb-1 px-1">Signed, needs coding ('+nc.length+')</div>'+nc.map(ncCard).join(''):'')+
         (ready.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pb-1 px-1">Insurance · waiting on review ('+ready.length+')</div>'+ready.map(card).join(''):'')+
         (appr.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-3 pb-1 px-1">Insurance · approved, ready to send ('+appr.length+')</div>'+appr.map(card).join(''):'')+
         (spReady.length||spAppr.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-4 pb-1 px-1">Self-pay visits · coded for records, retro coverage, and reimbursement ('+(spReady.length+spAppr.length)+')</div>'+spReady.map(card).join('')+spAppr.map(card).join(''):'')+
-        ((!ready.length&&!appr.length&&!spReady.length&&!spAppr.length)?'<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Nothing waiting. 🎉</div>':'');
+        ((!nc.length&&!ready.length&&!appr.length&&!spReady.length&&!spAppr.length)?'<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Nothing waiting. 🎉</div>':'');
     }catch(e){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">Error: '+besc(e.message)+'</div>'; }
   }
   window.cqMsg=function(id,html){ const el=document.getElementById('cq-'+id); if(el) el.innerHTML=html; };
+  // Code visit from Signed, needs coding: open the patient's chart and the coding window for that note.
+  // Coding a signed note defaults to Ready, so saving it sends the visit on to review.
+  window.cqCodeNote=async function(pid,noteId){
+    document.getElementById('claimOverlay')?.remove();
+    await openFromBoard(pid);
+    try{
+      const [nj,bj]=await Promise.all([postChart({action:'list',patient_id:pid}), postBilling({action:'list',patient_id:pid})]);
+      window.__chartNotes=(nj&&nj.notes)||[];
+      if(bj&&bj.ok!==false){ window.__coverages=bj.coverages||[]; window.__superbills=bj.superbills||[]; window.__canCode=!!bj.canCode; window.__canWriteIns=!!bj.canWriteInsurance; window.__fees=bj.fees||[]; window.__renderers=bj.rendering_providers||[]; }
+    }catch(e){ alert('Could not open that note to code it: '+((e&&e.message)||'error')); return; }
+    if(!(window.__chartNotes||[]).some(n=>n.id===noteId)){ alert('That note is not on this chart any more. Reload Billing review.'); return; }
+    codeVisitFromNote(noteId);
+  };
+  window.cqNoBill=function(noteId){
+    const el=document.getElementById('cqnb-'+noteId); if(!el) return;
+    el.innerHTML='<div class="rounded-xl bg-[#f7f8fa] border border-[#e6e9ee] p-2.5 mt-1">'+
+      '<div class="text-[11px] font-semibold text-[#3d4a45] mb-1.5">Mark this signed note as no bill? It leaves this list.</div>'+
+      '<input id="cqnbw-'+noteId+'" value="Not a billable visit" class="field w-full text-xs mb-2">'+
+      '<div class="flex gap-2 justify-end"><button onclick="document.getElementById(\'cqnb-'+noteId+'\').innerHTML=\'\'" class="px-2.5 py-1 rounded-lg border border-[#e6e9ee] text-[11px] font-semibold">Cancel</button>'+
+      '<button onclick="cqNoBillGo(\''+noteId+'\')" class="px-2.5 py-1 rounded-lg bg-[#3d4a45] text-white text-[11px] font-semibold">Yes, no bill</button></div></div>';
+  };
+  window.cqNoBillGo=async function(noteId){
+    const w=document.getElementById('cqnbw-'+noteId);
+    const j=await postClaimQ({ action:'note_no_bill', note_id:noteId, reason:w?w.value.trim():undefined });
+    if(!j||!j.ok){ const el=document.getElementById('cqnb-'+noteId); if(el) el.innerHTML='<span class="text-rose-600 font-semibold">'+besc((j&&j.error)||'Could not mark it.')+'</span>'; return; }
+    loadClaimQueue();
+  };
   window.claimDry=async function(id){
     cqMsg(id,'<span class="text-[#6b7280]">Checking…</span>');
     const j=await postClaimQ({ action:'claim_submit', superbill_id:id, dry_run:true });
@@ -813,15 +861,82 @@
   window.claimSend=function(id){
     const x=(window.__claimQueue||[]).find(q=>q.superbill_id===id);
     cqMsg(id,'<div class="rounded-xl bg-[#fef2f2] border border-[#fecaca] p-2.5 mt-1">'+
-      '<div class="text-[11px] font-semibold text-[#9f1239] mb-1.5">Send '+(x?besc(x.patient)+' · '+cqMoney(x.total_charge_cents):'this claim')+' to the payer? This transmits and cannot be unsent.</div>'+
+      '<div class="text-[11px] font-semibold text-[#9f1239] mb-1.5">Send '+(x?besc(x.patient)+' · '+cqMoney(x.total_charge_cents):'this claim')+' to the payer? '+(window.__claimsMode==='test'?'TEST MODE: this goes to the Stedi sandbox, not the payer.':'This transmits and cannot be unsent.')+'</div>'+
       '<div class="flex gap-2 justify-end"><button onclick="cqMsg(\''+id+'\',\'\')" class="px-2.5 py-1 rounded-lg border border-[#e6e9ee] text-[11px] font-semibold">Cancel</button>'+
       '<button onclick="claimSendGo(\''+id+'\')" class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[11px] font-semibold">Yes, send it</button></div></div>');
   };
   window.claimSendGo=async function(id){
     cqMsg(id,'<span class="text-[#6b7280]">Transmitting…</span>');
     const j=await postClaimQ({ action:'claim_submit', superbill_id:id });
-    if(j&&j.ok){ cqMsg(id,'<span class="text-emerald-700 font-semibold">✓ Sent · '+besc(j.status||'submitted')+'</span>'); setTimeout(loadClaimQueue,1400); }
+    if(j&&j.ok){ const isTest=j.mode==='test'||window.__claimsMode==='test'; cqMsg(id,isTest?'<span class="text-[#9a5a00] font-semibold">TEST: accepted by the sandbox. Nothing went to a payer.</span>':'<span class="text-emerald-700 font-semibold">✓ Sent · '+besc(j.status||'submitted')+'</span>'); setTimeout(loadClaimQueue,isTest?4000:1400); }
     else cqMsg(id,'<span class="text-rose-600 font-semibold">✗ '+besc((j&&j.error)||'Submission failed.')+'</span>');
+  };
+
+  // ---- Visits and billing (Netty 10/29, same view as Bloom): every booked visit per provider for a day or a month, whether the patient
+  // checked in and was seen, whether the note is signed, and where it is in billing. From convex/visitTracker.ts. ----
+  const vtToday=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  let __vt=null, __vtMode='day', __vtDay=null, __vtFilter='all';
+  window.openVisitTracker=async function(){
+    __vtDay=__vtDay||vtToday();
+    listModalShell('Visits and billing','<div id="vtBody" class="text-sm text-[#9aa0ab]">Loading…</div>','<button onclick="vtCsv()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm font-semibold hover:bg-[#f1f3f7]">Download CSV</button><button onclick="document.getElementById(\'listOverlay\').remove()" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold">Done</button>','max-w-6xl');
+    await vtLoad();
+  };
+  function vtRange(){
+    if(__vtMode==='day') return {from:__vtDay,to:__vtDay};
+    const ym=__vtDay.slice(0,7), [y,m]=ym.split('-').map(Number), last=new Date(Date.UTC(y,m,0)).getUTCDate();
+    return {from:ym+'-01',to:ym+'-'+String(last).padStart(2,'0')};
+  }
+  async function vtLoad(){
+    const box=document.getElementById('vtBody'); if(!box) return; box.innerHTML='<div class="text-sm text-[#9aa0ab]">Loading…</div>';
+    const rg=vtRange();
+    try{ const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'visit_tracker',from:rg.from,to:rg.to})}); __vt=await r.json(); }catch(e){ __vt=null; }
+    vtRender();
+  }
+  window.vtSet=function(k,v){
+    if(k==='mode'){ __vtMode=v; vtLoad(); return; }
+    if(k==='day'){ if(/^\d{4}-\d{2}$/.test(v)) v=v+'-01'; if(!/^\d{4}-\d{2}-\d{2}$/.test(v)) return; __vtDay=v; vtLoad(); return; }
+    if(k==='filter'){ __vtFilter=v; vtRender(); }
+  };
+  const VT_STATE={booked:['Booked','#f1f3f7','#4b5563'],checked_in:['Checked in','#fff7e6','#b45309'],seen:['Seen','#eaf7ef','#0a7a3d'],cancelled:['Cancelled','#f1f3f7','#9aa0ab'],no_show:['No-show','#fdecec','#be123c']};
+  const VT_NOTE={signed:['Signed','#eaf7ef','#0a7a3d'],draft:['Draft','#fff7e6','#b45309'],none:['No note','#fdecec','#be123c']};
+  const VT_BILL={not_coded:['Not coded','#fdecec','#be123c'],draft:['Coding draft','#fff7e6','#b45309'],ready:['Ready for review','#eef6ff','#1d4ed8'],approved:['Approved','#eef6ff','#1d4ed8'],submitted:['Sent to payer','#eaf7ef','#0a7a3d'],paid:['Paid','#eaf7ef','#0a7a3d'],no_bill:['No bill','#f1f3f7','#4b5563']};
+  const vtPill=(map,k)=>{ const x=map[k]||[k||'—','#f1f3f7','#4b5563']; return `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap" style="background:${x[1]};color:${x[2]}">${esc(x[0])}</span>`; };
+  const vtMatch=(r)=>__vtFilter==='no_note'?(r.state==='seen'&&r.note!=='signed')
+    :__vtFilter==='not_billed'?(r.note==='signed'&&(r.billing==='not_coded'||r.billing==='draft'))
+    :true;
+  function vtRender(){
+    const box=document.getElementById('vtBody'); if(!box) return;
+    if(!__vt||!__vt.ok){ box.innerHTML='<div class="text-[#be123c] text-sm">'+esc((__vt&&__vt.error)||'Could not load visits.')+'</div>'; return; }
+    const tab=(k,v,l,on)=>`<button onclick="vtSet('${k}','${v}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold ${on?'bg-[#0a6cf5] text-white':'bg-white border border-[#e6e9ee] text-[#3d4a45] hover:bg-[#f1f3f7]'}">${l}</button>`;
+    const all=__vt.rows||[], rows=all.filter(vtMatch);
+    const noNote=all.filter(r=>r.state==='seen'&&r.note!=='signed').length, notBilled=all.filter(r=>r.note==='signed'&&(r.billing==='not_coded'||r.billing==='draft')).length;
+    const picker=__vtMode==='day'
+      ?`<input type="date" value="${esc(__vtDay)}" onchange="vtSet('day',this.value)" class="field text-xs py-1 w-auto inline-block">`
+      :`<input type="month" value="${esc(__vtDay.slice(0,7))}" onchange="vtSet('day',this.value)" class="field text-xs py-1 w-auto inline-block">`;
+    const head=`<div class="flex items-center gap-2 flex-wrap mb-3">${tab('mode','day','Day',__vtMode==='day')}${tab('mode','month','Month',__vtMode==='month')}<span class="ml-1">${picker}</span>
+      <span class="ml-auto flex gap-2 flex-wrap">${tab('filter','all','All visits',__vtFilter==='all')}${tab('filter','no_note','Seen, no signed note ('+noNote+')',__vtFilter==='no_note')}${tab('filter','not_billed','Signed, not billed ('+notBilled+')',__vtFilter==='not_billed')}</span></div>
+      <div class="text-[12px] text-[#6b7280] mb-3">Counted under the provider on the appointment. A visit is matched to its note and its billing by patient and date of service. Seen means the visit was marked completed or has a note that day. Cancelled visits are not in Booked.</div>`;
+    const th='px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] border-b border-[#e6e9ee] whitespace-nowrap', td='px-3 py-2 border-b border-[#f1f3f7] text-[13px]';
+    const cols=[['booked','Booked'],['checked_in','Checked in'],['seen','Seen'],['note_signed','Note signed'],['note_draft','Note draft'],['note_missing','No note'],['coded','Coded'],['not_coded','Not coded'],['no_bill','No bill'],['no_show','No-show'],['cancelled','Cancelled']];
+    const provs=__vt.providers||[];
+    const tot={}; cols.forEach(([k])=>tot[k]=provs.reduce((a,p)=>a+((p.counts||{})[k]||0),0));
+    const num=(n,warn)=>n?`<span class="font-semibold ${warn?'text-[#be123c]':'text-[#16201d]'}">${n}</span>`:'<span class="text-[#c4c9d2]">0</span>';
+    const warnK=new Set(['note_missing','note_draft','not_coded','no_show']);
+    const summary=provs.length?`<div class="overflow-x-auto border border-[#e6e9ee] rounded-xl mb-4"><table class="w-full"><tr><th class="${th}">Provider</th>${cols.map(([,l])=>`<th class="${th} text-right">${l}</th>`).join('')}</tr>`
+      +provs.map(p=>`<tr><td class="${td} font-medium text-[#16201d] whitespace-nowrap">${esc(p.label)}</td>${cols.map(([k])=>`<td class="${td} text-right">${num((p.counts||{})[k]||0,warnK.has(k))}</td>`).join('')}</tr>`).join('')
+      +(provs.length>1?`<tr><td class="${td} font-semibold">All providers</td>${cols.map(([k])=>`<td class="${td} text-right font-semibold">${num(tot[k],warnK.has(k))}</td>`).join('')}</tr>`:'')
+      +`</table></div>`:'<div class="text-sm text-[#9aa0ab] mb-4">No visits booked for this '+(__vtMode==='day'?'day':'month')+'.</div>';
+    const when=(r)=>__vtMode==='day'?new Date(r.at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'}):new Date(r.day+'T12:00:00').toLocaleDateString('en-US',{month:'numeric',day:'numeric'})+' '+new Date(r.at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'});
+    const list=rows.length?`<div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mb-1">${rows.length} visit${rows.length===1?'':'s'}</div><div class="overflow-x-auto border border-[#e6e9ee] rounded-xl"><table class="w-full"><tr><th class="${th}">${__vtMode==='day'?'Time':'Date'}</th><th class="${th}">Patient</th><th class="${th}">Provider</th><th class="${th}">Visit</th><th class="${th}">Visit status</th><th class="${th}">Note</th><th class="${th}">Billing</th></tr>`
+      +rows.map(r=>`<tr><td class="${td} whitespace-nowrap">${esc(when(r))}</td><td class="${td}"><button onclick="document.getElementById('claimOverlay')?.remove();refOpen('${r.patient_id}')" class="text-left font-medium text-[#16201d] hover:text-[#0a6cf5]">${esc(r.patient)}</button></td><td class="${td} whitespace-nowrap">${esc(r.provider_label)}</td><td class="${td}">${esc(r.type)}${r.modality==='telehealth'?' · Telehealth':''}</td><td class="${td}">${vtPill(VT_STATE,r.state)}</td><td class="${td}">${r.state==='cancelled'?'':vtPill(VT_NOTE,r.note)}</td><td class="${td}">${r.state==='cancelled'?'':vtPill(VT_BILL,r.billing)}</td></tr>`).join('')
+      +`</table></div>`:(all.length?'<div class="text-sm text-[#9aa0ab]">Nothing matches this filter.</div>':'');
+    box.innerHTML=head+summary+list;
+  }
+  window.vtCsv=function(){
+    const rows=((__vt&&__vt.rows)||[]).filter(vtMatch); const c=(x)=>{ let s=String(x==null?'':x); if(/^[=+\-@]/.test(s)) s="'"+s; return '"'+s.replace(/"/g,'""')+'"'; };
+    const lab=(m,k)=>(m[k]||[k||''])[0];
+    const lines=[['Date','Time','Patient','Provider','Visit','Visit status','Note','Billing'].map(c).join(',')].concat(rows.map(r=>[r.day,new Date(r.at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'}),r.patient,r.provider_label,r.type+(r.modality==='telehealth'?' (Telehealth)':''),lab(VT_STATE,r.state),r.state==='cancelled'?'':lab(VT_NOTE,r.note),r.state==='cancelled'?'':lab(VT_BILL,r.billing)].map(c).join(',')));
+    const rg=vtRange(); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'})); a.download='visits-and-billing-'+(rg.from===rg.to?rg.from:rg.from.slice(0,7))+'.csv'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500);
   };
 
   // ---- Async GLP-1 Rx review queue (mirrors the Bloom queue; decisions reuse /record-rx-decision) ----
@@ -6647,7 +6762,7 @@ HARD RULES:
     const dos=s?s.date_of_service:(note?(note.encounter_date||new Date().toISOString().slice(0,10)):new Date().toISOString().slice(0,10));
     const covOpts=['<option value="">Self-pay (no claim)</option>'].concat((window.__coverages||[]).filter(c=>c.status==='active').map(c=>`<option value="${c.id}" ${s&&s.insurance_id===c.id?'selected':''}>${esc(c.payer_name)} · ${RANKS[c.rank]||c.rank} · ${esc(c.member_id_masked||'')}</option>`)).join('');
     const posOpts=Object.entries(PLACES_OF_SERVICE).map(([k,vv])=>`<option value="${k}" ${(s?s.place_of_service===k:k==='11')?'selected':''}>${vv}</option>`).join('');
-    const stOpts=['draft','ready','void'].map(k=>`<option value="${k}" ${(s?s.status===k:k==='draft')?'selected':''}>${SUPERBILL_STATUS[k][2]}</option>`).join('');
+    const stOpts=['draft','ready','void'].map(k=>`<option value="${k}" ${(s?s.status===k:(note&&note.status==='signed'?k==='ready':k==='draft'))?'selected':''}>${SUPERBILL_STATUS[k][2]}</option>`).join('');
     // Rendering provider. The roster is every active staff member with an NPI on file, so switching
     // the renderer (some payers will only accept the NP for a given service) is a pick, not a re-key
     // of a 10-digit number. Free text stays available under "Someone else" because a locum or a newly
@@ -6685,7 +6800,7 @@ HARD RULES:
       <div class="pt-2"><div class="text-[11px] font-semibold uppercase tracking-wide text-[#0a6cf5] mb-1.5">Service lines (CPT / HCPCS)</div><div id="sbLineRows"></div></div>
       <div class="flex justify-end items-baseline gap-2 pt-2 border-t border-[#eef1f4]"><span class="text-xs text-[#6b7280]">Total charge</span><span id="sbTotal" class="font-display text-lg font-semibold">$0.00</span></div>
       <label class="block text-xs font-semibold text-[#3d4a45]">Billing note (optional)<textarea id="sbNote" rows="2" class="field mt-1 block w-full resize-none">${esc(s?s.note:'')}</textarea></label>
-      <div class="text-[11px] text-[#9aa0ab]">Nothing here is transmitted to a payer. Coding a visit records what would be billed; claim submission is a separate step that is not wired yet.</div>`;
+      <div class="text-[11px] text-[#9aa0ab]">Saving here sends nothing to a payer. Claims go out from Billing review, when someone presses Send to payer.</div>`;
     const footer=`${s?`<button onclick="deleteSuperbill('${s.id}')" class="mr-auto px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#be123c] text-sm font-semibold hover:bg-[#fef2f2]">Delete</button>`:''}<button onclick="document.getElementById('listOverlay').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-sm font-semibold hover:bg-[#f1f3f7]">Cancel</button><button id="sbSave" onclick="saveSuperbill('${superbillId||''}','${noteId||''}')" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold hover:bg-[#0856c8]">Save</button>`;
     listModalShell(superbillId?'Edit coded visit':'Code a visit', body, footer, 'max-w-3xl');
     sbRenderDx(); sbRenderLines();
