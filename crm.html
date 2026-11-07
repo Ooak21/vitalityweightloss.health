@@ -738,6 +738,9 @@
       const nc=j.needs_coding||[];
       const rj=j.rejected_claims||[];
       window.__claimsMode=j.claims_mode||'test';
+      // AI coder (Luis 11/7): drafts land in review as "AI draft"; the button codes every note it has not settled yet.
+      const aiOn=!!j.autocode_enabled;
+      const aiTodo=nc.filter(x=>!x.autocode||x.autocode.status==='error'||(x.autocode.stale&&x.autocode.status!=='running')).length;
       // Backend sorts oldest date of service first (timely filing runs on the oldest).
       const agingAlertDays=j.aging_alert_days||20;
       const insQ=window.__claimQueue.filter(x=>!x.self_pay);
@@ -765,9 +768,10 @@
             '<div class="text-xs text-[#6b7280] mt-0.5">DOS '+besc(x.date_of_service||'—')+aging+' · POS '+besc(x.place_of_service||'—')+' · '+besc(x.rendering_provider||'no rendering provider')+(x.self_pay?' · <span class="font-semibold text-[#7c3aed]">Self-pay</span>':'')+'</div>'+
             '<div class="text-xs text-[#6b7280] mt-1">CPT '+cpt+' · Dx '+dx+(x.prior_auth_number?' · auth '+besc(x.prior_auth_number):'')+'</div>'+who+'</div>'+
             '<div class="text-right"><div class="font-display text-lg font-semibold">'+cqMoney(x.total_charge_cents)+'</div>'+
+            (x.ai_draft?'<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-violet-100 text-violet-800 mr-1">AI draft</span>':'')+
             '<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full '+(approved?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800')+'">'+(approved?'Approved, not sent':'Needs review')+'</span></div>'+
           '</div>'+
-          hold+'<div id="cq-'+x.superbill_id+'" class="text-xs mt-2"></div>'+
+          hold+(x.ai_draft?cqAiBlock(x.ai_draft):'')+'<div id="cq-'+x.superbill_id+'" class="text-xs mt-2"></div>'+
           '<div class="flex gap-2 justify-end mt-3">'+act+'</div>'+
         '</div>';
       };
@@ -781,8 +785,10 @@
             '<div class="text-xs text-[#6b7280] mt-1">'+(x.suggested?'Note supports CPT '+besc(x.suggested)+' · ':'')+'Dx '+((x.diagnoses||[]).map(besc).join(', ')||'none on the note')+'</div></div>'+
             '<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-sky-100 text-sky-800">Signed, needs coding</span>'+
           '</div>'+
+          cqAiLine(x, aiOn)+
           '<div id="cqnb-'+x.note_id+'" class="text-xs mt-2"></div>'+
           '<div class="flex gap-2 justify-end mt-3">'+
+            (aiOn&&x.autocode&&x.autocode.status!=='running'?'<button onclick="cqAiRetry(\''+x.note_id+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#5b21b6] text-xs font-semibold hover:bg-violet-50">Try AI again</button>':'')+
             '<button onclick="cqNoBill(\''+x.note_id+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">No bill</button>'+
             '<button onclick="cqCodeNote(\''+x.patient_id+'\',\''+x.note_id+'\')" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">Code visit</button>'+
           '</div></div>';
@@ -805,7 +811,9 @@
         testBanner+
         '<div class="bg-white rounded-2xl p-3 mb-3 text-xs text-[#6b7280]">Nothing is transmitted automatically. A claim only goes to the payer when someone presses <b>Send to payer</b> here.</div>'+
         (rj.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pb-1 px-1">Rejected, needs fixing ('+rj.length+')</div>'+rj.map(rjCard).join(''):'')+
-        (nc.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pb-1 px-1">Signed, needs coding ('+nc.length+')</div>'+nc.map(ncCard).join(''):'')+
+        (nc.length?'<div class="flex items-center justify-between gap-2 pb-1 px-1"><div class="text-[11px] font-semibold uppercase tracking-wide text-white/80">Signed, needs coding ('+nc.length+')</div>'+
+          (aiOn&&aiTodo?'<button id="cqAiAll" onclick="cqAiBacklog()" class="px-3 py-1 rounded-xl bg-white text-[#5b21b6] text-xs font-semibold hover:bg-violet-50">Draft codes with AI ('+aiTodo+')</button>':'')+
+          '</div><div id="cqAiMsg"></div>'+nc.map(ncCard).join(''):'')+
         (ready.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pb-1 px-1">Insurance · waiting on review ('+ready.length+')</div>'+ready.map(card).join(''):'')+
         (appr.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-3 pb-1 px-1">Insurance · approved, ready to send ('+appr.length+')</div>'+appr.map(card).join(''):'')+
         (spReady.length||spAppr.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-4 pb-1 px-1">Self-pay visits · coded for records, retro coverage, and reimbursement ('+(spReady.length+spAppr.length)+')</div>'+spReady.map(card).join('')+spAppr.map(card).join(''):'')+
@@ -813,6 +821,64 @@
     }catch(e){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">Error: '+besc(e.message)+'</div>'; }
   }
   window.cqMsg=function(id,html){ const el=document.getElementById('cq-'+id); if(el) el.innerHTML=html; };
+  // ---- AI coder (autoCode.ts, Luis 11/7). Drafts wait at "ready" like any coded visit; a person still approves. ----
+  const AI_AXIS={ problems:'Problems addressed', data:'Data reviewed', risk:'Risk of management' };
+  // What the AI coder made of a note still waiting to be coded, in plain words.
+  function cqAiLine(x, aiOn){
+    const ac=x.autocode; if(!ac) return '';
+    const box=(cls,html)=>'<div class="mt-2 rounded-xl px-2.5 py-2 text-[11px] '+cls+'">'+html+'</div>';
+    const stale=ac.stale&&ac.status!=='running'?' The note has changed since; '+(aiOn?'try AI again.':'code it by hand.'):'';
+    if(ac.status==='running') return box('bg-violet-50 border border-violet-100 text-violet-800 font-semibold','AI coder is reading this note.');
+    if(ac.status==='needs_dx'){
+      const q=(ac.queries||[]).filter(Boolean);
+      return box('bg-[#fff7ed] border border-[#ffd9a8] text-[#9a5a00]','<b>AI coder: no documented diagnosis.</b> '+besc(x.provider||'The provider')+' has a task to add one by addendum; the visit is coded again on its own after that.'+(q.length?'<div class="mt-1">'+q.map(s=>'<div>'+besc(s)+'</div>').join('')+'</div>':'')+besc(stale));
+    }
+    if(ac.status==='drafted') return '';
+    return box('bg-[#f7f8fa] border border-[#e6e9ee] text-[#3d4a45]','<b>AI coder:</b> '+besc(ac.reason||ac.status)+besc(stale));
+  }
+  // The AI draft's checks and the note text behind each code, on the review card.
+  function cqAiBlock(ai){
+    const flags=(ai.flags||[]).filter(Boolean);
+    const ev=ai.evidence||[];
+    const q=(s)=>s?' <span class="text-[#6b7280]">"'+besc(s)+'"</span>':'';
+    const rows=ev.map(e=>{
+      if(e.kind==='dx') return '<div><b>'+besc(e.code||'')+'</b>'+(e.source==='provider'?' <span class="text-[#6b7280]">on the provider\'s diagnosis list</span>':q(e.quote))+'</div>';
+      if(AI_AXIS[e.kind]) return '<div>'+AI_AXIS[e.kind]+': <b>'+besc(e.level||'')+'</b>'+(e.source==='provider'?' <span class="text-[#6b7280]">selected by the provider</span>':q(e.quote))+'</div>';
+      if(e.kind==='visit_type') return '<div>Visit type: <b>'+besc(e.level||'')+'</b> <span class="text-[#6b7280]">('+besc(e.quote||'')+')</span></div>';
+      if(e.kind==='place') return '<div>Place of service: <b>'+besc(e.level||'')+'</b> <span class="text-[#6b7280]">('+besc(e.quote||'')+')</span></div>';
+      return '';
+    }).join('');
+    const other=(ai.other_services||[]).map(s=>'<div>'+besc(s.description)+q(s.quote)+'</div>').join('');
+    return (flags.length?'<div class="mt-2 rounded-xl bg-[#fff7ed] border border-[#ffd9a8] px-2.5 py-2 text-[11px] text-[#9a5a00]"><b>Check first</b>'+flags.map(f=>'<div class="mt-0.5">'+besc(f)+'</div>').join('')+'</div>':'')+
+      '<details class="mt-2 rounded-xl bg-[#f7f8fa] border border-[#e6e9ee] px-2.5 py-2 text-[11px] text-[#3d4a45]"><summary class="cursor-pointer font-semibold text-[#5b21b6]">Why these codes</summary>'+
+        '<div class="mt-1.5 space-y-0.5">'+rows+'</div>'+
+        (ai.basis?'<div class="mt-1.5 text-[#6b7280]">'+besc(ai.basis)+'</div>':'')+
+        (other?'<div class="mt-1.5"><b>Also in the note, may be billed separately</b>'+other+'</div>':'')+
+        '<div class="mt-1.5 text-[#9aa0ab]">Drafted by the AI coder from the signed note. Quotes are checked against the note text; approving is still your call.</div>'+
+      '</details>';
+  }
+  window.cqAiBacklog=async function(){
+    const b=document.getElementById('cqAiAll'); if(b){ b.disabled=true; b.textContent='Starting'; }
+    const j=await postClaimQ({ action:'ai_code_backlog' });
+    const m=document.getElementById('cqAiMsg');
+    if(!j||!j.ok){
+      if(m) m.innerHTML='<div class="bg-white rounded-xl p-2.5 mb-2 text-xs font-semibold text-rose-600">'+besc((j&&j.error)||'Could not start the AI coder.')+'</div>';
+      if(b){ b.disabled=false; b.textContent='Draft codes with AI'; }
+      return;
+    }
+    if(b) b.remove();
+    if(m) m.innerHTML='<div class="bg-white rounded-xl p-2.5 mb-2 text-xs text-[#3d4a45]">The AI coder is drafting '+j.queued+' visit'+(j.queued===1?'':'s')+', a few seconds apart. Each draft moves to <b>waiting on review</b> when it finishes. Nothing is approved or sent.</div>';
+    // Refresh while it works, only while Billing review is still open.
+    [45000, 120000, 240000].forEach(ms=>setTimeout(()=>{ if(document.getElementById('claimBody')) loadClaimQueue(); }, ms));
+  };
+  window.cqAiRetry=async function(noteId){
+    const el=document.getElementById('cqnb-'+noteId);
+    const j=await postClaimQ({ action:'ai_code_note', note_id:noteId });
+    if(el) el.innerHTML=(j&&j.ok)
+      ? '<span class="text-violet-700 font-semibold">AI coder started on this note. It shows up in review in about a minute.</span>'
+      : '<span class="text-rose-600 font-semibold">'+besc((j&&j.error)||'Could not start it.')+'</span>';
+    if(j&&j.ok) setTimeout(()=>{ if(document.getElementById('claimBody')) loadClaimQueue(); }, 60000);
+  };
   // Code visit from Signed, needs coding: open the patient's chart and the coding window for that note.
   // Coding a signed note defaults to Ready, so saving it sends the visit on to review.
   window.cqCodeNote=async function(pid,noteId){
