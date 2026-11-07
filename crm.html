@@ -2579,12 +2579,14 @@
             <button class="chart-tab px-3.5 py-2.5 text-sm font-semibold text-[#6b7280] border-b-2 border-transparent -mb-px" data-ct="notes" onclick="chartTab('notes',this)">Notes</button>
             <button class="chart-tab px-3.5 py-2.5 text-sm font-semibold text-[#6b7280] border-b-2 border-transparent -mb-px" data-ct="docs" onclick="chartTab('docs',this)">Documents</button>
             <button class="chart-tab px-3.5 py-2.5 text-sm font-semibold text-[#6b7280] border-b-2 border-transparent -mb-px" data-ct="billing" onclick="chartTab('billing',this)">Billing</button>
+            <button class="chart-tab px-3.5 py-2.5 text-sm font-semibold text-[#6b7280] border-b-2 border-transparent -mb-px" data-ct="consents" onclick="chartTab('consents',this)">Consents</button>
           </div>
           <div class="p-5">
             <div id="chartTabSummary"><div id="chartListsPanel"></div></div>
             <div id="chartTabNotes" class="hidden"><div id="chartNotesPanel"></div></div>
             <div id="chartTabDocs" class="hidden"><div id="chartDocsPanel"></div></div>
             <div id="chartTabBilling" class="hidden"><div id="chartBillingPanel"></div></div>
+            <div id="chartTabConsents" class="hidden"><div id="chartConsentsPanel"></div></div>
           </div>
         </div>
 
@@ -2670,6 +2672,7 @@
     loadChartNotes(p.id);
     loadChartDocs(p.id);
     loadChartBilling(p.id);
+    loadChartConsents(p.id);
   }
 
   // ============ CRM (operational) view ============
@@ -2781,6 +2784,7 @@
           ${medicareBridgeCard(p)}
           <div class="glass rounded-2xl p-4"><div class="sect-h flex items-center gap-1.5"><img src="assets/deck-icons/billing.svg" alt="" style="width:15px;height:15px;opacity:.85">Subscription &amp; billing</div><div class="text-sm ${p.subscription?'':'text-[#9aa0ab]'}">${p.subscription?`<span class="font-display text-lg font-semibold">$${((p.subscription.recurring_cents||0)/100).toFixed(0)}</span><span class="text-[#6b7280]">/mo</span> · <span class="badge b-active">${p.subscription.status||'active'}</span>${p.subscription.next_bill_at?`<div class="text-xs text-[#6b7280] mt-1">Next bill ${new Date(p.subscription.next_bill_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}${p.subscription.cycles_billed!=null?` · ${p.subscription.cycles_billed} cycle${p.subscription.cycles_billed===1?'':'s'} billed`:''}${p.subscription.fail_count?` · <span style="color:#b91c1c">${p.subscription.fail_count} failed</span>`:''}</div>`:''}`:'No subscription on file'}</div>${p.coupon?`<div class="text-xs mt-2"><span class="badge" style="background:#fef3c7;color:#92400e">🎟 ${esc(p.coupon.label||p.coupon.code)}</span> <span class="text-[#6b7280]">${p.coupon.comped?'comped · full package, no charge':'discount applied'}</span></div>`:''}</div>
           <div class="glass rounded-2xl p-4"><div class="sect-h flex items-center gap-1.5"><img src="assets/deck-icons/glp1.svg" alt="" style="width:15px;height:15px;opacity:.85">Program</div><div class="text-sm font-medium">${PROG[p.program]||'Not set'}</div></div>
+          <div class="glass rounded-2xl p-4"><div class="flex items-center justify-between"><span class="sect-h" style="margin:0">Consents</span><button onclick="openConsents()" class="text-xs text-[#0a6cf5] font-semibold hover:underline">View and print</button></div><div class="text-xs text-[#6b7280] mt-1.5">Intake e-signatures, check-in disclosures, waivers and recording consent.</div></div>
           <div class="glass rounded-2xl p-4"><div class="sect-h">Referral source</div>${p.referred_by?`<div class="text-sm font-medium text-[#0a6cf5]">${esc(p.referred_by.practice_name)}</div>${p.referred_by.provider_name?`<div class="text-xs text-[#6b7280] mt-1">${esc(p.referred_by.provider_name)}</div>`:''}`:'<div class="text-sm text-[#9aa0ab]">None set</div>'}</div>
           <div class="glass rounded-2xl p-4"><div class="sect-h flex items-center gap-1.5">🩺 Primary care doctor</div>${p.pcp&&(p.pcp.name||p.pcp.practice||p.pcp.phone)?`<div class="text-sm font-medium">${esc(p.pcp.name||'(name not given)')}</div>${p.pcp.practice?`<div class="text-xs text-[#6b7280] mt-0.5">${esc(p.pcp.practice)}</div>`:''}${p.pcp.phone?`<div class="text-xs text-[#6b7280] mt-0.5">${esc(p.pcp.phone)}</div>`:''}<button onclick="pcpLetter('${p.id}')" class="mt-2 text-xs font-semibold text-[#0a6cf5] hover:underline">🖨 Print update letter</button>`:'<div class="text-sm text-[#9aa0ab]">Not provided</div>'}</div>
           <div class="glass rounded-2xl p-4"><div class="flex items-center justify-between mb-2"><span class="sect-h" style="margin:0">Open tasks</span><button onclick="addTask('${p.id}')" class="text-xs text-[#0a6cf5] font-semibold hover:underline">+ Add</button></div><div id="rightTasks" class="space-y-2 text-sm text-[#9aa0ab]">Loading…</div></div>
@@ -5885,7 +5889,7 @@ HARD RULES:
   }
   // Tab switch for the unified Clinical Chart card.
   window.chartTab=function(name, el){
-    ['summary','notes','docs','billing'].forEach(n=>{ const c=document.getElementById('chartTab'+n.charAt(0).toUpperCase()+n.slice(1)); if(c) c.classList.toggle('hidden', n!==name); });
+    ['summary','notes','docs','billing','consents'].forEach(n=>{ const c=document.getElementById('chartTab'+n.charAt(0).toUpperCase()+n.slice(1)); if(c) c.classList.toggle('hidden', n!==name); });
     document.querySelectorAll('#chartCard .chart-tab').forEach(b=>{ const on=(b===el)||(b.dataset.ct===name); b.classList.toggle('text-[#0a6cf5]',on); b.classList.toggle('border-[#0a6cf5]',on); b.classList.toggle('text-[#6b7280]',!on); b.classList.toggle('border-transparent',!on); });
   };
   // One consistent section wrapper inside the chart card (replaces the old separate glass boxes).
@@ -6178,6 +6182,113 @@ HARD RULES:
     const headline=(DOC_TYPE_LABELS[d.doc_type]||d.doc_type||'Document')+(d.note?' — '+esc(d.note):'');
     return `<div class="flex items-start justify-between gap-3 py-2 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm text-[#16201d] font-medium truncate">📄 ${headline}</div><div class="text-[11px] text-[#9aa0ab]">${meta}</div></div><div class="text-[11px] whitespace-nowrap pt-0.5">${view}${ren}${del}</div></div>`;
   }
+  // ---- Consents tab (consents.ts, Luis 11/7): every consent on file, for any staff member, printable for the patient. ----
+  const CONSENT_SURFACE={ glp1:'Online GLP-1 intake', intake:'Online intake form', bloom:'Bloom signup page', checkin:'Front-desk check-in kiosk', checkout:'Checkout page', web:'Website' };
+  const consentWhen=(ms)=>{ const d=new Date(ms); return isNaN(d)?'':d.toLocaleString('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})+' PT'; };
+  const consentPlaceholder=(r)=>(r.items||[]).some(i=>String(i.text||'').startsWith('PLACEHOLDER.'));
+  // The facility waiver text lives in /facility-waiver.js (the one copy every signing page uses). Loaded once, on demand.
+  let __waiverLoad=null;
+  function loadFacilityWaiver(){
+    if(window.FACILITY_WAIVER_HTML) return Promise.resolve();
+    if(!__waiverLoad) __waiverLoad=new Promise(res=>{ const s=document.createElement('script'); s.src='/facility-waiver.js'; s.onload=()=>res(); s.onerror=()=>res(); document.head.appendChild(s); });
+    return __waiverLoad;
+  }
+  const waiverTextFor=(version)=>(window.FACILITY_WAIVER_HTML&&window.FACILITY_WAIVER_VERSION===version)?window.FACILITY_WAIVER_HTML:'';
+  async function loadChartConsents(pid){
+    const box=document.getElementById('chartConsentsPanel'); if(!box) return;
+    box.innerHTML='<div class="text-sm text-[#9aa0ab]">Loading consents.</div>';
+    let j; try{ j=await postDocs({action:'consents',patient_id:pid}); }catch(e){ j={ ok:false, error:'Could not load consents.' }; }
+    if(pid!==selId) return; // another chart opened while this loaded
+    if(!j||j.ok===false){ box.innerHTML='<div class="text-sm text-rose-600">'+esc((j&&j.error)||'Could not load consents.')+'</div>'; return; }
+    window.__chartConsents=j;
+    const recs=j.records||[], docs=j.documents||[];
+    const printAll=recs.length?`<button onclick="printConsents('all')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">Print all</button>`:'';
+    const list=recs.length?recs.map((r,i)=>consentCard(r,i)).join(''):'<div class="text-sm text-[#9aa0ab]">No consents on file for this patient.</div>';
+    const docList=docs.map(d=>`<div class="flex items-start justify-between gap-3 py-2 border-b border-[#f1f3f7] last:border-0"><div class="min-w-0"><div class="text-sm text-[#16201d]">${esc(d.filename)}</div><div class="text-[11px] text-[#6b7280]">Uploaded ${esc(consentWhen(d.created_at))}${d.uploaded_by?' by '+esc(d.uploaded_by):''}</div></div>${d.url?`<a href="${esc(d.url)}" target="_blank" rel="noopener" class="text-xs font-semibold text-[#0a6cf5] hover:underline shrink-0">Open to print</a>`:'<span class="text-xs text-[#9aa0ab]">unavailable</span>'}</div>`).join('');
+    box.innerHTML=chartSection('Consents', printAll, `<div class="space-y-2">${list}</div>`)+(docs.length?chartSection('Uploaded consent files', '', `<div>${docList}</div>`):'');
+  }
+  function consentCard(r,i){
+    const items=r.items||[];
+    const notAgreed=items.filter(x=>!x.agreed).length;
+    const who=r.signature_name?'Signed by <b class="text-[#16201d]">'+esc(r.signature_name)+'</b> (typed e-signature)':(r.kind==='kiosk'?'Accepted at the front desk':(r.kind==='recording'?'Ticked in the video waiting room':''));
+    const meta=[consentWhen(r.at), r.version?'version '+esc(r.version):'', CONSENT_SURFACE[r.surface]?esc(CONSENT_SURFACE[r.surface]):''].filter(Boolean).join(' · ');
+    const summary=items.length?(items.length+' item'+(items.length===1?'':'s')+(notAgreed?', '+notAgreed+' not agreed':', all agreed')):'';
+    const legacy=r.source==='checkin_note'?'<div class="text-[11px] text-[#6b7280] mt-1">Recorded before 11/7 from the check-in note; the wording below is the kiosk text in use on that date.</div>'
+      :r.source==='clinical_review'?'<div class="text-[11px] text-[#6b7280] mt-1">Recorded before 11/7. If this patient sent more than one intake before then, only the latest signature was kept.</div>':'';
+    const draft=consentPlaceholder(r)?'<div class="mt-2 rounded-xl bg-[#fff7ed] border border-[#ffd9a8] px-2.5 py-1.5 text-[11px] text-[#9a5a00]">On this date the kiosk still showed draft wording (final text went live 7/24).</div>':'';
+    const rows=items.map(x=>{
+      const txt=x.text?esc(x.text):(x.group==='waiver'||x.id==='facility_waiver'?'Full waiver text, version '+esc(x.version||r.version||'')+', prints with this record.':'');
+      return `<div class="flex gap-2 py-1.5 border-b border-[#f1f3f7] last:border-0"><span class="${x.agreed?'text-emerald-700':'text-rose-600'} font-semibold text-xs shrink-0 w-24">${x.agreed?'Agreed':'Not agreed'}</span><div class="min-w-0 text-xs text-[#16201d]">${x.title?'<div class="font-semibold">'+esc(x.title)+(x.version?' <span class="font-normal text-[#9aa0ab]">('+esc(x.version)+')</span>':'')+'</div>':''}<div class="whitespace-pre-wrap text-[#3d4a45]">${txt}</div></div></div>`;
+    }).join('');
+    const tech=[r.ip?'IP '+esc(r.ip):'', r.actor?'Kiosk armed by '+esc(r.actor):'', r.user_agent?'Browser: '+esc(r.user_agent):'', r.detail&&r.kind==='recording'?esc(r.detail):''].filter(Boolean).map(s=>'<div>'+s+'</div>').join('');
+    return `<div class="rounded-xl border border-[#e6e9ee] p-3">
+      <div class="flex items-start justify-between gap-3 flex-wrap"><div class="min-w-0"><div class="text-sm font-semibold text-[#16201d]">${esc(r.title)}</div>
+        <div class="text-[11px] text-[#6b7280] mt-0.5">${meta}</div>${who?'<div class="text-xs text-[#3d4a45] mt-1">'+who+'</div>':''}${legacy}</div>
+        <button onclick="printConsents(${i})" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8] shrink-0">Print</button></div>
+      ${draft}
+      ${items.length?`<details class="mt-2"><summary class="cursor-pointer text-xs font-semibold text-[#0a6cf5]">What they agreed to${summary?' ('+summary+')':''}</summary><div class="mt-1.5">${rows}</div>${tech?'<div class="mt-2 text-[11px] text-[#9aa0ab] break-all">'+tech+'</div>':''}</details>`:''}
+    </div>`;
+  }
+  // Patient header "Consents" button: the chart (Provider view, open to every staff role) on its Consents tab.
+  window.openConsents=function(){
+    setViewMode('provider');
+    const b=document.querySelector('#chartCard .chart-tab[data-ct="consents"]');
+    if(b) chartTab('consents', b);
+    // The chart sits below the demographics in Provider view: bring it into sight, again once the panels above it load.
+    const show=()=>document.getElementById('chartCard')?.scrollIntoView({ block:'start' });
+    show(); setTimeout(show, 700); setTimeout(show, 1600);
+  };
+  // Print one record, or every record, as a copy the patient can take. Same brand header as the note print.
+  window.printConsents=async function(which){
+    const j=window.__chartConsents; if(!j){ alert('Consents are still loading.'); return; }
+    const recs=which==='all'?(j.records||[]):[(j.records||[])[which]].filter(Boolean);
+    if(!recs.length){ alert('Nothing to print.'); return; }
+    await loadFacilityWaiver();
+    const pt=j.patient||{};
+    const nm=pt.name||'Patient', dob=pt.dob?dobUS(pt.dob):'n/a';
+    let logo='';
+    try{ const resp=await fetch(new URL('assets/logo-icon.png', location.href).href); const blob=await resp.blob(); logo=await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=()=>res(''); fr.readAsDataURL(blob); }); }catch(e){ logo=''; }
+    const head='<div style="display:flex;align-items:center;gap:12px;border-bottom:2px solid #0a6cf5;padding-bottom:12px;margin-bottom:14px">'
+      +(logo?'<img src="'+logo+'" alt="Vitality Weight Loss" style="height:38px;width:auto">':'')
+      +'<div style="line-height:1.05"><div style="font-family:Montserrat,Inter,sans-serif;text-transform:uppercase;letter-spacing:.15em;font-weight:600;font-size:19px;color:#16201d">Vitality</div><div style="font-family:Montserrat,Inter,sans-serif;text-transform:uppercase;letter-spacing:.30em;font-weight:500;font-size:8.5px;color:#16201d;margin-top:3px">Weight Loss</div></div>'
+      +'<div style="margin-left:auto;text-align:right;font-size:11px;color:#6b7280;line-height:1.45">Consent record'+(recs.length>1?'s':'')+'<br>'+esc(PRACTICE.address)+'<br>'+esc(PRACTICE.phone)+'</div></div>'
+      +'<table style="width:100%;font-size:13px;border-collapse:collapse;margin-bottom:10px"><tr><td style="padding:2px 0"><b>Patient:</b> '+esc(nm)+'</td><td><b>DOB:</b> '+esc(dob)+'</td><td><b>Record no.:</b> '+esc(mrnFor(selId))+'</td></tr></table>';
+    const line=(k,v)=>v?'<tr><td style="padding:2px 10px 2px 0;color:#6b7280;white-space:nowrap;vertical-align:top">'+k+'</td><td style="padding:2px 0;word-break:break-all">'+v+'</td></tr>':'';
+    const body=recs.map((r,ix)=>{
+      const items=(r.items||[]).map(x=>{
+        const isWaiver=x.group==='waiver'||x.id==='facility_waiver';
+        const wHtml=isWaiver&&!x.text?waiverTextFor(x.version||r.version):'';
+        const text=x.text?'<div style="white-space:pre-wrap">'+esc(x.text)+'</div>':(wHtml?'<div style="font-size:11.5px">'+wHtml+'</div>':(isWaiver?'<div style="color:#9a5a00">Waiver text for version '+esc(x.version||r.version||'')+' is not on file in this browser.</div>':''));
+        return '<div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #eef1f4;font-size:12.5px;line-height:1.45;page-break-inside:avoid">'
+          +'<div style="width:86px;flex-shrink:0;font-weight:600;color:'+(x.agreed?'#047857':'#be123c')+'">'+(x.agreed?'[X] Agreed':'[ ] Not agreed')+'</div>'
+          +'<div style="min-width:0">'+(x.title?'<div style="font-weight:600">'+esc(x.title)+(x.version?' ('+esc(x.version)+')':'')+'</div>':'')+text+'</div></div>';
+      }).join('');
+      const sig=r.signature_name?'Signed electronically by typing the full legal name <b>'+esc(r.signature_name)+'</b> on '+esc(consentWhen(r.at))+'.'
+        :r.kind==='kiosk'?'Accepted on the front-desk check-in kiosk on '+esc(consentWhen(r.at))+'.'
+        :r.kind==='recording'?'Consent box ticked in the video visit waiting room on '+esc(consentWhen(r.at))+'.':'Recorded on '+esc(consentWhen(r.at))+'.';
+      return '<div style="'+(ix?'page-break-before:always;':'')+'">'
+        +(ix?head:'')
+        +'<h2 style="font-size:15px;margin:4px 0 6px;color:#16201d">'+esc(r.title)+'</h2>'
+        +'<table style="font-size:12px;border-collapse:collapse;margin-bottom:8px">'
+        +line('Date and time',esc(consentWhen(r.at)))
+        +line('Signature',r.signature_name?esc(r.signature_name)+' (typed e-signature)':'')
+        +line('Version',esc(r.version||''))+line('Language',esc(r.language||''))
+        +line('Where',esc(CONSENT_SURFACE[r.surface]||r.surface||''))
+        +line('Kiosk armed by',esc(r.actor||''))+line('IP address',esc(r.ip||''))+line('Browser',esc(r.user_agent||''))
+        +line('Visit',r.kind==='recording'?esc(r.detail||''):'')
+        +'</table>'
+        +(consentPlaceholder(r)?'<div style="font-size:11.5px;color:#9a5a00;margin-bottom:6px">On this date the check-in kiosk still showed draft wording. The text below is what was shown.</div>':'')
+        +items
+        +'<div style="margin-top:12px;font-size:12px;color:#374151">'+sig+'</div>'
+        +'</div>';
+    }).join('');
+    const me=(typeof __bellMe!=='undefined'&&__bellMe&&__bellMe.name)?__bellMe.name:'';
+    const foot='<div style="margin-top:18px;padding-top:8px;border-top:1px solid #e6e9ee;font-size:10.5px;color:#9aa0ab">Copy of the consent record kept in the patient\'s Vitality record. Printed '+esc(consentWhen(Date.now()))+(me?' by '+esc(me):'')+'.</div>';
+    let holder=document.getElementById('consentPrintBody');
+    if(!holder){ holder=document.createElement('div'); holder.id='consentPrintBody'; holder.style.display='none'; document.body.appendChild(holder); }
+    holder.innerHTML=head+body+foot;
+    window.__printEl('consentPrintBody', 'Consent record - '+esc(nm));
+  };
   window.openDocUpload=function(){
     const typeOpts=Object.entries(DOC_TYPE_LABELS).map(([k,vv])=>`<option value="${k}" ${k==='insurance_card'?'selected':''}>${vv}</option>`).join('');
     const body=`<label class="block text-xs font-semibold text-[#3d4a45]">Document type<select id="docType" class="field mt-1 block w-full">${typeOpts}</select></label><label class="block text-xs font-semibold text-[#3d4a45]">Note (optional)<input id="docNote" type="text" class="field mt-1 block w-full" placeholder="e.g., front of card"></label><label class="block text-xs font-semibold text-[#3d4a45]">File<input id="docFile" type="file" accept="application/pdf,image/*" class="field mt-1 block w-full text-sm"></label><div class="text-[11px] text-[#9aa0ab]">PDF or image, stored securely on the chart.</div>`;

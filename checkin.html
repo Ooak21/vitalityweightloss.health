@@ -178,6 +178,13 @@
       body: (window.FACILITY_WAIVER_HTML || 'Fitness Facility Waiver unavailable. Please see the front desk.') },
   ];
 
+  // Plain text of a disclosure body (the waiver is HTML), paragraph breaks kept, for the patient's consent record.
+  function plainText(html){
+    const tmp = document.createElement('div');
+    tmp.innerHTML = String(html || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|h[1-6]|li|div|ul|ol|tr)>/gi, '$&\n');
+    return (tmp.textContent || '').replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+
   // --- state ---
   let digits = '';
   let patient = null;
@@ -326,7 +333,9 @@
         body: JSON.stringify({
           patient_id: patient.patient_id,
           appt_id: patient.appt ? patient.appt.id : undefined,
-          disclosures: DISCLOSURES.map(d => ({ key:d.key, version:d.version })),
+          // The exact words shown go on the patient's consent record (chart Consents tab), so a printed copy
+          // matches what they accepted here. The waiver body is HTML; the record keeps its plain text.
+          disclosures: DISCLOSURES.map(d => ({ key:d.key, version:d.version, title:d.title, text:plainText(d.body) })),
           arrival_label: arrivalLabel,
           appt_label: apptLabel || undefined,
         }),
