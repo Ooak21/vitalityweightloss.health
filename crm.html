@@ -736,6 +736,10 @@
       if(!j.ok){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">'+besc(j.error||'Not permitted.')+'</div>'; return; }
       window.__claimQueue=j.queue||[];
       const nc=j.needs_coding||[];
+      // Netty 11/9: notes signed by staff who can't bill (no NPI on their staff record) and the ones sent on to a provider.
+      const cb=j.cannot_bill||[];
+      const stp=j.sent_to_provider||[];
+      window.__billingProviders=j.billing_providers||[];
       const rj=j.rejected_claims||[];
       window.__claimsMode=j.claims_mode||'test';
       // AI coder (Luis 11/7): drafts land in review as "AI draft"; the button codes every note it has not settled yet.
@@ -793,6 +797,37 @@
             '<button onclick="cqCodeNote(\''+x.patient_id+'\',\''+x.note_id+'\')" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">Code visit</button>'+
           '</div></div>';
       };
+      // Netty 11/9: signed by someone who can't bill. Never coded here: No bill, or send it to a provider to follow up.
+      const cbCard=(x)=>{
+        const aging=(x.aging_days!=null)?'<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ml-2 bg-slate-100 text-slate-600">'+x.aging_days+'d</span>':'';
+        return '<div class="bg-white rounded-2xl border border-[#e6e9ee] p-4 mb-2">'+
+          '<div class="flex items-start justify-between gap-3 flex-wrap">'+
+            '<div><div class="font-semibold text-[#16201d]">'+besc(x.patient)+'</div>'+
+            '<div class="text-xs text-[#6b7280] mt-0.5">DOS '+besc(x.date_of_service||'—')+aging+' · '+besc((typeof NOTE_TYPE_LABELS!=='undefined'&&NOTE_TYPE_LABELS[x.encounter_type])||'Clinical note')+' · signed by '+besc(x.signed_by||'—')+'</div>'+
+            '<div class="text-xs text-[#6b7280] mt-1">'+besc(x.signed_by||'The signer')+' has no NPI on their staff record, so this visit cannot be billed under them.</div></div>'+
+            '<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">Can\'t bill</span>'+
+          '</div>'+
+          '<div id="cqnb-'+x.note_id+'" class="text-xs mt-2"></div>'+
+          '<div id="cqsp-'+x.note_id+'" class="text-xs mt-2"></div>'+
+          '<div class="flex gap-2 justify-end mt-3">'+
+            '<button onclick="cqOpenChart(\''+x.patient_id+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">Open chart</button>'+
+            '<button onclick="cqNoBill(\''+x.note_id+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">No bill</button>'+
+            '<button onclick="cqSendProv(\''+x.note_id+'\')" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">Send to a provider</button>'+
+          '</div></div>';
+      };
+      // Sent to a provider: stays here until that provider's task is done.
+      const stpCard=(x)=>{
+        const st=x.task_status==='doing'?['In progress','bg-sky-100 text-sky-800']:['To do','bg-amber-100 text-amber-800'];
+        return '<div class="bg-white rounded-2xl border border-[#e6e9ee] p-4 mb-2">'+
+          '<div class="flex items-start justify-between gap-3 flex-wrap">'+
+            '<div><div class="font-semibold text-[#16201d]">'+besc(x.patient)+'</div>'+
+            '<div class="text-xs text-[#6b7280] mt-0.5">DOS '+besc(x.date_of_service||'—')+' · signed by '+besc(x.signed_by||'—')+'</div>'+
+            '<div class="text-xs text-[#3d4a45] mt-1">Sent to <b>'+besc(x.to)+'</b> by '+besc(x.by)+(x.at?' · '+new Date(x.at).toLocaleDateString():'')+'</div>'+
+            (x.message?'<div class="text-xs text-[#6b7280] mt-1">"'+besc(x.message)+'"</div>':'')+'</div>'+
+            '<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full '+st[1]+'">Provider task: '+st[0]+'</span>'+
+          '</div>'+
+          '<div class="flex gap-2 justify-end mt-3"><button onclick="cqOpenChart(\''+x.patient_id+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">Open chart</button></div></div>';
+      };
       // A claim Stedi or the payer rejected never reached adjudication, and timely filing keeps running.
       const rjCard=(x)=>{
         const aging=(x.aging_days!=null)?'<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ml-2 bg-slate-100 text-slate-600">'+x.aging_days+'d</span>':'';
@@ -814,10 +849,12 @@
         (nc.length?'<div class="flex items-center justify-between gap-2 pb-1 px-1"><div class="text-[11px] font-semibold uppercase tracking-wide text-white/80">Signed, needs coding ('+nc.length+')</div>'+
           (aiOn&&aiTodo?'<button id="cqAiAll" onclick="cqAiBacklog()" class="px-3 py-1 rounded-xl bg-white text-[#5b21b6] text-xs font-semibold hover:bg-violet-50">Draft codes with AI ('+aiTodo+')</button>':'')+
           '</div><div id="cqAiMsg"></div>'+nc.map(ncCard).join(''):'')+
+        (cb.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-3 pb-1 px-1">Signed by staff who can\'t bill ('+cb.length+')</div>'+cb.map(cbCard).join(''):'')+
+        (stp.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-3 pb-1 px-1">Sent to a provider ('+stp.length+')</div>'+stp.map(stpCard).join(''):'')+
         (ready.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pb-1 px-1">Insurance · waiting on review ('+ready.length+')</div>'+ready.map(card).join(''):'')+
         (appr.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-3 pb-1 px-1">Insurance · approved, ready to send ('+appr.length+')</div>'+appr.map(card).join(''):'')+
         (spReady.length||spAppr.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-4 pb-1 px-1">Self-pay visits · coded for records, retro coverage, and reimbursement ('+(spReady.length+spAppr.length)+')</div>'+spReady.map(card).join('')+spAppr.map(card).join(''):'')+
-        ((!rj.length&&!nc.length&&!ready.length&&!appr.length&&!spReady.length&&!spAppr.length)?'<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Nothing waiting. 🎉</div>':'');
+        ((!rj.length&&!nc.length&&!cb.length&&!stp.length&&!ready.length&&!appr.length&&!spReady.length&&!spAppr.length)?'<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Nothing waiting. 🎉</div>':'');
     }catch(e){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">Error: '+besc(e.message)+'</div>'; }
   }
   window.cqMsg=function(id,html){ const el=document.getElementById('cq-'+id); if(el) el.innerHTML=html; };
@@ -901,6 +938,28 @@
       '<div class="flex gap-2 justify-end"><button onclick="document.getElementById(\'cqnb-'+noteId+'\').innerHTML=\'\'" class="px-2.5 py-1 rounded-lg border border-[#e6e9ee] text-[11px] font-semibold">Cancel</button>'+
       '<button onclick="cqNoBillGo(\''+noteId+'\')" class="px-2.5 py-1 rounded-lg bg-[#3d4a45] text-white text-[11px] font-semibold">Yes, no bill</button></div></div>';
   };
+  // Netty 11/9: send a note signed by staff who can't bill to a provider. The provider gets a task and the usual task email.
+  window.cqSendProv=function(noteId){
+    const el=document.getElementById('cqsp-'+noteId); if(!el) return;
+    const nb=document.getElementById('cqnb-'+noteId); if(nb) nb.innerHTML='';
+    const provs=window.__billingProviders||[];
+    if(!provs.length){ el.innerHTML='<span class="text-rose-600 font-semibold">No active provider has an NPI on their staff record.</span>'; return; }
+    el.innerHTML='<div class="rounded-xl bg-[#f7f8fa] border border-[#e6e9ee] p-2.5 mt-1">'+
+      '<div class="text-[11px] font-semibold text-[#3d4a45] mb-1.5">Send to a provider. They get a task to contact the client. If they deliver a billable service, they document and sign their own note, and it comes back here to code. This visit is not billed.</div>'+
+      '<select id="cqspp-'+noteId+'" class="field w-full text-xs mb-2"><option value="">Pick a provider</option>'+provs.map(p=>'<option value="'+besc(p.staff_id)+'">'+besc(p.name)+'</option>').join('')+'</select>'+
+      '<input id="cqspm-'+noteId+'" maxlength="500" placeholder="Message for the provider (optional)" class="field w-full text-xs mb-2">'+
+      '<div id="cqspe-'+noteId+'" class="text-[11px] mb-1.5"></div>'+
+      '<div class="flex gap-2 justify-end"><button onclick="document.getElementById(\'cqsp-'+noteId+'\').innerHTML=\'\'" class="px-2.5 py-1 rounded-lg border border-[#e6e9ee] text-[11px] font-semibold">Cancel</button>'+
+      '<button id="cqspg-'+noteId+'" onclick="cqSendProvGo(\''+noteId+'\')" class="px-2.5 py-1 rounded-lg bg-[#0a6cf5] text-white text-[11px] font-semibold">Send</button></div></div>';
+  };
+  window.cqSendProvGo=async function(noteId){
+    const pick=document.getElementById('cqspp-'+noteId), msg=document.getElementById('cqspm-'+noteId), err=document.getElementById('cqspe-'+noteId), go=document.getElementById('cqspg-'+noteId);
+    if(!pick||!pick.value){ if(err) err.innerHTML='<span class="text-rose-600 font-semibold">Pick a provider first.</span>'; return; }
+    if(go){ go.disabled=true; go.textContent='Sending…'; }
+    const j=await postClaimQ({ action:'note_send_to_provider', note_id:noteId, staff_id:pick.value, message:msg?msg.value.trim():undefined });
+    if(!j||!j.ok){ if(err) err.innerHTML='<span class="text-rose-600 font-semibold">'+besc((j&&j.error)||'Could not send it.')+'</span>'; if(go){ go.disabled=false; go.textContent='Send'; } return; }
+    loadClaimQueue();
+  };
   window.cqNoBillGo=async function(noteId){
     const w=document.getElementById('cqnbw-'+noteId);
     const j=await postClaimQ({ action:'note_no_bill', note_id:noteId, reason:w?w.value.trim():undefined });
@@ -981,7 +1040,7 @@
   };
   const VT_STATE={booked:['Booked','#f1f3f7','#4b5563'],checked_in:['Checked in','#fff7e6','#b45309'],seen:['Seen','#eaf7ef','#0a7a3d'],cancelled:['Cancelled','#f1f3f7','#9aa0ab'],no_show:['No-show','#fdecec','#be123c']};
   const VT_NOTE={signed:['Signed','#eaf7ef','#0a7a3d'],draft:['Draft','#fff7e6','#b45309'],none:['No note','#fdecec','#be123c']};
-  const VT_BILL={not_coded:['Not coded','#fdecec','#be123c'],draft:['Coding draft','#fff7e6','#b45309'],ready:['Ready for review','#eef6ff','#1d4ed8'],approved:['Approved','#eef6ff','#1d4ed8'],submitted:['Sent to payer','#eaf7ef','#0a7a3d'],paid:['Paid','#eaf7ef','#0a7a3d'],no_bill:['No bill','#f1f3f7','#4b5563']};
+  const VT_BILL={not_coded:['Not coded','#fdecec','#be123c'],draft:['Coding draft','#fff7e6','#b45309'],ready:['Ready for review','#eef6ff','#1d4ed8'],approved:['Approved','#eef6ff','#1d4ed8'],submitted:['Sent to payer','#eaf7ef','#0a7a3d'],paid:['Paid','#eaf7ef','#0a7a3d'],no_bill:['No bill','#f1f3f7','#4b5563'],sent_to_provider:['Sent to a provider','#f1f3f7','#4b5563']};
   const vtPill=(map,k)=>{ const x=map[k]||[k||'—','#f1f3f7','#4b5563']; return `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap" style="background:${x[1]};color:${x[2]}">${esc(x[0])}</span>`; };
   const vtMatch=(r)=>__vtFilter==='no_note'?(r.state==='seen'&&r.note!=='signed')
     :__vtFilter==='not_billed'?(r.note==='signed'&&(r.billing==='not_coded'||r.billing==='draft'))
