@@ -1050,10 +1050,49 @@ function disqualify(reason, isCrisis) {
 // Shared-Supabase URL removed 2026-08-20. It was declared and never used.
 const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWZoY3ZiZ3hxd2x5d3Vndmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDc5NTgsImV4cCI6MjA4ODA4Mzk1OH0.UfRVLuvM8_HPvKXUEDXb0cxR50znv16L5Tf99AnSc7g';
 function leadPassword() { return 'Lead-' + Math.abs((state.email||'x').split('').reduce((a,c)=>((a<<5)-a+c.charCodeAt(0))|0,7)).toString(36) + '-9aZ'; }
+// AI follow-up call consent (Luis 11/11). OPTIONAL: Continue never waits on it (TCPA: consent may not be a
+// condition of purchase or treatment). The words shown are the record; they go with the lead to vit_consent_records.
+const CALL_CONSENT_VERSION = 'call-2026-11-11';
+const CALL_CONSENT_HTML = {
+  en: '<strong>Optional:</strong> By checking this box, I agree that DeBry Vitality Academies PC (Vitality Weight Loss) may call me at the phone number above about my online visit and Vitality\'s weight-loss programs, including with an automated or AI voice assistant. Calls may be recorded. Consent is not a condition of purchase or treatment. To stop these calls, tell the assistant on any call or call (702) 602-5002.',
+  es: '<strong>Opcional:</strong> Al marcar esta casilla, acepto que DeBry Vitality Academies PC (Vitality Weight Loss) me llame al número de teléfono indicado arriba sobre mi visita en línea y los programas de pérdida de peso de Vitality, incluso con un asistente de voz automatizado o de inteligencia artificial. Las llamadas pueden ser grabadas. El consentimiento no es condición de compra ni de tratamiento. Para dejar de recibir estas llamadas, dígaselo al asistente en cualquier llamada o llame al (702) 602-5002.'
+};
+function callConsentBox(parent) {
+  const lang = (window.__LANG === 'es') ? 'es' : 'en';
+  const card = h('div', { class:'ack-card' + (state.callConsent ? ' checked' : '') });
+  const body = h('label', { class:'ack-body' });
+  const cb = h('input', { type:'checkbox', id:'callConsent' });
+  cb.checked = !!state.callConsent;
+  const txt = h('div', { class:'ack-text notrans' });
+  txt.innerHTML = CALL_CONSENT_HTML[lang];
+  cb.onchange = () => {
+    state.callConsent = cb.checked;
+    state.callConsentRecord = {
+      agreed: cb.checked, version: CALL_CONSENT_VERSION, language: lang,
+      text: txt.textContent.replace(/\s+/g, ' ').trim(),
+      capturedAtUTC: new Date().toISOString(), userAgent: navigator.userAgent, pageUrl: location.href,
+    };
+    card.classList.toggle('checked', cb.checked);
+    save(); validateCta();
+  };
+  body.appendChild(cb); body.appendChild(txt);
+  card.appendChild(body);
+  parent.appendChild(card);
+}
 async function captureLead(status) {
-  if (!state.email || state.leadCaptured) return;   // need contact; once only
-  state.leadCaptured = status; save();
-  const tags = ['glp1-direct', 'status:' + status];
+  if (!state.email) return;   // need contact
+  // 'started' (step 3 Continue) sends again only when the email, phone or call box changed since the last send.
+  // Every other status sends once, as before.
+  if (status === 'started') {
+    const sig = [String(state.email).trim().toLowerCase(), String(state.phone || '').replace(/\D/g, ''), state.callConsent ? 1 : 0].join('|');
+    if (state.startedSig === sig) return;
+    state.startedSig = sig; save();
+  } else {
+    if (state.leadCaptured) return;
+    state.leadCaptured = status; save();
+  }
+  const tags = ['glp1-direct'];
+  if (status !== 'started') tags.push('status:' + status);
   if (status === 'disqualified' && state.disqualifiedReason) tags.push('review:glp1-screen');
   if (state.crisis) tags.push('review:crisis');
   if (state.reason) tags.push('reason:' + state.reason);
@@ -1064,8 +1103,10 @@ async function captureLead(status) {
       body: JSON.stringify({
         email: state.email,
         first_name: state.firstName || '', last_name: state.lastName || '', phone: state.phone || '', dob: state.dob,
-        program: state.reason || 'glp1', source: 'glp1-direct', tags, lead_status: status
-      })
+        program: state.reason || 'glp1', source: 'glp1-direct', tags, lead_status: status,
+        call_consent: state.callConsentRecord || undefined
+      }),
+      keepalive: true
     });
   } catch (e) { console.warn('lead capture (demo continues):', e); }
 }
@@ -1261,7 +1302,10 @@ const flow = [
     p.appendChild(h('p', { class:'lede' }, ['So we can follow up about your care, even if now is not the right time.']));
     textInput(p, 'email', 'Email', 'you@email.com', 'email', { autocomplete:'email' });
     textInput(p, 'phone', 'Phone', '(702) 555-0123', 'tel', { autocomplete:'tel' });
-    ctaBtn(p, { disabled: true });
+    callConsentBox(p);
+    // A "started" lead once they give a way to reach them, so the team (and the follow-up caller, with consent)
+    // can reach someone who stops before paying. Fire and forget: Continue never waits on the network.
+    ctaBtn(p, { disabled: true, onClick: () => { captureLead('started'); next(); } });
   }, canContinue:(s) => /.+@.+\..+/.test(s.email||'') && (s.phone||'').replace(/\D/g,'').length>=10 },
 
   { id:'dob', section:'Your details', view:(p) => {
