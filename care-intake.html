@@ -787,8 +787,46 @@ const CLINICIAN = { name: 'Peter DeBry, MD', npi: '1831137991' };
 
 // STATE ----------------------------------------------------------------------
 const INTAKE_DRAFT_SLOT = 'vitality_glp1_intake_v1';
-const state = JSON.parse(localStorage.getItem(INTAKE_DRAFT_SLOT) || '{}');
-function save() { localStorage.setItem(INTAKE_DRAFT_SLOT, JSON.stringify(state)); }
+const DRAFT_TTL_MS = 30 * 60 * 1000;
+let draftExpiryTimer;
+function clearDraft() {
+  clearTimeout(draftExpiryTimer);
+  try { localStorage.removeItem(INTAKE_DRAFT_SLOT); } catch (e) {}
+}
+function scheduleDraftExpiry(savedAt) {
+  clearTimeout(draftExpiryTimer);
+  draftExpiryTimer = setTimeout(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(INTAKE_DRAFT_SLOT) || 'null');
+      if (raw && raw._savedAt === savedAt) clearDraft();
+    } catch (e) { clearDraft(); }
+  }, Math.max(0, savedAt + DRAFT_TTL_MS - Date.now()));
+}
+function loadDraft() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(INTAKE_DRAFT_SLOT) || 'null');
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)
+        && Number.isFinite(raw._savedAt) && raw._savedAt > 0
+        && Date.now() >= raw._savedAt && Date.now() - raw._savedAt < DRAFT_TTL_MS) {
+      scheduleDraftExpiry(raw._savedAt);
+      const { _savedAt, sigName, signedAt, userAgent, pageUrl, attestationRecord,
+              idImageBase64, insuranceCardBase64, ...draft } = raw;
+      return draft;
+    }
+  } catch (e) {}
+  clearDraft();
+  return {};
+}
+const state = loadDraft();
+function save() {
+  const { sigName, signedAt, userAgent, pageUrl, attestationRecord,
+          idImageBase64, insuranceCardBase64, ...draft } = state;
+  const savedAt = Date.now();
+  try {
+    localStorage.setItem(INTAKE_DRAFT_SLOT, JSON.stringify({ ...draft, _savedAt: savedAt }));
+    scheduleDraftExpiry(savedAt);
+  } catch (e) { clearDraft(); }
+}
 
 let currentIdx = 0;
 const root = document.getElementById('root');
@@ -1527,8 +1565,8 @@ async function submitIntake() {
   save();
   try {
     // Posts to our own Convex CRM. This also alerts Fred (sendLeadAlert).
-    // The full signed intake stays in localStorage on the device and the
-    // clinical detail rides along in health_notes for the CRM record.
+    // The signed intake remains in memory for this visit. The saved draft expires
+    // after 30 minutes idle; clinical detail is sent in health_notes to the CRM.
     await fetch('https://quixotic-cat-492.convex.site/lead', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
