@@ -791,26 +791,26 @@ const US_STATES = [
 ];
 
 // STATE ----------------------------------------------------------------------
-const STORAGE_KEY = 'vitality_bloom_intake_v1';
+const BLOOM_DRAFT_SLOT = 'vitality_bloom_intake_v1';
 // A saved draft is a per-visit convenience, NOT a cross-visit record. On a shared or clinic browser it must
 // never prefill the PREVIOUS person's info: drop any legacy/untimestamped or idle-expired draft, and clear it
 // outright on completion (clearDraft, called on the submitted screen).
 const DRAFT_TTL_MS = 30 * 60 * 1000; // 30 minutes idle
 function loadDraft() {
   try {
-    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    const raw = JSON.parse(localStorage.getItem(BLOOM_DRAFT_SLOT) || '{}');
     if (raw && raw._savedAt && (Date.now() - raw._savedAt) <= DRAFT_TTL_MS) { delete raw._savedAt; return raw; }
   } catch (e) {}
-  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  try { localStorage.removeItem(BLOOM_DRAFT_SLOT); } catch (e) {}
   return {};
 }
 const state = loadDraft();
 function save() {
   const { photoPreviews, ...persist } = state;
   persist._savedAt = Date.now();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(persist));
+  localStorage.setItem(BLOOM_DRAFT_SLOT, JSON.stringify(persist));
 }
-function clearDraft() { try { localStorage.removeItem(STORAGE_KEY); } catch (e) {} }
+function clearDraft() { try { localStorage.removeItem(BLOOM_DRAFT_SLOT); } catch (e) {} }
 
 // Make sure heic2any is available even if the <head> CDN script hasn't loaded yet (race-safe).
 var __heicPromise = null;
@@ -871,7 +871,7 @@ async function toUploadableImage(file) {
 // Clear all saved answers and restart the intake from the top (re-take the questionnaire).
 window.bloomStartOver = function() {
   if (!confirm('Start the intake over from the beginning? This clears your current answers.')) return;
-  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  try { localStorage.removeItem(BLOOM_DRAFT_SLOT); } catch (e) {}
   location.reload();
 };
 
