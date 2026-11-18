@@ -482,6 +482,101 @@
   // Confirmed live after coordinated deploy (portal lane).
   const CONVEX_URL = "https://quixotic-cat-492.convex.site";
 
+  // Saved notice (clinic ask, 11/18): every save says so on screen, and a save the server refused says
+  // "not saved" with the reason. One hook on the CRM's save requests instead of each button, so the
+  // notice is the same everywhere. Only the actions listed here count as saves; reads, sends, AI runs
+  // and bulk imports are not listed and stay quiet. A new save button gets the notice once its action is added.
+  const SAVE_FIELD_LABELS = { first_name:'Name', last_name:'Name', email:'Email', phone:'Phone', dob:'Date of birth', sex:'Sex', program:'Program',
+    preferred_language:'Preferred language', preferred_contact:'Preferred contact',
+    address_line1:'Address', address_line2:'Apt / unit', address_city:'City', address_state:'State', address_zip:'ZIP',
+    ec_name:'Emergency contact name', ec_relationship:'Emergency contact relationship', ec_phone:'Emergency contact phone',
+    guardian_name:'Guardian name', guardian_relationship:'Guardian relationship', guardian_phone:'Guardian phone', guardian_email:'Guardian email',
+    pharmacy_name:'Pharmacy', pharmacy_phone:'Pharmacy phone', pharmacy_address:'Pharmacy address' };
+  const SAVE_LIST_NOUNS = { allergy:'Allergy', family:'Family history', med:'Medication', problem:'Problem', surgery:'Surgery', vitals:'Vitals' };
+  const SAVE_ACTIONS = {
+    'crm-data': {
+      update_patient: (b) => { const ls=[...new Set(Object.keys(b.fields||{}).map(k=>SAVE_FIELD_LABELS[k]||k.replace(/_/g,' ')))]; return (ls.length===1?ls[0]:'Chart')+' saved'; },
+      add:'Patient added', add_note:'Note saved', void_note:'Note removed', set_status:'Status saved', set_stage:'Stage saved',
+      set_prefs:'Care preferences saved', set_injection_rx:'Injection Rx saved', ssn_set:'SSN saved',
+      flag_add:'Flag saved', flag_resolve:'Flag resolved', archive_patient:'Patient archived', restore_patient:'Patient restored',
+      book_appt:'Appointment booked', update_appt:'Appointment saved', cancel_appt:'Appointment canceled', staff_checkin:'Checked in',
+      referral_attempt:'Referral attempt saved', referral_close:'Referral closed', ledger_add:'Ledger entry saved', ledger_void:'Ledger entry voided',
+      publish_plan:'Plan published', set_my_alert:'Alert setting saved', create_login:'Portal login created' },
+    'chart-notes': { create:'Note saved', update:'Note saved', sign:'Note signed', addendum:'Addendum saved', delete:'Note deleted' },
+    'chart-lists': (b) => { const m=/^(allergy|family|med|problem|surgery|vitals)_(add|update|delete)$/.exec(b.action||''); return m ? SAVE_LIST_NOUNS[m[1]]+(m[2]==='delete'?' removed':' saved') : null; },
+    'chart-docs': { record:'Document saved', update:'Document saved', delete:'Document deleted', mark_reviewed:'Marked reviewed',
+      fax_assign:'Fax filed to the chart', fax_create_patient:'Patient added from fax', fax_dismiss:'Fax dismissed' },
+    'chart-billing': { insurance_add:'Insurance saved', insurance_update:'Insurance saved', insurance_delete:'Insurance removed',
+      set_billing_intent:'Billing choice saved', superbill_save:'Superbill saved', superbill_status:'Superbill updated', superbill_delete:'Superbill deleted',
+      note_no_bill:'Marked no bill', note_send_to_provider:'Sent to a provider', claim_approve:'Claim approved', claim_unapprove:'Claim unapproved',
+      fee_save:'Fee saved', fee_delete:'Fee removed' },
+    'referral-data': { add_note:'Note saved', add_practice:'Practice added', add_provider:'Provider added', update_practice:'Practice saved',
+      update_provider:'Provider saved', set_stage:'Stage saved', set_referred_by:'Referral source saved' },
+    'tasks-data': { create:'Task saved', update:'Task saved' },
+    'trainer-tasks': { assign:'Task assigned', archive:'Task archived' },
+    'schedule-data': { set_hours:'Hours saved', add_exception:'Closure saved', remove_exception:'Closure removed', upsert_schedulable:'Schedule saved', upsert_type:'Appointment type saved' },
+    'calls': { set_type:'Caller type saved', promote:'Patient added' },
+  };
+  function saveLabelFor(url, init){
+    try{
+      if(typeof url!=='string' || url.indexOf(CONVEX_URL+'/')!==0 || !init || String(init.method||'').toUpperCase()!=='POST' || typeof init.body!=='string') return null;
+      const route=url.slice(CONVEX_URL.length+1).split(/[?#]/)[0], map=SAVE_ACTIONS[route]; if(!map) return null;
+      const b=JSON.parse(init.body); if(!b || !b.action) return null;
+      const l=typeof map==='function' ? map(b) : map[b.action];
+      return typeof l==='function' ? l(b) : (l||null);
+    }catch(e){ return null; }
+  }
+  const SAVE_ICON_OK='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5fd08f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>';
+  const SAVE_ICON_FAIL='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>';
+  let __saveNoticeTimer=null, __saveNoticeMsgs=[];
+  function hideSaveNotice(){ const d=document.getElementById('saveNotice'); if(d){ d.style.opacity='0'; d.style.transform='translate(-50%,8px)'; } __saveNoticeMsgs=[]; clearTimeout(__saveNoticeTimer); }
+  window.hideSaveNotice=hideSaveNotice;
+  function showSaveNotice(ok, text){
+    if(!document.body) return;
+    // A task notice ("Saved. Emailed Netty.") already covers that save; never stack two notices in one spot.
+    if(ok && document.querySelector('[data-notice="task"]')) return;
+    let d=document.getElementById('saveNotice');
+    if(!d){ d=document.createElement('div'); d.id='saveNotice';
+      d.style.cssText='position:fixed;left:50%;bottom:20px;z-index:95;display:flex;align-items:center;gap:8px;width:max-content;max-width:min(448px,calc(100vw - 32px));padding:10px 16px;border-radius:12px;color:#fff;font-size:14px;line-height:1.35;box-shadow:0 10px 30px rgba(11,18,32,.25);opacity:0;transform:translate(-50%,8px);pointer-events:none;cursor:default';
+      if(!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) d.style.transition='opacity .18s ease, transform .18s ease';
+      d.addEventListener('click', hideSaveNotice);
+      document.body.appendChild(d); }
+    // Saves in a row (tabbing through the address) read as one line: newest last, up to three.
+    if(ok){ __saveNoticeMsgs=__saveNoticeMsgs.filter(m=>m!==text).concat(text).slice(-3); } else { __saveNoticeMsgs=[]; }
+    d.setAttribute('role', ok?'status':'alert'); d.setAttribute('aria-live', ok?'polite':'assertive');
+    d.style.background = ok ? '#16201d' : '#b3261e';
+    d.style.pointerEvents = ok ? 'none' : 'auto';
+    d.innerHTML=(ok?SAVE_ICON_OK:SAVE_ICON_FAIL)+'<span></span>';
+    d.lastChild.textContent = ok ? __saveNoticeMsgs.join(' · ') : text;
+    // Sit above the Help button or panel when they share the bottom of the screen (measured, so any window width works).
+    d.style.bottom='20px';
+    const r=d.getBoundingClientRect();
+    ['cxhelp-btn','cxhelp-panel'].forEach(id=>{ const e=document.getElementById(id); if(!e) return; const s=getComputedStyle(e); if(s.display==='none'||s.visibility==='hidden') return;
+      const q=e.getBoundingClientRect(); if(!q.width||!q.height) return;
+      if(q.left < r.right+8 && q.right > r.left-8) d.style.bottom=Math.max(20, Math.round(innerHeight-q.top+12))+'px'; });
+    d.style.opacity='1'; d.style.transform='translate(-50%,0)';
+    clearTimeout(__saveNoticeTimer); __saveNoticeTimer=setTimeout(hideSaveNotice, ok?2600:7000);
+  }
+  window.showSaveNotice=showSaveNotice;
+  (function(){
+    const nativeFetch=window.fetch.bind(window);
+    window.fetch=function(input, init){
+      const label=saveLabelFor(typeof input==='string'?input:(input&&input.url), init);
+      const p=nativeFetch(input, init);
+      if(!label) return p;
+      // Read a copy of the answer; the caller still gets the untouched original.
+      p.then(r=>{ let c; try{ c=r.clone(); }catch(e){ return; }
+        c.json().catch(()=>null).then(j=>{
+          if(j && j.noop) return; // nothing changed on the server, so nothing to confirm
+          const ok=r.ok && !(j && j.ok===false);
+          const why=!ok ? String((j&&j.error)||('error '+r.status)).slice(0,140).replace(/\.+$/,'') : '';
+          showSaveNotice(ok, ok ? label : (/ saved$/.test(label) ? label.replace(/ saved$/,' not saved') : 'Not saved')+': '+why+'. Try again.');
+        });
+      }, ()=>showSaveNotice(false, (/ saved$/.test(label) ? label.replace(/ saved$/,' not saved') : 'Not saved')+': no connection. Try again.'));
+      return p;
+    };
+  })();
+
   // Convex routes are staff-gated (requireStaff validates the JWT identity), so they need
   // the LOGGED-IN staff member's access token, NOT the anon key. The auth guard (module
   // script) runs after this classic script, so wait briefly for it. It exposes either
@@ -2094,9 +2189,12 @@
     saveInfo(id,'program',sel.value);
   };
   window.saveInfo = async function(id,field,v){
-    const p=patients.find(x=>x.id===id); if(!p)return; p[field]=v;
+    const p=patients.find(x=>x.id===id); if(!p)return; const was=p[field]; p[field]=v;
     const col={first:'first_name',last:'last_name'}[field]||field;
-    if(USE_CONVEX){ try{ await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'update_patient',patient_id:id,fields:{[col]:v}})}); }catch(e){ console.warn('saveInfo',e); } }
+    // Read the server's answer (11/18). A refused save used to leave the new value on screen as if it had saved;
+    // now the old value comes back and the saved notice says "not saved" with the reason.
+    if(USE_CONVEX){ let ok=false; try{ const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'update_patient',patient_id:id,fields:{[col]:v}})}); const j=await r.json().catch(()=>({})); ok=r.ok&&j.ok!==false; }catch(e){ console.warn('saveInfo',e); }
+      if(!ok){ p[field]=was; if(selId===id) renderDetail(); } }
     else if(USE_SUPABASE && window.__vitSb){ try{ await window.__vitSb.from('vit_patients').update({[col]:v}).eq('id',id); }catch(e){ console.warn('saveInfo',e); } }
     renderList();
   };
@@ -3078,7 +3176,7 @@
     }catch(e){ if(err){ err.textContent='Could not save: '+e.message; err.classList.remove('hidden'); } if(btn){ btn.disabled=false; btn.textContent=taskId?'Save changes':'Create task'; } }
   };
   window.addTask = function(pid){ return openTaskModal(pid, null); };
-  function taskNote(msg){ const d=document.createElement('div'); d.className='fixed bottom-5 left-1/2 -translate-x-1/2 z-[95] bg-[#16201d] text-white text-sm rounded-xl px-4 py-2.5 shadow-xl max-w-md text-center'; d.textContent=msg; document.body.appendChild(d); setTimeout(()=>d.remove(),5000); }
+  function taskNote(msg){ if(window.hideSaveNotice) hideSaveNotice(); const d=document.createElement('div'); d.dataset.notice='task'; d.className='fixed bottom-5 left-1/2 -translate-x-1/2 z-[95] bg-[#16201d] text-white text-sm rounded-xl px-4 py-2.5 shadow-xl max-w-md text-center'; d.textContent=msg; document.body.appendChild(d); setTimeout(()=>d.remove(),5000); }
   window.taskNote=taskNote;
   // Hand an account to Billing (Netty 10/1): once demographics and insurance are obtained and verified and the client
   // confirmed the financial plan, one task to the Billing group and Netty, emailed, with a chart note. Self-pay counts
