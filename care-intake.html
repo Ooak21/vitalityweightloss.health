@@ -1419,6 +1419,7 @@ const flow = [
     ]);
     submit.onclick = submitIntake;
     p.appendChild(h('div', { style:'text-align:center;' }, [submit]));
+    p.appendChild(h('p', { id:'submitError', class:'skip-info', role:'alert', hidden:'' }));
     p.appendChild(h('div', { class:'skip-info' }, ['Secure Clover checkout · Cancel anytime']));
 
     function validateAll() {
@@ -1558,7 +1559,11 @@ window.goToClover = function() {
 // SUBMIT ---------------------------------------------------------------------
 async function submitIntake() {
   const btn = document.getElementById('submitBtn');
-  btn.disabled = true; btn.innerHTML = (window.__LANG==='es') ? 'Enviando…' : 'Submitting…';
+  if (!btn || btn.disabled) return;
+  const submitError = document.getElementById('submitError');
+  if (submitError) { submitError.hidden = true; submitError.textContent = ''; }
+  const buttonLabel = btn.textContent;
+  btn.disabled = true; btn.textContent = (window.__LANG==='es') ? 'Enviando…' : 'Submitting…';
   state.signedAt = new Date().toISOString();
   state.userAgent = navigator.userAgent;
   state.pageUrl = window.location.href;
@@ -1567,7 +1572,7 @@ async function submitIntake() {
     // Posts to our own Convex CRM. This also alerts Fred (sendLeadAlert).
     // The signed intake remains in memory for this visit. The saved draft expires
     // after 30 minutes idle; clinical detail is sent in health_notes to the CRM.
-    await fetch('https://quixotic-cat-492.convex.site/lead', {
+    const response = await fetch('https://quixotic-cat-492.convex.site/lead', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1596,8 +1601,22 @@ async function submitIntake() {
               .concat(state.acks && state.acks[5] ? ['sms-consent'] : []),
         consent: true
       })
-    }).then(r => r.json()).catch(err => console.error('submit fail:', err));
-  } catch(e) { console.error(e); }
+    });
+    if (response.status !== 200) throw new Error('Submission not confirmed');
+    const receipt = await response.json();
+    if (!receipt || receipt.ok !== true || typeof receipt.patient_id !== 'string' || !receipt.patient_id.trim()) {
+      throw new Error('Submission not confirmed');
+    }
+  } catch (e) {
+    btn.disabled = false; btn.textContent = buttonLabel;
+    if (submitError) {
+      submitError.textContent = (window.__LANG==='es')
+        ? 'No pudimos confirmar el envío. Tus respuestas siguen aquí. Inténtalo de nuevo.'
+        : 'We couldn’t confirm your submission. Your answers are still here. Please try again.';
+      submitError.hidden = false;
+    }
+    return;
+  }
   render({ id:'submitted', section:'Submitted', view: viewSubmitted });
   setProgress(1);
 }
