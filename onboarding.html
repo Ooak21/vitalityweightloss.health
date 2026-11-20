@@ -83,7 +83,7 @@
     $('d2').className='dot '+(n==='step2'?'on':(n==='step3'||n==='stepDone')?'done':'');
     $('d3').className='dot '+(n==='step3'?'on':n==='stepDone'?'done':''); };
   const busy=(btn,on,label)=>{ btn.disabled=on; btn.textContent=on?'One moment…':label; };
-  async function post(path,body){ const r=await fetch(API+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); return await r.json().catch(()=>({ok:false,error:'unexpected response'})); }
+  async function post(path,body){ try{ const r=await fetch(API+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); return await r.json().catch(()=>({ok:false,error:'unexpected response'})); }catch(_){ return {ok:false,error:'Could not reach the server. Check your connection and try again.'}; } }
 
   // Personalize from the invite link (?u=email). whoami only answers for provisioned staff.
   const u=new URLSearchParams(location.search).get('u')||'';
