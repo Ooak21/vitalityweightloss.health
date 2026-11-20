@@ -3416,24 +3416,34 @@
 
   const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-  // ============ Pipeline board (HubSpot-style Kanban) ============
-  // New Inquiry sits BEFORE Lead: brand-new inbound (web/phone/chat) lands here so real inquiries
-  // stop getting buried under already-seen "leads." pipeline_stage comes resolved from the backend
-  // (explicit drag wins, else derived from clinical status + scan/appt presence).
+  // ============ Board: status queues (11/19 meeting memo) ============
+  // Intake, Verification, Schedule, Follow Up, Referral/Auth, Provider Review, Collection, Archive,
+  // Active, in the memo's order. pipeline_stage comes resolved from the backend (explicit drag wins,
+  // old sales-lane keys are translated there, else derived from clinical status). New inquiries
+  // land in Intake and carry p.new_inquiry. Archive is not a lane: dropping a card there runs the
+  // existing Archive record (reason, off the board, automated emails stop, nothing deleted).
   const PIPE = [
-    {k:'new_inquiry',    label:'New Inquiry',     accent:'#f59e0b', tint:'#fff7ed'},
-    {k:'lead',           label:'Lead',            accent:'#0a6cf5', tint:'#f7f8fa'},
-    {k:'consult_booked', label:'Consult Booked',  accent:'#0a6cf5', tint:'#f7f8fa'},
-    {k:'intake',         label:'Intake / Labs',   accent:'#8b5cf6', tint:'#f7f8fa'},
+    {k:'intake',         label:'Intake',          accent:'#f59e0b', tint:'#fff7ed'},
+    {k:'verification',   label:'Verification',    accent:'#0a6cf5', tint:'#f7f8fa'},
+    {k:'schedule',       label:'Schedule',        accent:'#0a6cf5', tint:'#f7f8fa'},
+    {k:'follow_up',      label:'Follow Up',       accent:'#f59e0b', tint:'#f7f8fa'},
+    {k:'referral_auth',  label:'Referral/Auth',   accent:'#8b5cf6', tint:'#f7f8fa'},
     {k:'provider_review',label:'Provider Review', accent:'#8b5cf6', tint:'#f7f8fa'},
-    {k:'rx_written',     label:'Rx Written',      accent:'#0a7a3d', tint:'#f7f8fa'},
+    {k:'collection',     label:'Collection',      accent:'#be123c', tint:'#f7f8fa'},
+    {k:'archive',        label:'Archive',         accent:'#6b7280', tint:'#f7f8fa', archive:true},
     {k:'active',         label:'Active',          accent:'#0a7a3d', tint:'#f0fdf4'},
-    {k:'refill_due',     label:'Refill Due',      accent:'#f59e0b', tint:'#f7f8fa'},
-    {k:'at_risk',        label:'At Risk',         accent:'#be123c', tint:'#fef2f2'},
-    {k:'churned',        label:'Churned',         accent:'#9aa0ab', tint:'#f7f8fa'},
   ];
   let boardOpen = false;
-  function stageOf(p){ return p.pipeline_stage || 'new_inquiry'; }
+  function stageOf(p){ return p.pipeline_stage || 'intake'; }
+  // Archive column count, from the existing archived-records list. Refetched when 15s have passed
+  // or the board's patient count changed (an archive or a restore), so search typing doesn't refetch.
+  let archCount=null, _archAt=0, _archN=-1;
+  async function loadArchCount(){
+    if(Date.now()-_archAt<15000 && _archN===patients.length) return;
+    _archAt=Date.now(); _archN=patients.length;
+    try{ const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'list_archived'})});
+      const j=await r.json(); if(j&&j.ok){ archCount=j.count; const el=document.getElementById('archCount'); if(el) el.textContent=archCount; } }catch(_){ _archAt=0; }
+  }
   window.toggleBoard = function(){
     boardOpen = !boardOpen;
     const pane=document.getElementById('boardPane'), btn=document.getElementById('boardToggle'), close=document.getElementById('boardClose');
@@ -3443,10 +3453,9 @@
     if(boardOpen) renderBoard();
   };
   addEventListener('keydown', e=>{ if(e.key==='Escape' && boardOpen) toggleBoard(); });
-  // Early funnel lanes where "new" (green) and "touched but not moved" (yellow) are meaningful. In late
-  // lanes (rx/active/refill/at_risk/churned) neither flag applies, so opening an active patient never
-  // strands a yellow card on them.
-  const BOARD_EARLY = new Set(['new_inquiry','lead','consult_booked','intake','provider_review']);
+  // Work queues where "new" (green) and "touched but not moved" (yellow) are meaningful. Active is
+  // excluded, so opening an active patient never strands a yellow card on them.
+  const BOARD_EARLY = new Set(['intake','verification','schedule','follow_up','referral_auth','provider_review','collection']);
   function boardCard(p){
     const ch = {phone:'📞',web:'🌐',chat:'💬'}[p.channel]||'';
     const dropTs = p.created || p.last_activity;                 // stable drop-in time
@@ -3455,10 +3464,9 @@
     const early = BOARD_EARLY.has(_stg);
     // Yellow = a rep opened this card but did not advance it (getting stalled). Overrides green.
     const touched = early && !!p.touched_by;
-    // Green = freshly dropped in and not yet touched. Any early lane, not just New Inquiry, so a submitted
-    // intake under Intake/Labs still stands out instead of getting lost.
-    const isNew = !touched && early && (_stg==='new_inquiry' || (dropTs && (Date.now()-dropTs) < 4*864e5));
-    const cold = !isNew && !touched && actTs && (Date.now()-actTs > 7*864e5) && _stg!=='churned';
+    // Green = an un-worked inquiry, or freshly dropped in (4 days) and not yet touched, in any work queue.
+    const isNew = !touched && early && (p.new_inquiry || (dropTs && (Date.now()-dropTs) < 4*864e5));
+    const cold = !isNew && !touched && actTs && (Date.now()-actTs > 7*864e5);
     const na = p.next_appt ? fmtDT(p.next_appt) : '';
     const nm = ((p.first||'')+' '+(p.last||'')).trim() || (p.display_id||'Patient');
     const touchFirst = touched ? (String(p.touched_by).trim().split(/\s+/)[0]||'staff') : '';
@@ -3485,23 +3493,32 @@
   function renderBoard(){
     if(section==='referrals') return renderReferralBoard();
     const pane=document.getElementById('boardPane'); if(!pane) return;
-    const byStage={}; PIPE.forEach(s=>byStage[s.k]=[]);
-    patients.forEach(p=>{ const k=stageOf(p); (byStage[k]||byStage['new_inquiry']).push(p); });
+    const byStage={}; PIPE.forEach(s=>{ if(!s.archive) byStage[s.k]=[]; });
+    patients.forEach(p=>{ const k=stageOf(p); (byStage[k]||byStage['intake']).push(p); });
+    loadArchCount();
     Object.values(byStage).forEach(arr=>arr.sort((a,b)=>(a.last_activity||0)-(b.last_activity||0))); // stalest first
     pane.innerHTML = `<div class="h-full flex gap-3 overflow-x-auto px-4 py-4">${PIPE.map(s=>{
-      const cards=byStage[s.k]||[]; const isInq=s.k==='new_inquiry';
-      return `<div class="flex-shrink-0 w-60 flex flex-col h-full" ondragover="event.preventDefault()" ondrop="dropCard(event,'${s.k}')">
+      if(s.archive) return `<div class="flex-shrink-0 w-60 flex flex-col h-full" ondragover="event.preventDefault()" ondrop="dropCard(event,'archive')">
         <div class="flex items-center justify-between mb-2 px-1">
           <span class="text-[11px] font-bold uppercase tracking-wide" style="color:${s.accent}">${s.label}</span>
-          <span class="text-[11px] font-semibold ${isInq&&cards.length?'bg-[#be123c] text-white':'text-[#6b7280] bg-[#eef1f4]'} rounded-full px-2 py-0.5 min-w-[20px] text-center">${cards.length}</span>
+          <span id="archCount" class="text-[11px] font-semibold text-[#6b7280] bg-[#eef1f4] rounded-full px-2 py-0.5 min-w-[20px] text-center">${archCount==null?'':archCount}</span>
+        </div>
+        <div class="flex-1 flex flex-col items-center justify-start gap-3 rounded-xl border border-dashed border-[#d5dae1] p-4 text-center" style="background:${s.tint}">
+          <div class="text-[11px] text-[#6b7280] leading-relaxed pt-2">Drop a card here to archive it. It comes off the board and automated emails stop. Nothing is deleted.</div>
+          <button onclick="openArchived()" title="Records taken off the board. Nothing is deleted, kept in full for audits. Restore any time." class="px-3 py-1.5 rounded-lg border border-[#e6e9ee] bg-white text-[#4b5563] text-xs font-semibold hover:border-[#0a6cf5]/40 hover:text-[#0a6cf5] transition">View archived</button>
+        </div>
+      </div>`;
+      const cards=byStage[s.k]||[]; const isInq=s.k==='intake';
+      const nNew=isInq?cards.filter(p=>p.new_inquiry).length:0;
+      return `<div class="flex-shrink-0 w-60 flex flex-col h-full" ondragover="event.preventDefault()" ondrop="dropCard(event,'${s.k}')">
+        <div class="flex items-center justify-between gap-2 mb-2 px-1">
+          <span class="text-[11px] font-bold uppercase tracking-wide" style="color:${s.accent}">${s.label}</span>
+          <span class="flex items-center gap-1.5">${nNew?`<span title="New inquiries nobody has worked yet" class="text-[10px] font-bold bg-[#be123c] text-white rounded-full px-2 py-0.5">${nNew} new</span>`:''}<span class="text-[11px] font-semibold text-[#6b7280] bg-[#eef1f4] rounded-full px-2 py-0.5 min-w-[20px] text-center">${cards.length}</span></span>
         </div>
         <div class="flex-1 space-y-2 overflow-y-auto rounded-xl border ${isInq?'border-[#ffd9a8]':'border-[#eef1f4]'} p-2" style="background:${s.tint}">
           ${cards.map(boardCard).join('')||'<div class="text-[11px] text-[#c0c5cd] text-center py-4">empty</div>'}
         </div>
-      </div>`;}).join('')}
-      <div class="flex-shrink-0 w-44 flex flex-col h-full justify-start pt-6">
-        <button onclick="openArchived()" title="Records taken off the board. Nothing is deleted — kept in full for audits." class="rounded-xl border border-dashed border-[#e6e9ee] text-[#9aa0ab] text-[11px] font-semibold uppercase tracking-wide py-3 hover:border-[#0a6cf5]/40 hover:text-[#0a6cf5] transition">🗄 Archived</button>
-      </div></div>`;
+      </div>`;}).join('')}<div class="flex-shrink-0 w-32" aria-hidden="true"></div></div>`; // spacer: the last column (Active) clears the fixed Close board button when scrolled all the way right
   }
   let _dragId=null;
   window.dragCard=function(e,id){ _dragId=id; try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',id); }catch(_){} };
@@ -3515,15 +3532,17 @@
       return;
     }
     const p=patients.find(x=>x.id===id); if(!p||stageOf(p)===stage)return;
+    // Archive column = the existing Archive record (its own reason prompt is the confirm).
+    if(stage==='archive'){ await archivePatient(id); return; }
     // Fred 10/30: a dragged card used to change the lead with no prompt. Name the person and both columns.
     const nm=`${p.first||''} ${p.last||''}`.trim()||'this record';
     const fromLbl=(PIPE.find(s=>s.k===stageOf(p))||{}).label||stageOf(p);
     const toLbl=(PIPE.find(s=>s.k===stage)||{}).label||stage;
     if(!confirm(`Move ${nm} on the board?\n\nFrom: ${fromLbl}\nTo: ${toLbl}`)) return;
-    const prev=p.pipeline_stage, prevTb=p.touched_by, prevTa=p.touched_at;
-    p.pipeline_stage=stage; p.touched_by=null; p.touched_at=null; renderBoard(); updateInquiryBadge(); // optimistic (moving clears the yellow touched flag)
+    const prev=p.pipeline_stage, prevTb=p.touched_by, prevTa=p.touched_at, prevNew=p.new_inquiry;
+    p.pipeline_stage=stage; p.touched_by=null; p.touched_at=null; p.new_inquiry=false; renderBoard(); updateInquiryBadge(); // optimistic (moving clears the yellow touched flag; a worked card is no longer a new inquiry)
     try{ const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'set_stage',patient_id:id,stage})}); const j=await r.json(); if(!j.ok)throw new Error(j.error||'failed'); }
-    catch(err){ console.warn('set_stage',err); p.pipeline_stage=prev; p.touched_by=prevTb; p.touched_at=prevTa; renderBoard(); updateInquiryBadge(); alert('Could not move card'); }
+    catch(err){ console.warn('set_stage',err); p.pipeline_stage=prev; p.touched_by=prevTb; p.touched_at=prevTa; p.new_inquiry=prevNew; renderBoard(); updateInquiryBadge(); alert('Could not move card'); }
   };
   window.openFromBoard=async function(id){
     boardOpen=false;
@@ -3567,7 +3586,7 @@
   // Hover "Compose email" -> open the branded/templated email composer for this patient (over the board).
   window.boardEmail=function(id){ boardHoverKeep(); const pop=document.getElementById('boardHover'); if(pop) pop.classList.add('hidden'); selId=id; openEmail(); };
   function updateInquiryBadge(){
-    const n=patients.filter(p=>stageOf(p)==='new_inquiry').length;
+    const n=patients.filter(p=>p.new_inquiry).length;
     [document.getElementById('inqBadge'), document.getElementById('inqBadgeRail'), document.getElementById('inqBadgeExpand')].forEach(b=>{
       if(!b) return;
       if(n>0){ b.textContent=n; b.classList.remove('hidden'); } else b.classList.add('hidden');

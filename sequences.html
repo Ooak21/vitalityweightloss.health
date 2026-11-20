@@ -112,7 +112,8 @@
   import { staffInfo, signOut, getToken, STORE_STAFF } from './auth-convex.js';
   const CONVEX_URL = "https://quixotic-cat-492.convex.site";
   let TG=null, cur=null, TPLS=[], SEQS=[], PATIENTS=[], PARTNERS=[], enrollSel=new Set(), enrollMode='patients';
-  const PIPE=[{k:'new_inquiry',label:'New Inquiry'},{k:'lead',label:'Lead'},{k:'consult_booked',label:'Consult Booked'},{k:'intake',label:'Intake / Labs'},{k:'provider_review',label:'Provider Review'},{k:'rx_written',label:'Rx Written'},{k:'active',label:'Active'},{k:'refill_due',label:'Refill Due'},{k:'at_risk',label:'At Risk'},{k:'churned',label:'Churned'}];
+  // Board status queues (11/19 memo), same keys as the CRM board. Archived records are off the board, so no Archive group.
+  const PIPE=[{k:'intake',label:'Intake'},{k:'verification',label:'Verification'},{k:'schedule',label:'Schedule'},{k:'follow_up',label:'Follow Up'},{k:'referral_auth',label:'Referral/Auth'},{k:'provider_review',label:'Provider Review'},{k:'collection',label:'Collection'},{k:'active',label:'Active'}];
   const REFS=[{k:'prospect',label:'Prospect'},{k:'contacted',label:'Contacted'},{k:'meeting_set',label:'Meeting Set'},{k:'active_referrer',label:'Active Referrer'},{k:'dormant',label:'Dormant'}];
   const ICON={email:'<rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4.5 7 7.5 5.5L19.5 7"/>',wait:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',task:'<rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><path d="m7.8 12 2.8 2.8 5.6-6"/>'};
   const ic=(n,s)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="${s||18}" height="${s||18}" style="vertical-align:middle">${ICON[n]||''}</svg>`;
@@ -199,7 +200,7 @@
     const stages = enrollMode==='patients'?PIPE:REFS;
     const rows = enrollMode==='patients'?PATIENTS:PARTNERS;
     const nameOf = enrollMode==='patients'?(p=>((p.first||'')+' '+(p.last||'')).trim()||'(no name)'):(p=>(p.name||p.practice_name||'Partner'));
-    const stageOf = enrollMode==='patients'?(p=>p.pipeline_stage||'new_inquiry'):(p=>p.stage||'prospect');
+    const stageOf = enrollMode==='patients'?(p=>p.pipeline_stage||'intake'):(p=>p.stage||'prospect');
     const filtered = rows.filter(p=>!q||nameOf(p).toLowerCase().includes(q));
     const item = p=>`<label class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-[#f1f3f7]"><input type="checkbox" ${enrollSel.has(p.id)?'checked':''} onchange="togEnroll('${p.id}',this.checked)" style="accent-color:#0a6cf5"> ${esc(nameOf(p))}</label>`;
     let html='';
