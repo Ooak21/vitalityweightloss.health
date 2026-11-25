@@ -858,11 +858,13 @@
         // Payer effective-date hold, e.g. Anthem before 4 Sep. Warns, never blocks.
         const hold=x.hold_warning?'<div class="mt-2 rounded-xl bg-[#fff7ed] border border-[#ffd9a8] px-2.5 py-2 text-[11px] font-semibold text-[#9a5a00]">⚑ '+besc(x.hold_warning)+'</div>':'';
         const aging=(x.aging_days!=null)?('<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ml-2 '+(x.aging_alert?'bg-rose-100 text-rose-700':'bg-slate-100 text-slate-600')+'">'+x.aging_days+'d'+(x.aging_alert?' · timely filing':'')+'</span>'):'';
-        const act=approved
+        const remit=x.claim_id?'<button onclick="openPostRemittance(\''+String(x.claim_id).replace(/'/g,"\\'")+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">Post remittance</button>':'';
+        const spGo=(x.self_pay&&x.patient_id)?'<button onclick="openSelfPay(\''+String(x.patient_id).replace(/'/g,"\\'")+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">Self-pay</button>':'';
+        const act=remit+spGo+(approved
           ? '<button onclick="claimUnapprove(\''+x.superbill_id+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">Withdraw</button>'
             +'<button onclick="claimSend(\''+x.superbill_id+'\')" class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700">Send to payer</button>'
           : '<button onclick="claimDry(\''+x.superbill_id+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">Check it</button>'
-            +'<button onclick="claimApprove(\''+x.superbill_id+'\')" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">Approve</button>';
+            +'<button onclick="claimApprove(\''+x.superbill_id+'\')" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">Approve</button>');
         return '<div class="bg-white rounded-2xl border '+(approved?'border-emerald-200':'border-[#e6e9ee]')+' p-4 mb-2">'+
           '<div class="flex items-start justify-between gap-3 flex-wrap">'+
             '<div><div class="font-semibold text-[#16201d]">'+besc(x.patient)+'</div>'+
@@ -975,7 +977,14 @@
       const qHead=(label, n)=>'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-1 pb-1 px-1">'+label+' ('+n+')</div>';
       const qEmpty='<div class="bg-white rounded-2xl p-3 mb-2 text-sm text-[#6b7280]">None right now.</div>';
       const testBanner=window.__claimsMode==='test'?'<div class="rounded-2xl p-3 mb-3 text-xs font-semibold bg-[#fff7ed] border border-[#ffd9a8] text-[#9a5a00]">TEST MODE: Send to payer goes to the Stedi sandbox. No payer receives it and nothing is billed.</div>':'';
+      const payBar='<div class="bg-white rounded-2xl p-3 mb-3 flex flex-wrap gap-2">'+
+        '<button onclick="openRecordPayment()" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#16201d] text-xs font-semibold hover:bg-[#f1f3f7]">Record payment</button>'+
+        '<button onclick="openDailyCollections()" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#16201d] text-xs font-semibold hover:bg-[#f1f3f7]">Daily collections</button>'+
+        '<button onclick="openSelfPay()" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#16201d] text-xs font-semibold hover:bg-[#f1f3f7]">Self-pay</button>'+
+        '<button onclick="openPostRemittance()" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#16201d] text-xs font-semibold hover:bg-[#f1f3f7]">Post remittance</button>'+
+        '</div>';
       body.innerHTML=
+        payBar+
         testBanner+
         '<div class="bg-white rounded-2xl p-3 mb-3 text-xs text-[#6b7280]">Nothing is transmitted automatically. A claim only goes to the payer when someone presses <b>Send to payer</b> here.</div>'+
         qHead('Client Seen, Note Not Written', qSeen.length)+(qSeen.length?qSeen.map(x=>statusCard(x,'seen_note_missing')).join(''):qEmpty)+
@@ -993,6 +1002,173 @@
     }catch(e){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">Error: '+besc(e.message)+'</div>'; }
   }
   window.cqMsg=function(id,html){ const el=document.getElementById('cq-'+id); if(el) el.innerHTML=html; };
+  function cqPatientField(elId, selected){
+    const list=(patients||[]).filter(p=>p&&p.id);
+    if(!list.length) return '<label class="block text-xs font-semibold text-[#3d4a45]">Patient id<input id="'+elId+'" class="field mt-1 block w-full" value="'+besc(selected||'')+'"></label>';
+    const extra=selected && !list.some(p=>p.id===selected)?'<option value="'+besc(selected)+'" selected>'+besc(selected)+'</option>':'';
+    const opts=list.map(p=>{ const nm=((p.first||'')+' '+(p.last||'')).trim()||'Patient'; return '<option value="'+besc(p.id)+'" '+(p.id===selected?'selected':'')+'>'+besc(nm)+'</option>'; }).join('');
+    return '<label class="block text-xs font-semibold text-[#3d4a45]">Patient<select id="'+elId+'" class="field mt-1 block w-full"><option value="">Select a patient</option>'+extra+opts+'</select></label>';
+  }
+  function cqSay(id, text, bad){
+    const el=document.getElementById(id); if(!el) return;
+    el.textContent=text; el.className='text-sm mt-2 '+(bad?'text-rose-600':'text-[#0a7a3d]'); el.classList.remove('hidden');
+  }
+  function cqBalanceWords(cents){
+    if(cents==null || cents==='') return '';
+    const n=Number(cents); if(isNaN(n)) return '';
+    return n===0?' Balance is zero.':' Remaining '+$$m(n)+'.';
+  }
+  function cqApplyBalance(pid, cents){
+    const p=(patients||[]).find(x=>x.id===pid);
+    if(p && cents!=null && !isNaN(Number(cents))) p.balance_cents=Number(cents);
+    if(pid && selId===pid){ try{ renderDetail(); }catch(e){} }
+  }
+  window.openRecordPayment=function(pid, visitId, claimId){
+    const body=cqPatientField('rpPatient', pid||'')
+      +'<label class="block text-xs font-semibold text-[#3d4a45] mt-2">Amount<input id="rpAmt" inputmode="decimal" class="field mt-1 block w-full" placeholder="0.00"></label>'
+      +'<label class="block text-xs font-semibold text-[#3d4a45] mt-2">Method<select id="rpMethod" class="field mt-1 block w-full"><option value="card">Card</option><option value="cash">Cash</option><option value="check">Check</option><option value="other">Other</option></select></label>'
+      +'<label class="block text-xs font-semibold text-[#3d4a45] mt-2">Reference<input id="rpRef" class="field mt-1 block w-full" placeholder="Receipt or check number"></label>'
+      +'<div class="grid grid-cols-2 gap-2 mt-2"><label class="block text-xs font-semibold text-[#3d4a45]">Visit<input id="rpVisit" class="field mt-1 block w-full" value="'+besc(visitId||'')+'" placeholder="Optional"></label><label class="block text-xs font-semibold text-[#3d4a45]">Claim<input id="rpClaim" class="field mt-1 block w-full" value="'+besc(claimId||'')+'" placeholder="Optional"></label></div>'
+      +'<label class="block text-xs font-semibold text-[#3d4a45] mt-2">Paid on<input id="rpWhen" type="date" class="field mt-1 block w-full"></label>'
+      +'<div id="rpMsg" class="text-sm mt-2 hidden"></div>';
+    listModalShell('Record payment', body, '<button onclick="document.getElementById(\'listOverlay\').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm font-semibold text-[#3d4a45]">Cancel</button><button id="rpSave" onclick="submitRecordPayment()" class="px-4 py-2 rounded-xl text-white text-sm font-semibold" style="background:#0a6cf5">Record payment</button>', 'max-w-lg');
+  };
+  window.submitRecordPayment=async function(){
+    const pid=((document.getElementById('rpPatient')||{}).value||'').trim();
+    const cents=toCents((document.getElementById('rpAmt')||{}).value);
+    const method=(document.getElementById('rpMethod')||{}).value;
+    if(!pid) return cqSay('rpMsg','Select a patient.', true);
+    if(!(cents>0)) return cqSay('rpMsg','Enter the payment amount.', true);
+    if(['card','cash','check','other'].indexOf(method)<0) return cqSay('rpMsg','Choose card, cash, check, or other.', true);
+    const body={action:'record_payment', patient_id:pid, amount_cents:cents, method:method};
+    const ref=((document.getElementById('rpRef')||{}).value||'').trim();
+    const visit=((document.getElementById('rpVisit')||{}).value||'').trim();
+    const claim=((document.getElementById('rpClaim')||{}).value||'').trim();
+    const when=((document.getElementById('rpWhen')||{}).value||'').trim();
+    if(ref) body.reference=ref;
+    if(visit) body.visit_id=visit;
+    if(claim) body.claim_id=claim;
+    if(when) body.paid_at=when;
+    let j; try{ j=await postClaimQ(body); }catch(e){ j={ok:false, error:(e&&e.message)||'network error'}; }
+    if(!j||j.ok===false) return cqSay('rpMsg','Could not record the payment: '+((j&&j.error)||'unknown'), true);
+    cqApplyBalance(pid, j.balance_cents);
+    cqSay('rpMsg','Payment recorded.'+cqBalanceWords(j.balance_cents), false);
+    const btn=document.getElementById('rpSave'); if(btn) btn.disabled=true;
+  };
+  window.openDailyCollections=function(){
+    const t=new Date(); const p=n=>String(n).padStart(2,'0');
+    const d=t.getFullYear()+'-'+p(t.getMonth()+1)+'-'+p(t.getDate());
+    listModalShell('Daily collections',
+      '<label class="block text-xs font-semibold text-[#3d4a45]">Day<input id="dcDate" type="date" value="'+d+'" class="field mt-1 block w-full"></label><div id="dcBody" class="text-sm text-[#6b7280] mt-3">Pick a day and show collections.</div><div id="dcErr" class="text-sm text-rose-600 hidden mt-2"></div>',
+      '<button onclick="document.getElementById(\'listOverlay\').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm font-semibold text-[#3d4a45]">Close</button><button onclick="printDailyCollections()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm font-semibold text-[#3d4a45]">Print</button><button onclick="loadDailyCollections()" class="px-4 py-2 rounded-xl text-white text-sm font-semibold" style="background:#0a6cf5">Show collections</button>',
+      'max-w-3xl');
+  };
+  function dcMethodLabel(m){ return {card:'Card',cash:'Cash',check:'Check',other:'Other'}[m]||m||''; }
+  window.loadDailyCollections=async function(){
+    const date=((document.getElementById('dcDate')||{}).value||'').trim();
+    const err=document.getElementById('dcErr');
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){ if(err){ err.textContent='Choose a day.'; err.classList.remove('hidden'); } return; }
+    let j; try{ j=await postClaimQ({action:'daily_collections', date:date}); }catch(e){ j={ok:false, error:(e&&e.message)||'network error'}; }
+    if(!j||j.ok===false){ if(err){ err.textContent='Could not load collections: '+((j&&j.error)||'unknown'); err.classList.remove('hidden'); } return; }
+    if(err) err.classList.add('hidden');
+    window.__dailyCollections=j;
+    const box=document.getElementById('dcBody'); if(!box) return;
+    const totals=j.totals||{};
+    const rows=(j.payments||[]).map(pay=>'<tr class="border-b border-[#f1f3f7]"><td class="py-2 pr-2">'+besc(pay.patient_name||'Patient')+'</td><td class="py-2 pr-2">'+besc(dcMethodLabel(pay.method))+'</td><td class="py-2 pr-2 text-right">'+besc($$m(pay.amount_cents))+'</td><td class="py-2 pr-2">'+besc(pay.reference||'')+'</td><td class="py-2 pr-2">'+besc(pay.by||'')+'</td><td class="py-2">'+besc(pay.at?new Date(pay.at).toLocaleString('en-US'):'')+'</td></tr>').join('');
+    const tot=(k)=>besc($$m(totals[k]||0));
+    box.innerHTML='<div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3 text-sm">'
+      +'<div class="rounded-xl bg-[#f7f8fa] p-2"><div class="text-[11px] text-[#6b7280]">Card</div><div class="font-semibold">'+tot('card')+'</div></div>'
+      +'<div class="rounded-xl bg-[#f7f8fa] p-2"><div class="text-[11px] text-[#6b7280]">Cash</div><div class="font-semibold">'+tot('cash')+'</div></div>'
+      +'<div class="rounded-xl bg-[#f7f8fa] p-2"><div class="text-[11px] text-[#6b7280]">Check</div><div class="font-semibold">'+tot('check')+'</div></div>'
+      +'<div class="rounded-xl bg-[#f7f8fa] p-2"><div class="text-[11px] text-[#6b7280]">Other</div><div class="font-semibold">'+tot('other')+'</div></div>'
+      +'<div class="rounded-xl bg-[#f7f8fa] p-2"><div class="text-[11px] text-[#6b7280]">All</div><div class="font-semibold">'+tot('all')+'</div></div></div>'
+      +((j.payments||[]).length?'<table class="w-full text-sm"><thead><tr class="text-left text-[11px] text-[#6b7280]"><th class="py-1 pr-2">Patient</th><th class="py-1 pr-2">Method</th><th class="py-1 pr-2 text-right">Amount</th><th class="py-1 pr-2">Reference</th><th class="py-1 pr-2">By</th><th class="py-1">When</th></tr></thead><tbody>'+rows+'</tbody></table>':'<div class="py-6 text-center text-[#9aa0ab]">No payments on this day.</div>');
+  };
+  window.printDailyCollections=function(){
+    const j=window.__dailyCollections; if(!j){ const err=document.getElementById('dcErr'); if(err){ err.textContent='Show collections before printing.'; err.classList.remove('hidden'); } return; }
+    const totals=j.totals||{};
+    const rows=(j.payments||[]).map(pay=>'<tr><td>'+besc(pay.patient_name||'Patient')+'</td><td>'+besc(dcMethodLabel(pay.method))+'</td><td>'+besc($$m(pay.amount_cents))+'</td><td>'+besc(pay.reference||'')+'</td><td>'+besc(pay.by||'')+'</td><td>'+besc(pay.at?new Date(pay.at).toLocaleString('en-US'):'')+'</td></tr>').join('');
+    const w=window.open('','_blank','width=800,height=900'); if(!w) return;
+    w.document.write('<!doctype html><html><head><title>Daily collections</title><style>body{font-family:Georgia,serif;padding:32px;color:#16201d}h1{font-size:22px;margin:0 0 8px}table{width:100%;border-collapse:collapse;margin-top:16px}td,th{text-align:left;padding:6px 8px;border-bottom:1px solid #e6e9ee;font-size:13px}.totals{margin-top:12px;font-size:14px}</style></head><body><h1>Daily collections</h1><div>'+besc(j.date||'')+'</div><div class="totals">Card '+besc($$m(totals.card||0))+' · Cash '+besc($$m(totals.cash||0))+' · Check '+besc($$m(totals.check||0))+' · Other '+besc($$m(totals.other||0))+' · All '+besc($$m(totals.all||0))+'</div>'+(rows?'<table><thead><tr><th>Patient</th><th>Method</th><th>Amount</th><th>Reference</th><th>By</th><th>When</th></tr></thead><tbody>'+rows+'</tbody></table>':'<p>No payments on this day.</p>')+'<script>setTimeout(function(){window.print()},300)<\/script></body></html>');
+    w.document.close();
+  };
+  window.openSelfPay=function(pid){
+    const body='<div class="text-xs text-[#6b7280]">Add the charge, then record the payment. What is left is the remaining balance, or zero.</div>'
+      +cqPatientField('spPatient', pid||'')
+      +'<label class="block text-xs font-semibold text-[#3d4a45] mt-2">Charge<input id="spCharge" inputmode="decimal" class="field mt-1 block w-full" placeholder="0.00"></label>'
+      +'<div class="grid grid-cols-2 gap-2 mt-2"><label class="block text-xs font-semibold text-[#3d4a45]">Date of service<input id="spDos" type="date" class="field mt-1 block w-full"></label><label class="block text-xs font-semibold text-[#3d4a45]">What for<input id="spDesc" class="field mt-1 block w-full" placeholder="Visit"></label></div>'
+      +'<button type="button" onclick="submitSelfPayCharge()" class="mt-3 px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-xs font-semibold text-[#16201d] hover:bg-[#f1f3f7]">Add charge</button>'
+      +'<div class="text-xs font-semibold text-[#3d4a45] mt-4">Payment against this balance</div>'
+      +'<label class="block text-xs font-semibold text-[#3d4a45] mt-2">Amount<input id="spPay" inputmode="decimal" class="field mt-1 block w-full" placeholder="0.00"></label>'
+      +'<label class="block text-xs font-semibold text-[#3d4a45] mt-2">Method<select id="spMethod" class="field mt-1 block w-full"><option value="card">Card</option><option value="cash">Cash</option><option value="check">Check</option><option value="other">Other</option></select></label>'
+      +'<label class="block text-xs font-semibold text-[#3d4a45] mt-2">Reference<input id="spRef" class="field mt-1 block w-full" placeholder="Receipt or check number"></label>'
+      +'<div id="spMsg" class="text-sm mt-2 hidden"></div>';
+    listModalShell('Self-pay', body, '<button onclick="document.getElementById(\'listOverlay\').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm font-semibold text-[#3d4a45]">Cancel</button><button id="spSave" onclick="submitSelfPayPayment()" class="px-4 py-2 rounded-xl text-white text-sm font-semibold" style="background:#0a6cf5">Record payment</button>', 'max-w-lg');
+  };
+  window.submitSelfPayCharge=async function(){
+    const pid=((document.getElementById('spPatient')||{}).value||'').trim();
+    const cents=toCents((document.getElementById('spCharge')||{}).value);
+    if(!pid) return cqSay('spMsg','Select a patient.', true);
+    if(!(cents>0)) return cqSay('spMsg','Enter the charge amount.', true);
+    const dos=((document.getElementById('spDos')||{}).value||'').trim();
+    const desc=((document.getElementById('spDesc')||{}).value||'').trim();
+    const body={action:'ledger_add', patient_id:pid, kind:'charge', amount_cents:cents};
+    if(desc) body.description=desc;
+    if(dos) body.service_date=dos;
+    let j; try{ j=await ledgerPost(body); }catch(e){ j={ok:false, error:(e&&e.message)||'network error'}; }
+    if(!j||j.ok===false) return cqSay('spMsg','Could not add the charge: '+((j&&j.error)||'unknown'), true);
+    cqApplyBalance(pid, j.balance_cents);
+    cqSay('spMsg','Charge saved.'+cqBalanceWords(j.balance_cents), false);
+  };
+  window.submitSelfPayPayment=async function(){
+    const pid=((document.getElementById('spPatient')||{}).value||'').trim();
+    const cents=toCents((document.getElementById('spPay')||{}).value);
+    const method=(document.getElementById('spMethod')||{}).value;
+    if(!pid) return cqSay('spMsg','Select a patient.', true);
+    if(!(cents>0)) return cqSay('spMsg','Enter the payment amount.', true);
+    if(['card','cash','check','other'].indexOf(method)<0) return cqSay('spMsg','Choose card, cash, check, or other.', true);
+    const body={action:'record_payment', patient_id:pid, amount_cents:cents, method:method};
+    const ref=((document.getElementById('spRef')||{}).value||'').trim();
+    if(ref) body.reference=ref;
+    let j; try{ j=await postClaimQ(body); }catch(e){ j={ok:false, error:(e&&e.message)||'network error'}; }
+    if(!j||j.ok===false) return cqSay('spMsg','Could not record the payment: '+((j&&j.error)||'unknown'), true);
+    cqApplyBalance(pid, j.balance_cents);
+    cqSay('spMsg','Payment recorded.'+cqBalanceWords(j.balance_cents), false);
+    const btn=document.getElementById('spSave'); if(btn) btn.disabled=true;
+  };
+  window.openPostRemittance=function(claimId){
+    const body='<label class="block text-xs font-semibold text-[#3d4a45]">Claim<input id="rmClaim" class="field mt-1 block w-full" value="'+besc(claimId||'')+'" placeholder="Claim id"></label>'
+      +'<label class="block text-xs font-semibold text-[#3d4a45] mt-2">Source<select id="rmSource" class="field mt-1 block w-full"><option value="era">ERA</option><option value="eob">Paper EOB</option></select></label>'
+      +'<label class="block text-xs font-semibold text-[#3d4a45] mt-2">Payer paid<input id="rmPaid" inputmode="decimal" class="field mt-1 block w-full" placeholder="0.00"></label>'
+      +'<label class="block text-xs font-semibold text-[#3d4a45] mt-2">Contractual adjustment<input id="rmAdj" inputmode="decimal" class="field mt-1 block w-full" placeholder="0.00"></label>'
+      +'<label class="block text-xs font-semibold text-[#3d4a45] mt-2">Patient responsibility<input id="rmPt" inputmode="decimal" class="field mt-1 block w-full" placeholder="0.00"></label>'
+      +'<label class="block text-xs font-semibold text-[#3d4a45] mt-2">Payer reference<input id="rmRef" class="field mt-1 block w-full" placeholder="Optional"></label>'
+      +'<label class="block text-xs font-semibold text-[#3d4a45] mt-2">Posted on<input id="rmWhen" type="date" class="field mt-1 block w-full"></label>'
+      +'<div id="rmMsg" class="text-sm mt-2 hidden"></div>';
+    listModalShell('Post remittance', body, '<button onclick="document.getElementById(\'listOverlay\').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm font-semibold text-[#3d4a45]">Cancel</button><button id="rmSave" onclick="submitRemittance()" class="px-4 py-2 rounded-xl text-white text-sm font-semibold" style="background:#0a6cf5">Post remittance</button>', 'max-w-lg');
+  };
+  window.submitRemittance=async function(){
+    const claim=((document.getElementById('rmClaim')||{}).value||'').trim();
+    const source=(document.getElementById('rmSource')||{}).value;
+    const paidRaw=((document.getElementById('rmPaid')||{}).value||'').trim();
+    const adjRaw=((document.getElementById('rmAdj')||{}).value||'').trim();
+    const ptRaw=((document.getElementById('rmPt')||{}).value||'').trim();
+    if(!claim) return cqSay('rmMsg','Enter the claim.', true);
+    if(source!=='era' && source!=='eob') return cqSay('rmMsg','Choose ERA or paper EOB.', true);
+    const paid=paidRaw?toCents(paidRaw):0;
+    const adj=adjRaw?toCents(adjRaw):0;
+    const pt=ptRaw?toCents(ptRaw):0;
+    if(isNaN(paid)||paid<0||isNaN(adj)||adj<0||isNaN(pt)||pt<0) return cqSay('rmMsg','Enter amounts as dollars, or leave them blank for zero.', true);
+    const body={action:'post_remittance', claim_id:claim, source:source, paid_cents:paid, contractual_adj_cents:adj, patient_resp_cents:pt};
+    const ref=((document.getElementById('rmRef')||{}).value||'').trim();
+    const when=((document.getElementById('rmWhen')||{}).value||'').trim();
+    if(ref) body.payer_ref=ref;
+    if(when) body.posted_at=when;
+    let j; try{ j=await postClaimQ(body); }catch(e){ j={ok:false, error:(e&&e.message)||'network error'}; }
+    if(!j||j.ok===false) return cqSay('rmMsg','Could not post: '+((j&&j.error)||'unknown'), true);
+    cqSay('rmMsg','Remittance posted.'+cqBalanceWords(j.balance_cents), false);
+    const btn=document.getElementById('rmSave'); if(btn) btn.disabled=true;
+  };
   // ---- AI coder (autoCode.ts, Luis 11/7). Drafts wait at "ready" like any coded visit; a person still approves. ----
   const AI_AXIS={ problems:'Problems addressed', data:'Data reviewed', risk:'Risk of management' };
   // What the AI coder made of a note still waiting to be coded, in plain words.
