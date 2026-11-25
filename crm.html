@@ -110,6 +110,7 @@
         window.__vitUserEmail = info.email || null;
         document.documentElement.style.visibility='visible';
         window.setUserAvatar();
+        if (typeof window.applyCrmAccess === 'function') window.applyCrmAccess();
       }
     } else {
       const sb = createClient('https://jtifhcvbgxqwlywugvjv.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWZoY3ZiZ3hxd2x5d3Vndmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDc5NTgsImV4cCI6MjA4ODA4Mzk1OH0.UfRVLuvM8_HPvKXUEDXb0cxR50znv16L5Tf99AnSc7g',{ auth:{ storageKey:'sb-vit-staff', persistSession:true } });
@@ -1408,10 +1409,27 @@
   const PROG_CHOICES = ['primary','behavioral','multiple','other'];
   const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','AS','GU','MP','PR','VI'];
   const STAT = {lead:'New Inquiry',referral:'Referral',new_patient:'New Patient',active:'Active',inactive:'Inactive',rx_written:'Rx written',rx_declined:'Rx declined'};
+  function staffRole(){
+    return String((window.__vca && window.__vca.role) || (window.__vitUser && window.__vitUser.app_metadata && window.__vitUser.app_metadata.role) || '').toLowerCase();
+  }
   function isProvider(){
-    const r = (window.__vca && window.__vca.role) || (window.__vitUser && window.__vitUser.app_metadata && window.__vitUser.app_metadata.role) || '';
+    const r = staffRole();
     return r === 'vitality_provider' || r === 'provider';
   }
+  // CRM access for front desk. Task routing still uses GROUP_FOR_ROLE. Clinical panels stay on isProvider().
+  const FRONT_DESK_ROLES = ['staff','vitality_staff','front_desk','vitality_front_desk'];
+  function isFrontDesk(){ return FRONT_DESK_ROLES.indexOf(staffRole()) >= 0; }
+  function applyCrmAccess(){
+    const role = staffRole();
+    if(!role) return;
+    const btn = document.querySelector('#viewModeTabs [data-mode="crm"]');
+    if(!btn) return;
+    btn.disabled = false;
+    btn.classList.remove('hidden');
+    btn.removeAttribute('aria-disabled');
+  }
+  window.applyCrmAccess = applyCrmAccess;
+  window.isFrontDesk = isFrontDesk;
   // Patient number = the same ref the Google Calendar events and task titles carry ("Patient #8G8KD"):
   // last 5 of the record key, uppercased. Shown beside the name so DeBry can dictate by number.
   function patRef(pid){ return String(pid||'').slice(-5).toUpperCase(); }
@@ -1720,11 +1738,48 @@
     const top=Math.max(0,Math.min(schedH-h,((a.dt.getHours()-SCHED_START)+a.dt.getMinutes()/60)*SCHED_PXH));
     const w=100/o.lanes, left=o.lane*w;
     const time=a.dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-    return `<div onclick="event.stopPropagation();schedOpen('${a.pid}')" title="${time} · ${esc(a.name)}${a.provider?' · '+esc(a.provider):''}${a.type?' · '+esc(a.type):''}"
+    const pid=String(a.pid||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<div onclick="event.stopPropagation();schedOpen('${pid}')" title="${time} · ${esc(a.name)}${a.provider?' · '+esc(a.provider):''}${a.type?' · '+esc(a.type):''}"
       style="position:absolute;top:${top}px;height:${h}px;left:calc(${left}% + 1px);width:calc(${w}% - 2px);background:${col}1f;border-left:3px solid ${col};border-radius:6px;padding:3px 6px;overflow:hidden;cursor:pointer">
-      <div class="text-[10px] font-semibold text-[#16201d] truncate leading-tight">${time} ${esc(a.name)}</div>
+      <div class="text-[10px] font-semibold text-[#16201d] truncate leading-tight">${time} <span onmouseenter="schedNameHover(event,'${pid}')" onmouseleave="schedNameHoverHide()">${esc(a.name)}</span></div>
       <div class="text-[9px] text-[#6b7280] truncate leading-tight">${esc(a.type||'')}${withProv&&a.provider?' · '+esc(a.provider):''}</div></div>`;
   }
+  const schedFlagTried={};
+  function schedNameHover(ev, pid){
+    let pop=document.getElementById('schedNamePop');
+    if(!pop){
+      pop=document.createElement('div');
+      pop.id='schedNamePop';
+      pop.className='fixed z-[80] max-w-xs rounded-xl border border-[#e6e9ee] bg-white shadow-lg px-3 py-2 text-xs text-[#16201d] pointer-events-none';
+      document.body.appendChild(pop);
+    }
+    pop.dataset.pid=pid;
+    const p=(patients||[]).find(x=>x.id===pid);
+    const status=p?pipeLabel(stageOf(p)):'Status not on this schedule yet';
+    const flags=activeFlagList(pid);
+    const flagHtml=flags.length?flags.map(f=>'<div class="mt-0.5">'+esc((f.kind==='alert'?'Alert: ':'')+flagText(f))+'</div>').join(''):'<div class="text-[#6b7280]">No active flags</div>';
+    pop.innerHTML='<div class="font-semibold">Status</div><div>'+esc(status)+'</div><div class="font-semibold mt-2">Active flags</div>'+flagHtml;
+    const r=ev.currentTarget.getBoundingClientRect();
+    pop.style.left=Math.max(8, Math.min(r.left, window.innerWidth-260))+'px';
+    pop.style.top=(r.bottom+6)+'px';
+    pop.classList.remove('hidden');
+    if(p && !Array.isArray(p.flags) && !(window.__chartAlerts&&window.__chartAlerts[pid]) && !schedFlagTried[pid]){
+      schedFlagTried[pid]=1;
+      fetchChartAlerts(pid).then(function(){
+        const el=document.getElementById('schedNamePop');
+        if(!el || el.classList.contains('hidden') || el.dataset.pid!==pid) return;
+        const again=activeFlagList(pid);
+        const fh=again.length?again.map(f=>'<div class="mt-0.5">'+esc((f.kind==='alert'?'Alert: ':'')+flagText(f))+'</div>').join(''):'<div class="text-[#6b7280]">No active flags</div>';
+        el.innerHTML='<div class="font-semibold">Status</div><div>'+esc(status)+'</div><div class="font-semibold mt-2">Active flags</div>'+fh;
+      });
+    }
+  }
+  function schedNameHoverHide(){
+    const pop=document.getElementById('schedNamePop');
+    if(pop) pop.classList.add('hidden');
+  }
+  window.schedNameHover=schedNameHover;
+  window.schedNameHoverHide=schedNameHoverHide;
   // Column sizing: Week view has exactly 7 columns so they flex to fill the overlay width (no dead
   // space on the right); Day view keeps a fixed width since the number of provider columns varies.
   let schedColCls='shrink-0', schedColStyle='width:182px';
@@ -2324,8 +2379,9 @@
   // ---- View-mode dispatch: CRM (operational) / Provider (clinical) / Patient Portal ----
   let viewMode = 'crm';
   window.setViewMode = function(m){
-    viewMode = m;
-    document.querySelectorAll('.vm-btn').forEach(b=>{ const on = b.dataset.mode===m; b.classList.toggle('bg-[#0a6cf5]', on); b.classList.toggle('text-white', on); b.classList.toggle('text-[#4b5563]', !on); });
+    viewMode = (m==='provider'||m==='portal'||m==='crm') ? m : 'crm';
+    document.querySelectorAll('.vm-btn').forEach(b=>{ const on = b.dataset.mode===viewMode; b.classList.toggle('bg-[#0a6cf5]', on); b.classList.toggle('text-white', on); b.classList.toggle('text-[#4b5563]', !on); });
+    applyCrmAccess();
     renderDetail();
     syncBodyDock();
   };
@@ -2450,10 +2506,81 @@
     const host=document.getElementById('detailMain'); if(!host) return;
     host.insertAdjacentHTML('afterbegin',`<div id="chartAlertBar" onclick="openChartAlerts('${p.id}')" title="Open flags and pending items" class="cursor-pointer mx-4 mt-3 rounded-xl border px-3 py-2 text-sm flex items-center justify-between gap-3 ${imp?'border-rose-300 bg-rose-50 text-rose-800':'border-amber-300 bg-amber-50 text-amber-800'}"><span class="min-w-0 truncate">${[lead,rest].filter(Boolean).join(' · ')}</span><span class="text-xs font-semibold underline shrink-0">View</span></div>`);
   }
+  function flagText(f){ return (f && (f.label || f.text)) || ''; }
+  function flagIsActive(f){
+    if(!f || f.active===false || f.resolved_at) return false;
+    return true;
+  }
+  function activeFlagList(pid){
+    const p=(patients||[]).find(x=>x.id===pid);
+    const a=window.__chartAlerts && window.__chartAlerts[pid];
+    const raw=[].concat((p&&p.flags)||[], (a&&a.flags)||[]);
+    const seen={}, out=[];
+    raw.forEach(f=>{
+      if(!flagIsActive(f)) return;
+      const id=f.id||f.flag_id||flagText(f);
+      if(!id || seen[id]) return;
+      seen[id]=1; out.push(f);
+    });
+    return out;
+  }
+  function showFlagAlertGate(pid){
+    const alerts=activeFlagList(pid).filter(f=>f.kind==='alert' && !f.last_dismissed_at);
+    const gateExisting=document.getElementById('flagAlertGate');
+    if(!alerts.length){ if(gateExisting) gateExisting.remove(); return; }
+    const f=alerts[0];
+    const fid=f.id||f.flag_id||'';
+    window.__flagAlert={pid:pid, fid:fid};
+    let gate=gateExisting;
+    if(!gate){
+      gate=document.createElement('div');
+      gate.id='flagAlertGate';
+      gate.className='fixed inset-0 z-[90] bg-black/50 flex items-center justify-center p-4';
+      document.body.appendChild(gate);
+    }
+    const p=(patients||[]).find(x=>x.id===pid);
+    const nm=p?((((p.first||'')+' '+(p.last||'')).trim())||'this chart'):'this chart';
+    gate.innerHTML=`<div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl" role="alertdialog" aria-modal="true">
+      <div class="text-xs font-semibold uppercase tracking-wide text-[#be123c]">Alert</div>
+      <div class="font-display text-lg font-semibold text-[#16201d] mt-1">${esc(flagText(f)||'Chart alert')}</div>
+      ${f.note?`<div class="text-sm text-[#3d4a45] mt-2">${esc(f.note)}</div>`:''}
+      <div class="text-xs text-[#6b7280] mt-2">${esc(nm)}. Dismiss this alert to continue.</div>
+      <div id="flagAlertErr" class="text-sm text-rose-600 mt-2 hidden"></div>
+      <div class="mt-4 flex justify-end">
+        <button type="button" onclick="dismissFlagAlert()" class="px-4 py-2 rounded-xl text-white text-sm font-semibold" style="background:#0a6cf5">Dismiss</button>
+      </div>
+    </div>`;
+  }
+  window.dismissFlagAlert=async function(){
+    const cur=window.__flagAlert||{};
+    const err=document.getElementById('flagAlertErr');
+    if(!cur.fid){
+      if(err){ err.textContent='This alert has no id yet, so it cannot be dismissed.'; err.classList.remove('hidden'); }
+      return;
+    }
+    let j;
+    try{
+      const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'dismiss_flag_alert',patient_id:cur.pid,flag_id:cur.fid})});
+      j=await r.json().catch(()=>({ok:false,error:'bad response'}));
+    }catch(e){ j={ok:false,error:(e&&e.message)||'network error'}; }
+    if(!j||j.ok===false){
+      if(err){ err.textContent='Could not dismiss: '+((j&&j.error)||'unknown'); err.classList.remove('hidden'); }
+      return;
+    }
+    const stamp=list=>{ (list||[]).forEach(fl=>{ if((fl.id||fl.flag_id)===cur.fid){ fl.last_dismissed_at=j.dismissed_at||Date.now(); fl.last_dismissed_by=j.dismissed_by||''; } }); };
+    const p=(patients||[]).find(x=>x.id===cur.pid);
+    if(p) stamp(p.flags);
+    if(window.__chartAlerts[cur.pid]) stamp(window.__chartAlerts[cur.pid].flags);
+    showFlagAlertGate(cur.pid);
+  };
   async function chartAlertsOnOpen(pid){
-    const a=await fetchChartAlerts(pid); if(selId!==pid||!a) return;
+    if(selId===pid) showFlagAlertGate(pid);
+    const a=await fetchChartAlerts(pid);
+    if(selId!==pid) return;
     const p=patients.find(x=>x.id===pid); if(!p) return;
-    paintAlertBar(p);
+    if(a) paintAlertBar(p);
+    showFlagAlertGate(pid);
+    if(!a) return;
     const flags=(a.flags||[]).filter(f=>!f.resolved_at), items=pendingItems(p,a);
     if(!flags.length&&!items.length) return;
     const sig=flags.map(f=>f.id).join(',')+'|'+items.join('|');
@@ -2461,6 +2588,7 @@
     if(seen===sig) return;
     try{ sessionStorage.setItem('chartAlertSeen_'+pid,sig); }catch(_){}
     if(document.getElementById('listOverlay')) return;   // never cover a window the user already has open
+    if(document.getElementById('flagAlertGate')) return;
     openChartAlerts(pid);
   }
   window.chartAlertsOnOpen=chartAlertsOnOpen;
@@ -2987,6 +3115,10 @@ ${skipNote ? '' : `          <div class="flex gap-2 mt-2 pt-3 border-t border-[#
               <button onclick="addTask('${p.id}')" class="qa"><span class="ic">${ic('task')}</span>Task</button>
               <button onclick="focusBoardStatus()" class="qa"><span class="ic">${ic('status')}</span>Status</button>
             </div>
+            <div class="flex flex-wrap gap-2 mt-3">
+              <button onclick="bookAppt('${p.id}')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-xs font-semibold text-[#16201d] hover:bg-[#f1f3f7]">Book appointment</button>
+              <button onclick="openAttendance('${p.id}')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-xs font-semibold text-[#16201d] hover:bg-[#f1f3f7]">Attendance history</button>
+            </div>
           </div>
           <div class="glass rounded-2xl overflow-hidden">
             <div class="flex items-center justify-between px-4 py-3 cursor-pointer" onclick="this.nextElementSibling.classList.toggle('hidden')">
@@ -3083,7 +3215,103 @@ ${skipNote ? '' : `          <div class="flex gap-2 mt-2 pt-3 border-t border-[#
     crmConsentView(p.id);
   }
   window.focusBoardStatus = function(){ const s=document.getElementById('crmBoardStatus'); if(s){ s.focus(); try{ s.scrollIntoView({block:'nearest'}); }catch(e){} } };
-  window.openCrmFlag = function(pid){ openChartAlerts(pid); };
+  window.openAttendance = function(pid){
+    const p=patients.find(x=>x.id===pid); if(!p) return;
+    const appts=(p.appts||[]).slice().sort((a,b)=>new Date(b.when||b.created||0)-new Date(a.when||a.created||0));
+    const body=appts.length?appts.map(a=>{
+      const when=a.when?fmtDT(a.when):(a.created?fmtDT(a.created):'');
+      const bits=[when, a.provider||'', a.status||'', a.checked_in_at?'checked in':''].filter(Boolean);
+      return `<div class="py-2 border-b border-[#f1f3f7]"><div class="text-sm font-medium text-[#16201d]">${esc(a.type||'Appointment')}</div><div class="text-xs text-[#6b7280] mt-0.5">${esc(bits.join(' · '))}</div></div>`;
+    }).join(''):'<div class="text-sm text-[#9aa0ab] py-6 text-center">No appointments on this chart.</div>';
+    listModalShell('Attendance history', body, '<button onclick="document.getElementById(\'listOverlay\').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm font-semibold text-[#3d4a45]">Close</button>', 'max-w-lg');
+  };
+  window.openCrmFlag = function(pid){
+    const p=patients.find(x=>x.id===pid); if(!p) return;
+    const flags=activeFlagList(pid);
+    window.__crmFlagEdit=flags;
+    window.__crmFlagPid=pid;
+    if(window.__crmFlagFor!==pid) window.__crmFlagId='';
+    window.__crmFlagFor=pid;
+    const rows=flags.length?flags.map((f,i)=>{
+      const kind=f.kind==='alert'?'Alert':'Info';
+      return `<div class="flex items-start justify-between gap-2 py-2 border-b border-[#f1f3f7]">
+        <div class="min-w-0"><div class="text-sm text-[#16201d]">${esc(flagText(f))}</div>
+        <div class="text-[11px] text-[#6b7280] mt-0.5">${kind}${f.note?' · '+esc(f.note):''}</div></div>
+        <div class="flex gap-2 shrink-0">
+          <button type="button" onclick="crmFlagEdit(${i})" class="px-2.5 py-1 rounded-lg border border-[#e6e9ee] text-xs font-semibold">Edit</button>
+          <button type="button" onclick="crmFlagOff(${i})" class="px-2.5 py-1 rounded-lg border border-[#e6e9ee] text-xs font-semibold">Turn off</button>
+        </div>
+      </div>`;
+    }).join(''):'<div class="text-sm text-[#9aa0ab]">No active flags.</div>';
+    const body=`<div>
+      <div class="text-xs font-semibold uppercase tracking-wide text-[#6b7280] mb-1">Active flags</div>
+      ${rows}
+      <label class="block text-xs font-semibold text-[#3d4a45] mt-3">Label<input id="sfLabel" class="field mt-1 block w-full" placeholder="What staff should know"></label>
+      <label class="block text-xs font-semibold text-[#3d4a45] mt-2">Kind<select id="sfKind" class="field mt-1 block w-full"><option value="info">Info</option><option value="alert">Alert</option></select></label>
+      <label class="block text-xs font-semibold text-[#3d4a45] mt-2">Note (optional)<textarea id="sfNote" rows="2" class="field mt-1 block w-full resize-none"></textarea></label>
+      <div id="sfErr" class="text-sm text-rose-600 hidden mt-2"></div>
+    </div>`;
+    listModalShell('Flags', body, `<button onclick="document.getElementById('listOverlay').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm font-semibold text-[#3d4a45]">Cancel</button><button onclick="saveCrmFlag('${pid}')" class="px-4 py-2 rounded-xl text-white text-sm font-semibold" style="background:#0a6cf5">Save flag</button>`, 'max-w-lg');
+  };
+  window.crmFlagEdit = function(i){
+    const f=(window.__crmFlagEdit||[])[i]; if(!f) return;
+    window.__crmFlagId=f.id||f.flag_id||'';
+    const lab=document.getElementById('sfLabel'); if(lab) lab.value=flagText(f);
+    const k=document.getElementById('sfKind'); if(k) k.value=f.kind==='alert'?'alert':'info';
+    const n=document.getElementById('sfNote'); if(n) n.value=f.note||'';
+  };
+  window.crmFlagOff = function(i){ saveCrmFlag(window.__crmFlagPid, i); };
+  window.saveCrmFlag = async function(pid, turnOffIndex){
+    const err=document.getElementById('sfErr');
+    let label, kind, note, flag_id, active=true;
+    if(typeof turnOffIndex==='number'){
+      const f=(window.__crmFlagEdit||[])[turnOffIndex];
+      if(!f) return;
+      label=flagText(f);
+      kind=f.kind==='alert'?'alert':'info';
+      note=f.note||'';
+      flag_id=f.id||f.flag_id||'';
+      active=false;
+      if(!flag_id){ alert('This flag has no id yet, so it cannot be updated.'); return; }
+    } else {
+      label=((document.getElementById('sfLabel')||{}).value||'').trim();
+      kind=(document.getElementById('sfKind')||{}).value==='alert'?'alert':'info';
+      note=((document.getElementById('sfNote')||{}).value||'').trim();
+      flag_id=window.__crmFlagId||'';
+      if(!label){ if(err){ err.textContent='Enter a label.'; err.classList.remove('hidden'); } return; }
+    }
+    const body={action:'set_flag', patient_id:pid, label:label, kind:kind, active:active};
+    if(flag_id) body.flag_id=flag_id;
+    if(note) body.note=note;
+    let j;
+    try{
+      const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify(body)});
+      j=await r.json().catch(()=>({ok:false,error:'bad response'}));
+    }catch(e){ j={ok:false,error:(e&&e.message)||'network error'}; }
+    if(!j||j.ok===false){
+      const msg='Could not save the flag: '+((j&&j.error)||'unknown');
+      if(err && typeof turnOffIndex!=='number'){ err.textContent=msg; err.classList.remove('hidden'); }
+      else alert(msg);
+      return;
+    }
+    const p=patients.find(x=>x.id===pid);
+    const id=j.flag_id||flag_id;
+    if(p){
+      if(!Array.isArray(p.flags)) p.flags=[];
+      let row=id?p.flags.find(fl=>(fl.id||fl.flag_id)===id):null;
+      if(!row){ row={id:id}; p.flags.push(row); }
+      row.id=id||row.id;
+      row.flag_id=id||row.flag_id;
+      row.label=label;
+      row.text=label;
+      row.kind=kind;
+      row.active=active;
+      if(note) row.note=note;
+    }
+    window.__crmFlagId='';
+    await fetchChartAlerts(pid);
+    if(document.getElementById('listOverlay')) openCrmFlag(pid);
+  };
 
   // ---- condensed record: activity model (filter tabs over the pieces we already have) ----
   function actItems(p){
