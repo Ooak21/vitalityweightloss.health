@@ -107,6 +107,36 @@ $('signout').onclick=()=> signOutFn().then(()=>location.replace('login.html'));
 async function api(p){
   if (USE_CONVEX_AUTH){ const r=await fetch(CONVEX_URL+'/admin-data',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getAuthToken()},body:JSON.stringify(p||{})}); return await r.json(); }
   const r=await fetch(FN,{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON,'Authorization':'Bearer '+TOKEN},body:JSON.stringify(p||{})}); return await r.json(); }
+async function billingPrintApi(p){
+  const r=await fetch(CONVEX_URL+'/chart-billing',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getAuthToken()},body:JSON.stringify(p||{})});
+  return await r.json().catch(()=>({ok:false,error:'bad response'}));
+}
+let cmsSettingsLoaded=false, cmsXmm=0, cmsYmm=0, cmsSettingsError='';
+function cmsOffsetCard(){
+  return `<section class="card p-5">
+    <div class="font-display text-lg font-semibold">CMS-1500 print offset</div>
+    <p class="text-sm text-[#6b7280] mt-1">Nudge the data on the preprinted red and white form. Saved for this clinic. Admin only.</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 max-w-md">
+      <label class="text-xs font-semibold text-[#3d4a45]">Horizontal offset (mm)<input id="cmsX" type="number" step="0.1" class="field mt-1 block w-full" value="${esc(cmsXmm)}"></label>
+      <label class="text-xs font-semibold text-[#3d4a45]">Vertical offset (mm)<input id="cmsY" type="number" step="0.1" class="field mt-1 block w-full" value="${esc(cmsYmm)}"></label>
+    </div>
+    <div id="cmsMsg" class="text-sm mt-2 ${cmsSettingsError?'text-rose-600':'hidden text-[#0a7a3d]'}">${esc(cmsSettingsError)}</div>
+    <div class="flex flex-wrap gap-2 mt-3">
+      <button id="cmsTest" type="button" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm font-semibold">Test print</button>
+      <button id="cmsSave" type="button" class="px-4 py-2 rounded-xl text-white text-sm font-semibold" style="background:#0a6cf5">Save offsets</button>
+    </div>
+  </section>`;
+}
+function cmsTestPrint(){
+  const x=Number(($('cmsX')||{}).value);
+  const y=Number(($('cmsY')||{}).value);
+  const ox=isFinite(x)?x:0, oy=isFinite(y)?y:0;
+  const samples=[[128,22,'PAYER NAME'],[128,36,'MEMBER ID'],[8,36,'PATIENT NAME'],[8,48,'01/01/1990'],[52,48,'U'],[8,60,'123 MAIN ST'],[8,72,'LAS VEGAS NV 88901'],[10,142,'E66.9'],[8,168,'99213'],[168,232,'$0.00'],[12,248,'PROVIDER'],[12,256,'NPI']];
+  const bits=samples.map(([l,t,text])=>`<div style="position:absolute;left:${l}mm;top:${t}mm;font:11px Courier,monospace;color:#111;white-space:nowrap">${esc(text)}</div>`).join('');
+  const w=window.open('','_blank','width=900,height=1100'); if(!w) return;
+  w.document.write('<!doctype html><html><head><title>CMS-1500 test print</title><style>@page{size:letter;margin:0}html,body{margin:0;padding:0;background:#fff}.page{position:relative;width:215.9mm;height:279.4mm;transform:translate('+ox+'mm,'+oy+'mm)}</style></head><body><div class="page">'+bits+'</div><script>setTimeout(function(){window.print()},300)<\/script></body></html>');
+  w.document.close();
+}
 async function tasksApi(p){
   if (USE_CONVEX_AUTH){ const r=await fetch(CONVEX_URL+'/tasks-data',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getAuthToken()},body:JSON.stringify(p||{})}); return await r.json(); }
   const r=await fetch(SB+'/functions/v1/vit-tasks',{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON,'Authorization':'Bearer '+TOKEN},body:JSON.stringify(p||{})}); return await r.json(); }
@@ -483,11 +513,36 @@ function render(){
     : '<div><h1 class="font-display text-2xl font-semibold tracking-[-.5px]">Operations</h1><p class="text-sm text-[#6b7280] mt-1">Access control, the task board, and the compliance audit trail.</p></div>';
   $('app').innerHTML=`
     ${head}
+    ${PROVIDER_MODE?'':cmsOffsetCard()}
     <div class="flex gap-2 flex-wrap">
       ${TABS.map(([k,label])=>`<span class="tab ${TAB===k?'on':''}" data-t="${k}">${label}</span>`).join('')}
     </div>
     ${TAB==='systems'?viewSystems():TAB==='access'?viewAccess():TAB==='tasks'?viewTasks():TAB==='tickets'?viewTickets():TAB==='reports'?viewReports():TAB==='email'?viewEmail():TAB==='billing'?viewBilling():TAB==='production'?viewProduction():TAB==='vendors'?viewVendors():viewAudit()}`;
   document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{ TAB=t.dataset.t; render(); });
+  if(!PROVIDER_MODE){
+    if(!cmsSettingsLoaded){
+      cmsSettingsLoaded=true;
+      billingPrintApi({action:'print_settings_get'}).then(j=>{
+        if(j&&j.ok&&j.cms1500){ cmsXmm=Number(j.cms1500.offset_x_mm)||0; cmsYmm=Number(j.cms1500.offset_y_mm)||0; cmsSettingsError=''; }
+        else cmsSettingsError=(j&&j.error)||'Offsets are not available yet.';
+        render();
+      }).catch(()=>{ cmsSettingsError='Offsets are not available yet.'; render(); });
+    }
+    const cmsSave=$('cmsSave');
+    if(cmsSave) cmsSave.onclick=async()=>{
+      const msg=$('cmsMsg');
+      const x=Number(($('cmsX')||{}).value), y=Number(($('cmsY')||{}).value);
+      if(!isFinite(x)||!isFinite(y)){ if(msg){ msg.textContent='Enter both offsets in millimeters.'; msg.className='text-sm mt-2 text-rose-600'; } return; }
+      cmsSave.disabled=true;
+      let j; try{ j=await billingPrintApi({action:'print_settings_set', cms1500:{offset_x_mm:x, offset_y_mm:y}}); }catch(e){ j={ok:false,error:(e&&e.message)||'network error'}; }
+      cmsSave.disabled=false;
+      if(!j||j.ok===false){ if(msg){ msg.textContent='Could not save: '+((j&&j.error)||'unknown'); msg.className='text-sm mt-2 text-rose-600'; } return; }
+      cmsXmm=x; cmsYmm=y; cmsSettingsError='';
+      if(msg){ msg.textContent='Offsets saved.'; msg.className='text-sm mt-2 text-[#0a7a3d]'; }
+    };
+    const cmsTest=$('cmsTest');
+    if(cmsTest) cmsTest.onclick=()=>cmsTestPrint();
+  }
   if(TAB==='systems' && SYS){
     const rc=$('runChk'); if(rc) rc.onclick=async()=>{ rc.disabled=true; rc.textContent='Running…'; await sysApi({action:'run'}); SYS=await sysApi({action:'load'}); render(); };
   } else if(TAB==='access'){

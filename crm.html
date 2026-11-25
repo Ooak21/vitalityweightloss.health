@@ -858,9 +858,12 @@
         // Payer effective-date hold, e.g. Anthem before 4 Sep. Warns, never blocks.
         const hold=x.hold_warning?'<div class="mt-2 rounded-xl bg-[#fff7ed] border border-[#ffd9a8] px-2.5 py-2 text-[11px] font-semibold text-[#9a5a00]">⚑ '+besc(x.hold_warning)+'</div>':'';
         const aging=(x.aging_days!=null)?('<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ml-2 '+(x.aging_alert?'bg-rose-100 text-rose-700':'bg-slate-100 text-slate-600')+'">'+x.aging_days+'d'+(x.aging_alert?' · timely filing':'')+'</span>'):'';
+        const qid=String(x.superbill_id||x.claim_id||'').replace(/'/g,"\\'");
         const remit=x.claim_id?'<button onclick="openPostRemittance(\''+String(x.claim_id).replace(/'/g,"\\'")+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">Post remittance</button>':'';
         const spGo=(x.self_pay&&x.patient_id)?'<button onclick="openSelfPay(\''+String(x.patient_id).replace(/'/g,"\\'")+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">Self-pay</button>':'';
-        const act=remit+spGo+(approved
+        const cmsGo=qid?'<button onclick="printCms1500(\'queue\',\''+qid+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">Print CMS-1500</button>':'';
+        const refGo=(x.claim_id && !claimAlreadySubmitted(x.claim_status||x.status))?'<button onclick="refreshClaimFromPayer(\''+String(x.claim_id).replace(/'/g,"\\'")+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">Refresh from payer</button>':'';
+        const act=remit+spGo+cmsGo+refGo+(approved
           ? '<button onclick="claimUnapprove(\''+x.superbill_id+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">Withdraw</button>'
             +'<button onclick="claimSend(\''+x.superbill_id+'\')" class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700">Send to payer</button>'
           : '<button onclick="claimDry(\''+x.superbill_id+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">Check it</button>'
@@ -982,6 +985,7 @@
         '<button onclick="openDailyCollections()" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#16201d] text-xs font-semibold hover:bg-[#f1f3f7]">Daily collections</button>'+
         '<button onclick="openSelfPay()" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#16201d] text-xs font-semibold hover:bg-[#f1f3f7]">Self-pay</button>'+
         '<button onclick="openPostRemittance()" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#16201d] text-xs font-semibold hover:bg-[#f1f3f7]">Post remittance</button>'+
+        '<button onclick="openPayerSetup()" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#16201d] text-xs font-semibold hover:bg-[#f1f3f7]">Payer setup</button>'+
         '</div>';
       body.innerHTML=
         payBar+
@@ -1168,6 +1172,122 @@
     if(!j||j.ok===false) return cqSay('rmMsg','Could not post: '+((j&&j.error)||'unknown'), true);
     cqSay('rmMsg','Remittance posted.'+cqBalanceWords(j.balance_cents), false);
     const btn=document.getElementById('rmSave'); if(btn) btn.disabled=true;
+  };
+  function claimAlreadySubmitted(status){
+    return ['submitted','sent','accepted','paid'].indexOf(String(status||'').toLowerCase())>=0;
+  }
+  window.openPayerSetup=function(){
+    const states=(typeof US_STATES!=='undefined'?US_STATES:[]).map(s=>'<option value="'+s+'">'+s+'</option>').join('');
+    const body='<p class="text-xs text-[#6b7280]">One payer at a time. Type the payer key this clinic already uses. There is no payer list on this page.</p>'
+      +'<label class="block text-xs font-semibold text-[#3d4a45] mt-2">Payer key<input id="pyKey" class="field mt-1 block w-full" placeholder="Payer key"></label>'
+      +'<label class="block text-xs font-semibold text-[#3d4a45] mt-2">Electronic payer id<input id="pyEid" class="field mt-1 block w-full" placeholder="Clearinghouse payer id"></label>'
+      +'<div class="text-xs font-semibold text-[#3d4a45] mt-3">Paper claims mailing address</div>'
+      +'<label class="block text-xs font-semibold text-[#3d4a45] mt-2">Address<input id="pyLine1" class="field mt-1 block w-full"></label>'
+      +'<label class="block text-xs font-semibold text-[#3d4a45] mt-2">Address line 2<input id="pyLine2" class="field mt-1 block w-full" placeholder="Optional"></label>'
+      +'<div class="grid grid-cols-3 gap-2 mt-2"><label class="block text-xs font-semibold text-[#3d4a45]">City<input id="pyCity" class="field mt-1 block w-full"></label><label class="block text-xs font-semibold text-[#3d4a45]">State<select id="pyState" class="field mt-1 block w-full"><option value="">State</option>'+states+'</select></label><label class="block text-xs font-semibold text-[#3d4a45]">ZIP<input id="pyZip" class="field mt-1 block w-full"></label></div>'
+      +'<div id="pyMsg" class="text-sm mt-2 hidden"></div>';
+    listModalShell('Payer setup', body, '<button onclick="document.getElementById(\'listOverlay\').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm font-semibold text-[#3d4a45]">Cancel</button><button id="pySave" onclick="submitPayerSetup()" class="px-4 py-2 rounded-xl text-white text-sm font-semibold" style="background:#0a6cf5">Save payer</button>', 'max-w-lg');
+  };
+  window.submitPayerSetup=async function(){
+    const key=((document.getElementById('pyKey')||{}).value||'').trim();
+    const eid=((document.getElementById('pyEid')||{}).value||'').trim();
+    const line1=((document.getElementById('pyLine1')||{}).value||'').trim();
+    const line2=((document.getElementById('pyLine2')||{}).value||'').trim();
+    const city=((document.getElementById('pyCity')||{}).value||'').trim();
+    const state=((document.getElementById('pyState')||{}).value||'').trim().toUpperCase();
+    const zip=((document.getElementById('pyZip')||{}).value||'').trim();
+    if(!key) return cqSay('pyMsg','Enter the payer key.', true);
+    const anyPaper=!!(line1||line2||city||state||zip);
+    if(!eid && !anyPaper) return cqSay('pyMsg','Enter an electronic payer id or a paper address.', true);
+    if(anyPaper && (!line1||!city||!state||!zip)) return cqSay('pyMsg','Paper address needs a street, city, state, and ZIP.', true);
+    if(state && typeof US_STATES!=='undefined' && US_STATES.indexOf(state)<0) return cqSay('pyMsg','State must be a 2-letter code.', true);
+    const body={action:'update_payer', payer_key:key};
+    if(eid) body.electronic_payer_id=eid;
+    if(anyPaper) body.paper_address={line1:line1, city:city, state:state, zip:zip};
+    if(anyPaper && line2) body.paper_address.line2=line2;
+    let j; try{ j=await postClaimQ(body); }catch(e){ j={ok:false, error:(e&&e.message)||'network error'}; }
+    if(!j||j.ok===false) return cqSay('pyMsg','Could not save the payer: '+((j&&j.error)||'unknown'), true);
+    cqSay('pyMsg','Payer saved.', false);
+    const btn=document.getElementById('pySave'); if(btn) btn.disabled=true;
+  };
+  window.refreshClaimFromPayer=async function(claimId){
+    if(!claimId) return;
+    let j; try{ j=await postBilling({action:'refresh_claim_from_payer', claim_id:claimId}); }catch(e){ j={ok:false, error:(e&&e.message)||'network error'}; }
+    if(!j||j.ok===false){ alert('Could not refresh: '+((j&&j.error)||'unknown')); return; }
+    alert('Claim refreshed from the payer.');
+    if(selId){ try{ await loadChartBilling(selId); }catch(e){} }
+    if(document.getElementById('claimBody')){ try{ await loadClaimQueue(); }catch(e){} }
+  };
+  const CMS1500_POS={
+    payer:[128,22], member:[128,36], name:[8,36], dob:[8,48], sex:[52,48],
+    address:[8,60], city:[8,72], phone:[128,60], group:[128,84],
+    dx:[10,142], line:[8,168], total:[168,232], provider:[12,248], npi:[12,256]
+  };
+  async function cmsOffsets(){
+    if(window.__cms1500Offset) return window.__cms1500Offset;
+    let j=null; try{ j=await postBilling({action:'print_settings_get'}); }catch(e){ j=null; }
+    const o=(j&&j.ok&&j.cms1500)?j.cms1500:{offset_x_mm:0, offset_y_mm:0};
+    window.__cms1500Offset={x:Number(o.offset_x_mm)||0, y:Number(o.offset_y_mm)||0};
+    return window.__cms1500Offset;
+  }
+  function cmsPut(items, left, top, text){
+    const t=String(text==null?'':text).trim(); if(!t) return;
+    items.push({left:left, top:top, text:t});
+  }
+  window.printCms1500=async function(kind, id){
+    let row=null, patient=null, cov=null;
+    if(kind==='queue'){
+      row=(window.__claimQueue||[]).find(x=>x.superbill_id===id||x.claim_id===id)||null;
+      patient=(patients||[]).find(p=>row&&p.id===row.patient_id)||null;
+    } else if(kind==='superbill'){
+      row=(window.__superbills||[]).find(x=>x.id===id)||null;
+      patient=(patients||[]).find(p=>p.id===selId)||null;
+      cov=(window.__coverages||[]).find(c=>row&&c.id===row.insurance_id)||(window.__coverages||[]).find(c=>c.status==='active')||null;
+    } else {
+      row=(window.__claims||[]).find(x=>(x.id||x.claim_id)===id)||null;
+      patient=(patients||[]).find(p=>p.id===selId)||null;
+      cov=(window.__coverages||[]).find(c=>c.status==='active')||null;
+    }
+    if(!row && !patient){ alert('Nothing to print.'); return; }
+    const off=await cmsOffsets();
+    const P=CMS1500_POS;
+    const items=[];
+    const nm=patient?(((patient.first||'')+' '+(patient.last||'')).trim()):(row&&(row.patient||row.patient_name))||'';
+    cmsPut(items, P.name[0], P.name[1], nm);
+    if(patient&&patient.dob) cmsPut(items, P.dob[0], P.dob[1], dobUS(patient.dob));
+    if(patient&&patient.sex) cmsPut(items, P.sex[0], P.sex[1], sexNorm(patient.sex)||patient.sex);
+    if(patient){
+      cmsPut(items, P.address[0], P.address[1], [patient.address_line1, patient.address_line2].filter(Boolean).join(' '));
+      cmsPut(items, P.city[0], P.city[1], [patient.address_city, patient.address_state, patient.address_zip].filter(Boolean).join(' '));
+      cmsPut(items, P.phone[0], P.phone[1], patient.phone||'');
+    }
+    const payerName=(cov&&cov.payer_name)||(row&&row.payer_name)||'';
+    cmsPut(items, P.payer[0], P.payer[1], payerName);
+    cmsPut(items, P.member[0], P.member[1], (cov&&(cov.member_id_masked||cov.member_id))||(row&&row.member_id)||'');
+    cmsPut(items, P.group[0], P.group[1], (cov&&cov.group_number)||'');
+    const dx=(row&&row.diagnoses)||[];
+    dx.slice(0,12).forEach((d,i)=>{
+      const code=typeof d==='string'?d:(d&&d.code)||'';
+      const col=i<6?0:1, r=i%6;
+      cmsPut(items, P.dx[0]+col*42, P.dx[1]+r*4.2, code);
+    });
+    const lines=(row&&row.lines)||[];
+    lines.slice(0,6).forEach((l,i)=>{
+      const top=P.line[1]+i*8;
+      const dos=(row&&row.date_of_service)||'';
+      const pos=(row&&row.place_of_service)||'';
+      const cpt=[l.cpt].concat(l.modifiers||[]).filter(Boolean).join(' ');
+      const charge=l.charge_cents!=null?money(l.charge_cents):(l.charge||'');
+      cmsPut(items, P.line[0], top, [dos, pos, cpt, l.units?('x'+l.units):'', (l.dx_pointers||[]).join(','), charge].filter(Boolean).join('  '));
+    });
+    const total=row&&(row.total_charge_cents!=null?row.total_charge_cents:row.total_cents);
+    if(total!=null) cmsPut(items, P.total[0], P.total[1], money(total));
+    cmsPut(items, P.provider[0], P.provider[1], (row&&(row.rendering_provider||row.provider))||'');
+    cmsPut(items, P.npi[0], P.npi[1], (row&&row.rendering_npi)?('NPI '+(row.rendering_npi)):'');
+    const body=items.map(it=>'<div style="position:absolute;left:'+it.left+'mm;top:'+it.top+'mm;font:11px Courier,monospace;color:#111;white-space:nowrap">'+besc(it.text)+'</div>').join('');
+    const w=window.open('','_blank','width=900,height=1100'); if(!w) return;
+    w.document.write('<!doctype html><html><head><title>CMS-1500</title><style>@page{size:letter;margin:0}html,body{margin:0;padding:0;background:#fff}.page{position:relative;width:215.9mm;height:279.4mm;transform:translate('+off.x+'mm,'+off.y+'mm)}</style></head><body><div class="page">'+body+'</div><script>setTimeout(function(){window.print()},300)<\/script></body></html>');
+    w.document.close();
   };
   // ---- AI coder (autoCode.ts, Luis 11/7). Drafts wait at "ready" like any coded visit; a person still approves. ----
   const AI_AXIS={ problems:'Problems addressed', data:'Data reviewed', risk:'Risk of management' };
@@ -7376,6 +7496,8 @@ HARD RULES:
     const ack=c.ack_message?`<div class="text-[11px] text-[#6b7280] mt-1">${esc(c.ack_message)}</div>`:'';
     const err=c.error_message?`<div class="text-[11px] text-[#be123c] mt-1">${esc(c.error_message)}</div>`:'';
     const paid=c.paid_cents!=null?`<div class="text-[11px] text-[#0a7a3d] mt-1">Paid ${money(c.paid_cents)}</div>`:'';
+    const cid=c.id||c.claim_id||'';
+    const claimBtns=cid?`<div class="flex flex-wrap gap-2 mt-2"><button type="button" onclick="printCms1500('claim','${String(cid).replace(/'/g,"\\'")}')" class="px-2.5 py-1 rounded-lg border border-[#e6e9ee] text-[11px] font-semibold text-[#16201d]">Print CMS-1500</button>${claimAlreadySubmitted(c.status)?'':`<button type="button" onclick="refreshClaimFromPayer('${String(cid).replace(/'/g,"\\'")}')" class="px-2.5 py-1 rounded-lg border border-[#e6e9ee] text-[11px] font-semibold text-[#16201d]">Refresh from payer</button>`}</div>`:'';
     return `<div class="border border-[#e6e9ee] rounded-xl p-3">
       <div class="flex items-start justify-between gap-2">
         <div class="min-w-0">
@@ -7386,7 +7508,7 @@ HARD RULES:
           <span class="inline-block rounded-full px-2 py-0.5 text-[10px] font-bold" style="background:${st[0]};color:${st[1]}">${st[2]}</span>
           <div class="text-xs text-[#3d4a45] mt-1">${money(c.total_charge_cents)}</div>
         </div>
-      </div>${ack}${err}${paid}
+      </div>${ack}${err}${paid}${claimBtns}
     </div>`;
   }
   // Submitting is money. Confirm with the mode named out loud, so nobody sends a live claim thinking
@@ -7615,6 +7737,7 @@ HARD RULES:
       <div class="mt-2">${dx}</div>
       <div class="mt-1.5 border-t border-[#f1f3f7] pt-1.5">${lines}</div>
       <div class="flex items-center justify-between mt-2 pt-2 border-t border-[#f1f3f7]"><div class="text-[11px]">${acts}</div><div class="text-sm font-semibold">${money(s.total_cents)}</div></div>
+      <div class="flex flex-wrap gap-2 mt-2"><button type="button" onclick="printCms1500('superbill','${s.id}')" class="px-2.5 py-1 rounded-lg border border-[#e6e9ee] text-[11px] font-semibold text-[#16201d]">Print CMS-1500</button>${(s.claim_id&&!claimAlreadySubmitted(s.claim_status||s.status))?`<button type="button" onclick="refreshClaimFromPayer('${String(s.claim_id).replace(/'/g,"\\'")}')" class="px-2.5 py-1 rounded-lg border border-[#e6e9ee] text-[11px] font-semibold text-[#16201d]">Refresh from payer</button>`:''}</div>
     </div>`;
   }
   window.setSuperbillStatus=async function(id,status){
