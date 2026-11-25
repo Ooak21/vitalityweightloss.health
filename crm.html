@@ -405,6 +405,7 @@
       <label class="flex items-start gap-2 text-sm text-[#3d4a45] cursor-pointer mt-1"><input id="apLogin" type="checkbox" class="w-4 h-4 mt-0.5 accent-[#0a6cf5]"><span>Create a patient portal login <span class="text-[#9aa0ab]">(needs an email · generates a temporary password to hand over)</span></span></label>
       <div id="apRefRow" class="hidden rounded-xl border border-[#e6e9ee] p-3"><label class="text-xs text-[#6b7280] font-semibold">Referral or intake packet (optional)</label><div class="grid grid-cols-3 gap-2 mt-1"><select id="apRefType" class="field"><option value="referral">Referral</option><option value="intake_packet">Intake packet</option></select><input id="apRefFile" type="file" accept="application/pdf,image/*" class="field col-span-2 text-sm"></div><div class="text-[11px] text-[#9aa0ab] mt-1">Saved to the chart and listed in the referral queue under Documents to review.</div></div>
       <div id="apErr" class="text-sm text-rose-600 hidden"></div>
+      <div id="apShared" class="hidden rounded-xl border border-[#cfe0ff] bg-[#eef4ff] p-3 text-sm text-[#16201d]"></div>
     </div>
     <div class="p-5 border-t border-[#e6e9ee] flex justify-end gap-2 items-center shrink-0">
       <button onclick="closeAddPatient()" class="px-4 py-2 rounded-xl border border-[#e6e9ee] text-[#4b5563] text-sm hover:bg-[#f1f3f7]">Cancel</button>
@@ -5218,6 +5219,8 @@ HARD RULES:
     const rp=document.getElementById('apReferPractice'); if(rp) rp.value='';
     populateAddReferPicker();
     const err=document.getElementById('apErr'); err.classList.add('hidden'); err.textContent='';
+    { const sh=document.getElementById('apShared'); if(sh){ sh.classList.add('hidden'); sh.innerHTML=''; } window.__apAllowShared=false; }
+    { const sb=document.getElementById('apSave'); if(sb){ sb.disabled=false; sb.textContent='Add patient'; sb.classList.remove('hidden'); } }
     const m=document.getElementById('addModal'); m.classList.remove('hidden'); m.classList.add('flex');
     setTimeout(()=>document.getElementById('apFirst').focus(),40);
   };
@@ -7249,7 +7252,9 @@ HARD RULES:
     const ssnD=v('apSsn').replace(/\D/g,''); if(ssnD&&ssnD.length!==9){ err.textContent='An SSN is 9 digits.'; err.classList.remove('hidden'); return; }
     err.classList.add('hidden'); btn.disabled=true; btn.textContent='Adding…';
     const payload={ action:'add', first_name:first, last_name:last, email:v('apEmail'), phone:v('apPhone'), dob:v('apDob')||null, program:v('apProgram'), status:v('apStatus'), note:v('apNote'),
-      sex:v('apSex'), address_line1:v('apAddr1'), address_line2:v('apAddr2')||undefined, address_city:v('apCity'), address_state:v('apState').toUpperCase(), address_zip:v('apZip'), ssn:ssnD||undefined };
+      sex:v('apSex'), address_line1:v('apAddr1'), address_line2:v('apAddr2')||undefined, address_city:v('apCity'), address_state:v('apState').toUpperCase(), address_zip:v('apZip'), ssn:ssnD||undefined,
+      allow_shared_contact: window.__apAllowShared===true ? true : undefined };
+    { const sh=document.getElementById('apShared'); if(sh){ sh.classList.add('hidden'); sh.innerHTML=''; } btn.classList.remove('hidden'); }
     try{
       let r, j;
       if (USE_CONVEX) {
@@ -7259,10 +7264,40 @@ HARD RULES:
         r = await fetch(`${SB}/functions/v1/vit-crm-data`, { method:'POST', headers:{'content-type':'application/json','apikey':ANON,'authorization':`Bearer ${ANON}`}, body:JSON.stringify(payload) });
         j = await r.json();
       }
+      // Same phone or email as another patient, different name: staff choose a separate chart or the existing one.
+      if(j.shared_contact){
+        btn.disabled=false; btn.textContent='Add patient';
+        const sh=document.getElementById('apShared');
+        const nm=esc(j.shared_with_name||'another patient');
+        const loginNote=(j.shared_by==='email' && wantLogin) ? '<div class="text-[12px] text-[#6b7280] mt-1">A portal login needs its own email, so give this person their own email for a login.</div>' : '';
+        sh.innerHTML=`<div class="font-semibold">This ${j.shared_by==='email'?'email':'phone number'} is already on ${nm}'s chart.</div>
+          <div class="text-[#6b7280] mt-0.5">If this is a different person, such as a family member, create a separate chart.</div>${loginNote}
+          <div class="flex flex-wrap gap-2 mt-3">
+            <button id="apSharedNew" type="button" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8]">Create a separate chart</button>
+            <button id="apSharedOpen" type="button" class="px-4 py-2 rounded-xl border border-[#e6e9ee] bg-white text-[#16201d] text-sm hover:bg-[#f1f3f7]">Open ${nm}'s chart</button>
+          </div>`;
+        sh.classList.remove('hidden');
+        document.getElementById('apSharedNew').onclick=()=>{ window.__apAllowShared=true; saveAddPatient(); };
+        document.getElementById('apSharedOpen').onclick=()=>{ closeAddPatient(); select(j.shared_with_id); };
+        btn.classList.add('hidden');
+        const m=document.getElementById('addModal');
+        const back=(e)=>{ if(e && sh.contains(e.target)) return; sh.classList.add('hidden'); sh.innerHTML=''; window.__apAllowShared=false; btn.classList.remove('hidden'); m.removeEventListener('input',back,true); m.removeEventListener('change',back,true); };
+        m.addEventListener('input',back,true); m.addEventListener('change',back,true);
+        requestAnimationFrame(()=>document.getElementById('apSharedOpen')?.scrollIntoView({block:'nearest'}));
+        return;
+      }
       if(!j.ok){
         err.textContent=j.error||'Could not add patient.'; err.classList.remove('hidden');
         btn.disabled=false; btn.textContent='Add patient';
         if(j.existing_id){ closeAddPatient(); select(j.existing_id); }
+        return;
+      }
+      if(j.matched && j.existing_id){
+        btn.disabled=false; btn.textContent='Add patient';
+        closeAddPatient();
+        await loadData();
+        select(j.existing_id);
+        alert(`${j.matched_name||'This patient'} already has ${j.archived?'an archived':'a'} chart, so it was opened instead of adding a second one.`);
         return;
       }
       // referral attribution: tag the new patient with the chosen partner/doctor (if any)
