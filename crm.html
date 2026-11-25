@@ -869,21 +869,21 @@
             '<div class="text-xs text-[#6b7280] mt-1">CPT '+cpt+' · Dx '+dx+(x.prior_auth_number?' · auth '+besc(x.prior_auth_number):'')+'</div>'+who+'</div>'+
             '<div class="text-right"><div class="font-display text-lg font-semibold">'+cqMoney(x.total_charge_cents)+'</div>'+
             (x.ai_draft?'<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-violet-100 text-violet-800 mr-1">AI draft</span>':'')+
-            '<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full '+(approved?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800')+'">'+(approved?'Approved, not sent':'Needs review')+'</span></div>'+
+            '<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full '+(x.queue_status==='ready_for_billing'?'bg-sky-100 text-sky-800':(approved?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800'))+'">'+(x.queue_status==='ready_for_billing'?'Ready for Billing':(approved?'Approved, not sent':'Needs review'))+'</span></div>'+
           '</div>'+
           hold+(x.ai_draft?cqAiBlock(x.ai_draft):'')+'<div id="cq-'+x.superbill_id+'" class="text-xs mt-2"></div>'+
           '<div class="flex gap-2 justify-end mt-3">'+act+'</div>'+
         '</div>';
       };
       // Netty 10/29: a signed note lands here the moment it is signed. Code it (it then moves to review) or mark no bill.
-      const ncCard=(x)=>{
+      const ncCard=(x, pill)=>{
         const aging=(x.aging_days!=null)?'<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ml-2 bg-slate-100 text-slate-600">'+x.aging_days+'d</span>':'';
         return '<div class="bg-white rounded-2xl border border-[#e6e9ee] p-4 mb-2">'+
           '<div class="flex items-start justify-between gap-3 flex-wrap">'+
             '<div><div class="font-semibold text-[#16201d]">'+besc(x.patient)+'</div>'+
             '<div class="text-xs text-[#6b7280] mt-0.5">DOS '+besc(x.date_of_service||'—')+aging+' · '+besc((typeof NOTE_TYPE_LABELS!=='undefined'&&NOTE_TYPE_LABELS[x.encounter_type])||'Clinical note')+' · signed by '+besc(x.provider||'—')+'</div>'+
             '<div class="text-xs text-[#6b7280] mt-1">'+(x.suggested?'Note supports CPT '+besc(x.suggested)+' · ':'')+'Dx '+((x.diagnoses||[]).map(besc).join(', ')||'none on the note')+'</div></div>'+
-            '<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-sky-100 text-sky-800">Signed, needs coding</span>'+
+            '<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-sky-100 text-sky-800">'+(pill||'Signed, needs coding')+'</span>'+
           '</div>'+
           cqAiLine(x, aiOn)+
           '<div id="cqnb-'+x.note_id+'" class="text-xs mt-2"></div>'+
@@ -937,20 +937,58 @@
           '<div class="text-[11px] text-[#6b7280] mt-2">Fix the problem, void the coded visit on the chart, code it again and send it through review.</div>'+
           '<div class="flex gap-2 justify-end mt-3"><button onclick="cqOpenChart(\''+x.patient_id+'\')" class="px-3 py-1.5 rounded-xl bg-[#0a6cf5] text-white text-xs font-semibold hover:bg-[#0856c8]">Open chart</button></div></div>';
       };
+      const qSeen=[], qReady=[];
+      const qSeenKeys=new Set(), qReadyKeys=new Set();
+      const qKey=(x)=>String((x&&(x.superbill_id||x.note_id||x.visit_id||x.id))||'')+'|'+(x&&x.patient_id||'')+'|'+(x&&x.date_of_service||'');
+      function takeQ(arr){
+        const keep=[];
+        (arr||[]).forEach(x=>{
+          const st=x&&x.queue_status;
+          if(st==='seen_note_missing'){ const k=qKey(x); if(!qSeenKeys.has(k)){ qSeenKeys.add(k); qSeen.push(x); } }
+          else if(st==='ready_for_billing'){ const k=qKey(x); if(!qReadyKeys.has(k)){ qReadyKeys.add(k); qReady.push(x); } }
+          else keep.push(x);
+        });
+        return keep;
+      }
+      const ncK=takeQ(nc), cbK=takeQ(cb), stpK=takeQ(stp), rjK=takeQ(rj);
+      const readyK=takeQ(ready), apprK=takeQ(appr), spReadyK=takeQ(spReady), spApprK=takeQ(spAppr);
+      (j.seen_note_missing||[]).forEach(x=>{ const row=Object.assign({queue_status:'seen_note_missing'}, x); const k=qKey(row); if(!qSeenKeys.has(k)){ qSeenKeys.add(k); qSeen.push(row); } });
+      (j.ready_for_billing||[]).forEach(x=>{ const row=Object.assign({queue_status:'ready_for_billing'}, x); const k=qKey(row); if(!qReadyKeys.has(k)){ qReadyKeys.add(k); qReady.push(row); } });
+      const statusCard=(x, st)=>{
+        const label=st==='seen_note_missing'?'Client Seen, Note Not Written':'Ready for Billing';
+        const tone=st==='seen_note_missing'?'bg-amber-100 text-amber-800':'bg-sky-100 text-sky-800';
+        const aging=(x.aging_days!=null)?'<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ml-2 bg-slate-100 text-slate-600">'+x.aging_days+'d</span>':'';
+        const dos=x.date_of_service||'';
+        const who=x.provider||x.rendering_provider||x.signed_by||'';
+        const open=x.patient_id?'<div class="flex gap-2 justify-end mt-3"><button onclick="cqOpenChart(\''+x.patient_id+'\')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] text-xs font-semibold hover:bg-[#f1f3f7]">Open chart</button></div>':'';
+        return '<div class="bg-white rounded-2xl border border-[#e6e9ee] p-4 mb-2"><div class="flex items-start justify-between gap-3 flex-wrap">'+
+          '<div><div class="font-semibold text-[#16201d]">'+besc(x.patient||x.patient_name||'Patient')+'</div>'+
+          '<div class="text-xs text-[#6b7280] mt-0.5">'+(dos?('DOS '+besc(dos)+aging):'No date of service')+(who?' · '+besc(who):'')+(x.visit_status?' · '+besc(String(x.visit_status)):'')+'</div></div>'+
+          '<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full '+tone+'">'+label+'</span></div>'+open+'</div>';
+      };
+      const readyRow=(x)=>{
+        if(x.superbill_id && (x.lines||x.status||x.total_charge_cents!=null)) return card(Object.assign({}, x, {queue_status:'ready_for_billing'}));
+        if(x.note_id) return ncCard(x, 'Ready for Billing');
+        return statusCard(x, 'ready_for_billing');
+      };
+      const qHead=(label, n)=>'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-1 pb-1 px-1">'+label+' ('+n+')</div>';
+      const qEmpty='<div class="bg-white rounded-2xl p-3 mb-2 text-sm text-[#6b7280]">None right now.</div>';
       const testBanner=window.__claimsMode==='test'?'<div class="rounded-2xl p-3 mb-3 text-xs font-semibold bg-[#fff7ed] border border-[#ffd9a8] text-[#9a5a00]">TEST MODE: Send to payer goes to the Stedi sandbox. No payer receives it and nothing is billed.</div>':'';
       body.innerHTML=
         testBanner+
         '<div class="bg-white rounded-2xl p-3 mb-3 text-xs text-[#6b7280]">Nothing is transmitted automatically. A claim only goes to the payer when someone presses <b>Send to payer</b> here.</div>'+
-        (rj.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pb-1 px-1">Rejected, needs fixing ('+rj.length+')</div>'+rj.map(rjCard).join(''):'')+
-        (nc.length?'<div class="flex items-center justify-between gap-2 pb-1 px-1"><div class="text-[11px] font-semibold uppercase tracking-wide text-white/80">Signed, needs coding ('+nc.length+')</div>'+
+        qHead('Client Seen, Note Not Written', qSeen.length)+(qSeen.length?qSeen.map(x=>statusCard(x,'seen_note_missing')).join(''):qEmpty)+
+        qHead('Ready for Billing', qReady.length)+(qReady.length?qReady.map(readyRow).join(''):qEmpty)+
+        (rjK.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pb-1 px-1">Rejected, needs fixing ('+rjK.length+')</div>'+rjK.map(rjCard).join(''):'')+
+        (ncK.length?'<div class="flex items-center justify-between gap-2 pb-1 px-1"><div class="text-[11px] font-semibold uppercase tracking-wide text-white/80">Signed, needs coding ('+ncK.length+')</div>'+
           (aiOn&&aiTodo?'<button id="cqAiAll" onclick="cqAiBacklog()" class="px-3 py-1 rounded-xl bg-white text-[#5b21b6] text-xs font-semibold hover:bg-violet-50">Draft codes with AI ('+aiTodo+')</button>':'')+
-          '</div><div id="cqAiMsg"></div>'+nc.map(ncCard).join(''):'')+
-        (cb.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-3 pb-1 px-1">Signed by staff who can\'t bill ('+cb.length+')</div>'+cb.map(cbCard).join(''):'')+
-        (stp.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-3 pb-1 px-1">Sent to a provider ('+stp.length+')</div>'+stp.map(stpCard).join(''):'')+
-        (ready.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pb-1 px-1">Insurance · waiting on review ('+ready.length+')</div>'+ready.map(card).join(''):'')+
-        (appr.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-3 pb-1 px-1">Insurance · approved, ready to send ('+appr.length+')</div>'+appr.map(card).join(''):'')+
-        (spReady.length||spAppr.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-4 pb-1 px-1">Self-pay visits · coded for records, retro coverage, and reimbursement ('+(spReady.length+spAppr.length)+')</div>'+spReady.map(card).join('')+spAppr.map(card).join(''):'')+
-        ((!rj.length&&!nc.length&&!cb.length&&!stp.length&&!ready.length&&!appr.length&&!spReady.length&&!spAppr.length)?'<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Nothing waiting. 🎉</div>':'');
+          '</div><div id="cqAiMsg"></div>'+ncK.map(x=>ncCard(x)).join(''):'')+
+        (cbK.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-3 pb-1 px-1">Signed by staff who can\'t bill ('+cbK.length+')</div>'+cbK.map(cbCard).join(''):'')+
+        (stpK.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-3 pb-1 px-1">Sent to a provider ('+stpK.length+')</div>'+stpK.map(stpCard).join(''):'')+
+        (readyK.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pb-1 px-1">Insurance · waiting on review ('+readyK.length+')</div>'+readyK.map(card).join(''):'')+
+        (apprK.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-3 pb-1 px-1">Insurance · approved, ready to send ('+apprK.length+')</div>'+apprK.map(card).join(''):'')+
+        (spReadyK.length||spApprK.length?'<div class="text-[11px] font-semibold uppercase tracking-wide text-white/80 pt-4 pb-1 px-1">Self-pay visits · coded for records, retro coverage, and reimbursement ('+(spReadyK.length+spApprK.length)+')</div>'+spReadyK.map(card).join('')+spApprK.map(card).join(''):'')+
+        ((!rjK.length&&!ncK.length&&!cbK.length&&!stpK.length&&!readyK.length&&!apprK.length&&!spReadyK.length&&!spApprK.length&&!qSeen.length&&!qReady.length)?'<div class="bg-white rounded-2xl p-8 text-center text-[#6b7280]">Nothing waiting. 🎉</div>':'');
     }catch(e){ body.innerHTML='<div class="bg-white rounded-2xl p-8 text-center text-rose-600">Error: '+besc(e.message)+'</div>'; }
   }
   window.cqMsg=function(id,html){ const el=document.getElementById('cq-'+id); if(el) el.innerHTML=html; };
