@@ -2878,6 +2878,13 @@
               </div>
             </div>
             <div class="text-xs text-[#6b7280] mb-4">${PROG[p.program]||'-'} program · age ${age} · since ${fmtDate(p.created)}</div>
+            <div class="mb-4">
+              <label for="crmBoardStatus" class="text-[11px] font-semibold text-[#6b7280]">Board status</label>
+              <select id="crmBoardStatus" class="field mt-1" onchange="changeBoardStatus('${p.id}', this.value)">
+                ${PIPE.filter(s=>!s.archive).map(s=>`<option value="${s.k}" ${stageOf(p)===s.k?'selected':''}>${s.label}</option>`).join('')}
+              </select>
+              <div id="statusHist" data-pid="${p.id}" class="mt-2 text-xs text-[#6b7280]">Loading status history…</div>
+            </div>
             <div class="flex gap-2">
               <button onclick="focusNoteTab()" class="qa"><span class="ic">${ic('note')}</span>Note</button>
               <button onclick="openEmail()" class="qa"><span class="ic">${ic('email')}</span>Email</button>
@@ -2950,6 +2957,7 @@
       </div>`;
     setActTab('all');
     loadPatientTasks(p.id);
+    loadStatusHistory(p.id);
   }
 
   // ---- condensed record: activity model (filter tabs over the pieces we already have) ----
@@ -3436,6 +3444,23 @@
   ];
   let boardOpen = false;
   function stageOf(p){ return p.pipeline_stage || 'intake'; }
+  // Open Collection or Referral/Auth stays on the Active card as a badge. The page reads
+  // p.open_tracks (array of 'collection' | 'referral_auth') and does not draw a second card.
+  function openTracks(p){
+    const raw = p && (p.open_tracks || p.open_items);
+    const list = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+    return list.filter(k => k==='collection' || k==='referral_auth');
+  }
+  function trackLabel(k){ return k==='collection' ? 'Collection' : (k==='referral_auth' ? 'Referral/Auth' : (k||'')); }
+  function pipeLabel(k){ return (PIPE.find(s=>s.k===k)||{}).label || k || ''; }
+  let boardStatusFilter = 'all';
+  function cardMatchesBoardFilter(p){
+    if(boardStatusFilter==='all') return true;
+    if(stageOf(p)===boardStatusFilter) return true;
+    if(stageOf(p)==='active' && openTracks(p).includes(boardStatusFilter)) return true;
+    return false;
+  }
+  window.setBoardFilter = function(v){ boardStatusFilter = v || 'all'; renderBoard(); };
   // Archive column count, from the existing archived-records list. Refetched when 15s have passed
   // or the board's patient count changed (an archive or a restore), so search typing doesn't refetch.
   let archCount=null, _archAt=0, _archN=-1;
@@ -3476,6 +3501,7 @@
                   :            'bg-white border border-[#e6e9ee] hover:border-[#0a6cf5]/60';
     const badge = touched ? `<span class="text-[9px] font-bold uppercase tracking-wide text-[#92400e] bg-[#fde68a] rounded px-1 py-0.5" title="Opened by ${esc(p.touched_by)} but not moved">👁 ${esc(touchFirst)}</span>`
                 : isNew ? '<span class="text-[9px] font-bold uppercase tracking-wide text-white bg-[#0a7a3d] rounded px-1 py-0.5">New</span>' : '';
+    const trackHtml = (_stg==='active' ? openTracks(p) : []).map(k=>`<span class="text-[9px] font-bold uppercase tracking-wide rounded px-1 py-0.5" style="color:${k==='collection'?'#be123c':'#6d28d9'};background:${k==='collection'?'#ffe4e6':'#ede9fe'}" title="Open item. This card stays on Active.">${trackLabel(k)}</span>`).join('');
     const ageHtml = touched
       ? `<span class="text-[#92400e] font-semibold flex-shrink-0" title="Opened by ${esc(p.touched_by)}, not moved">👁 ${p.touched_at?rel(new Date(p.touched_at).toISOString()):'seen'}</span>`
       : isNew
@@ -3485,7 +3511,7 @@
     return `<div draggable="true" ondragstart="dragCard(event,'${p.id}')" onclick="openFromBoard('${p.id}')" onmouseenter="boardHoverShow(event,'${p.id}')" onmouseleave="boardHoverHide()" class="rounded-lg p-2.5 cursor-pointer hover:shadow-sm transition ${cardCls}">
       <div class="flex items-center justify-between gap-1">
         <div class="text-sm font-semibold text-[#16201d] truncate">${esc(nm)}</div>
-        <div class="flex items-center gap-1 flex-shrink-0">${badge}${ch?`<span title="${p.channel} inquiry">${ch}</span>`:''}</div>
+        <div class="flex items-center gap-1 flex-shrink-0">${badge}${trackHtml}${ch?`<span title="${p.channel} inquiry">${ch}</span>`:''}</div>
       </div>
       <div class="text-[11px] text-[#6b7280] mt-0.5 truncate">${PROG[p.program]||p.program||'No program'}${p.preferred_language==='Spanish'?' · Spanish':''}</div>
       <div class="flex items-center justify-between mt-1.5 text-[10px] gap-1">${na?`<span class="text-[#0a6cf5] truncate">📅 ${na}</span>`:'<span></span>'}${ageHtml}</div>
@@ -3495,10 +3521,17 @@
     if(section==='referrals') return renderReferralBoard();
     const pane=document.getElementById('boardPane'); if(!pane) return;
     const byStage={}; PIPE.forEach(s=>{ if(!s.archive) byStage[s.k]=[]; });
-    patients.forEach(p=>{ const k=stageOf(p); (byStage[k]||byStage['intake']).push(p); });
+    patients.forEach(p=>{ if(!cardMatchesBoardFilter(p)) return; const k=stageOf(p); (byStage[k]||byStage['intake']).push(p); });
     loadArchCount();
     Object.values(byStage).forEach(arr=>arr.sort((a,b)=>(a.last_activity||0)-(b.last_activity||0))); // stalest first
-    pane.innerHTML = `<div class="h-full flex gap-3 overflow-x-auto px-4 py-4">${PIPE.map(s=>{
+    const boardFilter = `<div class="px-4 pt-3 flex items-center gap-2 shrink-0">
+      <label for="boardStatusFilter" class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280]">Status</label>
+      <select id="boardStatusFilter" class="field w-auto text-sm" onchange="setBoardFilter(this.value)">
+        <option value="all" ${boardStatusFilter==='all'?'selected':''}>All statuses</option>
+        ${PIPE.filter(s=>!s.archive).map(s=>`<option value="${s.k}" ${boardStatusFilter===s.k?'selected':''}>${s.label}</option>`).join('')}
+      </select>
+    </div>`;
+    pane.innerHTML = `<div class="h-full flex flex-col">${boardFilter}<div class="flex-1 min-h-0 flex gap-3 overflow-x-auto px-4 py-3">${PIPE.map(s=>{
       if(s.archive) return `<div class="flex-shrink-0 w-60 flex flex-col h-full" ondragover="event.preventDefault()" ondrop="dropCard(event,'archive')">
         <div class="flex items-center justify-between mb-2 px-1">
           <span class="text-[11px] font-bold uppercase tracking-wide" style="color:${s.accent}">${s.label}</span>
@@ -3519,7 +3552,7 @@
         <div class="flex-1 space-y-2 overflow-y-auto rounded-xl border ${isInq?'border-[#ffd9a8]':'border-[#eef1f4]'} p-2" style="background:${s.tint}">
           ${cards.map(boardCard).join('')||'<div class="text-[11px] text-[#c0c5cd] text-center py-4">empty</div>'}
         </div>
-      </div>`;}).join('')}<div class="flex-shrink-0 w-32" aria-hidden="true"></div></div>`; // spacer: the last column (Active) clears the fixed Close board button when scrolled all the way right
+      </div>`;}).join('')}<div class="flex-shrink-0 w-32" aria-hidden="true"></div></div></div>`; // spacer: the last column (Active) clears the fixed Close board button when scrolled all the way right
   }
   let _dragId=null;
   window.dragCard=function(e,id){ _dragId=id; try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',id); }catch(_){} };
@@ -4252,6 +4285,47 @@
 
   // ---------------- actions ----------------
   // Persists to Convex (Ana 9/29: the change used to live only in the browser, so the next board load put it back).
+  // Board status from the CRM tab. Writes pipeline_stage through set_status. The clinical
+  // status dropdown (changeStatus) is separate and still posts the clinical key.
+  window.changeBoardStatus = async function(id, val){
+    const p=patients.find(x=>x.id===id); if(!p) return;
+    const old=stageOf(p); if(old===val) return;
+    const nm=`${p.first||''} ${p.last||''}`.trim()||'this record';
+    if(!confirm(`Change board status for ${nm}?\n\nFrom: ${pipeLabel(old)}\nTo: ${pipeLabel(val)}`)){ renderDetail(); return; }
+    const prev=p.pipeline_stage, prevTb=p.touched_by, prevTa=p.touched_at, prevNew=p.new_inquiry;
+    p.pipeline_stage=val; p.touched_by=null; p.touched_at=null; p.new_inquiry=false;
+    renderDetail(); if(boardOpen) renderBoard(); updateInquiryBadge();
+    try{
+      const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'set_status',patient_id:id,status:val})});
+      const j=await r.json().catch(()=>({})); if(!r.ok||!j||j.ok===false) throw new Error((j&&j.error)||('HTTP '+r.status));
+      loadStatusHistory(id);
+    }catch(e){
+      console.warn('set_status',e);
+      p.pipeline_stage=prev; p.touched_by=prevTb; p.touched_at=prevTa; p.new_inquiry=prevNew;
+      renderDetail(); if(boardOpen) renderBoard(); updateInquiryBadge();
+      alert('Board status not saved: '+e.message);
+    }
+  };
+  async function loadStatusHistory(id){
+    const box=document.getElementById('statusHist');
+    if(!box || box.dataset.pid!==id) return;
+    try{
+      const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'status_history',patient_id:id})});
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok||!j||j.ok===false) throw new Error((j&&j.error)||('HTTP '+r.status));
+      const rows=Array.isArray(j.history)?j.history:[];
+      if(!box.isConnected || box.dataset.pid!==id) return;
+      if(!rows.length){ box.innerHTML='<div class="text-[11px] text-[#9aa0ab]">No status changes yet.</div>'; return; }
+      box.innerHTML='<div class="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280] mb-1">Status history</div>'+rows.map(h=>{
+        const when=h.at?fmtDT(h.at):'';
+        const note=h.note?` · ${esc(h.note)}`:'';
+        return `<div class="py-1 border-t border-[#eef1f4]"><div class="text-[12px] text-[#16201d]">${esc(pipeLabel(h.from)||'None')} to ${esc(pipeLabel(h.to))}</div><div class="text-[11px] text-[#9aa0ab]">${esc(h.by||'')}${when?' · '+esc(when):''}${note}</div></div>`;
+      }).join('');
+    }catch(e){
+      console.warn('status_history',e);
+      if(box.isConnected && box.dataset.pid===id) box.innerHTML='<div class="text-[11px] text-[#9aa0ab]">Status history is not available yet.</div>';
+    }
+  }
   async function changeStatus(id,val){ const p=patients.find(x=>x.id===id); if(!p) return; const old=p.status; if(old===val) return;
     // Fred 10/30: the status dropdown used to save the moment it changed. Ask first, and put it back on cancel.
     const nm=`${p.first||''} ${p.last||''}`.trim()||'this record';
