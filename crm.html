@@ -4092,13 +4092,23 @@ ${skipNote ? '' : `          <div class="flex gap-2 mt-2 pt-3 border-t border-[#
     {k:'active',         label:'Active',          accent:'#0a7a3d', tint:'#f0fdf4'},
   ];
   let boardOpen = false;
-  function stageOf(p){ return p.pipeline_stage || 'intake'; }
-  // Open Collection or Referral/Auth stays on the Active card as a badge. The page reads
-  // p.open_tracks (array of 'collection' | 'referral_auth') and does not draw a second card.
+  const BOARD_LANES = new Set(['intake','verification','schedule','follow_up','referral_auth','provider_review','collection','active']);
+  function stageOf(p){
+    if (p && BOARD_LANES.has(p.lane)) return p.lane;
+    return (p && p.pipeline_stage) || 'intake';
+  }
+  // Open Collection or Referral/Auth stays on the Active card as a badge. The board
+  // payload uses lane plus badges. open_tracks and open_items remain as fallbacks.
   function openTracks(p){
-    const raw = p && (p.open_tracks || p.open_items);
+    const raw = p && (p.badges || p.open_tracks || p.open_items);
     const list = Array.isArray(raw) ? raw : (raw ? [raw] : []);
     return list.filter(k => k==='collection' || k==='referral_auth');
+  }
+  function applyBoardLane(p, stage){
+    const badge = (stage==='collection' || stage==='referral_auth') && (p.status==='active' || stageOf(p)==='active');
+    if (badge) { p.lane = 'active'; p.badges = [stage]; }
+    else { p.lane = stage; p.badges = []; p.pipeline_stage = stage; }
+    p.touched_by = null; p.touched_at = null; p.new_inquiry = false;
   }
   function trackLabel(k){ return k==='collection' ? 'Collection' : (k==='referral_auth' ? 'Referral/Auth' : (k||'')); }
   function pipeLabel(k){ return (PIPE.find(s=>s.k===k)||{}).label || k || ''; }
@@ -4222,10 +4232,10 @@ ${skipNote ? '' : `          <div class="flex gap-2 mt-2 pt-3 border-t border-[#
     const fromLbl=(PIPE.find(s=>s.k===stageOf(p))||{}).label||stageOf(p);
     const toLbl=(PIPE.find(s=>s.k===stage)||{}).label||stage;
     if(!confirm(`Move ${nm} on the board?\n\nFrom: ${fromLbl}\nTo: ${toLbl}`)) return;
-    const prev=p.pipeline_stage, prevTb=p.touched_by, prevTa=p.touched_at, prevNew=p.new_inquiry;
-    p.pipeline_stage=stage; p.touched_by=null; p.touched_at=null; p.new_inquiry=false; renderBoard(); updateInquiryBadge(); // optimistic (moving clears the yellow touched flag; a worked card is no longer a new inquiry)
+    const prev=p.pipeline_stage, prevLane=p.lane, prevBadges=p.badges, prevTb=p.touched_by, prevTa=p.touched_at, prevNew=p.new_inquiry;
+    applyBoardLane(p, stage); renderBoard(); updateInquiryBadge();
     try{ const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'set_stage',patient_id:id,stage})}); const j=await r.json(); if(!j.ok)throw new Error(j.error||'failed'); }
-    catch(err){ console.warn('set_stage',err); p.pipeline_stage=prev; p.touched_by=prevTb; p.touched_at=prevTa; p.new_inquiry=prevNew; renderBoard(); updateInquiryBadge(); alert('Could not move card'); }
+    catch(err){ console.warn('set_stage',err); p.pipeline_stage=prev; p.lane=prevLane; p.badges=prevBadges; p.touched_by=prevTb; p.touched_at=prevTa; p.new_inquiry=prevNew; renderBoard(); updateInquiryBadge(); alert('Could not move card'); }
   };
   window.openFromBoard=async function(id){
     boardOpen=false;
@@ -4941,8 +4951,8 @@ ${skipNote ? '' : `          <div class="flex gap-2 mt-2 pt-3 border-t border-[#
     const old=stageOf(p); if(old===val) return;
     const nm=`${p.first||''} ${p.last||''}`.trim()||'this record';
     if(!confirm(`Change board status for ${nm}?\n\nFrom: ${pipeLabel(old)}\nTo: ${pipeLabel(val)}`)){ renderDetail(); return; }
-    const prev=p.pipeline_stage, prevTb=p.touched_by, prevTa=p.touched_at, prevNew=p.new_inquiry;
-    p.pipeline_stage=val; p.touched_by=null; p.touched_at=null; p.new_inquiry=false;
+    const prev=p.pipeline_stage, prevLane=p.lane, prevBadges=p.badges, prevTb=p.touched_by, prevTa=p.touched_at, prevNew=p.new_inquiry;
+    applyBoardLane(p, val);
     renderDetail(); if(boardOpen) renderBoard(); updateInquiryBadge();
     try{
       const r=await fetch(CONVEX_URL+'/crm-data',{method:'POST',headers:await convexHeaders(),body:JSON.stringify({action:'set_status',patient_id:id,status:val})});
@@ -4950,7 +4960,7 @@ ${skipNote ? '' : `          <div class="flex gap-2 mt-2 pt-3 border-t border-[#
       loadStatusHistory(id);
     }catch(e){
       console.warn('set_status',e);
-      p.pipeline_stage=prev; p.touched_by=prevTb; p.touched_at=prevTa; p.new_inquiry=prevNew;
+      p.pipeline_stage=prev; p.lane=prevLane; p.badges=prevBadges; p.touched_by=prevTb; p.touched_at=prevTa; p.new_inquiry=prevNew;
       renderDetail(); if(boardOpen) renderBoard(); updateInquiryBadge();
       alert('Board status not saved: '+e.message);
     }
