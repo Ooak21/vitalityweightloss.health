@@ -1221,7 +1221,9 @@
   const CMS1500_POS={
     payer:[128,22], member:[128,36], name:[8,36], dob:[8,48], sex:[52,48],
     address:[8,60], city:[8,72], phone:[128,60], group:[128,84],
-    dx:[10,142], line:[8,168], total:[168,232], provider:[12,248], npi:[12,256]
+    dx:[10,142], line:[8,168], total:[168,232], provider:[12,248], npi:[12,256],
+    // Box 25 sits on the box 28 row; box 33 is the right-hand block under it. Fine-tune with the clinic offsets.
+    tin:[8,232], tinEin:[48,232], billPhone:[176,240], billName:[140,244], billAddr:[140,248], billCity:[140,252], billNpi:[140,256]
   };
   async function cmsOffsets(){
     if(window.__cms1500Offset) return window.__cms1500Offset;
@@ -1263,7 +1265,11 @@
     }
     const payerName=(cov&&cov.payer_name)||(row&&row.payer_name)||'';
     cmsPut(items, P.payer[0], P.payer[1], payerName);
-    cmsPut(items, P.member[0], P.member[1], (cov&&(cov.member_id_masked||cov.member_id))||(row&&row.member_id)||'');
+    // Box 1a needs the full member id. The chart only holds it masked, so reveal it (audited), as the 2Morrow print does.
+    let memberId=(cov&&(cov.member_id_masked||cov.member_id))||(row&&row.member_id)||'';
+    const insId=(cov&&cov.id)||(row&&row.insurance_id)||'';
+    if(insId){ const rev=await postBilling({action:'insurance_reveal',insurance_id:insId}).catch(()=>null); if(rev&&rev.ok&&rev.member_id) memberId=rev.member_id; }
+    cmsPut(items, P.member[0], P.member[1], memberId);
     cmsPut(items, P.group[0], P.group[1], (cov&&cov.group_number)||'');
     const dx=(row&&row.diagnoses)||[];
     dx.slice(0,12).forEach((d,i)=>{
@@ -1284,6 +1290,15 @@
     if(total!=null) cmsPut(items, P.total[0], P.total[1], money(total));
     cmsPut(items, P.provider[0], P.provider[1], (row&&(row.rendering_provider||row.provider))||'');
     cmsPut(items, P.npi[0], P.npi[1], (row&&row.rendering_npi)?('NPI '+(row.rendering_npi)):'');
+    // Box 25 (tax id) and box 33 (billing provider) from an audited lookup; entity lists never carry the full tax id.
+    const idj=await postBilling({action:'cms1500_identity'}).catch(()=>null);
+    if(!idj||!idj.ok){ alert('Could not load the billing tax id and address for this claim: '+((idj&&idj.error)||'unknown')); return; }
+    cmsPut(items, P.tin[0], P.tin[1], idj.ein||''); if(idj.ein) cmsPut(items, P.tinEin[0], P.tinEin[1], 'X');
+    cmsPut(items, P.billPhone[0], P.billPhone[1], idj.phone||'');
+    cmsPut(items, P.billName[0], P.billName[1], idj.legal_name||'');
+    cmsPut(items, P.billAddr[0], P.billAddr[1], [idj.address1, idj.address2].filter(Boolean).join(' '));
+    cmsPut(items, P.billCity[0], P.billCity[1], [idj.city, idj.state, idj.zip].filter(Boolean).join(' '));
+    cmsPut(items, P.billNpi[0], P.billNpi[1], idj.npi||'');
     const body=items.map(it=>'<div style="position:absolute;left:'+it.left+'mm;top:'+it.top+'mm;font:11px Courier,monospace;color:#111;white-space:nowrap">'+besc(it.text)+'</div>').join('');
     const w=window.open('','_blank','width=900,height=1100'); if(!w) return;
     w.document.write('<!doctype html><html><head><title>CMS-1500</title><style>@page{size:letter;margin:0}html,body{margin:0;padding:0;background:#fff}.page{position:relative;width:215.9mm;height:279.4mm;transform:translate('+off.x+'mm,'+off.y+'mm)}</style></head><body><div class="page">'+body+'</div><script>setTimeout(function(){window.print()},300)<\/script></body></html>');
