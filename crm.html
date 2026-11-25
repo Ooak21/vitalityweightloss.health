@@ -384,13 +384,13 @@
       <div class="grid grid-cols-2 gap-3">
         <div><label class="text-xs text-[#6b7280] font-semibold">Email</label><input id="apEmail" type="email" class="field mt-1" placeholder="jane@email.com"></div>
         <div><label class="text-xs text-[#6b7280] font-semibold">SSN <span class="font-normal text-[#9aa0ab]">(optional)</span></label><input id="apSsn" class="field mt-1" inputmode="numeric" maxlength="11" placeholder="###-##-####" autocomplete="off"></div>
-        <div><label class="text-xs text-[#6b7280] font-semibold">Sex *</label><select id="apSex" class="field mt-1"><option value="">Select</option><option value="F">Female</option><option value="M">Male</option></select></div>
+        <div><label class="text-xs text-[#6b7280] font-semibold">Sex *</label><select id="apSex" class="field mt-1"><option value="">Select</option><option value="F">Female</option><option value="M">Male</option><option value="U">Unknown</option></select></div>
       </div>
       <div><label class="text-xs text-[#6b7280] font-semibold">Street address *</label><input id="apAddr1" class="field mt-1" placeholder="123 Main St" autocomplete="off"></div>
       <div class="grid grid-cols-6 gap-3">
         <div class="col-span-2"><label class="text-xs text-[#6b7280] font-semibold">Apt / unit</label><input id="apAddr2" class="field mt-1" autocomplete="off"></div>
         <div class="col-span-2"><label class="text-xs text-[#6b7280] font-semibold">City *</label><input id="apCity" class="field mt-1" placeholder="Las Vegas" autocomplete="off"></div>
-        <div><label class="text-xs text-[#6b7280] font-semibold">State *</label><input id="apState" class="field mt-1" maxlength="2" value="NV" autocomplete="off"></div>
+        <div><label class="text-xs text-[#6b7280] font-semibold">State *</label><select id="apState" class="field mt-1"></select></div>
         <div><label class="text-xs text-[#6b7280] font-semibold">ZIP *</label><input id="apZip" class="field mt-1" inputmode="numeric" maxlength="10" autocomplete="off"></div>
       </div>
       <div class="grid grid-cols-2 gap-3">
@@ -1404,7 +1404,9 @@
   // Program labels. The async GLP-1 flow stores the specific drug code (sema/tirz/oral) in `program`,
   // and other funnels use medicare_glp1 / bloom / total_male — all were missing here, so those patients
   // rendered as "-". Keep every real program value mapped so the field shows what a patient is actually on.
-  const PROG = {glp1:'GLP-1',sema:'GLP-1 · Semaglutide',tirz:'GLP-1 · Tirzepatide',oral:'GLP-1 · Oral semaglutide',medicare_glp1:'Medicare GLP-1 Bridge',bloom:'Bloom · Hair loss',total_male:'Total Male · TRT',metabolic:'Metabolic',coaching:'Coaching',unsure:'Undecided'};
+  const PROG = {primary:'Primary',behavioral:'Behavioral',multiple:'Multiple',other:'Other',glp1:'GLP-1',sema:'GLP-1 · Semaglutide',tirz:'GLP-1 · Tirzepatide',oral:'GLP-1 · Oral semaglutide',medicare_glp1:'Medicare GLP-1 Bridge',bloom:'Bloom · Hair loss',total_male:'Total Male · TRT',metabolic:'Metabolic',coaching:'Coaching',unsure:'Undecided'};
+  const PROG_CHOICES = ['primary','behavioral','multiple','other'];
+  const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','AS','GU','MP','PR','VI'];
   const STAT = {lead:'New Inquiry',referral:'Referral',new_patient:'New Patient',active:'Active',inactive:'Inactive',rx_written:'Rx written',rx_declined:'Rx declined'};
   function isProvider(){
     const r = (window.__vca && window.__vca.role) || (window.__vitUser && window.__vitUser.app_metadata && window.__vitUser.app_metadata.role) || '';
@@ -2160,8 +2162,33 @@
   };
   function infoRow(p, field, label){
     if(field==='program'){
+      const cur=p.program||'';
+      const opts=PROG_CHOICES.map(k=>[k, PROG[k]||k]);
+      if(cur && !PROG_CHOICES.includes(cur)) opts.unshift([cur, PROG[cur]||cur]);
       return `<div class="flex items-center justify-between gap-3 px-4 py-2"><span class="text-xs text-[#6b7280]">${label}</span>
-        <select class="field w-auto py-1 text-sm" onchange="saveProgram('${p.id}',this)">${Object.entries(PROG).map(([k,v])=>`<option value="${k}" ${k===p.program?'selected':''}>${v}</option>`).join('')}</select></div>`;
+        <select class="field w-auto py-1 text-sm" onchange="saveProgram('${p.id}',this)">${opts.map(([k,v])=>`<option value="${esc(k)}" ${k===cur?'selected':''}>${esc(v)}</option>`).join('')}</select></div>`;
+    }
+    if(field==='sex'){
+      const cur=sexNorm(p.sex);
+      const extra=p.sex && !['M','F','U'].includes(cur)?`<option value="${esc(p.sex)}" selected>${esc(p.sex)}</option>`:'';
+      return `<div class="flex items-center justify-between gap-3 px-4 py-2"><span class="text-xs text-[#6b7280]">${label}</span>
+        <select class="field w-auto py-1 text-sm" onchange="saveSex('${p.id}',this)">
+          <option value="" ${!cur?'selected':''}>Select</option>
+          <option value="M" ${cur==='M'?'selected':''}>Male</option>
+          <option value="F" ${cur==='F'?'selected':''}>Female</option>
+          <option value="U" ${cur==='U'?'selected':''}>Unknown</option>
+          ${extra}
+        </select></div>`;
+    }
+    if(field==='address_state'){
+      const cur=String(p.address_state||'').trim().toUpperCase();
+      const extra=cur && !US_STATES.includes(cur)?`<option value="${esc(cur)}" selected>${esc(cur)}</option>`:'';
+      return `<div class="flex items-center justify-between gap-3 px-4 py-2"><span class="text-xs text-[#6b7280]">${label}</span>
+        <select class="field w-auto py-1 text-sm" title="2-letter state or territory code" onchange="saveState('${p.id}',this)">
+          <option value="" ${!cur?'selected':''}>Select</option>
+          ${US_STATES.map(s=>`<option value="${s}" ${s===cur?'selected':''}>${s}</option>`).join('')}
+          ${extra}
+        </select></div>`;
     }
     const v=p[field]; const disp=v?esc(field==='dob'?dobUS(v):String(v)):'<span class="text-[#9aa0ab] italic">add…</span>';
     return `<div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">${label}</span>
@@ -2226,6 +2253,26 @@
     const p=patients.find(x=>x.id===id); if(!p) return;
     if(!confirmChange(p,'Program',PROG[p.program]||p.program||'',PROG[sel.value]||sel.value)){ sel.value=p.program||''; return; }
     saveInfo(id,'program',sel.value);
+  };
+  function sexNorm(v){
+    const k=String(v||'').trim().toUpperCase();
+    if(k==='M'||k==='MALE') return 'M';
+    if(k==='F'||k==='FEMALE') return 'F';
+    if(k==='U'||k==='UNKNOWN') return 'U';
+    return k;
+  }
+  function sexLabel(v){ return {M:'Male',F:'Female',U:'Unknown'}[sexNorm(v)] || String(v||''); }
+  window.saveSex = function(id, sel){
+    const p=patients.find(x=>x.id===id); if(!p) return;
+    if(!confirmChange(p,'Sex', sexLabel(p.sex), sexLabel(sel.value))){ sel.value=sexNorm(p.sex)||''; return; }
+    saveInfo(id,'sex', sel.value);
+  };
+  window.saveState = function(id, sel){
+    const p=patients.find(x=>x.id===id); if(!p) return;
+    const next=String(sel.value||'').trim().toUpperCase();
+    if(next && !US_STATES.includes(next)){ alert('State must be a 2-letter code.'); sel.value=String(p.address_state||'').trim().toUpperCase(); return; }
+    if(!confirmChange(p,'State', String(p.address_state||'').toUpperCase(), next)){ sel.value=String(p.address_state||'').trim().toUpperCase(); return; }
+    saveInfo(id,'address_state', next);
   };
   window.saveInfo = async function(id,field,v){
     const p=patients.find(x=>x.id===id); if(!p)return; const was=p[field]; p[field]=v;
@@ -2642,8 +2689,8 @@
             <h2 id="patName" onclick="editName('${p.id}')" title="Click to edit name" class="font-display text-2xl font-semibold tracking-[-1px] cursor-text hover:bg-[#f4f6f8] rounded px-1 -ml-1 inline-block">${(`${p.first||''} ${p.last||''}`).trim()?`${p.first||''} ${p.last||''}`:'<span class="text-[#9aa0ab]">Add name</span>'}</h2>
             <div class="text-sm text-[#6b7280] mt-1">${patRefChip(p.id)} ${PROG[p.program]||'-'} program · age ${age} · patient since ${fmtDate(p.created)}</div>
           </div>
-          <select class="field w-auto" onchange="changeStatus('${p.id}',this.value)">
-            ${Object.entries(STAT).map(([k,v])=>`<option value="${k}" ${k===p.status?'selected':''}>${v}</option>`).join('')}
+          <select class="field w-auto" title="Board status" onchange="changeBoardStatus('${p.id}',this.value)">
+            ${PIPE.filter(s=>!s.archive).map(s=>`<option value="${s.k}" ${s.k===stageOf(p)?'selected':''}>${s.label}</option>`).join('')}
           </select>
         </div>
 
@@ -5322,7 +5369,7 @@ HARD RULES:
   };
   window.openAddPatient = function(){
     ['apFirst','apLast','apPhone','apDob','apEmail','apNote','apSex','apAddr1','apAddr2','apCity','apZip','apSsn'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
-    { const st=document.getElementById('apState'); if(st) st.value='NV'; }
+    { const st=document.getElementById('apState'); if(st){ if(st.options.length<US_STATES.length) st.innerHTML=US_STATES.map(s=>`<option value="${s}">${s}</option>`).join(''); st.value='NV'; } }
     document.getElementById('apProgram').value='glp1';
     document.getElementById('apStatus').value='lead';
     document.getElementById('apRefRow')?.classList.add('hidden'); { const rf=document.getElementById('apRefFile'); if(rf) rf.value=''; const h=document.querySelector('#addModal h3'); if(h) h.textContent='Add patient'; }
