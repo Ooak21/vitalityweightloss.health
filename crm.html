@@ -2678,43 +2678,11 @@
       </div>`;
   }
 
-  function renderProviderView(p){
-    const age = ageOf(p.dob) ?? '-';
-    const tlHtml = (()=>{ try { return timeline(p); } catch(e){ console.error('provider timeline failed', e); return '<div class="text-xs text-[#be123c]">Timeline unavailable.</div>'; } })();
-    try {
-    $('#detailMain').innerHTML = `
-      <div class="p-6 max-w-3xl">
-        <div class="flex items-start justify-between gap-4 mb-6">
-          <div>
-            <h2 id="patName" onclick="editName('${p.id}')" title="Click to edit name" class="font-display text-2xl font-semibold tracking-[-1px] cursor-text hover:bg-[#f4f6f8] rounded px-1 -ml-1 inline-block">${(`${p.first||''} ${p.last||''}`).trim()?`${p.first||''} ${p.last||''}`:'<span class="text-[#9aa0ab]">Add name</span>'}</h2>
-            <div class="text-sm text-[#6b7280] mt-1">${patRefChip(p.id)} ${PROG[p.program]||'-'} program · age ${age} · patient since ${fmtDate(p.created)}</div>
-          </div>
-          <select class="field w-auto" title="Board status" onchange="changeBoardStatus('${p.id}',this.value)">
-            ${PIPE.filter(s=>!s.archive).map(s=>`<option value="${s.k}" ${s.k===stageOf(p)?'selected':''}>${s.label}</option>`).join('')}
-          </select>
-        </div>
-
-        ${minorBanner(p)}
-        <div class="border border-[#e6e9ee] rounded-2xl mb-6 divide-y divide-[#eef1f4]">
-          ${infoRow(p,'email','Email')}
-          ${infoRow(p,'phone','Phone')}
-          ${prefSelect(p,'preferred_language','Preferred language')}
-          ${prefSelect(p,'preferred_contact','Preferred contact')}
-          ${infoRow(p,'dob','Date of birth')}
-          ${ssnRow(p)}
-          ${ledgerRow(p)}
-          ${infoRow(p,'sex','Sex')}
-          ${infoRow(p,'program','Program')}
-          ${infoRow(p,'address_line1','Address')}
-          ${infoRow(p,'address_line2','Apt / unit')}
-          ${infoRow(p,'address_city','City')}
-          ${infoRow(p,'address_state','State')}
-          ${infoRow(p,'address_zip','ZIP')}
-        </div>
-        <div class="border border-[#e6e9ee] rounded-2xl mb-6 divide-y divide-[#eef1f4]">
-          ${contactRows(p)}
-        </div>
-
+  function providerLowerHtml(p, tlHtml, skipNote){
+    const emailCls = skipNote
+      ? 'px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]'
+      : 'px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8]';
+    return `
         ${p.medicare_bridge ? `<div class="mb-6">${medicareBridgeCard(p)}</div>` : ''}
 
         ${p.review&&p.review.length ? `
@@ -2750,7 +2718,7 @@
           <div>
             <div class="text-[10px] font-semibold tracking-[.14em] text-[#9aa0ab] uppercase mb-1.5">Communicate</div>
             <div class="flex gap-2 flex-wrap">
-              <button onclick="openEmail()" class="px-4 py-2.5 rounded-xl bg-[#0a6cf5] text-white font-semibold text-sm hover:bg-[#0856c8]">✉ Send branded email</button>
+              <button onclick="openEmail()" class="${emailCls}">${skipNote?'':'✉ '}Send branded email</button>
               <button onclick="bookAppt('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]">+ Book appointment</button>
               <button onclick="videoVisitNow('${p.id}')" class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#16201d] font-semibold text-sm hover:bg-[#f1f3f7]" title="Start a video visit now, or book one for later with type Video visit">🎥 Video visit</button>
               <button onclick="portalLogin('${p.id}',${!!p.has_login})" ${p.email?'':'title="Add an email first"'} class="px-4 py-2.5 rounded-xl border border-[#e6e9ee] text-[#3d4a45] font-semibold text-sm hover:bg-[#f1f3f7]">🔑 ${p.has_login?'Reset portal password':'Create portal login'}</button>
@@ -2891,11 +2859,51 @@
         <div class="glass border border-[#e6e9ee] rounded-2xl p-5">
           <div class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase mb-4">Chart timeline</div>
           <div class="overflow-y-auto scroll -mr-2 pr-2" style="max-height:420px">${tlHtml}</div>
-          <div class="flex gap-2 mt-2 pt-3 border-t border-[#e6e9ee]">
+${skipNote ? '' : `          <div class="flex gap-2 mt-2 pt-3 border-t border-[#e6e9ee]">
             <textarea id="noteInput" data-grow rows="1" class="field resize-none" placeholder="Add a note to the chart… (Shift+Enter for a new line)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addNote('${p.id}')}"></textarea>
             <button onclick="addNote('${p.id}')" class="px-4 py-2 rounded-lg bg-[#f1f3f7] border border-[#e6e9ee] text-sm font-medium hover:border-[#0a6cf5]/40">Add</button>
-          </div>
+          </div>`}
         </div>
+    `;
+  }
+  function renderProviderView(p){
+    const age = ageOf(p.dob) ?? '-';
+    const tlHtml = (()=>{ try { return timeline(p); } catch(e){ console.error('provider timeline failed', e); return '<div class="text-xs text-[#be123c]">Timeline unavailable.</div>'; } })();
+    try {
+    $('#detailMain').innerHTML = `
+      <div class="p-6 max-w-3xl">
+        <div class="flex items-start justify-between gap-4 mb-6">
+          <div>
+            <h2 id="patName" onclick="editName('${p.id}')" title="Click to edit name" class="font-display text-2xl font-semibold tracking-[-1px] cursor-text hover:bg-[#f4f6f8] rounded px-1 -ml-1 inline-block">${(`${p.first||''} ${p.last||''}`).trim()?`${p.first||''} ${p.last||''}`:'<span class="text-[#9aa0ab]">Add name</span>'}</h2>
+            <div class="text-sm text-[#6b7280] mt-1">${patRefChip(p.id)} ${PROG[p.program]||'-'} program · age ${age} · patient since ${fmtDate(p.created)}</div>
+          </div>
+          <select class="field w-auto" title="Board status" onchange="changeBoardStatus('${p.id}',this.value)">
+            ${PIPE.filter(s=>!s.archive).map(s=>`<option value="${s.k}" ${s.k===stageOf(p)?'selected':''}>${s.label}</option>`).join('')}
+          </select>
+        </div>
+
+        ${minorBanner(p)}
+        <div class="border border-[#e6e9ee] rounded-2xl mb-6 divide-y divide-[#eef1f4]">
+          ${infoRow(p,'dob','Date of birth')}
+          ${ssnRow(p)}
+          ${infoRow(p,'sex','Sex')}
+          ${infoRow(p,'phone','Phone')}
+          ${infoRow(p,'email','Email')}
+          ${prefSelect(p,'preferred_language','Preferred language')}
+          ${prefSelect(p,'preferred_contact','Preferred contact')}
+          ${infoRow(p,'address_line1','Address')}
+          ${infoRow(p,'address_line2','Apt / unit')}
+          ${infoRow(p,'address_city','City')}
+          ${infoRow(p,'address_state','State')}
+          ${infoRow(p,'address_zip','ZIP')}
+          ${ledgerRow(p)}
+          ${infoRow(p,'program','Program')}
+        </div>
+        <div class="border border-[#e6e9ee] rounded-2xl mb-6 divide-y divide-[#eef1f4]">
+          ${contactRows(p)}
+        </div>
+
+        ${providerLowerHtml(p, tlHtml)}
       </div>`;
     } catch(e){
       // Never leave the provider view blank: fall back to identity + the Medicare Bridge card so the
@@ -2936,6 +2944,8 @@
     call:    '<path d="M6.4 3.6c.5 0 .95.3 1.15.77l1.1 2.6a1.25 1.25 0 0 1-.28 1.4L7.1 9.65a12.5 12.5 0 0 0 5.6 5.6l1.28-1.27a1.25 1.25 0 0 1 1.4-.28l2.6 1.1c.47.2.77.65.77 1.15v2.3a1.5 1.5 0 0 1-1.62 1.5A15.5 15.5 0 0 1 3.62 5.2 1.5 1.5 0 0 1 5.1 3.6Z"/>',
     bill:    '<rect x="3" y="6" width="18" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.4"/><path d="M6.5 9.5v5M17.5 9.5v5"/>',
     task:    '<rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><path d="m7.8 12 2.8 2.8 5.6-6"/>',
+    flag:    '<path d="M5 21V3.5"/><path d="M5 4.5h11l-2 3.2 2 3.3H5"/>',
+    status:  '<circle cx="12" cy="12" r="8"/><path d="M12 8v4.2l2.6 1.6"/>',
     meet:    '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>',
     mobile:  '<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>',
     headset: '<path d="M4 13.5v-1.5a8 8 0 0 1 16 0v1.5"/><rect x="3" y="13" width="4" height="6.5" rx="1.8"/><rect x="17" y="13" width="4" height="6.5" rx="1.8"/>',
@@ -2946,10 +2956,12 @@
   function renderCrmView(p){
     const age = ageOf(p.dob) ?? '-';
     const initials = (((p.first||'')[0]||'?')+((p.last||'')[0]||'')).toUpperCase();
-    const telHref = p.phone ? 'tel:'+String(p.phone).replace(/[^0-9+]/g,'') : '';
+    const bal = p.balance_cents||0;
+    const crmTl = (()=>{ try { return timeline(p); } catch(e){ return '<div class="text-xs text-[#be123c]">Timeline unavailable.</div>'; } })();
     window.__crmP = p; window.__actFilter = 'all'; window.__crmTasks = null; window.__crmEmails = null;
     const c = actCounts(p);
     $('#detailMain').innerHTML = `
+      <div>
       <div class="crm3 p-5">
         <!-- LEFT: identity -->
         <div class="flex flex-col gap-4">
@@ -2969,15 +2981,11 @@
               </select>
               <div id="statusHist" data-pid="${p.id}" class="mt-2 text-xs text-[#6b7280]">Loading status history…</div>
             </div>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
               <button onclick="focusNoteTab()" class="qa"><span class="ic">${ic('note')}</span>Note</button>
-              <button onclick="openEmail()" class="qa"><span class="ic">${ic('email')}</span>Email</button>
-              ${telHref
-                ? `<a href="${telHref}" class="qa" style="text-decoration:none" title="Call ${p.phone}"><span class="ic">${ic('call')}</span>Call</a>`
-                : `<button onclick="alert('No phone number on file for this patient.')" class="qa"><span class="ic">${ic('call')}</span>Call</button>`}
+              <button onclick="openCrmFlag('${p.id}')" class="qa"><span class="ic">${ic('flag')}</span>Flag</button>
               <button onclick="addTask('${p.id}')" class="qa"><span class="ic">${ic('task')}</span>Task</button>
-              <button onclick="bookAppt('${p.id}')" class="qa"><span class="ic">${ic('meet')}</span>Meet</button>
-              <button onclick="sendToBilling('${p.id}')" class="qa" title="Hand this account to Billing once demographics and insurance are verified and the client agreed to the financial plan"><span class="ic">${ic('bill')}</span>Billing</button>
+              <button onclick="focusBoardStatus()" class="qa"><span class="ic">${ic('status')}</span>Status</button>
             </div>
           </div>
           <div class="glass rounded-2xl overflow-hidden">
@@ -2985,13 +2993,19 @@
               <span class="text-xs font-semibold tracking-[.12em] text-[#0a6cf5] uppercase">Key information</span><span class="text-[#9aa0ab] text-sm">▾</span>
             </div>
             <div class="divide-y divide-[#eef1f4]">
-              ${infoRow(p,'email','Email')}
+              ${infoRow(p,'dob','Date of birth')}
+              ${ssnRow(p)}
+              ${infoRow(p,'sex','Sex')}
               ${infoRow(p,'phone','Phone')}
+              ${infoRow(p,'email','Email')}
               ${prefSelect(p,'preferred_language','Preferred language')}
               ${prefSelect(p,'preferred_contact','Preferred contact')}
-              ${infoRow(p,'dob','Date of birth')}
-          ${ssnRow(p)}
-          ${ledgerRow(p)}
+              ${infoRow(p,'address_line1','Address')}
+              ${infoRow(p,'address_line2','Apt / unit')}
+              ${infoRow(p,'address_city','City')}
+              ${infoRow(p,'address_state','State')}
+              ${infoRow(p,'address_zip','ZIP')}
+              ${ledgerRow(p)}
               ${infoRow(p,'program','Program')}
               <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Referred by</span><span class="text-sm cursor-pointer hover:bg-[#f4f6f8] rounded px-1.5 py-0.5 -mr-1 ${p.referred_by?'text-[#0a6cf5] font-medium':'text-[#9aa0ab] italic'}" title="Click to set the referral source" onclick="openReferPicker('${p.id}')">${p.referred_by?esc(p.referred_by.practice_name+(p.referred_by.provider_name?' · '+p.referred_by.provider_name:'')):'set referral source…'}</span></div>
               <div class="flex items-center justify-between gap-3 px-4 py-2.5"><span class="text-xs text-[#6b7280]">Portal login</span><span class="text-sm ${p.has_login?'text-[#0a7a3d]':(p.has_thrive?'text-[#b9760a]':'text-[#9aa0ab]')}">${p.has_login?'Active':(p.has_thrive?'Thrive QR only':'Not set up')}</span></div>
@@ -3030,19 +3044,46 @@
 
         <!-- RIGHT: associations -->
         <div class="flex flex-col gap-4">
-          ${medicareBridgeCard(p)}
-          <div class="glass rounded-2xl p-4"><div class="sect-h flex items-center gap-1.5"><img src="assets/deck-icons/billing.svg" alt="" style="width:15px;height:15px;opacity:.85">Subscription &amp; billing</div><div class="text-sm ${p.subscription?'':'text-[#9aa0ab]'}">${p.subscription?`<span class="font-display text-lg font-semibold">$${((p.subscription.recurring_cents||0)/100).toFixed(0)}</span><span class="text-[#6b7280]">/mo</span> · <span class="badge b-active">${p.subscription.status||'active'}</span>${p.subscription.next_bill_at?`<div class="text-xs text-[#6b7280] mt-1">Next bill ${new Date(p.subscription.next_bill_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}${p.subscription.cycles_billed!=null?` · ${p.subscription.cycles_billed} cycle${p.subscription.cycles_billed===1?'':'s'} billed`:''}${p.subscription.fail_count?` · <span style="color:#b91c1c">${p.subscription.fail_count} failed</span>`:''}</div>`:''}`:'No subscription on file'}</div>${p.coupon?`<div class="text-xs mt-2"><span class="badge" style="background:#fef3c7;color:#92400e">🎟 ${esc(p.coupon.label||p.coupon.code)}</span> <span class="text-[#6b7280]">${p.coupon.comped?'comped · full package, no charge':'discount applied'}</span></div>`:''}</div>
-          <div class="glass rounded-2xl p-4"><div class="sect-h flex items-center gap-1.5"><img src="assets/deck-icons/glp1.svg" alt="" style="width:15px;height:15px;opacity:.85">Program</div><div class="text-sm font-medium">${PROG[p.program]||'Not set'}</div></div>
-          <div class="glass rounded-2xl p-4"><div class="flex items-center justify-between"><span class="sect-h" style="margin:0">Consents</span><button onclick="openConsents()" class="text-xs text-[#0a6cf5] font-semibold hover:underline">View and print</button></div><div class="text-xs text-[#6b7280] mt-1.5">Intake e-signatures, check-in disclosures, waivers and recording consent.</div></div>
-          <div class="glass rounded-2xl p-4"><div class="sect-h">Referral source</div>${p.referred_by?`<div class="text-sm font-medium text-[#0a6cf5]">${esc(p.referred_by.practice_name)}</div>${p.referred_by.provider_name?`<div class="text-xs text-[#6b7280] mt-1">${esc(p.referred_by.provider_name)}</div>`:''}`:'<div class="text-sm text-[#9aa0ab]">None set</div>'}</div>
-          <div class="glass rounded-2xl p-4"><div class="sect-h flex items-center gap-1.5">🩺 Primary care doctor</div>${p.pcp&&(p.pcp.name||p.pcp.practice||p.pcp.phone)?`<div class="text-sm font-medium">${esc(p.pcp.name||'(name not given)')}</div>${p.pcp.practice?`<div class="text-xs text-[#6b7280] mt-0.5">${esc(p.pcp.practice)}</div>`:''}${p.pcp.phone?`<div class="text-xs text-[#6b7280] mt-0.5">${esc(p.pcp.phone)}</div>`:''}<button onclick="pcpLetter('${p.id}')" class="mt-2 text-xs font-semibold text-[#0a6cf5] hover:underline">🖨 Print update letter</button>`:'<div class="text-sm text-[#9aa0ab]">Not provided</div>'}</div>
+          <div class="glass rounded-2xl p-4">
+            <div class="sect-h">Balance</div>
+            <div class="flex items-center justify-between gap-2 mt-1">
+              <span class="font-display text-lg font-semibold ${bal>0?'text-[#be123c]':'text-[#16201d]'}">${$$m(bal)}</span>
+              <button onclick="openLedger('${p.id}')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-xs font-semibold text-[#16201d] hover:bg-[#f1f3f7]">Payments</button>
+            </div>
+            ${p.billing_intent==='self_pay'?'<div class="text-[11px] text-amber-800 mt-1">Cash pay</div>':''}
+          </div>
+          <div class="glass rounded-2xl p-4"><div class="sect-h">Program</div><div class="text-sm font-medium">${PROG[p.program]||'Not set'}</div></div>
           <div class="glass rounded-2xl p-4"><div class="flex items-center justify-between mb-2"><span class="sect-h" style="margin:0">Open tasks</span><button onclick="addTask('${p.id}')" class="text-xs text-[#0a6cf5] font-semibold hover:underline">+ Add</button></div><div id="rightTasks" class="space-y-2 text-sm text-[#9aa0ab]">Loading…</div></div>
+          <div class="glass rounded-2xl p-4"><div class="sect-h">Primary care provider</div>${p.pcp&&(p.pcp.name||p.pcp.practice||p.pcp.phone)?`<div class="text-sm font-medium">${esc(p.pcp.name||'(name not given)')}</div>${p.pcp.practice?`<div class="text-xs text-[#6b7280] mt-0.5">${esc(p.pcp.practice)}</div>`:''}${p.pcp.phone?`<div class="text-xs text-[#6b7280] mt-0.5">${esc(p.pcp.phone)}</div>`:''}<button onclick="pcpLetter('${p.id}')" class="mt-2 text-xs font-semibold text-[#0a6cf5] hover:underline">Print update letter</button>`:'<div class="text-sm text-[#9aa0ab]">Not provided</div>'}</div>
+          <div class="glass rounded-2xl p-4"><div class="sect-h">Referral source</div>${p.referred_by?`<div class="text-sm font-medium text-[#0a6cf5]">${esc(p.referred_by.practice_name)}</div>${p.referred_by.provider_name?`<div class="text-xs text-[#6b7280] mt-1">${esc(p.referred_by.provider_name)}</div>`:''}<button onclick="openReferPicker('${p.id}')" class="mt-2 text-xs font-semibold text-[#0a6cf5] hover:underline">Change</button>`:`<div class="text-sm text-[#9aa0ab]">None set</div><button onclick="openReferPicker('${p.id}')" class="mt-2 text-xs font-semibold text-[#0a6cf5] hover:underline">Set referral source</button>`}</div>
+          <div class="glass rounded-2xl p-4">
+            <div class="sect-h">Consents</div>
+            <div id="crmConsentList" class="text-xs text-[#6b7280] mt-1.5">Intake e-signatures, check-in disclosures, waivers and recording consent.</div>
+            <div class="flex flex-wrap gap-2 mt-3">
+              <button onclick="crmConsentView('${p.id}')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-xs font-semibold text-[#16201d] hover:bg-[#f1f3f7]">View</button>
+              <button onclick="crmConsentPrint('${p.id}')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-xs font-semibold text-[#16201d] hover:bg-[#f1f3f7]">Print</button>
+              <button onclick="crmConsentAdd('${p.id}')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-xs font-semibold text-[#16201d] hover:bg-[#f1f3f7]">Add</button>
+              <button onclick="crmConsentSend('${p.id}')" class="px-3 py-1.5 rounded-xl border border-[#e6e9ee] text-xs font-semibold text-[#16201d] hover:bg-[#f1f3f7]">Send</button>
+            </div>
+          </div>
         </div>
+      </div>
+      <div class="px-5 pb-8">${providerLowerHtml(p, crmTl, true)}</div>
       </div>`;
     setActTab('all');
     loadPatientTasks(p.id);
     loadStatusHistory(p.id);
+    if (isProvider()) loadClinicalReview(p.id);
+    if (p.wearable && p.wearable.summary) loadCheckpointNarrative(p.id);
+    loadChartLists(p.id);
+    loadChartNotes(p.id);
+    loadChartDocs(p.id);
+    loadChartBilling(p.id);
+    loadChartConsents(p.id);
+    crmConsentView(p.id);
   }
+  window.focusBoardStatus = function(){ const s=document.getElementById('crmBoardStatus'); if(s){ s.focus(); try{ s.scrollIntoView({block:'nearest'}); }catch(e){} } };
+  window.openCrmFlag = function(pid){ openChartAlerts(pid); };
 
   // ---- condensed record: activity model (filter tabs over the pieces we already have) ----
   function actItems(p){
@@ -6567,6 +6608,63 @@ HARD RULES:
     </div>`;
   }
   // Patient header "Consents" button: the chart (Provider view, open to every staff role) on its Consents tab.
+  window.crmConsentView = async function(pid){
+    const box=document.getElementById('crmConsentList');
+    if(box) box.textContent='Loading consents.';
+    let j; try{ j=await postDocs({action:'consents', patient_id:pid}); }catch(e){ j={ok:false, error:'Could not load consents.'}; }
+    if(selId!==pid) return;
+    if(!j||j.ok===false){ if(box) box.textContent=(j&&j.error)||'Could not load consents.'; return; }
+    window.__chartConsents=j;
+    const recs=j.records||[];
+    if(!box) return;
+    box.innerHTML=recs.length
+      ? recs.map((r,i)=>`<div class="flex items-center justify-between gap-2 py-1 border-b border-[#f1f3f7] last:border-0"><span class="text-[#16201d]">${esc(r.title||'Consent')}</span><button type="button" onclick="printConsents(${i})" class="text-[11px] font-semibold text-[#0a6cf5] hover:underline shrink-0">Print</button></div>`).join('')
+      : '<span class="text-[#9aa0ab]">No consents on file.</span>';
+  };
+  window.crmConsentPrint = async function(pid){
+    await crmConsentView(pid);
+    printConsents('all');
+  };
+  window.crmPrintWaiver = async function(){
+    await loadFacilityWaiver();
+    const html=window.FACILITY_WAIVER_HTML;
+    if(!html){ alert('The facility waiver template is not available.'); return; }
+    let holder=document.getElementById('consentPrintBody');
+    if(!holder){ holder=document.createElement('div'); holder.id='consentPrintBody'; holder.style.display='none'; document.body.appendChild(holder); }
+    holder.innerHTML='<h2 style="font-size:16px;margin:0 0 8px">Facility waiver</h2>'+html;
+    window.__printEl('consentPrintBody', 'Facility waiver');
+  };
+  window.crmConsentAdd = function(pid){
+    const body=`<div class="text-sm text-[#3d4a45]">Add a signed consent to this chart. Upload the signed file, or print the facility waiver for the patient to sign.</div>
+      <label class="block text-xs font-semibold text-[#3d4a45] mt-3">Signed consent file<input id="conFile" type="file" accept="application/pdf,image/*" class="field mt-1 block w-full text-sm"></label>
+      <label class="block text-xs font-semibold text-[#3d4a45] mt-2">Note (optional)<input id="conNote" class="field mt-1 block w-full" placeholder="Facility waiver, signed in clinic"></label>
+      <div id="conErr" class="text-sm text-rose-600 hidden mt-2"></div>`;
+    const footer=`<button onclick="crmPrintWaiver()" class="mr-auto px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm">Print blank waiver</button><button onclick="document.getElementById('listOverlay').remove()" class="px-3 py-2 rounded-xl border border-[#e6e9ee] text-sm">Cancel</button><button id="conUp" onclick="crmConsentUpload('${pid}')" class="px-4 py-2 rounded-xl bg-[#0a6cf5] text-white text-sm font-semibold">Upload consent</button>`;
+    listModalShell('Add consent', body, footer);
+  };
+  window.crmConsentUpload = async function(pid){
+    const fileEl=document.getElementById('conFile');
+    const f=fileEl&&fileEl.files&&fileEl.files[0];
+    const err=document.getElementById('conErr');
+    if(!f){ if(err){ err.textContent='Choose the signed consent file.'; err.classList.remove('hidden'); } return; }
+    const btn=document.getElementById('conUp'); if(btn){ btn.disabled=true; btn.textContent='Uploading…'; }
+    try{
+      const note=(document.getElementById('conNote').value||'').trim();
+      await uploadChartFile(pid, f, 'consent', note||undefined);
+      document.getElementById('listOverlay')?.remove();
+      if(document.getElementById('chartConsentsPanel')) loadChartConsents(pid);
+      crmConsentView(pid);
+    }catch(e){
+      if(err){ err.textContent=(e&&e.message)||'Could not upload.'; err.classList.remove('hidden'); }
+      if(btn){ btn.disabled=false; btn.textContent='Upload consent'; }
+    }
+  };
+  window.crmConsentSend = function(pid){
+    const p=patients.find(x=>x.id===pid);
+    if(!p||!p.email){ alert('Add an email on the chart before sending.'); return; }
+    selId=pid;
+    openEmail();
+  };
   window.openConsents=function(){
     setViewMode('provider');
     const b=document.querySelector('#chartCard .chart-tab[data-ct="consents"]');
